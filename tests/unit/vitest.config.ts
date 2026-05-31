@@ -98,6 +98,8 @@ const GROUP_AI = [
   'doctor-portal/geminiService.test.ts',
   'patient-portal/aiRoute.test.ts',
   'patient-portal/aiTriage.test.ts',
+  'patient-portal/aiNewChat.behavior.test.ts',
+  'patient-portal/aiLanguagePrompt.behavior.test.ts',
 ];
 const GROUP_API = [
   'doctor-portal/apiEndpoints.test.ts',
@@ -112,6 +114,8 @@ const GROUP_NOTIFICATIONS = [
   'patient-portal/notificationService.test.ts',
   'patient-portal/notificationsRoute.test.ts',
   'patient-portal/notificationWorkflow.test.ts',
+  'patient-portal/notificationRowNormalize.test.ts',
+  'patient-portal/notificationMarkAllRead.behavior.test.ts',
 ];
 const GROUP_SECURITY = [
   'doctor-portal/owaspMiddleware.test.ts',

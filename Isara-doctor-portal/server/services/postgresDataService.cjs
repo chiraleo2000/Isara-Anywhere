@@ -1479,9 +1479,13 @@ function normalizeNotificationRow(row) {
   }
   const payload = data && typeof data === 'object' ? data : {};
   const appointmentId = payload.appointmentId ?? payload.appointment_id;
+  const createdAt = row.created_at ?? row.createdAt ?? null;
+  const readAt = row.read_at ?? row.readAt ?? null;
   return {
     ...row,
     data: payload,
+    ...(createdAt ? { createdAt } : {}),
+    isRead: Boolean(readAt),
     ...(appointmentId ? { appointmentId } : {}),
   };
 }

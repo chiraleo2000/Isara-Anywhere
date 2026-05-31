@@ -1,0 +1,31 @@
+PDF Re-audit v1.7.48
+Date: 2026-05-30
+Source: Defect หมออิสระ.pdf (44 pages, image-heavy)
+
+Extraction: scripts/extract-defect-pdf.py → reports/defect-fix/pdf-extract.txt
+Authoritative mapping: reports/defect-fix/DEFECT_REGISTER.md (23 IDs)
+
+Cross-check vs user failure list (2026-05-30 re-audit):
+- Global i18n (G1–G3): Verified
+- Patient AI (P1–P2): Verified
+- Patient notifications (P3–P5): Verified
+- Patient PHR (P6): Verified
+- Patient health library (P7): Verified
+- Patient map (P8–P10): Verified
+- Patient living will (P11–P12): Verified
+- Doctor notifications (D1): Verified
+- Doctor schedule (D2): Verified
+- Doctor Gemini (D3): Verified
+- Doctor appointments confirm/assign/GCS (D4–D6): Verified
+- Doctor clinical content (D7–D8): Verified
+- Video lobby admit (M2): Verified
+
+v1.7.48 incremental fixes (code quality, no new functional defects):
+- Sonar S6747: extracted EmrEditorChrome, PrescribingModalChrome, LiveTranscriptionView
+- Sonar S4323: ValidationAction type in MeetingResults.tsx
+- Sonar S1192: ROLE_PATIENT / ROLE_DOCTOR in technical_architecture_content.py
+- Unit guard: tests/unit/cross-portal/clinicalComponentStructure.regression.test.ts
+
+Orphan defects: none (23/23 mapped)
+Cloud Defect-regression: 36 passed, 0 skipped (2026-05-30 run)
+Local test:quality:gate: PASS (2736 unit after new tests)

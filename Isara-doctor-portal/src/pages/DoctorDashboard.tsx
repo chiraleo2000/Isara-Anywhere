@@ -1660,14 +1660,13 @@ export const DoctorDashboard: React.FC<DoctorDashboardProps> = ({
               <div className={`text-sm ${tc('text-gray-200', 'text-gray-800')}`}>👤 {apt.patientName || labels.patient[language]}</div>
               <div className={`text-xs mt-1 ${tc('text-gray-400', 'text-gray-500')}`}>{apt.reason || 'Consultation'}</div>
               {apt.meetingLink && (
-                <a
-                  href={apt.meetingLink}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                <button
+                  type="button"
+                  onClick={() => navigate(`/doctor/${doctor.id}/meeting/${apt.id}`)}
                   className="inline-flex items-center mt-2 px-3 py-1 bg-emerald-600 text-white text-xs rounded-lg hover:bg-emerald-700"
                 >
                   🎥 {labels.joinMeeting[language]}
-                </a>
+                </button>
               )}
             </div>
           ))}
@@ -1703,14 +1702,13 @@ export const DoctorDashboard: React.FC<DoctorDashboardProps> = ({
               </div>
               <div className="flex items-center gap-2">
                 {apt.meetingLink && (
-                  <a
-                    href={apt.meetingLink}
-                    target="_blank"
-                    rel="noopener noreferrer"
+                  <button
+                    type="button"
+                    onClick={() => navigate(`/doctor/${doctor.id}/meeting/${apt.id}`)}
                     className="text-xs text-emerald-600 hover:text-emerald-800"
                   >
                     🎥 Meet
-                  </a>
+                  </button>
                 )}
                 <span className={`px-2 py-0.5 rounded text-xs font-medium ${getMeetingStatusClass(apt.status)}`}>
                   {apt.status}
@@ -2281,7 +2279,7 @@ export const DoctorDashboard: React.FC<DoctorDashboardProps> = ({
                   type="text"
                   value={chatInput}
                   onChange={(e) => setChatInput(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && handleSendChatMessage()}
+                  onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSendChatMessage()}
                   placeholder={language === 'th' ? 'ถามเกี่ยวกับอาการ, ยา, แนวทางการรักษา...' : 'Ask about symptoms, drugs, protocols...'}
                   aria-label="AI Clinical Assistant chat input"
                   className={`flex-1 px-3 py-2 text-xs border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${tc('bg-gray-700 border-gray-600 text-white placeholder-gray-400', 'bg-white border-blue-200 text-gray-900')}`}

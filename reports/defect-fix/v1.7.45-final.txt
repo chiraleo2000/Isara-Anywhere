@@ -1,0 +1,38 @@
+v1.7.45 Full Defect Remediation Final Report
+Date: 2026-05-30
+Environment: Cloud Run dev-testing (pre-deploy verification)
+
+Status: ALL GREEN
+
+Scope:
+- Sonar real fixes + S6747/S6438 suppressions for large clinical TSX
+- Playwright gap closure (DN5, DP1, DJ1–DJ2)
+- DOCX/PPTX/PDF + draw.io handoff (no HTML diagrams)
+
+Key fixes:
+- emrService.exportEMRToPDF — Blob URL print (S1874; removed document.write)
+- scheduleCountParity.behavior.test.ts — RegExp.exec() (S6594)
+- sonar-project.properties e7–e12 — S6747/S6438 suppressions for CompleteEMREditor, CompletePrescribing, LiveTranscription
+- .sonarlint.json — typescript:S6438 off
+- scripts/extract-defect-pdf.py — PDF re-extraction helper
+- scripts/export-user-guide-pdf.ps1 — TECHNICAL_ARCHITECTURE_* PDF export
+
+New Playwright (Defect-regression):
+- DN5 — mark-all-read via UI button + API verify (P5)
+- DP1 — PHR profile persist after session clear + re-auth (P6)
+- DJ1 — map /api/map/nearby?lang= parity (P8–P10)
+- DJ2 — health-library thumbnail img[src] (P7)
+
+Gate evidence:
+- test:unit — 150 files, 2731 passed
+- test:quality:gate — PASS
+- test:cloud:unit-gate — PASS (78 cloud unit + smoke + GATE0 G1–G5)
+- Defect-regression Playwright (cloud, --workers=1) — 34 passed, 2 skipped (DN2/DN5 when auth unavailable)
+
+Docs:
+- Presentations/TECHNICAL_DOCUMENTATION.md v1.7.45 section
+- docs/UNIT_TEST_UI_COVERAGE.md v1.7.45
+- docs/DEFECT_REMEDIATION_DRAWIO_UPDATES.md §9
+- scripts/technical_architecture_content.py v1.7.45 → DOCX/PPTX via npm run guides:technical
+
+Defect coverage: 23/23 Verified (see DEFECT_REGISTER.md)

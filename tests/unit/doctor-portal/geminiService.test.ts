@@ -205,7 +205,7 @@ Monitor INR closely when combining warfarin with aspirin.`;
   describe('F — Gemini Configuration Validation', () => {
     it('F01 — accepts valid config', () => {
       expect(validateGeminiConfig({
-        model: 'gemini-2.5-flash-lite',
+        model: 'gemini-3.1-flash-lite',
         temperature: 0.3,
         maxTokens: 8192,
       })).toBe(true);
@@ -221,7 +221,7 @@ Monitor INR closely when combining warfarin with aspirin.`;
 
     it('F03 — rejects temperature out of range', () => {
       expect(validateGeminiConfig({
-        model: 'gemini-2.5-flash-lite',
+        model: 'gemini-3.1-flash-lite',
         temperature: 3.0,
         maxTokens: 4096,
       })).toBe(false);
@@ -229,7 +229,7 @@ Monitor INR closely when combining warfarin with aspirin.`;
 
     it('F04 — rejects negative temperature', () => {
       expect(validateGeminiConfig({
-        model: 'gemini-2.5-flash-lite',
+        model: 'gemini-3.1-flash-lite',
         temperature: -1,
         maxTokens: 4096,
       })).toBe(false);
@@ -237,7 +237,7 @@ Monitor INR closely when combining warfarin with aspirin.`;
 
     it('F05 — rejects zero max tokens', () => {
       expect(validateGeminiConfig({
-        model: 'gemini-2.5-flash-lite',
+        model: 'gemini-3.1-flash-lite',
         temperature: 0.5,
         maxTokens: 0,
       })).toBe(false);
@@ -245,7 +245,7 @@ Monitor INR closely when combining warfarin with aspirin.`;
 
     it('F06 — rejects exceeding max tokens', () => {
       expect(validateGeminiConfig({
-        model: 'gemini-2.5-flash-lite',
+        model: 'gemini-3.1-flash-lite',
         temperature: 0.5,
         maxTokens: 100000,
       })).toBe(false);

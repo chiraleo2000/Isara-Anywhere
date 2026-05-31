@@ -16,7 +16,10 @@ import {
   test, expect, assertFullHealth, snap,
   PATIENT_URL, DOCTOR_URL, MEETING_URL,
   ROLE_BROWSER_MATRIX, getRoleBrowserSpec,
+  refreshPatientSession, waitForContent,
 } from './helpers/multi-portal';
+
+const IS_CLOUD = process.env.TEST_ENV === 'cloud';
 
 test.describe('Group A — Auth & Access Verification', () => {
   test.describe.configure({ mode: 'serial' });
@@ -53,6 +56,13 @@ test.describe('Group A — Auth & Access Verification', () => {
   /* ── A02 — Patient sidebar has all expected nav items ────────────── */
   test('A02 — Patient portal sidebar complete', async ({ portals }) => {
     const { patient } = portals;
+    await refreshPatientSession(patient.page);
+    await patient.page.goto(`${PATIENT_URL}/`, {
+      waitUntil: 'domcontentloaded',
+      timeout: IS_CLOUD ? 90_000 : 45_000,
+    });
+    await waitForContent(patient.page, 'A02', IS_CLOUD ? 20_000 : 8_000);
+    await assertFullHealth(patient.page, 'A02-patient');
     const expectedLinks = [
       { href: '/', label: 'Home' },
       { href: '/appointments', label: 'Appointments' },
@@ -69,7 +79,7 @@ test.describe('Group A — Auth & Access Verification', () => {
     const found: string[] = [];
     for (const item of expectedLinks) {
       const link = patient.page.locator(`nav a[href="${item.href}"], aside a[href="${item.href}"]`).first();
-      if (await link.isVisible({ timeout: 3_000 }).catch(() => false)) {
+      if (await link.isVisible({ timeout: IS_CLOUD ? 8_000 : 3_000 }).catch(() => false)) {
         found.push(item.label);
       }
     }

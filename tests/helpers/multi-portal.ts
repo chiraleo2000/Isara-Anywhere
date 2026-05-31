@@ -629,6 +629,76 @@ export async function refreshPatientSession(page: Page): Promise<void> {
   } catch { /* page may not be ready */ }
 }
 
+/** Resolve patient JWT + user id from portal localStorage (izara_user is canonical). */
+export async function getPatientAuth(page: Page): Promise<{ token: string; userId: string }> {
+  const auth = await page.evaluate(() => {
+    const token =
+      localStorage.getItem('auth_token')
+      || localStorage.getItem('izara_auth_token')
+      || '';
+    let userId = '';
+    for (const key of ['izara_user', 'patient_user', 'user']) {
+      try {
+        const raw = localStorage.getItem(key);
+        if (raw) {
+          const parsed = JSON.parse(raw) as { id?: string };
+          if (parsed?.id) {
+            userId = String(parsed.id);
+            break;
+          }
+        }
+      } catch { /* ignore malformed storage */ }
+    }
+    return { token, userId };
+  });
+  return auth;
+}
+
+export async function requirePatientAuth(page: Page, label: string): Promise<{ token: string; userId: string }> {
+  const auth = await getPatientAuth(page);
+  expect(auth.token, `${label}: patient auth_token missing`).toBeTruthy();
+  expect(auth.userId, `${label}: patient user id missing (izara_user)`).toBeTruthy();
+  return auth;
+}
+
+export async function requireDoctorAuth(page: Page, label: string): Promise<{ token: string }> {
+  const auth = await page.evaluate(() => ({
+    token:
+      localStorage.getItem('token')
+      || localStorage.getItem('izara_auth_token')
+      || localStorage.getItem('auth_token')
+      || '',
+  }));
+  expect(auth.token, `${label}: doctor token missing`).toBeTruthy();
+  return auth;
+}
+
+/** Book a pool appointment so patient gets an appointment-linked notification (works on cloud). */
+export async function seedPatientAppointmentNotification(
+  page: Page,
+  patientUrl: string,
+  token: string,
+): Promise<string> {
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const preferredDate = tomorrow.toISOString().slice(0, 10);
+  const resp = await page.request.post(`${patientUrl}/api/appointments`, {
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    data: {
+      preferredDate,
+      preferredTime: '10:00',
+      reason: 'Defect notification routing test',
+      symptoms: ['general'],
+      urgency: 'normal',
+    },
+  });
+  expect(resp.ok(), 'seed appointment for notification link').toBeTruthy();
+  const body = (await resp.json()) as { appointment?: { id?: string }; id?: string };
+  const appointmentId = body.appointment?.id || body.id || '';
+  expect(appointmentId, 'seeded appointment id').toBeTruthy();
+  return appointmentId;
+}
+
 // ── Wait for SPA content to render (2s min + content poll) ──────────
 export async function waitForContent(page: Page, label: string, timeoutMs = 8_000) {
   await page.waitForTimeout(WAIT_AFTER_NAV);

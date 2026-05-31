@@ -27,6 +27,7 @@ import {
   holdWithMediaChecks,
   pollRecordingUrlCloud,
   waitMeetingEnded,
+  waitForMeetingResultsReady,
   assertGeminiConfiguredForCloud,
 } from './helpers/meeting-lifecycle-fixture';
 import { CHROMIUM_MEDIA_PERMISSIONS } from './helpers/browser-matrix';
@@ -142,7 +143,7 @@ test.describe('Group Q - Meeting Lifecycle (3-party)', () => {
     await test.step('Q01d - Guest joins lobby (name only, no auth)', async () => {
       guestBrowser = await launchVisibleChromium('Guest-Q');
       const guestCtx = await guestBrowser.newContext();
-      await guestCtx.grantPermissions(CHROMIUM_MEDIA_PERMISSIONS as unknown as string[]);
+      await guestCtx.grantPermissions([...CHROMIUM_MEDIA_PERMISSIONS]);
       guestPage = await guestCtx.newPage();
       await guestPage.goto(
         `${PATIENT_URL}/guest-join/${meetingKey}?name=${encodeURIComponent(GUEST_NAME)}`,
@@ -280,17 +281,35 @@ test.describe('Group Q - Meeting Lifecycle (3-party)', () => {
     });
 
     await test.step('Q02c - Doctor health-meeting / results shows recording-player', async () => {
+      await waitForMeetingResultsReady(
+        doctor.page.request,
+        MEETING_URL,
+        meetingKey,
+        token,
+        IS_CLOUD ? 120_000 : 60_000,
+      );
+      const resultsResponse = doctor.page.waitForResponse(
+        (r) => r.url().includes('/results') && r.request().method() === 'GET' && r.status() === 200,
+        { timeout: IS_CLOUD ? 90_000 : 45_000 },
+      );
       await doctor.page.goto(`${DOCTOR_URL}/doctor/${DOCTOR_ID}/meeting/${appointmentId}/results`, {
         waitUntil: 'domcontentloaded',
         timeout: IS_CLOUD ? 90_000 : 45_000,
       });
+      await resultsResponse.catch(() => null);
       const player = doctor.page.getByTestId('recording-player');
       const results = doctor.page.getByTestId('meeting-results');
       await expect(player.or(results).first()).toBeVisible({
-        timeout: IS_CLOUD ? 60_000 : 30_000,
+        timeout: IS_CLOUD ? 90_000 : 45_000,
       });
       if (await player.isVisible({ timeout: 5_000 }).catch(() => false)) {
         await expect(player).toBeVisible();
+      } else {
+        const retryBtn = doctor.page.getByRole('button', { name: /ลองใหม่|retry/i });
+        if (await retryBtn.isVisible({ timeout: 3_000 }).catch(() => false)) {
+          await retryBtn.click();
+          await expect(player.or(results).first()).toBeVisible({ timeout: IS_CLOUD ? 60_000 : 30_000 });
+        }
       }
       await snap(doctor.page, 'Q02c-dashboard-recording', 'group-Q');
     });

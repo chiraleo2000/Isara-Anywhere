@@ -36,6 +36,11 @@ if (-not $env:DB_PASSWORD -and $env:DEV_DB_PASSWORD) {
     $env:DB_PASSWORD = $env:DEV_DB_PASSWORD
 }
 
+# Cloud purge must use CLOUD_DB_PASSWORD even when .env sets local DB_PASSWORD
+if ($env:CLOUD_DB_PASSWORD) {
+    $env:DB_PASSWORD = $env:CLOUD_DB_PASSWORD
+}
+
 if (-not $env:DB_PASSWORD) {
     Write-Error "DB_PASSWORD (or CLOUD_DB_PASSWORD) required in .env"
 }

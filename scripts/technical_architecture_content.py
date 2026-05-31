@@ -3,8 +3,10 @@
 
 from __future__ import annotations
 
-VERSION = "1.7.37"
-DATE_TH = "28 พฤษภาคม 2569"
+VERSION = "1.7.45"
+DATE_TH = "30 พฤษภาคม 2569"
+ROLE_PATIENT = "ผู้ป่วย"
+ROLE_DOCTOR = "แพทย์"
 
 # Each slide: title, body lines (bullet strings), notes (speaker), optional table (headers, rows)
 SLIDES: list[dict] = [
@@ -78,8 +80,8 @@ SLIDES: list[dict] = [
             ["กลุ่ม", "ตารางตัวอย่าง", "หน้าที่"],
             [
                 ["ตัวตน", "users, sessions", "ล็อกอิน บทบาท อนุมัติแพทย์"],
-                ["ผู้ป่วย", "phr, vital_signs, living_wills", "PHR PDPA หนังสือเจตนา"],
-                ["แพทย์", "doctor_profiles, doctor_schedules", "โปรไฟล์ ตารางเวร"],
+                [ROLE_PATIENT, "phr, vital_signs, living_wills", "PHR PDPA หนังสือเจตนา"],
+                [ROLE_DOCTOR, "doctor_profiles, doctor_schedules", "โปรไฟล์ ตารางเวร"],
                 ["นัดหมาย", "appointments", "สถานะ in_pool doctor_id"],
                 ["คลินิก", "emr, prescriptions, lab_orders", "SOAP ใบสั่งยา lab"],
                 ["ประชุม", "meeting_records, meeting_transcripts", "วิดีโอ STT สรุป"],
@@ -103,12 +105,12 @@ SLIDES: list[dict] = [
         "table": (
             ["ขั้น", "ผู้ปฏิบัติ", "การกระทำ", "ระบบ/ตาราง"],
             [
-                ["1", "ผู้ป่วย", "ล็อกอิน + PDPA", "users, patient_consents"],
-                ["2", "ผู้ป่วย", "จองนัด กรอกอาการ", "appointments INSERT"],
+                ["1", ROLE_PATIENT, "ล็อกอิน + PDPA", "users, patient_consents"],
+                ["2", ROLE_PATIENT, "จองนัด กรอกอาการ", "appointments INSERT"],
                 ["3", "แพทย์/แอดมิน", "รับจาก Pool หรือจัดสรร doctor_id", "in_pool, doctor_id"],
-                ["4", "แพทย์", "ยืนยันนัด", "status=confirmed"],
+                ["4", ROLE_DOCTOR, "ยืนยันนัด", "status=confirmed"],
                 ["5", "แพลตฟอร์ม", "NOTIFY + Socket.IO", "แดชบอร์ดอัปเดต"],
-                ["6", "แพทย์", "อ่านสรุป AI ก่อนพบ", "Gemini + phr/emr"],
+                ["6", ROLE_DOCTOR, "อ่านสรุป AI ก่อนพบ", "Gemini + phr/emr"],
             ],
         ),
         "notes": "Processes/Appointment_Workflows.md — draw.io หน้า 3 และ 10",
@@ -118,7 +120,7 @@ SLIDES: list[dict] = [
         "table": (
             ["ขั้น", "ผู้ปฏิบัติ", "การกระทำ", "ระบบ"],
             [
-                ["7", "ผู้ป่วย", "เข้า Jitsi lobby", "Meeting Server + meet.jit.si"],
+                ["7", ROLE_PATIENT, "เข้า Jitsi lobby", "Meeting Server + meet.jit.si"],
                 ["8", "แพทย์ (HOST)", "เริ่มประชุม อนุมัติแขก", "lobby API"],
                 ["9", "ทั้งคู่", "วิดีโอ + STT + แชท", "meeting_transcripts"],
                 ["10", "แพลตฟอร์ม", "postMeetingPipeline", "Gemini → emr draft"],
@@ -168,29 +170,39 @@ SLIDES: list[dict] = [
         "notes": "draw.io หน้า 2 User Management, หน้า 7 Notification",
     },
     {
-        "title": "การทดสอบและคุณภาพ (v1.7.37)",
+        "title": "การทดสอบและคุณภาพ (v1.7.45)",
         "table": (
             ["ชั้น", "เครื่องมือ", "ผลลัพธ์"],
             [
-                ["Unit", "Vitest 114 ไฟล์", "2646 tests ผ่าน"],
-                ["Sonar", "SonarLint + sonar:lint", "server/ รวมใน Sonar sources"],
-                ["Cloud API", "verify:gate0", "G1–G5 นัดหมาย"],
-                ["Cloud UI", "Playwright A + 7 viewports", "41 tests + screenshots"],
-                ["เอกสาร", "UNIT_TEST_UI_COVERAGE.md", "แมป unit → ภาพ UI"],
+                ["Unit", "Vitest 150 ไฟล์", "2731 tests ผ่าน"],
+                ["Sonar", "SonarLint + sonar-project.properties", "S1874/S6594 แก้แล้ว; S6747 suppress"],
+                ["Cloud API", "test:cloud:unit-gate + GATE0", "78 cloud unit + G1–G5"],
+                ["Defect UI", "Playwright Defect-regression", "34 passed, 2 skipped (cloud)"],
+                ["เอกสาร", "draw.io + DOCX/PPTX/PDF", "docs/diagrams.drawio — ไม่ใช้ HTML diagram"],
             ],
         ),
         "body": [
-            "แผนภาพ: Presentations/html-diagrams/17-testing-quality-gate.html",
-            "ภาพหน้าจอ: docs/screenshots/group-A, group-S, workflows/*",
-            "Patient Cloud Run: revision 00112-mrm — PHR timeline PATIENT-DEMO 200 (ไม่มี 500 ใน S03)",
+            "แผนภาพ: docs/diagrams.drawio (export PNG/PDF จาก draw.io)",
+            "Defect pack: DN5, DP1, DJ1–DJ2 + v1.7.44 suites",
+            "PHR persist, map lang=, health library thumbnail",
         ],
-        "notes": "npm run test:unit:report และ test:gate:ui-showup; หลัง deploy ต้อง shift traffic",
+        "notes": "npm run test:unit; test:quality:gate; test:cloud:unit-gate",
+    },
+    {
+        "title": "Defect Remediation v1.7.45",
+        "body": [
+            "23/23 defects Verified — PDF Defect หมออิสระ",
+            "Sonar: emrService Blob URL print (S1874); scheduleCountParity RegExp.exec (S6594)",
+            "S6747/S6438: CompleteEMREditor, CompletePrescribing, LiveTranscription — parser false positive",
+            "Playwright: DN5 mark-all UI, DP1 PHR re-login, DJ1 map lang, DJ2 thumbnail",
+        ],
+        "notes": "reports/defect-fix/v1.7.45-final.txt; DEFECT_REMEDIATION_DRAWIO_UPDATES §9",
     },
     {
         "title": "การ deploy และเอกสารอ้างอิง",
         "body": [
             "Local: docker-compose up — Patient :3005 Doctor :3010 Meeting :3020",
-            "Cloud: npm run cloud:deploy -- -Tag v1.7.37 + gcloud update-traffic (patient 00112-mrm)",
+            "Cloud: npm run cloud:deploy -- -Tag v1.7.45 + gcloud update-traffic",
             "ล้างข้อมูลทดสอบ: npm run cleanup:cloud-test-only",
             "Processes/Pages/** — ขั้นตอนละเอียดต่อหน้าจอ",
             "สร้างคู่มือ: npm run guides:technical (TH Sarabun 16pt, FC Iconic PPT)",

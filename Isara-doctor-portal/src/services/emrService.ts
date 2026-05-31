@@ -145,7 +145,7 @@ class EMRService {
    * Create a new EMR
    */
   createNewEMR(patientId: string, doctorId: string, doctorName: string): EMR {
-    const emrId = `emr_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const emrId = `emr_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
 
     return {
       id: emrId,
@@ -524,8 +524,14 @@ class EMRService {
       </html>
     `;
 
-    printWindow.document.write(htmlContent);
-    printWindow.document.close();
+    const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    printWindow.location.href = url;
+    printWindow.onload = () => {
+      printWindow.focus();
+      printWindow.print();
+      URL.revokeObjectURL(url);
+    };
   }
 
   /**

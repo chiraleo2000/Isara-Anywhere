@@ -5,9 +5,11 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Bell, Check, Calendar, Video, FileText, AlertCircle, X, ChevronRight } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { notificationService, Notification } from '../lib/services';
+import { getNotificationTarget } from '../utils/notificationRouting';
 import { useAuth } from '../contexts/AuthContext';
+import { useSettings } from '../contexts/SettingsContext';
 
 interface NotificationBellProps {
   readonly className?: string;
@@ -15,6 +17,8 @@ interface NotificationBellProps {
 
 export function NotificationBell({ className = '' }: Readonly<NotificationBellProps>) {
   const { user } = useAuth();
+  const { language } = useSettings();
+  const navigate = useNavigate();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [isOpen, setIsOpen] = useState(false);
@@ -72,6 +76,12 @@ export function NotificationBell({ className = '' }: Readonly<NotificationBellPr
     }
   };
 
+  const handleNotificationClick = async (notification: Notification) => {
+    await handleMarkAsRead(notification.id);
+    setIsOpen(false);
+    navigate(getNotificationTarget(notification));
+  };
+
   // Mark all as read
   const handleMarkAllAsRead = async () => {
     if (!user?.id) return;
@@ -112,6 +122,13 @@ export function NotificationBell({ className = '' }: Readonly<NotificationBellPr
     const diffHours = Math.floor(diffMins / 60);
     const diffDays = Math.floor(diffHours / 24);
 
+    if (language === 'en') {
+      if (diffMins < 1) return 'just now';
+      if (diffMins < 60) return `${diffMins}m ago`;
+      if (diffHours < 24) return `${diffHours}h ago`;
+      if (diffDays < 7) return `${diffDays}d ago`;
+      return date.toLocaleDateString('en-US');
+    }
     if (diffMins < 1) return 'เมื่อสักครู่';
     if (diffMins < 60) return `${diffMins} นาทีที่แล้ว`;
     if (diffHours < 24) return `${diffHours} ชั่วโมงที่แล้ว`;
@@ -142,14 +159,14 @@ export function NotificationBell({ className = '' }: Readonly<NotificationBellPr
           <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 bg-gray-50">
             <h3 className="font-semibold text-gray-800 flex items-center gap-2">
               <Bell className="w-4 h-4 text-emerald-600" />
-              การแจ้งเตือน
+              {language === 'en' ? 'Notifications' : 'การแจ้งเตือน'}
             </h3>
             {unreadCount > 0 && (
               <button
                 onClick={handleMarkAllAsRead}
                 className="text-xs text-emerald-600 hover:text-emerald-700 font-medium"
               >
-                อ่านทั้งหมด
+                {language === 'en' ? 'Mark all' : 'อ่านทั้งหมด'}
               </button>
             )}
           </div>
@@ -164,7 +181,7 @@ export function NotificationBell({ className = '' }: Readonly<NotificationBellPr
             {!loading && notifications.length === 0 && (
               <div className="p-8 text-center text-gray-500">
                 <Bell className="w-12 h-12 mx-auto mb-2 opacity-30" />
-                <p>ไม่มีการแจ้งเตือน</p>
+                <p>{language === 'en' ? 'No notifications' : 'ไม่มีการแจ้งเตือน'}</p>
               </div>
             )}
             {!loading && notifications.length > 0 && (
@@ -173,7 +190,7 @@ export function NotificationBell({ className = '' }: Readonly<NotificationBellPr
                   <button
                     type="button"
                     key={notification.id}
-                    onClick={() => handleMarkAsRead(notification.id)}
+                    onClick={() => void handleNotificationClick(notification)}
                     className={`p-4 hover:bg-gray-50 transition-colors cursor-pointer w-full text-left ${notification.isRead ? '' : 'bg-emerald-50/50'
                       }`}
                     aria-label={`Notification: ${notification.title}`}
@@ -207,19 +224,19 @@ export function NotificationBell({ className = '' }: Readonly<NotificationBellPr
                           {/* Action indicators */}
                           {notification.appointmentId && (
                             <span className="text-xs text-emerald-600 font-medium flex items-center gap-1">
-                              ดูรายละเอียด <ChevronRight className="w-3 h-3" />
+                              {language === 'en' ? 'View details' : 'ดูรายละเอียด'} <ChevronRight className="w-3 h-3" />
                             </span>
                           )}
 
                           {notification.meetingLink && (
                             <span className="text-xs text-blue-600 font-medium flex items-center gap-1">
-                              <Video className="w-3 h-3" /> เข้าประชุม
+                              <Video className="w-3 h-3" /> {language === 'en' ? 'Join meeting' : 'เข้าประชุม'}
                             </span>
                           )}
 
                           {notification.calendarUrl && (
                             <span className="text-xs text-purple-600 font-medium flex items-center gap-1">
-                              <Calendar className="w-3 h-3" /> ปฏิทิน
+                              <Calendar className="w-3 h-3" /> {language === 'en' ? 'Calendar' : 'ปฏิทิน'}
                             </span>
                           )}
                         </div>
@@ -239,7 +256,7 @@ export function NotificationBell({ className = '' }: Readonly<NotificationBellPr
                 className="block text-center text-sm text-emerald-600 hover:text-emerald-700 font-medium"
                 onClick={() => setIsOpen(false)}
               >
-                ดูการแจ้งเตือนทั้งหมด ({notifications.length})
+                {language === 'en' ? 'View all notifications' : 'ดูการแจ้งเตือนทั้งหมด'} ({notifications.length})
               </Link>
             </div>
           )}

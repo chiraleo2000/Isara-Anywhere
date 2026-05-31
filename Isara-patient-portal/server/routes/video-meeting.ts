@@ -103,7 +103,7 @@ const JITSI_APP_ID = process.env.JITSI_APP_ID || process.env.VITE_JITSI_APP_ID |
 // Gemini AI Configuration (for summary & recommendations)
 // Note: API key should be set via environment variable in production
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY || '';
-const GEMINI_MODEL = process.env.GEMINI_MODEL || process.env.VITE_GEMINI_MODEL || 'gemini-2.5-flash-lite';
+const GEMINI_MODEL = process.env.GEMINI_MODEL || process.env.VITE_GEMINI_MODEL || 'gemini-3.1-flash-lite';
 
 // Log configuration at startup (without leaking API key)
 console.log('[Video Meeting] ===== Configuration v1.7.3 =====');

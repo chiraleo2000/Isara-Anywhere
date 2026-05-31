@@ -204,7 +204,7 @@ class PatientDataService {
     const existingConsents = await fetchPatientConsents(patientId) || { activeConsents: [], history: [] };
 
     const consentRequest = {
-      id: `consent_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      id: `consent_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`,
       doctorId,
       consentType: 'ehr-access',
       status: 'pending',
@@ -240,7 +240,7 @@ class PatientDataService {
     );
 
     const consent = {
-      id: `consent_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      id: `consent_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`,
       doctorId,
       consentType: 'ehr-access',
       status: 'active',

@@ -1,0 +1,35 @@
+v1.7.40 Defect + Sonar Remediation Final Report
+Date: 2026-05-30
+Environment: Cloud Run dev-testing
+
+Status: ALL GREEN
+
+Deploy:
+- Tag: v1.7.40
+- Cloud Build: 03ca172a-dc55-4579-957d-a9584be58267 (SUCCESS, ~3m49s)
+- Post-deploy smoke: patient/doctor/meeting health 200
+
+Sonar/static fixes (Prompts 1-5):
+- tests/unit/tsconfig.json: ignoreDeprecations 5.0
+- postgresDataService.ts: substr replaced with slice
+- onKeyPress to onKeyDown (doctor chat inputs)
+- MapPage: AdvancedMarkerElement + marker library; placeIsOpenNow()
+- useNotificationsPage hook extracted
+- mainApiServer buildAppointmentPutUpdates helper
+- ProfilePage demographics spread cleanup
+- HTML diagram S5725 security comments
+
+Defect coverage (23/23 Verified):
+- All items in DEFECT_REGISTER.md remain Verified
+- Defect-regression Playwright: 19 passed, 1 skipped (cloud)
+
+Gate evidence:
+- test:unit — 138 files, 2687 passed
+- test:quality:gate — PASS
+- test:cloud:unit-gate — PASS (GATE0 G1-G5)
+- Defect-regression (cloud) — 19/19 executed, 1 skip
+
+Docs:
+- docs/DEFECT_REMEDIATION_DRAWIO_UPDATES.md (draw.io handoff)
+- Presentations/TECHNICAL_DOCUMENTATION.md v1.7.40 section
+- reports/defect-fix/PHASE2_LOG_REPORT.md v1.7.40 appendix

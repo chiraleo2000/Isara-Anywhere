@@ -154,21 +154,23 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     needs: [unit-tests, security-audit, secret-scan]
-    env:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: ${{ secrets.CI_POSTGRES_PASSWORD }}
-      POSTGRES_DB: izara_phase1
-      JWT_SECRET: ${{ secrets.CI_JWT_SECRET }}
-      VITE_GEMINI_API_KEY: ${{ secrets.CI_GEMINI_API_KEY }}
-      VITE_GOOGLE_MAPS_API_KEY: ${{ secrets.CI_GOOGLE_MAPS_API_KEY }}
-      VITE_GEMINI_MODEL: gemini-2.5-flash-lite
-      RATE_LIMIT_MAX: "999999"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
+
+      - name: Set E2E stack credentials
+        run: |
+          echo "POSTGRES_USER=postgres" >> "$GITHUB_ENV"
+          echo "POSTGRES_PASSWORD=ci_postgres_e2e_${{ github.run_id }}" >> "$GITHUB_ENV"
+          echo "POSTGRES_DB=izara_phase1" >> "$GITHUB_ENV"
+          echo "JWT_SECRET=ci-jwt-e2e-secret-minimum-32-characters" >> "$GITHUB_ENV"
+          echo "VITE_GEMINI_API_KEY=ci-placeholder-gemini" >> "$GITHUB_ENV"
+          echo "VITE_GOOGLE_MAPS_API_KEY=ci-placeholder-maps" >> "$GITHUB_ENV"
+          echo "VITE_GEMINI_MODEL=gemini-3.1-flash-lite" >> "$GITHUB_ENV"
+          echo "RATE_LIMIT_MAX=999999" >> "$GITHUB_ENV"
 
       - name: Install root deps (Playwright)
         run: npm ci --prefer-offline --no-audit --progress=false

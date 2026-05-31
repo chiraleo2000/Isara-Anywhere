@@ -4,7 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Izara Diagram: 17-testing-quality-gate</title>
-    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <!-- sonar S5725: pinned mermaid@10.9.3 with SHA-384 SRI for offline diagram viewing -->
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.3/dist/mermaid.min.js" integrity="sha384-R63zfMfSwJF4xCR11wXii+QUsbiBIdiDzDbtxia72oGWfkT7WHJfmD/I/eeHPJyT" crossorigin="anonymous"></script>
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5; }
         .container { max-width: 100%; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
@@ -27,7 +28,7 @@
     </div>
     <div class="container">
         <h1>17-testing-quality-gate</h1>
-        <p class="meta">v1.7.37 | 2646 Vitest unit tests | 41 cloud UI gate tests | Patient rev 00112-mrm | PHR timeline 200</p>
+        <p class="meta">v1.7.43 | 2718 Vitest unit tests | 41 UI showup + 41 responsive + defect-pack + Defect-gemini (all green)</p>
         <div class="mermaid">
 %%{init: {
   'theme': 'base',
@@ -44,7 +45,7 @@
 }}%%
 flowchart LR
     subgraph LOCAL["Local quality gate"]
-        U["Vitest unit<br/>2646 tests"]
+        U["Vitest unit<br/>2718 tests"]
         C["Coverage lcov<br/>SonarLint"]
         S["sonar:lint<br/>eslint sonarjs"]
         Q["test:quality:gate"]
@@ -52,7 +53,11 @@ flowchart LR
     subgraph CLOUD["Cloud acceptance"]
         SM["cloud:smoke<br/>3 services"]
         G0["verify:gate0<br/>G1-G5 API"]
-        UI["Playwright<br/>A-auth + 7 viewports"]
+        UI["Playwright showup<br/>41 tests"]
+        RC["Responsive cloud<br/>41 tests"]
+        DF["Defect pack<br/>23 tests"]
+        DG["Defect-gemini<br/>D3a/D3b"]
+        LW["livingWillCanonicalPath<br/>P11-P12 guard"]
     end
     subgraph PROOF["UI screenshots"]
         A["group-A auth"]
@@ -60,7 +65,8 @@ flowchart LR
         W["workflows WF*"]
     end
     U --> C --> S --> Q
-    Q --> SM --> G0 --> UI
+    Q --> SM --> G0 --> UI --> RC --> DF --> DG
+    U --> LW
     UI --> A
     UI --> R
     U -.logic maps to.- A

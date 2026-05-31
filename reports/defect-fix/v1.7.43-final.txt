@@ -1,0 +1,45 @@
+v1.7.43 Full Defect Remediation Final Report
+Date: 2026-05-30
+Environment: Cloud Run dev-testing (tag v1.7.43)
+
+Status: ALL GREEN
+
+Full reset scope:
+- Re-audited all 23 defects from Defect หมออิสระ.pdf
+- Sonar clearance + canonical file consolidation
+- Auto traffic shift post-deploy
+
+Key fixes:
+- LivingWill: pages/LivingWillPage.tsx re-exports pdpa/LivingWillPage.tsx (P11–P12, G2 test/production parity)
+- HealthMeeting: riskToString() prevents S6551 [object Object] in pre-consult risks (D4 area)
+- Removed orphan pages/map/MapPage.tsx (deprecated google.maps.Marker)
+- HTML diagrams: S5725 security comments on mermaid scripts (10, 17, 18, 19, 21)
+- scripts/shift-cloud-traffic.ps1 — 100% traffic to latest revision after deploy
+
+New tests (+9):
+- tests/unit/patient-portal/livingWillCanonicalPath.regression.test.ts
+- tests/unit/doctor-portal/healthMeetingRiskString.behavior.test.ts
+- tests/unit/cross-portal/defectRegisterCoverage.regression.test.ts
+
+Defect coverage (23/23 Verified):
+- All items in DEFECT_REGISTER.md remain Verified
+- See reports/defect-fix/PHASE2_LOG_REPORT.md for gap analysis
+
+Gate evidence:
+- test:unit — 146 files, 2718 passed
+- test:quality:gate — PASS
+- test:cloud:unit-gate — PASS (GATE0 G1–G5, cloud smoke)
+- Defect pack (cloud, --project=Defect-regression) — 21 passed, 1 skipped
+- test:gate:ui-showup — 41/41 passed (exit 0)
+- test:gate:responsive-cloud — 41/41 passed (exit 0)
+
+Deploy:
+- npm run cloud:deploy -- -Tag v1.7.43 — Cloud Build SUCCESS (4m5s)
+- Auto traffic shift: doctor rev 00143-g4v, patient rev 00118-z2s (100%)
+- Post-deploy smoke: all 3 services 200
+
+Docs:
+- Presentations/TECHNICAL_DOCUMENTATION.md v1.7.43 section
+- docs/UNIT_TEST_UI_COVERAGE.md v1.7.43
+- Presentations/html-diagrams/21-defect-remediation-v1743.html
+- docs/DEFECT_REMEDIATION_DRAWIO_UPDATES.md §7 Living Will canonical route

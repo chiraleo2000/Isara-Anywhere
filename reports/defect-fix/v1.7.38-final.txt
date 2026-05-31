@@ -1,0 +1,31 @@
+v1.7.38 Defect Remediation Final Report
+Date: 2026-05-30
+Environment: Cloud Run dev-testing
+
+Status: ALL GREEN
+
+Completed Waves:
+- Wave A: notifications normalization/read-all/route, AI new chat reset, schedule parity, PHR profile persistence, AI language propagation
+- Wave B: doctor confirm/assign API hardening, doctor notification normalization handling, Gemini server fallback path, clinical resource flow hardening
+- Wave C: targeted i18n/placeholder/dark-mode fixes on defect-touched screens
+- Wave D: living will validation/signature DPR, map behavior checks, meeting lobby admit UX routing
+
+Key evidence:
+- Unit gate: `npm run test:unit` passed (127 files, 2659 tests)
+- Quality gate: `npm run test:quality:gate` passed
+- Cloud unit gate: `npm run test:cloud:unit-gate` passed
+- UI showup gate: `npm run test:gate:ui-showup` passed (41 tests)
+- Responsive cloud gate: `npm run test:gate:responsive-cloud` passed (41 tests)
+- Defect Playwright pack: `21/21` passed on rerun:
+  - `tests/group-Defect-*.ui-test.ts`
+  - `tests/group-I-*.ui-test.ts`
+  - `tests/group-J-*.ui-test.ts`
+  - `tests/group-Q-meeting-lifecycle.ui-test.ts`
+  - `tests/group-H-*.ui-test.ts`
+
+Stability note:
+- One transient first-pass failure in Group Q (`Q02c`) due to temporary `/api/meetings/:id/results` 500; immediate rerun passed, and full defect pack rerun passed end-to-end.
+
+Notes:
+- Observed non-blocking browser diagnostics (Google API timeout warnings, Firefox font warnings, extension URL scheme noise) did not fail gates.
+- This report reflects remediation and verification only; deployment/traffic shifting is not included in this run log.

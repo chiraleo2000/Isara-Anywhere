@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Izara Diagram: 20-gemini-31-migration</title>
+    <!-- sonar S5725: pinned mermaid@10.9.3 with SHA-384 SRI for offline diagram viewing -->
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.3/dist/mermaid.min.js" integrity="sha384-R63zfMfSwJF4xCR11wXii+QUsbiBIdiDzDbtxia72oGWfkT7WHJfmD/I/eeHPJyT" crossorigin="anonymous"></script>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5; }
+        .container { max-width: 100%; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        h1 { color: #2c3e50; text-align: center; border-bottom: 2px solid #eee; padding-bottom: 15px; }
+        .meta { text-align: center; color: #666; margin-bottom: 16px; }
+        .mermaid { display: flex; justify-content: center; margin-top: 20px; }
+        .nav { margin-bottom: 20px; text-align: center; }
+        .nav a { margin: 0 10px; color: #3498db; text-decoration: none; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="nav">
+        <a href="index.html">Back to Index</a>
+    </div>
+    <div class="container">
+        <h1>20-gemini-31-migration (v1.7.42)</h1>
+        <p class="meta">gemini-2.5-flash → gemini-3.1-flash-lite | env → build → runtime → UI badge</p>
+        <div class="mermaid">
+sequenceDiagram
+    participant Env as .env / Cloud Run secrets
+    participant Build as Docker VITE_GEMINI_MODEL
+    participant API as mainApiServer / ai.ts
+    participant UI as GeminiAIStudio
+    participant Google as Gemini API
+
+    Env->>Build: GEMINI_MODEL=gemini-3.1-flash-lite
+    Build->>UI: import.meta.env (optional client key)
+    Env->>API: GEMINI_API_KEY runtime
+    UI->>API: GET /api/ai/gemini/status
+    API-->>UI: configured true, model gemini-3.1-flash-lite
+    UI->>UI: Badge API Connected
+    UI->>API: POST /api/ai/gemini/clinical
+    API->>Google: generateContent (3.1-flash-lite)
+    Google-->>API: clinical text
+    API-->>UI: assistant reply
+        </div>
+    </div>
+    <script>mermaid.initialize({ startOnLoad: true, theme: 'base' });</script>
+</body>
+</html>

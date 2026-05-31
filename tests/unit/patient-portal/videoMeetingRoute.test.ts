@@ -22,7 +22,7 @@ import { createHash, randomUUID } from 'node:crypto';
 
 const JITSI_DOMAIN = 'meet.jit.si';
 const JITSI_APP_ID = 'izara-telemedicine';
-const GEMINI_MODEL = 'gemini-2.5-flash-lite';
+const GEMINI_MODEL = 'gemini-3.1-flash-lite';
 
 // ── Types ───────────────────────────────────────────────────────────────
 
@@ -404,7 +404,7 @@ describe('Video Meeting — Config & Edge Cases', () => {
   it('Jitsi config constants are correct', () => {
     expect(JITSI_DOMAIN).toBe('meet.jit.si');
     expect(JITSI_APP_ID).toBe('izara-telemedicine');
-    expect(GEMINI_MODEL).toBe('gemini-2.5-flash-lite');
+    expect(GEMINI_MODEL).toBe('gemini-3.1-flash-lite');
   });
 
   it('URL without recording omits recording param', () => {

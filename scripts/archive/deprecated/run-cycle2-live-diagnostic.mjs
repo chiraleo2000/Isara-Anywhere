@@ -91,7 +91,7 @@ async function simulatePipeline() {
         },
       }),
     },
-    geminiModel: 'gemini-2.5-flash-lite',
+    geminiModel: 'gemini-3.1-flash-lite',
     recordingsDir: path.join(root, 'reports', 'cycle2-tmp'),
     io: { to: () => ({ emit: () => {} }) },
     hasSttCredentials: () => false,

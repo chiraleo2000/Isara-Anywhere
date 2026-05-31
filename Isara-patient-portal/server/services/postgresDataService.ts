@@ -811,7 +811,7 @@ export const AppointmentService = {
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
        RETURNING *`,
       [
-        `APT-${Date.now()}-${Math.random().toString(36).substr(2, 6).toUpperCase()}`,
+        `APT-${Date.now()}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`,
         data.patient_id,
         data.doctor_id,
         data.scheduled_date || data.requested_date,
@@ -1057,9 +1057,15 @@ function normalizeNotificationRow(row: Record<string, unknown>): Record<string, 
   const payload = (data && typeof data === 'object' ? data : {}) as Record<string, unknown>;
   const appointmentId =
     payload.appointmentId ?? payload.appointment_id ?? undefined;
+  const createdAt =
+    row.created_at ?? row.createdAt ?? null;
+  const readAt =
+    row.read_at ?? row.readAt ?? null;
   return {
     ...row,
     data: payload,
+    ...(createdAt ? { createdAt } : {}),
+    isRead: Boolean(readAt),
     ...(appointmentId ? { appointmentId } : {}),
   };
 }
@@ -1239,7 +1245,7 @@ export const MeetingService = {
     guestUrl?: string;
     config?: Record<string, unknown>;
   }) {
-    const meetingId = `meet-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`;
+    const meetingId = `meet-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
     const result = await pool.query(
       `INSERT INTO meeting_records (

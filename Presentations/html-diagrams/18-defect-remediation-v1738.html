@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Izara Diagram: 18-defect-remediation-v1738</title>
+    <!-- sonar S5725: pinned mermaid@10.9.3 with SHA-384 SRI for offline diagram viewing -->
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.3/dist/mermaid.min.js" integrity="sha384-R63zfMfSwJF4xCR11wXii+QUsbiBIdiDzDbtxia72oGWfkT7WHJfmD/I/eeHPJyT" crossorigin="anonymous"></script>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5; }
+        .container { max-width: 100%; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        h1 { color: #2c3e50; text-align: center; border-bottom: 2px solid #eee; padding-bottom: 15px; }
+        .mermaid { display: flex; justify-content: center; margin-top: 20px; }
+        .nav { margin-bottom: 20px; text-align: center; }
+        .nav a { margin: 0 10px; color: #3498db; text-decoration: none; font-weight: bold; }
+        .nav a:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <div class="nav">
+        <a href="index.html">🔙 Back to Index</a>
+        <span>|</span>
+        <a href="javascript:location.reload()">🔄 Refresh</a>
+    </div>
+    <div class="container">
+        <h1>18-defect-remediation-v1738</h1>
+        <div class="mermaid">
+            %%{init: {'theme': 'base'}}%%
+flowchart LR
+  A[Notification Bell] -->|PUT read-all| B[Patient API]
+  B --> C[(Postgres read_at)]
+  C --> D[GET notifications]
+  D --> E[/notifications page shows isRead]
+
+  F[AI Doctor New Chat] -->|clearChatHistory(sessionId)| G[AI Route]
+  G --> H[(chat history rows cleared)]
+  H --> I[Session list reload]
+
+  J[Doctor Dashboard filter] --> K[Shared active statuses]
+  L[Schedule page filter] --> K
+  K --> M[Consistent appointment counts]
+
+  N[Meeting lobby panel] --> O[Waiting participants visible]
+  O --> P[Admit / Admit-all]
+  P --> Q[Patient joins room]
+        </div>
+    </div>
+</body>
+</html>

@@ -1838,7 +1838,7 @@ app.get('/api/ai/health', (req, res) => {
       chat: true,
       validation: true
     },
-    provider: 'Gemini 2.5 Flash'
+    provider: 'Gemini 3.1 Flash Lite'
   });
 });
 
@@ -2030,6 +2030,52 @@ app.post('/api/meetings/create', authenticateToken, async (req, res) => {
     console.error('Meeting creation error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
+});
+
+function getMeetingServerBase() {
+  return (process.env.MEETING_SERVER_URL || process.env.VITE_MEETING_SERVER_URL || '').replace(/\/$/, '');
+}
+
+async function proxyMeetingServerRequest(req, res, method, pathSuffix) {
+  const base = getMeetingServerBase();
+  if (!base) {
+    return res.status(503).json({ success: false, error: 'Meeting server not configured' });
+  }
+  try {
+    const authHeader = req.headers.authorization || '';
+    const init = {
+      method,
+      headers: {
+        Authorization: authHeader,
+        'Content-Type': 'application/json',
+      },
+    };
+    if (method !== 'GET' && method !== 'HEAD' && req.body && Object.keys(req.body).length > 0) {
+      init.body = JSON.stringify(req.body);
+    }
+    const upstream = await fetch(`${base}${pathSuffix}`, init);
+    const text = await upstream.text();
+    res.status(upstream.status).type(upstream.headers.get('content-type') || 'application/json').send(text);
+  } catch (err) {
+    console.error('[MEETING PROXY]', method, pathSuffix, err.message);
+    res.status(502).json({ success: false, error: 'Meeting server unavailable' });
+  }
+}
+
+app.get('/api/meetings/:id/results', authenticateToken, (req, res) => {
+  proxyMeetingServerRequest(req, res, 'GET', `/api/meetings/${req.params.id}/results`);
+});
+
+app.post('/api/meetings/:id/generate-summary', authenticateToken, (req, res) => {
+  proxyMeetingServerRequest(req, res, 'POST', `/api/meetings/${req.params.id}/generate-summary`);
+});
+
+app.post('/api/meetings/:id/validate', authenticateToken, (req, res) => {
+  proxyMeetingServerRequest(req, res, 'POST', `/api/meetings/${req.params.id}/validate`);
+});
+
+app.post('/api/meetings/:id/patient-instruction', authenticateToken, (req, res) => {
+  proxyMeetingServerRequest(req, res, 'POST', `/api/meetings/${req.params.id}/patient-instruction`);
 });
 
 // ============================================================================
@@ -2577,7 +2623,7 @@ app.put('/api/lab-orders/:labOrderId/results', authenticateToken, async (req, re
     let aiAnalysis = '';
     try {
       const GEMINI_KEY = process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY;
-      const GEMINI_MDL = process.env.GEMINI_MODEL || process.env.VITE_GEMINI_MODEL || 'gemini-2.5-flash-lite';
+      const GEMINI_MDL = process.env.GEMINI_MODEL || process.env.VITE_GEMINI_MODEL || 'gemini-3.1-flash-lite';
       if (GEMINI_KEY && results && results.length > 0) {
         const resultsSummary = results.map(r => {
           const range = r.normalRange
@@ -2821,6 +2867,40 @@ app.put('/api/imaging-orders/:orderId/results', authenticateToken, async (req, r
 // ============================================================================
 // AI ASSISTANT ENDPOINTS (Phase 1 Requirements 2.2, 3.3)
 // ============================================================================
+
+/**
+ * GET /api/ai/gemini/status
+ * Runtime Gemini status (Cloud Run/server env aware).
+ * Public read — returns only configured/model, no secrets.
+ */
+app.get('/api/ai/gemini/status', async (_req, res) => {
+  const configured = Boolean(process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY || GEMINI_API_KEY);
+  res.json({
+    configured,
+    model: process.env.GEMINI_MODEL || process.env.VITE_GEMINI_MODEL || GEMINI_MODEL || 'gemini-3.1-flash-lite',
+  });
+});
+
+/**
+ * POST /api/ai/gemini/clinical
+ * Server-side Gemini proxy so browser key is optional in cloud.
+ */
+app.post('/api/ai/gemini/clinical', authenticateToken, async (req, res) => {
+  try {
+    const { prompt, taskType = 'clinical-chat' } = req.body || {};
+    if (!prompt || typeof prompt !== 'string') {
+      return res.status(400).json({ error: 'prompt is required' });
+    }
+
+    const text = await callGeminiForSummary(prompt, taskType === 'medical-qa' ? 2048 : 1024);
+    if (!text) {
+      return res.status(503).json({ error: 'Gemini is not configured on server runtime' });
+    }
+    return res.json({ text, taskType });
+  } catch (error) {
+    return res.status(500).json({ error: error.message || 'Gemini proxy failed' });
+  }
+});
 
 /**
  * POST /api/ai/chat
@@ -4022,7 +4102,7 @@ app.post('/api/meeting/transcript/summary', authenticateToken, async (req, res) 
     // Generate summary using Gemini AI
     const { GoogleGenerativeAI } = require('@google/generative-ai');
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash-lite' });
+    const model = genAI.getGenerativeModel({ model: 'gemini-3.1-flash-lite' });
 
     const prompt = `คุณเป็นผู้ช่วยแพทย์ กรุณาสรุปการสนทนาในการประชุมแพทย์-ผู้ป่วยต่อไปนี้เป็นภาษาไทย โดยจัดรูปแบบเป็น SOAP format:
 
@@ -4238,7 +4318,7 @@ const GOOGLE_SPEECH_API_KEY = process.env.GOOGLE_SPEECH_API_KEY ||
 
 // Gemini AI Configuration (for summary & recommendations)
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY || '';
-const GEMINI_MODEL = process.env.GEMINI_MODEL || process.env.VITE_GEMINI_MODEL || 'gemini-2.5-flash-lite';
+const GEMINI_MODEL = process.env.GEMINI_MODEL || process.env.VITE_GEMINI_MODEL || 'gemini-3.1-flash-lite';
 
 // Log video meeting configuration
 console.log('[Video Meeting] ===== Configuration =====');
@@ -5166,6 +5246,35 @@ app.post('/api/video-meeting/:appointmentId/upload-recording', authenticateToken
   }
 });
 
+function parseMeetingJsonField(raw) {
+  if (typeof raw !== 'string') return raw;
+  try { return JSON.parse(raw); } catch { return raw; }
+}
+
+function resolveMeetingSummaryText(summary, dbSummaryFallback) {
+  if (typeof summary === 'string') return summary;
+  if (summary && typeof summary === 'object') {
+    return summary.text || summary.summary || summary.narrative || null;
+  }
+  return typeof dbSummaryFallback === 'string' ? dbSummaryFallback : null;
+}
+
+function absolutizeRecordingUrl(recordingUrl, meetingServerBase) {
+  if (!recordingUrl?.startsWith('/') || !meetingServerBase) return recordingUrl || null;
+  return `${meetingServerBase.replace(/\/$/, '')}${recordingUrl}`;
+}
+
+function getPostMeetingPipeline(dbMeeting) {
+  try {
+    const mc = typeof dbMeeting.meeting_config === 'string'
+      ? JSON.parse(dbMeeting.meeting_config)
+      : dbMeeting.meeting_config;
+    return mc?.postMeetingPipeline || null;
+  } catch {
+    return null;
+  }
+}
+
 // Get meeting recordings and files for doctor portal display - USES POSTGRESQL
 app.get('/api/video-meeting/:appointmentId/files', authenticateToken, async (req, res) => {
   try {
@@ -5178,34 +5287,13 @@ app.get('/api/video-meeting/:appointmentId/files', authenticateToken, async (req
       return res.status(404).json({ error: 'Meeting data not found' });
     }
     
-    // Parse JSON fields if they're strings
-    let transcript = dbMeeting.transcript;
-    let summary = dbMeeting.ai_summary;
-    let recommendations = dbMeeting.ai_recommendations;
-    
-    try { if (typeof transcript === 'string') transcript = JSON.parse(transcript); } catch {}
-    try { if (typeof summary === 'string') summary = JSON.parse(summary); } catch {}
-    try { if (typeof recommendations === 'string') recommendations = JSON.parse(recommendations); } catch {}
-
-    const summaryText =
-      typeof summary === 'string' ? summary
-        : summary?.text || summary?.summary || summary?.narrative
-          || (typeof dbMeeting.ai_summary === 'string' ? dbMeeting.ai_summary : null)
-          || null;
-
+    const transcript = parseMeetingJsonField(dbMeeting.transcript);
+    const summary = parseMeetingJsonField(dbMeeting.ai_summary);
+    const recommendations = parseMeetingJsonField(dbMeeting.ai_recommendations);
+    const summaryText = resolveMeetingSummaryText(summary, dbMeeting.ai_summary);
     const meetingServerBase = process.env.MEETING_SERVER_URL || process.env.VITE_MEETING_SERVER_URL || '';
-    let recordingUrl = dbMeeting.recording_url || null;
-    if (recordingUrl && recordingUrl.startsWith('/') && meetingServerBase) {
-      recordingUrl = `${meetingServerBase.replace(/\/$/, '')}${recordingUrl}`;
-    }
-
-    let pipeline = null;
-    try {
-      const mc = typeof dbMeeting.meeting_config === 'string'
-        ? JSON.parse(dbMeeting.meeting_config)
-        : dbMeeting.meeting_config;
-      pipeline = mc?.postMeetingPipeline || null;
-    } catch { /* ignore */ }
+    const recordingUrl = absolutizeRecordingUrl(dbMeeting.recording_url, meetingServerBase);
+    const pipeline = getPostMeetingPipeline(dbMeeting);
 
     res.json({
       success: true,
@@ -5434,11 +5522,46 @@ app.get('/api/appointments/pending/:doctorId', authenticateToken, async (req, re
   }
 });
 
+/** Map camelCase appointment PUT body to snake_case DB columns */
+function buildAppointmentPutUpdates(body) {
+  const updates = {};
+  const directFields = [
+    ['status', 'status'],
+    ['notes', 'notes'],
+  ];
+  for (const [src, dest] of directFields) {
+    if (body[src] !== undefined) updates[dest] = body[src];
+  }
+  const aliasPairs = [
+    [['doctorId', 'doctor_id'], 'doctor_id'],
+    [['appointmentDate', 'scheduled_date'], 'scheduled_date'],
+    [['appointmentTime', 'scheduled_time'], 'scheduled_time'],
+    [['confirmedDate', 'confirmed_date'], 'confirmed_date'],
+    [['confirmedTime', 'confirmed_time'], 'confirmed_time'],
+    [['doctorMeetingUrl', 'doctor_meeting_url'], 'doctor_meeting_url'],
+    [['patientMeetingUrl', 'patient_meeting_url'], 'patient_meeting_url'],
+    [['guestMeetingUrl', 'guest_meeting_url'], 'guest_meeting_url'],
+    [['confirmedBy', 'confirmed_by'], 'confirmed_by'],
+    [['confirmedByEmail', 'confirmed_by_email'], 'confirmed_by_email'],
+    [['confirmedAt', 'confirmed_at'], 'confirmed_at'],
+    [['meetingType', 'appointment_type'], 'appointment_type'],
+  ];
+  for (const [keys, dest] of aliasPairs) {
+    const val = body[keys[0]] || body[keys[1]];
+    if (val) updates[dest] = val;
+  }
+  const meetLink = body.meetingLink || body.patientMeetingUrl || body.meeting_link || body.meet_link;
+  if (meetLink) updates.meeting_link = meetLink;
+  const roomName = body.jitsiRoomName || body.meetCode || body.jitsi_room_name;
+  if (roomName) updates.jitsi_room_name = roomName;
+  return updates;
+}
+
 /**
  * PUT /api/appointments/:id — Full appointment update (used by saveAppointment from frontend)
  * Accepts camelCase fields from frontend, maps to snake_case DB columns
  */
-app.put('/api/appointments/:appointmentId', authenticateToken, async (req, res) => { // NOSONAR S3776: tested appointment update endpoint, role-based field update branches
+app.put('/api/appointments/:appointmentId', authenticateToken, async (req, res) => {
   try {
     const { appointmentId } = req.params;
     const body = req.body;
@@ -5449,34 +5572,7 @@ app.put('/api/appointments/:appointmentId', authenticateToken, async (req, res) 
       return res.status(404).json({ error: 'Appointment not found' });
     }
 
-    // Map camelCase frontend fields to snake_case DB fields
-    const updates = {};
-    if (body.status !== undefined) updates.status = body.status;
-    if (body.doctorId || body.doctor_id) updates.doctor_id = body.doctorId || body.doctor_id;
-    if (body.notes !== undefined) updates.notes = body.notes;
-    if (body.appointmentDate || body.scheduled_date) updates.scheduled_date = body.appointmentDate || body.scheduled_date;
-    if (body.appointmentTime || body.scheduled_time) updates.scheduled_time = body.appointmentTime || body.scheduled_time;
-    if (body.confirmedDate || body.confirmed_date) updates.confirmed_date = body.confirmedDate || body.confirmed_date;
-    if (body.confirmedTime || body.confirmed_time) updates.confirmed_time = body.confirmedTime || body.confirmed_time;
-
-    // Meeting link fields — critical for video meeting entry
-    const meetLink = body.meetingLink || body.patientMeetingUrl || body.meeting_link || body.meet_link;
-    if (meetLink) updates.meeting_link = meetLink;
-    const roomName = body.jitsiRoomName || body.meetCode || body.jitsi_room_name;
-    if (roomName) updates.jitsi_room_name = roomName;
-
-    // Separate Jitsi URLs for doctor/patient/guest
-    if (body.doctorMeetingUrl || body.doctor_meeting_url) updates.doctor_meeting_url = body.doctorMeetingUrl || body.doctor_meeting_url;
-    if (body.patientMeetingUrl || body.patient_meeting_url) updates.patient_meeting_url = body.patientMeetingUrl || body.patient_meeting_url;
-    if (body.guestMeetingUrl || body.guest_meeting_url) updates.guest_meeting_url = body.guestMeetingUrl || body.guest_meeting_url;
-
-    // Confirmation tracking
-    if (body.confirmedBy || body.confirmed_by) updates.confirmed_by = body.confirmedBy || body.confirmed_by;
-    if (body.confirmedByEmail || body.confirmed_by_email) updates.confirmed_by_email = body.confirmedByEmail || body.confirmed_by_email;
-    if (body.confirmedAt || body.confirmed_at) updates.confirmed_at = body.confirmedAt || body.confirmed_at;
-
-    // appointment_type
-    if (body.meetingType || body.appointment_type) updates.appointment_type = body.meetingType || body.appointment_type;
+    const updates = buildAppointmentPutUpdates(body);
 
     const updated = await PostgresDataService.AppointmentService.updateAppointment(appointmentId, updates);
 
@@ -9076,7 +9172,7 @@ async function startServer() {
     console.log('📊 Storage: PostgreSQL + pgvector (PRIMARY)');
     console.log('🎥 Video: Jitsi Meet (FREE)');
     console.log('🎤 Transcription: Web Speech API (FREE)');
-    console.log('🤖 AI: Gemini 2.5 Flash Lite (FREE)');
+    console.log('🤖 AI: Gemini 3.1 Flash Lite (FREE)');
     console.log('\n🔗 Key Endpoints:');
     console.log('   GET  /api/health              - Health check');
     console.log('   GET  /api/dashboard/:doctorId  - Doctor dashboard');

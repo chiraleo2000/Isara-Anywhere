@@ -226,7 +226,8 @@ gcloud run deploy $SVC_MEETING `
     --min-instances=0 `
     --max-instances=5 `
     --timeout=300 `
-    --set-env-vars="NODE_ENV=production,DB_HOST=$PG_HOST,DB_PORT=5432,DB_NAME=$DB_NAME,DB_USER=$DB_USER,DB_PASSWORD=$DB_PASSWORD,DB_SSL=false,DATABASE_URL=$DATABASE_URL,GEMINI_API_KEY=$GEMINI_API_KEY,GEMINI_MODEL=gemini-2.5-flash-lite,JITSI_DOMAIN=meet.jit.si,JWT_SECRET=$JWT_SECRET,CORS_ORIGINS=*,USE_POSTGRESQL=true" `
+    --set-env-vars="NODE_ENV=production,DB_HOST=$PG_HOST,DB_PORT=5432,DB_NAME=$DB_NAME,DB_USER=$DB_USER,DB_PASSWORD=$DB_PASSWORD,DB_SSL=false,DATABASE_URL=$DATABASE_URL,GEMINI_MODEL=gemini-3.1-flash-lite,JITSI_DOMAIN=meet.jit.si,JWT_SECRET=$JWT_SECRET,CORS_ORIGINS=*,USE_POSTGRESQL=true" `
+    --set-secrets="GEMINI_API_KEY=gemini-api-key:latest,JWT_SECRET=jwt-secret:latest,DB_PASSWORD=db-password:latest,DATABASE_URL=database-url:latest,GOOGLE_SPEECH_API_KEY=google-speech-api-key:latest,GCP_SERVICE_ACCOUNT_KEY=gcp-service-account-key:latest" `
     --quiet
 
 if ($LASTEXITCODE -ne 0) { Write-Err "Meeting Server deployment failed!"; exit 1 }
@@ -252,7 +253,7 @@ if (-not $SkipBuild) {
         --build-arg VITE_GOOGLE_MAPS_API_KEY=$MAPS_API_KEY `
         --build-arg VITE_GOOGLE_MAPS_MAP_ID=$MAPS_MAP_ID `
         --build-arg VITE_GEMINI_API_KEY=$GEMINI_API_KEY `
-        --build-arg VITE_GEMINI_MODEL=gemini-2.5-flash-lite `
+        --build-arg VITE_GEMINI_MODEL=gemini-3.1-flash-lite `
         -t $IMG_PATIENT .
     if ($LASTEXITCODE -ne 0) { Write-Err "Patient Portal build failed!"; Pop-Location; exit 1 }
     
@@ -274,7 +275,7 @@ gcloud run deploy $SVC_PATIENT `
     --min-instances=0 `
     --max-instances=10 `
     --timeout=300 `
-    --set-env-vars="NODE_ENV=production,DATABASE_URL=$DATABASE_URL,DB_HOST=$PG_HOST,DB_PORT=5432,DB_NAME=$DB_NAME,DB_USER=$DB_USER,DB_PASSWORD=$DB_PASSWORD,DB_SSL=false,USE_POSTGRESQL=true,VITE_USE_POSTGRESQL=true,MEETING_SERVER_URL=$MEETING_URL,VITE_MEETING_SERVER_URL=$MEETING_URL,GOOGLE_MAPS_API_KEY=$MAPS_API_KEY,VITE_GOOGLE_MAPS_API_KEY=$MAPS_API_KEY,GEMINI_API_KEY=$GEMINI_API_KEY,GEMINI_MODEL=gemini-2.5-flash-lite,JWT_SECRET=$JWT_SECRET" `
+    --set-env-vars="NODE_ENV=production,DATABASE_URL=$DATABASE_URL,DB_HOST=$PG_HOST,DB_PORT=5432,DB_NAME=$DB_NAME,DB_USER=$DB_USER,DB_PASSWORD=$DB_PASSWORD,DB_SSL=false,USE_POSTGRESQL=true,VITE_USE_POSTGRESQL=true,MEETING_SERVER_URL=$MEETING_URL,VITE_MEETING_SERVER_URL=$MEETING_URL,GOOGLE_MAPS_API_KEY=$MAPS_API_KEY,VITE_GOOGLE_MAPS_API_KEY=$MAPS_API_KEY,GEMINI_API_KEY=$GEMINI_API_KEY,GEMINI_MODEL=gemini-3.1-flash-lite,JWT_SECRET=$JWT_SECRET" `
     --quiet
 
 if ($LASTEXITCODE -ne 0) { Write-Err "Patient Portal deployment failed!"; exit 1 }
@@ -319,8 +320,8 @@ gcloud run deploy $SVC_DOCTOR `
     --min-instances=0 `
     --max-instances=2 `
     --timeout=300 `
-    --set-env-vars="NODE_ENV=production,USE_POSTGRESQL=true,VITE_USE_POSTGRESQL=true,DB_HOST=$PG_HOST,DB_PORT=5432,DB_NAME=$DB_NAME,DB_USER=$DB_USER,DB_SSL=false,MEETING_SERVER_URL=$MEETING_URL,VITE_MEETING_SERVER_URL=$MEETING_URL,JITSI_DOMAIN=meet.jit.si,GEMINI_MODEL=gemini-2.5-flash-lite,GCP_PROJECT_ID=$PROJECT_ID,IZARA_DEV_TESTING=1,GOOGLE_TOKEN_VERIFIER_FIXTURE=1" `
-    --set-secrets="GEMINI_API_KEY=gemini-api-key:latest,VITE_GEMINI_API_KEY=gemini-api-key:latest,DB_PASSWORD=db-password:latest,DATABASE_URL=database-url:latest,JWT_SECRET=jwt-secret:latest,GOOGLE_CLIENT_ID=google-client-id:latest" `
+    --set-env-vars="NODE_ENV=production,USE_POSTGRESQL=true,VITE_USE_POSTGRESQL=true,DB_HOST=$PG_HOST,DB_PORT=5432,DB_NAME=$DB_NAME,DB_USER=$DB_USER,DB_SSL=false,MEETING_SERVER_URL=$MEETING_URL,VITE_MEETING_SERVER_URL=$MEETING_URL,JITSI_DOMAIN=meet.jit.si,GEMINI_MODEL=gemini-3.1-flash-lite,GCP_PROJECT_ID=$PROJECT_ID,IZARA_DEV_TESTING=1,GOOGLE_TOKEN_VERIFIER_FIXTURE=1" `
+    --set-secrets="GEMINI_API_KEY=gemini-api-key:latest,VITE_GEMINI_API_KEY=gemini-api-key:latest,DB_PASSWORD=db-password:latest,DATABASE_URL=database-url:latest,JWT_SECRET=jwt-secret:latest,GOOGLE_CLIENT_ID=google-client-id:latest,GOOGLE_SPEECH_API_KEY=google-speech-api-key:latest,GCP_SERVICE_ACCOUNT_KEY=gcp-service-account-key:latest" `
     --execution-environment=gen2 `
     --cpu-boost `
     --quiet

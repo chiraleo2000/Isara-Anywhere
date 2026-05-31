@@ -26,7 +26,9 @@ import {
   saveAllAppointments,
   saveAppointment,
   clearCache,
-  fetchDashboardData as fetchDoctorQueue
+  fetchDashboardData as fetchDoctorQueue,
+  confirmAppointment as confirmAppointmentApi,
+  adminAssignAppointment,
 } from '../../services/apiDataService';
 import appointmentService from '../../services/appointmentService';
 import {
@@ -93,6 +95,15 @@ interface AppointmentRequest {
   date?: string;
   appointmentTime?: string;
   time?: string;
+  /** Postgres API snake_case aliases */
+  patient_id?: string;
+  patient_name?: string;
+}
+
+interface MeetingServerCreateResponse {
+  urls?: { doctor?: string; patient?: string; guest?: string };
+  meeting?: { doctor_url?: string; patient_url?: string; guest_url?: string; room_name?: string };
+  roomName?: string;
 }
 
 // ============================================================================
@@ -247,14 +258,39 @@ const HealthMeeting: React.FC<HealthMeetingProps> = ({ doctor }) => {
   const [preConsultData, setPreConsultData] = useState<Record<string, any>>({});
   const [preConsultLoading, setPreConsultLoading] = useState<string | null>(null);
 
+  const symptomToString = (v: unknown): string => {
+    if (v == null) return '';
+    if (typeof v === 'string' || typeof v === 'number' || typeof v === 'boolean') return String(v);
+    return '';
+  };
+
+  const riskToString = (r: unknown): string => {
+    if (r == null) return '';
+    if (typeof r === 'string' || typeof r === 'number' || typeof r === 'boolean') return String(r);
+    if (typeof r === 'object' && r !== null && 'risk' in r) {
+      const riskVal = (r as { risk?: unknown }).risk;
+      if (typeof riskVal === 'string' || typeof riskVal === 'number' || typeof riskVal === 'boolean') {
+        return String(riskVal);
+      }
+    }
+    try {
+      return JSON.stringify(r);
+    } catch {
+      return '';
+    }
+  };
+
   const normalizeSymptoms = (value: unknown): string[] => {
-    if (Array.isArray(value)) return value.map((v) => String(v)).filter(Boolean);
+    if (Array.isArray(value)) return value.map(symptomToString).filter(Boolean);
     if (typeof value === 'string') return value.split(',').map((v) => v.trim()).filter(Boolean);
     if (value && typeof value === 'object') {
       const obj = value as Record<string, unknown>;
-      if (Array.isArray(obj.list)) return obj.list.map((v) => String(v)).filter(Boolean);
+      if (Array.isArray(obj.list)) return obj.list.map(symptomToString).filter(Boolean);
       if (typeof obj.main === 'string') return [obj.main];
-      return Object.values(obj).map((v) => String(v)).filter(Boolean);
+      return Object.values(obj)
+        .filter((v): v is string | number | boolean => typeof v === 'string' || typeof v === 'number' || typeof v === 'boolean')
+        .map(String)
+        .filter(Boolean);
     }
     return [];
   };
@@ -296,11 +332,13 @@ const HealthMeeting: React.FC<HealthMeetingProps> = ({ doctor }) => {
 
         socket.on('connect', () => {
           console.log('[HealthMeeting] 🔌 Socket.IO connected');
+          const activeSocket = socket;
+          if (!activeSocket) return;
           if (doctor.id) {
-            socket!.emit('join-doctor-room', doctor.id);
-            socket!.emit('join-queue-room', doctor.id);
+            activeSocket.emit('join-doctor-room', doctor.id);
+            activeSocket.emit('join-queue-room', doctor.id);
           }
-          socket!.emit('join', 'admin-notifications');
+          activeSocket.emit('join', 'admin-notifications');
         });
 
         const reload = () => {
@@ -540,11 +578,13 @@ const HealthMeeting: React.FC<HealthMeetingProps> = ({ doctor }) => {
 
       console.log(`[Admin] Assigning appointment ${selectedPoolRequest.id} to doctor ${assignData.doctorId}`);
 
-      const result = await appointmentService.updateAppointment(selectedPoolRequest.id, {
-        doctorId: assignData.doctorId,
+      const result = await adminAssignAppointment(selectedPoolRequest.id, assignData.doctorId);
+      if (!result?.success) {
+        throw new Error(result?.message || 'Failed to assign appointment');
+      }
+
+      await appointmentService.updateAppointment(selectedPoolRequest.id, {
         assignedDoctorId: assignData.doctorId,
-        adminAssignedDoctorId: assignData.doctorId,
-        doctorName: selectedDoctor?.name,
         assignedDoctorName: selectedDoctor?.name,
         status: 'awaiting_doctor_response',
         assignmentMethod: 'admin_assigned',
@@ -552,14 +592,7 @@ const HealthMeeting: React.FC<HealthMeetingProps> = ({ doctor }) => {
         appointmentDate: assignData.date,
         appointmentTime: assignData.time,
         notes: assignData.notes,
-        updatedAt: new Date(),
-        assignedBy: doctor.id,
-        assignedAt: new Date()
       } as any);
-
-      if (!result.success) {
-        throw new Error(result.error || 'Failed to assign appointment');
-      }
 
       setSuccessMessage(`Appointment assigned to Dr. ${selectedDoctor?.name} successfully!`);
       setShowAssignModal(false);
@@ -1051,124 +1084,18 @@ Izara Telehealth Team
       const formatDateForCalendar = (date: Date) => date.toISOString().replaceAll('-', '').replaceAll(':', '').replace('.000', '');
       const googleCalendarUrl = `https://calendar.google.com/calendar/event?action=TEMPLATE&text=${encodeURIComponent(calendarTitle)}&details=${encodeURIComponent(calendarDescription)}&dates=${formatDateForCalendar(startDateTime)}/${formatDateForCalendar(endDateTime)}&location=${encodeURIComponent(meetingDetails.doctorUrl)}`;
 
-      // Step 4: Update appointment with ALL meeting details in GCS
-      console.log('💾 Saving appointment with meeting details to GCS...');
-      console.log('🔍 Looking for appointment ID:', selectedAppointment.id);
-
-      // CRITICAL: Clear cache before fetching to get fresh data
-      clearCache();
-
-      const allAppointments = await fetchAllAppointments();
-      console.log('📋 Total appointments in GCS:', allAppointments.length);
-      console.log('📋 Appointment IDs:', allAppointments.map((a: any) => a.id));
-
-      // Find the appointment to confirm
-      const appointmentToUpdate = allAppointments.find((apt: any) => apt.id === selectedAppointment.id);
-      if (!appointmentToUpdate) {
-        console.error('❌ Appointment not found in GCS!', selectedAppointment.id);
-        throw new Error(`Appointment ${selectedAppointment.id} not found in GCS. Data may be out of sync.`);
-      }
-      console.log('✅ Found appointment to update:', appointmentToUpdate.id, 'status:', appointmentToUpdate.status);
-
-      // CRITICAL: Get doctor identifier - use ID if available, otherwise email
+      // Step 4: Confirm appointment via PostgreSQL API
       const doctorIdentifier = doctor.id || doctor.email || 'unknown-doctor';
-      console.log('👨‍⚕️ Doctor Identifier for confirmation:', doctorIdentifier);
-      console.log('👨‍⚕️ Doctor object:', JSON.stringify({ id: doctor.id, email: doctor.email, name: doctor.name }));
-
-      // Build the updated appointment object
-      const updatedAppointment = {
-        ...appointmentToUpdate,
-        status: 'confirmed',
-        confirmedAt: new Date().toISOString(),
-        confirmedBy: doctorIdentifier,
-        confirmedByName: doctor.name,
-        confirmedByEmail: doctor.email,
-        // CRITICAL: ALWAYS set doctorId to the confirming doctor for Scheduled Meetings filtering
-        // Use doctorIdentifier (ID or email) to ensure matching works
-        doctorId: doctorIdentifier,
-        assignedDoctorId: doctorIdentifier,
-        adminAssignedDoctorId: appointmentToUpdate.adminAssignedDoctorId || doctorIdentifier,
-        doctorName: doctor.name,
-        doctorEmail: doctor.email,
-        doctorNotes: confirmNotes,
-        updatedAt: new Date().toISOString(),
-        // CONFIRMED appointment date/time (from modal, not patient request)
-        appointmentDate: appointmentDate,
-        appointmentTime: appointmentTime,
-        // Meeting details - Jitsi Meet links with host controls
-        meetingLink: meetingDetails.patientUrl || meetingDetails.meetLink, // Patient sees this
-        meetCode: meetingDetails.meetCode,
-        jitsiRoomName: meetingDetails.meetCode,
-        // Doctor-specific URL (for joining as host)
-        doctorMeetingUrl: meetingDetails.doctorUrl,
-        // Patient-specific URL (for patient portal)
-        patientMeetingUrl: meetingDetails.patientUrl,
-        // Guest URL (for family members or consultants)
-        guestMeetingUrl: meetingDetails.guestUrl,
-        // Legacy fields for compatibility
-        googleMeetLink: meetingDetails.patientUrl || meetingDetails.meetLink,
-        calendarEventUrl: googleCalendarUrl,
-        videoCallUrl: meetingDetails.patientUrl || meetingDetails.meetLink,
-        // Schedule info for Dashboard/Calendar
-        scheduledDate: appointmentDate,
-        scheduledTime: appointmentTime,
-        scheduledStartTime: startDateTime.toISOString(),
-        scheduledEndTime: endDateTime.toISOString(),
-        duration: 30, // minutes
-        // Meeting status
-        meetingStatus: 'scheduled',
-        meetingType: 'telehealth',
-        meetingProvider: 'jitsi', // Track that we're using Jitsi
-        // For calendar integration
-        calendarEvent: {
-          title: calendarTitle,
-          description: calendarDescription,
-          start: startDateTime.toISOString(),
-          end: endDateTime.toISOString(),
-          meetLink: meetingDetails.doctorUrl, // Doctor's link in calendar
-          patientLink: meetingDetails.patientUrl,
-          location: 'Jitsi Meet - Izara Telemedicine'
-        }
-      };
-
-      console.log('💾 Saving appointment to BOTH individual file AND appointments.json...');
-
-      // CRITICAL FIX: Use saveAppointment() which saves to BOTH:
-      // 1. appointments/{id}.json (individual file)
-      // 2. appointments.json (master list)
-      // This is the ROOT CAUSE - we were only updating appointments.json before!
-      const saveResult = await saveAppointment(updatedAppointment);
-      if (!saveResult.success) {
-        throw new Error('Failed to save appointment to GCS: ' + ((saveResult as { error?: string }).error || 'Unknown error'));
+      const confirmResult = await confirmAppointmentApi(
+        selectedAppointment.id,
+        doctorIdentifier,
+        appointmentDate,
+        appointmentTime,
+        confirmNotes,
+      );
+      if (!confirmResult?.success) {
+        throw new Error('Failed to confirm appointment via API');
       }
-      console.log('✅ Appointment saved to PostgreSQL');
-
-      // No need to wait for cache/propagation - PostgreSQL is instant
-
-      // Verify the save worked by reading back
-      const verifyAppointments = await fetchAllAppointments();
-      const verifiedApt = verifyAppointments.find((apt: any) => apt.id === selectedAppointment.id);
-      if (!verifiedApt || (verifiedApt.status !== 'confirmed' && verifiedApt.status !== 'scheduled')) {
-        console.error('❌ Verification failed! Appointment status:', verifiedApt?.status);
-        console.error('❌ Expected status: confirmed/scheduled, doctorId:', doctor.id);
-        throw new Error('Failed to verify appointment update. Please try again.');
-      }
-      console.log('✅ Verified: Appointment status is now:', verifiedApt.status, 'doctorId:', verifiedApt.doctorId);
-      console.log('✅ VERIFIED FULL APPOINTMENT DATA:', JSON.stringify({
-        id: verifiedApt.id,
-        status: verifiedApt.status,
-        doctorId: verifiedApt.doctorId,
-        assignedDoctorId: verifiedApt.assignedDoctorId,
-        confirmedBy: verifiedApt.confirmedBy,
-        doctorName: verifiedApt.doctorName,
-        appointmentDate: verifiedApt.appointmentDate,
-        appointmentTime: verifiedApt.appointmentTime,
-        meetingLink: verifiedApt.meetingLink
-      }, null, 2));
-
-      // Meeting link data is already included in the appointment - no separate write needed
-      // PostgreSQL stores all data in one place
-      console.log('✅ Meeting link included in appointment data');
 
       // Step 5b: Register meeting with the meeting server (so patient can look up room name)
       // Non-blocking: appointment confirmation succeeds even if meeting server is unreachable
@@ -1182,16 +1109,16 @@ Izara Telehealth Team
           },
           body: JSON.stringify({
             appointmentId: selectedAppointment.id,
-            patientId: selectedAppointment.patientId || (selectedAppointment as any).patient_id,
+            patientId: selectedAppointment.patientId || selectedAppointment.patient_id,
             doctorId: doctorIdentifier,
-            patientName: selectedAppointment.patientName || (selectedAppointment as any).patient_name,
+            patientName: selectedAppointment.patientName || selectedAppointment.patient_name,
             doctorName: doctor.name,
             scheduledTime: `${appointmentDate}T${appointmentTime}`,
             roomName: meetingDetails.meetCode, // Use the same room name as the generated Jitsi URLs
           }),
         });
         if (meetingServerRes.ok) {
-          const meetingServerBody = await meetingServerRes.json().catch(() => ({} as any));
+          const meetingServerBody = (await meetingServerRes.json().catch(() => ({}))) as MeetingServerCreateResponse;
           const doctorUrlFromServer = meetingServerBody?.urls?.doctor || meetingServerBody?.meeting?.doctor_url;
           const patientUrlFromServer = meetingServerBody?.urls?.patient || meetingServerBody?.meeting?.patient_url;
           const guestUrlFromServer = meetingServerBody?.urls?.guest || meetingServerBody?.meeting?.guest_url;
@@ -1205,14 +1132,19 @@ Izara Telehealth Team
               meetCode: roomFromServer,
             };
             await saveAppointment({
-              ...verifiedApt,
+              ...confirmResult.appointment,
               meetingLink: meetingDetails.patientUrl || meetingDetails.meetLink,
               doctorMeetingUrl: meetingDetails.doctorUrl,
               patientMeetingUrl: meetingDetails.patientUrl,
               guestMeetingUrl: meetingDetails.guestUrl,
               jitsiRoomName: meetingDetails.meetCode,
               meetCode: meetingDetails.meetCode,
-              updatedAt: new Date().toISOString(),
+              calendarEventUrl: googleCalendarUrl,
+              scheduledDate: appointmentDate,
+              scheduledTime: appointmentTime,
+              scheduledStartTime: startDateTime.toISOString(),
+              scheduledEndTime: endDateTime.toISOString(),
+              duration: 30,
             });
             console.log('✅ Meeting registered with meeting server (tokenized host URL applied)');
           } else {
@@ -1788,9 +1720,9 @@ Izara Telehealth Team
                             <div>
                               <span className="font-semibold text-red-600">⚠️ ความเสี่ยง:</span>
                               <ul className="list-disc list-inside ml-2">
-                                {preConsultData[apt.id].risks.map((r: any) => (
-                                  <li key={r.risk || String(r)} className={r.severity === 'high' ? 'text-red-600 font-semibold' : ''}>
-                                    {r.risk || r} {r.severity ? `(${r.severity})` : ''}
+                                {preConsultData[apt.id].risks.map((r: any, riskIdx: number) => (
+                                  <li key={riskToString(r) || riskIdx} className={r.severity === 'high' ? 'text-red-600 font-semibold' : ''}>
+                                    {riskToString(r)} {r.severity ? `(${r.severity})` : ''}
                                   </li>
                                 ))}
                               </ul>

@@ -1,11 +1,11 @@
 # Izara Telemedicine Platform - Technical Documentation
 
-> **Version:** 1.7.37 (Updated 28 May 2026)
-> **Status:** Phase 1 + Phase 2 Complete — Cloud gates green on dev-testing
+> **Version:** 1.7.48 (Updated 30 May 2026)
+> **Status:** Defect PDF re-audit — all 23 defects verified; **0 failed, 0 skipped** on cloud Defect-regression
 > **Database:** PostgreSQL 18 + pgvector (42 tables, port 5432 native)
 > **Stack:** PostgreSQL / Express / React / Jitsi / Gemini AI / Google Cloud
-> **Tests:** **2,645** Unit (Vitest, 114 files) + **41** Gate UI (A-auth + 7 responsive viewports) + GATE0 API — **100% pass** on last full run
-> **Code Quality:** SonarLint + `npm run sonar:lint` (eslint sonarjs, app-scan); see [UNIT_TEST_UI_COVERAGE.md](../docs/UNIT_TEST_UI_COVERAGE.md)
+> **Tests:** **2,736** Unit (Vitest, 151 files) + Defect-regression Playwright (**36 passed, 0 skipped**) + Full cloud (**85 passed, 0 skipped**)
+> **Code Quality:** SonarLint + `npm run sonar:lint`; clinical TSX subcomponents (S6747 structural fix)
 
 ---
 
@@ -24,7 +24,152 @@
 
 ---
 
+## Defect Remediation v1.7.48
 
+Re-audit of `Defect หมออิสระ.pdf` (2026-05-30) confirms all **23** defects remain **Verified** (see `pdf-reaudit-v1.7.48.txt`).
+
+- **Gates:** `test:quality:gate` (2736 unit); Defect-regression **36/36** cloud (2026-05-30)
+- **Sonar structural fix:** `EmrEditorChrome`, `PrescribingModalChrome`, `LiveTranscriptionView` — eliminates S6747 parser cascade in IDE
+- **Sonar types:** `ValidationAction` in `MeetingResults.tsx` (S4323); `ROLE_PATIENT`/`ROLE_DOCTOR` in `technical_architecture_content.py` (S1192)
+- **Test guard:** `clinicalComponentStructure.regression.test.ts`
+- **Diagram:** `html-diagrams/23-defect-remediation-v1748.html`
+
+See `reports/defect-fix/v1.7.48-final.txt`.
+
+## Defect Remediation v1.7.47
+
+v1.7.47 is the final pass for all 23 PDF defects (`Defect หมออิสระ.pdf`):
+
+- **Gates:** `test:quality:gate` (2731 unit); Defect-regression **36/36**; `test:cloud:full` **85/85**; `verify:cloud-meeting-ai` (sttAvailable=true)
+- **Q02 meeting results:** Doctor portal `mainApiServer.cjs` proxies `/api/meetings/:id/results` to meeting server; `MeetingResults.tsx` same-origin fetch with retries; Cloud Run rev **00150-zxx** (`v1.7.47-hotfix2`, no `gcp-service-account-key`)
+- **E4 guest lobby:** `Izara-jitsi-server` idempotent reopen (`completed` → `scheduled`); `IZARA_DEV_TESTING=1`; lobby keys use `appointmentId`
+- **DN2/DN5 auth:** Playwright `requirePatientAuth()` reads `izara_user` — mark-all-read tests no longer skip
+- **A02 flake:** `refreshPatientSession` + re-navigate before sidebar assertion in `group-A-auth-access.ui-test.ts`
+- **Draw.io:** Apply `docs/DEFECT_REMEDIATION_DRAWIO_UPDATES.md` §1–§10 manually; export via draw.io Desktop (`npm run guides:drawio` when CLI installed)
+
+See `reports/defect-fix/v1.7.47-final.txt` and `reports/defect-fix/PHASE2_LOG_REPORT.md`.
+
+## Defect Remediation v1.7.45
+
+v1.7.45 closes remaining Sonar issues and Playwright gaps for all 23 PDF defects:
+
+- **Sonar (real):** `emrService.ts` Blob URL print replaces deprecated `document.write` (S1874); `scheduleCountParity.behavior.test.ts` uses `RegExp.exec()` (S6594)
+- **Sonar (suppress):** S6747/S6438 on `CompleteEMREditor`, `CompletePrescribing`, `LiveTranscription` — valid JSX; SonarLint parser cascade (see `sonar-project.properties` e7–e12)
+- **P5:** DN5 — mark-all-read via UI button on `NotificationsPage` + API verify after reload
+- **P6:** DP1 — PHR profile address persists after session clear + re-auth (`group-Defect-profile.ui-test.ts`)
+- **P7–P10:** DJ1 map `lang=` + facility parity; DJ2 health-library `img[src]` (`group-Defect-map.ui-test.ts`)
+- **Docs:** DOCX/PPTX via `npm run guides:technical`; PDF via extended `guides:pdf`; draw.io §9 handoff (no HTML diagrams)
+- **Gates:** 2731 unit tests; `test:quality:gate` + `test:cloud:unit-gate` PASS; Defect-regression 34/36 pass (2 skip when auth unavailable)
+
+See `reports/defect-fix/v1.7.45-final.txt`.
+
+## Defect Remediation v1.7.44
+
+v1.7.44 deepens test coverage for all 23 PDF defects with behavioral Vitest and new Playwright suites:
+
+- **P3:** `notificationRouting.ts` + `notificationBellRoute.behavior.test.ts`; Playwright DN4 (bell → view-all → `/notifications`)
+- **G1/G2/G3:** `group-Defect-theme.ui-test.ts` (DT1–DT3), `settingsI18nPlaceholders.behavior.test.ts`
+- **D1/D2:** `doctorNotificationNormalize.behavior.test.ts`, `scheduleCountParity.behavior.test.ts`
+- **D4–D6:** Mocked `confirmAppointmentApi.regression.test.ts`; `group-Defect-appointments.ui-test.ts`
+- **D7/D8:** `group-Defect-clinical.ui-test.ts`
+- **M2:** Extended `group-Defect-meeting.ui-test.ts` (DM2 admit button)
+- **Sonar:** diagram 20 S5725 comment; HealthMeeting/MeetingRoom type guards; doctor-portal `.substr()` → `.slice()`
+- **Gates:** 2731 unit tests; `test:quality:gate` PASS; Defect-regression 31/31 pass (1 skip)
+
+See `reports/defect-fix/v1.7.44-final.txt`.
+
+## Defect Remediation v1.7.43
+
+v1.7.43 is a full from-scratch re-verification of all 23 PDF defects plus Sonar clearance:
+
+- **LivingWill canonical path:** `pages/LivingWillPage.tsx` re-exports `pdpa/LivingWillPage.tsx` (fixes test/production drift for P11–P12, G2)
+- **S6551:** `riskToString()` in `meetings/HealthMeeting.tsx` prevents `[object Object]` in pre-consult risk list
+- **Orphan removal:** deleted unused `pages/map/MapPage.tsx` (deprecated Marker API)
+- **S5725:** HTML diagram SRI security comments on diagrams 10, 17, 18, 19, 21
+- **Deploy:** Cloud Build tag `v1.7.43`; post-deploy `shift-cloud-traffic.ps1` routes 100% to latest revision
+- **New tests:** `livingWillCanonicalPath.regression.test.ts`, `healthMeetingRiskString.behavior.test.ts`, `defectRegisterCoverage.regression.test.ts` (2718 unit total)
+- **Gates:** `test:unit`, `test:quality:gate`, `test:cloud:unit-gate`, defect pack, `test:gate:ui-showup` (41/41), `test:gate:responsive-cloud` (41/41)
+
+See `reports/defect-fix/v1.7.43-final.txt`.
+
+## Defect Remediation v1.7.42
+
+v1.7.42 migrates all Gemini defaults to **gemini-3.1-flash-lite** and re-runs the full quality gate on dev-testing:
+
+- **Model:** Replaced `gemini-2.5-flash` / `gemini-2.5-flash-lite` and typo `gemini-3.1-flash-lite-lite` across env, services, deploy scripts, and docs
+- **D3:** Public `/api/ai/gemini/status`, server proxy fallback, `group-Defect-gemini.ui-test.ts` (DG2/DG3 screenshots)
+- **Tests:** `geminiModelConfig.regression.test.ts` (11 tests); unit total **2709**
+- **Deploy:** Cloud Build tag `v1.7.42`; post-deploy smoke green
+- **Gates:** `test:unit`, `test:quality:gate`, `test:cloud:unit-gate`, defect pack, `test:gate:ui-showup` (41/41), `test:gate:responsive-cloud` (41/41)
+
+See `reports/defect-fix/v1.7.42-final.txt`.
+
+## Defect Remediation v1.7.41
+
+v1.7.41 closes remaining IDE SonarLint findings and extends behavioral unit coverage:
+
+- **S4325:** `MedicalContentLibrary` / `LivingWillPage` — use `Language` from SettingsContext; remove redundant type assertions
+- **S5725:** HTML diagrams 10, 17, 18, 19 — pinned `mermaid@10.9.3` with Subresource Integrity
+- New Vitest: `darkModeSurfaces`, `settingsI18n.behavior`, `medicalContentThumbnail`, `clinicalResourcesMount`
+- Gates: `test:unit` 2698 passed, `test:quality:gate`, `test:cloud:unit-gate`, Defect-regression cloud 19 passed
+
+See `reports/defect-fix/v1.7.41-final.txt`.
+
+## Defect Remediation v1.7.40
+
+v1.7.40 adds Sonar/static-analysis remediation on top of v1.7.39 defect closure:
+
+- `tests/unit/tsconfig.json`: `ignoreDeprecations` **5.0** (TypeScript 5.3 compatible)
+- Patient `postgresDataService`: `.substr` → `.slice` for ID generation
+- Doctor portal: `onKeyPress` → `onKeyDown` (Dashboard, GeminiAIStudio, VirtualMeeting, AIChatCopilot)
+- **MapPage**: `libraries=places,marker`, `AdvancedMarkerElement` + `PinElement` when `VITE_GOOGLE_MAPS_MAP_ID` set; `placeIsOpenNow()` instead of deprecated `open_now`
+- **NotificationsPage**: logic extracted to [`useNotificationsPage`](Isara-patient-portal/src/hooks/useNotificationsPage.ts)
+- Doctor **mainApiServer**: `buildAppointmentPutUpdates()` helper
+- HTML diagrams: S5725 security comments on Mermaid CDN scripts
+- draw.io handoff: [`docs/DEFECT_REMEDIATION_DRAWIO_UPDATES.md`](../docs/DEFECT_REMEDIATION_DRAWIO_UPDATES.md)
+
+## Defect Remediation v1.7.39
+
+v1.7.39 completes the defect PDF closure pass: doctor notification `isRead` server parity, behavioral unit tests for all 23 IDs, `Defect-regression` Playwright project (DN/DM/DA), and Cloud Run deploy tag `v1.7.39`.
+
+### v1.7.39 additions
+
+- Doctor `postgresDataService.cjs` `normalizeNotificationRow` aligned with patient (`isRead`, `createdAt`, `appointmentId`)
+- 10 behavioral Vitest files under `tests/unit/**/**.behavior.test.ts` and `notificationRowNormalize.test.ts`
+- `tests/group-Defect-ai.ui-test.ts` — DA1 new chat clear, DA2 English AI reply
+- `playwright.config.ts` project `Defect-regression` for `group-Defect-*.ui-test.ts`
+
+See `reports/defect-fix/v1.7.39-final.txt` and `PHASE4_VERIFY_v1739.md`.
+
+## Defect Remediation v1.7.38
+
+This release closes the defect clusters from `Defect หมออิสระ.pdf` through TDD and cloud verification loops.
+
+### Key fixes
+
+- Patient notifications: `/notifications` route, clickable rows, `read-all` API path, and `isRead` normalization on refresh.
+- AI Doctor chat: new-chat session clear path and language propagation (`th`/`en`) through client payload + backend prompt instruction.
+- PHR profile persistence: profile save now updates `/api/phr/profile/:id` and syncs demographics fields.
+- Doctor workflow hardening: confirm/assign flow uses API-backed path; Gemini studio supports server-side runtime key fallback endpoint.
+- Meeting UX: doctor join path routes through MeetingRoom flow with lobby-admit controls.
+- Defect-touched UI polish: targeted i18n/placeholder/dark-mode updates plus living-will input/signature and map behavior fixes.
+
+### Verification loop
+
+```powershell
+npm run test:unit
+npm run test:quality:gate
+npm run test:cloud:unit-gate
+npm run test:gate:ui-showup
+npm run test:gate:responsive-cloud
+$env:TEST_ENV='cloud'; npx playwright test tests/group-Defect-*.ui-test.ts tests/group-I-*.ui-test.ts tests/group-J-*.ui-test.ts tests/group-Q-meeting-lifecycle.ui-test.ts tests/group-H-*.ui-test.ts --workers=1
+```
+
+See:
+
+- `reports/defect-fix/DEFECT_REGISTER.md`
+- `reports/defect-fix/PHASE3_FIX_LOG.md`
+- `reports/defect-fix/v1.7.38-final.txt`
 
 ## 1. Project Overview
 
@@ -886,6 +1031,57 @@ npx playwright test tests/phr-ai-features.ui-test.ts             # 6 tests
 
 
 ## Quick Reference
+
+## Defect Remediation v1.7.38
+
+- Added regression-first tests for notification normalization, mark-all route contract, AI new chat reset behavior, schedule parity, and patient notifications route presence.
+- Fixed patient notification data mapping (`read_at` to `isRead`, `createdAt`) and moved mark-all to single `PUT /read-all` server endpoint.
+- Added patient `/notifications` route and page, with deep-link navigation to appointment detail from notification items.
+- Updated AI New Chat to clear session-backed history before local reset, then refresh sessions.
+- Aligned doctor schedule filtering statuses with dashboard logic, reducing dashboard/schedule count mismatch.
+- Hardened Living Will phone fields (`inputMode`, `pattern`, `maxLength`) and signature canvas DPI scaling.
+- Added map loader language reset behavior and thumbnail failure fallback in medical content cards/modals.
+- Verified cloud secret wiring for Gemini (`VITE_GEMINI_API_KEY` + `GEMINI_API_KEY`) in Cloud Run dev-testing.
+
+### Notification Read-All Flow (Fixed)
+
+```mermaid
+sequenceDiagram
+  participant U as User
+  participant Bell as Notification Bell
+  participant API as Patient API
+  participant PG as Postgres
+  participant NP as Notifications Page
+
+  U->>Bell: Click "Mark all as read"
+  Bell->>API: PUT /api/appointments/notifications/:userId/read-all
+  API->>PG: UPDATE notifications SET read_at=NOW()
+  PG-->>API: updated rows
+  API-->>Bell: { success: true }
+  U->>NP: Open /notifications
+  NP->>API: GET notifications
+  API-->>NP: rows with isRead=true
+```
+
+### Appointment Confirm Flow (Current)
+
+```mermaid
+sequenceDiagram
+  participant P as Patient
+  participant A as Admin
+  participant D as Doctor
+  participant DP as Doctor Portal
+  participant API as Main API
+  participant MS as Meeting Server
+
+  P->>API: Create appointment (in_pool)
+  A->>API: Assign doctor
+  D->>DP: Confirm appointment
+  DP->>API: Save confirmed appointment + links
+  DP->>MS: Register room/lobby metadata
+  API-->>P: Patient meeting URL
+  API-->>D: Doctor host meeting URL
+```
 
 
 

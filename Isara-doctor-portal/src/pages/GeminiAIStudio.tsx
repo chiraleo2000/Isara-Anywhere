@@ -7,14 +7,24 @@ export const GeminiAIStudio: React.FC = () => {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<'chat' | 'calculators'>('chat');
-  const [isApiConfigured, setIsApiConfigured] = useState(false);
+  const [isApiConfigured, setIsApiConfigured] = useState(
+    () => geminiClinicalService.isApiConfigured(),
+  );
 
   const [bmiInputs, setBmiInputs] = useState({ weight: '', height: '' });
   const [gfrInputs, setGfrInputs] = useState({ creatinine: '', age: '', gender: 'male', race: 'other' });
 
   // Check API configuration on mount
   useEffect(() => {
-    setIsApiConfigured(geminiClinicalService.isApiConfigured());
+    geminiClinicalService
+      .checkConfiguration()
+      .then((configured) => {
+        setIsApiConfigured(configured);
+      })
+      .catch(() => {
+        const fallback = geminiClinicalService.isApiConfigured();
+        setIsApiConfigured(fallback);
+      });
   }, []);
 
   const handleSendMessage = async () => {
@@ -116,7 +126,9 @@ export const GeminiAIStudio: React.FC = () => {
         </div>
         {!isApiConfigured && (
           <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-sm text-yellow-800">
-            ⚠️ Gemini API key not configured. Set{' '}<code className="bg-yellow-100 px-1 rounded">VITE_GEMINI_API_KEY</code>{' '}in your environment to enable full AI capabilities.
+            ⚠️ Gemini is not configured in browser or server runtime. Local dev can use{' '}
+            <code className="bg-yellow-100 px-1 rounded">VITE_GEMINI_API_KEY</code>; cloud should set server{' '}
+            <code className="bg-yellow-100 px-1 rounded">GEMINI_API_KEY</code>.
           </div>
         )}
       </div>
@@ -227,7 +239,7 @@ export const GeminiAIStudio: React.FC = () => {
                   type="text"
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && !e.shiftKey && handleSendMessage()}
+                  onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSendMessage()}
                   placeholder="พิมพ์คำถามทางการแพทย์..."
                   aria-label="พิมพ์คำถามทางการแพทย์"
                   className="flex-1 px-4 py-3 border rounded-lg focus:ring-2 focus:ring-purple-500"

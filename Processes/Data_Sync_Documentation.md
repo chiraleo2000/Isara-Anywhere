@@ -550,7 +550,7 @@ Doctor Completes EMR
   id: "VAL-{uuid}",
   content_type: enum["emr", "patient_instruction", "summary", "document_analysis"],
   content_id: "{uuid}",                 // Reference to the content
-  ai_model: "gemini-2.5-flash-lite",
+  ai_model: "gemini-3.1-flash-lite",
   original_content: JSONB,              // AI-generated original
   validated_content: JSONB,             // Doctor-approved final
   validation_status: enum["pending", "approved", "rejected", "edited"],

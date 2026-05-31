@@ -1,0 +1,29 @@
+v1.7.39 Defect Remediation Final Report
+Date: 2026-05-29
+Environment: Cloud Run dev-testing
+
+Status: ALL GREEN
+
+Deploy:
+- Tag: v1.7.39
+- Cloud Build: e2e5eac2-139a-4ffb-b891-bcf3fa240b13 (SUCCESS, ~4m11s)
+- Post-deploy smoke: patient/doctor/meeting health 200
+
+Key changes:
+- Doctor notification row normalization (isRead/createdAt) aligned with patient portal
+- Behavioral unit tests for all 23 defect clusters (2681 Vitest tests)
+- Playwright Defect-regression project: notifications, meeting lobby, AI new chat + English reply
+
+Gate evidence:
+- test:unit — 137 files, 2681 passed
+- test:quality:gate — PASS
+- test:cloud:unit-gate — PASS (smoke + GATE0 G1–G5)
+- test:gate:ui-showup — 41/41
+- test:gate:responsive-cloud — 41/41
+- Defect Playwright pack — 21/21 (I/J/Q/H + Defect-* CLI)
+- Defect-regression project — 15/15 (DN, DM, DA)
+
+Docs:
+- reports/defect-fix/PHASE0_REAUDIT.md
+- reports/defect-fix/PHASE4_VERIFY_v1739.md
+- reports/defect-fix/DEFECT_REGISTER.md (status column)

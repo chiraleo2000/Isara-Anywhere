@@ -66,6 +66,16 @@ if (IS_CLOUD) {
 // Local default 1 worker (one 3-browser fixture). Set PW_WORKERS=4 to parallelize B/C/G/H/I/J.
 const workers = Number.parseInt(process.env.PW_WORKERS || (IS_CLOUD ? '4' : '1'), 10);
 
+function resolveSlowMo(headless: boolean, isCloud: boolean): number {
+  if (headless) return 0;
+  return isCloud ? 300 : 150;
+}
+
+function resolvePlaywrightChannel(headless: boolean): string | undefined {
+  if (headless) return undefined;
+  return process.platform === 'win32' ? 'chrome' : undefined;
+}
+
 const sharedUse = {
   headless: USE_HEADLESS,
   viewport: { width: 1440, height: 900 } as const,
@@ -74,7 +84,7 @@ const sharedUse = {
   actionTimeout: IS_CLOUD ? 20_000 : 15_000,
   navigationTimeout: IS_CLOUD ? 90_000 : 15_000,
   launchOptions: {
-    slowMo: USE_HEADLESS ? 0 : (IS_CLOUD ? 300 : 150),
+    slowMo: resolveSlowMo(USE_HEADLESS, IS_CLOUD),
     args: chromiumLaunchArgs(USE_HEADLESS),
   },
   browserName: 'chromium' as const,
@@ -161,6 +171,11 @@ export default defineConfig({
       testMatch: 'group-J-ai-timeline-map.ui-test.ts',
       dependencies: ['A-auth'],
     },
+    {
+      name: 'Defect-regression',
+      testMatch: /group-Defect-.*\.ui-test\.ts/,
+      dependencies: ['A-auth'],
+    },
 
     /* ── SEQUENTIAL PIPELINE (D → E → F) ────────────────────────── */
     {
@@ -173,7 +188,7 @@ export default defineConfig({
       testMatch: 'group-D-doctor-host-workflow.ui-test.ts',
       dependencies: ['D-appointments'],
       use: {
-        channel: USE_HEADLESS ? undefined : (process.platform === 'win32' ? 'chrome' : undefined),
+        channel: resolvePlaywrightChannel(USE_HEADLESS),
       },
     },
     {

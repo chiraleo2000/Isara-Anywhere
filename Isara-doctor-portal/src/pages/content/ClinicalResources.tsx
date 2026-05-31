@@ -323,6 +323,7 @@ export const ClinicalResources: React.FC = () => {
   // ============================================================================
   const handleCreate = async () => {
     try {
+      setError(null);
       const response = await fetch(`${API_BASE}/api/content/clinical`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -332,7 +333,10 @@ export const ClinicalResources: React.FC = () => {
           userName: user?.name || user?.email || 'Unknown',
         }),
       });
-      if (!response.ok) throw new Error('Failed to create resource');
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText || 'Failed to create resource');
+      }
       const newResource = await response.json();
       setResources((prev) => [...prev, newResource]);
       setShowCreateModal(false);
@@ -342,7 +346,7 @@ export const ClinicalResources: React.FC = () => {
       }
     } catch (err) {
       console.error('Error creating resource:', err);
-      alert('Failed to create resource');
+      setError(err instanceof Error ? err.message : 'Failed to create resource');
     }
   };
 

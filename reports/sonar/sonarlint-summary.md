@@ -1,6 +1,6 @@
 # SonarLint / SonarQube IDE Summary
 
-**Project:** izara-telemedicine · **Version:** 1.7.37  
+**Project:** izara-telemedicine · **Version:** 1.7.40  
 **Config:** [`sonar-project.properties`](../../sonar-project.properties) (includes `server/` paths)
 
 ## IDE setup
@@ -20,6 +20,8 @@ npm run test:quality:gate
 ## Known accepted findings
 
 See [`docs/SECURITY_SCANNING_LEDGER.md`](../../docs/SECURITY_SCANNING_LEDGER.md) — CORS dev fallbacks, Dockerfile.unified S7020, LoginPage false positives.
+
+**v1.7.40 Sonar cleanup:** Profile UI split into `profile/ProfilePageView.tsx`; MapPage legacy pins use `google.maps.Circle` (not deprecated `Marker`). Workspace [`.sonarlint.json`](../../.sonarlint.json) disables known false-positive rules for IDE analysis.
 
 ## Regression guarded by unit tests
 

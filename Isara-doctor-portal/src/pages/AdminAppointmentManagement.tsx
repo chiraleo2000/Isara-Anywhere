@@ -166,7 +166,7 @@ const AdminAppointmentManagement: React.FC = () => {
       console.log(`📊 Found ${appointmentsArray.length} appointments`);
 
       const requests: AppointmentRequest[] = appointmentsArray.map((apt: any) => ({
-        id: apt.id || `apt-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        id: apt.id || `apt-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`,
         patientId: apt.patientId || apt.userId || apt.user?.id || '',
         patientName: apt.patientName || apt.user?.name || 'Unknown Patient',
         patientEmail: apt.patientEmail || apt.user?.email || '',

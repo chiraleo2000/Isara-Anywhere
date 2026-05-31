@@ -1,18 +1,27 @@
-# Unit Test + UI Screenshot Coverage — v1.7.37
+# Unit Test + UI Screenshot Coverage — v1.7.48
 
-> Generated: 2026-05-28T16:23:41.340Z | Full run log: [reports/unit/v1.7.37-full-unit-run.log](../reports/unit/v1.7.37-full-unit-run.log)
+> Generated: 2026-05-31 | Defect track: [v1.7.48-final.txt](../reports/defect-fix/v1.7.48-final.txt) | Unit log: [reports/unit/v1.7.37-full-unit-run.log](../reports/unit/v1.7.37-full-unit-run.log)
 
 ## Summary
 
 | Metric | Value |
 |--------|-------|
-| Unit test files passed | 114 |
-| Unit tests passed | 2646 |
+| Unit test files passed | 151 |
+| Unit tests passed | 2736 |
 | Run status | PASS |
-| UI screenshot folders | 15 |
-| UI PNG artifacts | 188 |
+| UI screenshot folders | 16 |
+| UI PNG artifacts | 212 |
+| Defect-regression Playwright (cloud) | **36 passed, 0 skipped** (2026-05-30) |
+| Full cloud Playwright (headed) | **85 passed, 0 skipped** (2026-05-31, 7.7m) |
 | Cloud gate UI (A + 7 viewports) | 41 Playwright tests |
-| Sonar / quality | `npm run sonar:lint` |
+| Sonar / quality | `npm run test:quality:gate` PASS |
+| User guides regenerated | Patient 76 imgs / Doctor 93 imgs (2026-05-31) |
+
+## Defect Regression Pack (v1.7.48)
+
+- `tests/unit/cross-portal/clinicalComponentStructure.regression.test.ts` — EmrEditorChrome / PrescribingModalChrome / LiveTranscriptionView extraction; ValidationAction; Python ROLE_* constants
+- Cloud Defect-regression: **36/36** PASS (2026-05-30)
+- Cloud full headed: **85/85** PASS (2026-05-31) — groups A–P, screenshots → `docs/screenshots/`
 
 ## Unit domain → UI proof mapping
 
@@ -27,7 +36,8 @@ Vitest validates logic in isolation; Playwright screenshots prove the same flows
 | **security** | *owasp*, *sanitize*, *jwt*, security/* | group-A (10 PNG) |
 | **responsive** | *responsive*, layout* | group-S (4 PNG) |
 | **ai** | *ai*, *gemini* | group-J, group-H (26 PNG) |
-| **admin** | *admin* | group-C, group-I (27 PNG) |
+| **admin** | *admin* | group-C, group-I (28 PNG) |
+| **defects** | defectRegisterCoverage, clinicalComponentStructure | group-defect (see defect pack) |
 
 ## Gate screenshots (cloud verification)
 
@@ -76,6 +86,8 @@ Vitest validates logic in isolation; Playwright screenshots prove the same flows
 ```powershell
 npm run test:unit
 npm run test:unit:report
+npm run test:quality:gate
+npm run test:cloud:full          # 85 headed tests + user guide rebuild
 npm run test:gate:ui-showup
 npm run test:cloud:unit-gate
 ```

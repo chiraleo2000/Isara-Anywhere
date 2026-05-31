@@ -319,6 +319,10 @@ router.put('/profile/:id', authMiddleware, async (req: Request, res: Response) =
         updateFields.push(`name = $${paramCount++}`);
         values.push(profileData.name);
       }
+      if (profileData.address) {
+        updateFields.push(`address = $${paramCount++}`);
+        values.push(profileData.address);
+      }
       if (profileData.avatarUrl) {
         updateFields.push(`avatar_url = $${paramCount++}`);
         values.push(profileData.avatarUrl);
@@ -332,6 +336,22 @@ router.put('/profile/:id', authMiddleware, async (req: Request, res: Response) =
           values
         );
       }
+
+      const existingPhr = await PHRService.getPHR(id);
+      const demographics: Record<string, string> = {};
+      if (existingPhr?.demographics) {
+        Object.assign(demographics, existingPhr.demographics);
+      }
+      if (profileData.name) demographics.name = profileData.name;
+      if (profileData.phone) demographics.phone = profileData.phone;
+      if (profileData.address) demographics.address = profileData.address;
+      if (profileData.emergencyContactName) {
+        demographics.emergencyContactName = profileData.emergencyContactName;
+      }
+      if (profileData.emergencyContactPhone) {
+        demographics.emergencyContactPhone = profileData.emergencyContactPhone;
+      }
+      await PHRService.upsertPHR(id, { demographics });
     } catch (dbError) {
       console.log('[PHR] Profile DB update skipped:', dbError);
     }
@@ -627,7 +647,10 @@ async function safeTimelineQuery<T>(
   try {
     return await fn();
   } catch (err: unknown) {
-    const msg = err instanceof Error ? err.message : String(err);
+    let msg: string;
+    if (err instanceof Error) msg = err.message;
+    else if (typeof err === 'string') msg = err;
+    else msg = JSON.stringify(err);
     console.warn(`[PHR] Timeline segment "${label}" skipped for ${patientId}:`, msg);
     if (isDemoTimelinePatient(patientId)) return fallback;
     throw err;

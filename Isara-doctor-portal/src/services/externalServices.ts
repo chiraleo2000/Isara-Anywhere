@@ -14,7 +14,7 @@ export const summarizeSymptomsWithAI = async (
   }
 
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
+    const model = genAI.getGenerativeModel({ model: "gemini-3.1-flash-lite" });
     const prompt = `
 ในฐานะผู้ช่วยแพทย์ AI ของแพลตฟอร์ม Izara Anywhere คุณมีหน้าที่คัดกรองเบื้องต้นโดยการสรุปข้อมูลที่ผู้ป่วยส่งมาให้แพทย์อย่างกระชับ ห้ามให้คำวินิจฉัยหรือคำแนะนำทางการแพทย์เด็ดขาด
 
@@ -38,7 +38,7 @@ export const suggestSymptoms = async (initialSymptoms: string): Promise<string[]
   if (!genAI) return ["ไข้", "ปวดหัว", "คลื่นไส้", "อ่อนเพลีย"];
 
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
+    const model = genAI.getGenerativeModel({ model: "gemini-3.1-flash-lite" });
     const prompt = `
 คุณเป็น AI ผู้ช่วยแพทย์ ผู้ป่วยอธิบายอาการว่า: "${initialSymptoms}"
 กรุณาแนะนำอาการที่เกี่ยวข้องอื่นๆ ที่ผู้ป่วยอาจพบเห็น 4-6 อาการ โดยตอบเป็น JSON array ของ string เท่านั้น
@@ -63,7 +63,7 @@ export const chatWithAI = async (
   }
 
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
+    const model = genAI.getGenerativeModel({ model: "gemini-3.1-flash-lite" });
     const contextPrompt = context ? `\n\nบริบทเพิ่มเติม:\n${context}` : '';
     const conversationHistory = messages.map(msg =>
       `${msg.role === 'user' ? 'ผู้ใช้' : 'AI'}: ${msg.content}`
@@ -257,7 +257,7 @@ export class GoogleMeetService {
         attendees: validAttendees,
         conferenceData: {
           createRequest: {
-            requestId: `izara-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+            requestId: `izara-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`,
             conferenceSolutionKey: { type: 'hangoutsMeet' },
           },
         },
@@ -370,7 +370,7 @@ export class GoogleMeetService {
     // Use Jitsi Meet instead of fake Google Meet codes
     const JITSI_DOMAIN = 'meet.jit.si';
 
-    const meetId = `izara-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    const meetId = `izara-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
 
     // Generate secure room name for medical consultation
     const timestamp = Date.now().toString(36);

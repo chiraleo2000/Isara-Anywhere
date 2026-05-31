@@ -73,7 +73,7 @@ class AuditLogService {
     }
   ): Promise<void> {
     const auditLog: AuditLog = {
-      id: `AUDIT-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      id: `AUDIT-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`,
       timestamp: new Date(),
       userId,
       userName,

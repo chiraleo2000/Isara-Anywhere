@@ -37,6 +37,81 @@ function getAuthHeaders(): Record<string, string> {
   return headers;
 }
 
+function errorMessageFromUnknown(err: unknown): string {
+  return err instanceof Error ? err.message : String(err);
+}
+
+function lobbyRoleLabel(role: string): string {
+  if (role === 'guest') return 'Guest';
+  if (role === 'admin') return 'Admin';
+  return 'Patient';
+}
+
+async function postRecordingBase64(
+  meetingServerUrl: string,
+  appointmentId: string,
+  base64: string,
+  duration: number,
+): Promise<void> {
+  const res = await fetch(`${meetingServerUrl}/api/meetings/${appointmentId}/save-recording`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+    body: JSON.stringify({
+      audioBase64: base64,
+      mimeType: 'audio/webm',
+      durationMs: duration,
+      triggerTranscription: true,
+    }),
+  });
+  if (!res.ok) {
+    const errBody = await res.text().catch(() => '');
+    throw new Error(`save-recording ${res.status}: ${errBody}`);
+  }
+}
+
+function readBlobAsRecordingUpload(
+  blob: Blob,
+  meetingServerUrl: string,
+  appointmentId: string,
+  duration: number,
+): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = async () => {
+      try {
+        const result = reader.result;
+        const base64 = typeof result === 'string' ? result.split(',')[1] : '';
+        if (!base64) {
+          resolve();
+          return;
+        }
+        await postRecordingBase64(meetingServerUrl, appointmentId, base64, duration);
+        resolve();
+      } catch (err) {
+        reject(err);
+      }
+    };
+    reader.onerror = () => reject(reader.error || new Error('FileReader failed'));
+    reader.readAsDataURL(blob);
+  });
+}
+
+function stopRecorderAndUpload(
+  recorder: MediaRecorder,
+  chunks: Blob[],
+  durationMs: number,
+  upload: (chunks: Blob[], duration: number) => Promise<void>,
+): Promise<void> {
+  return new Promise((resolve) => {
+    recorder.onstop = () => {
+      upload(chunks, durationMs)
+        .catch((err) => console.warn('[MeetingEnd] Recording save failed:', errorMessageFromUnknown(err)))
+        .finally(() => resolve());
+    };
+    recorder.stop();
+  });
+}
+
 const FETCH_TIMEOUT_MS = 15_000;
 
 async function fetchWithTimeout(url: string, init: RequestInit = {}, timeoutMs = FETCH_TIMEOUT_MS): Promise<Response> {
@@ -323,6 +398,7 @@ const MeetingRoom: React.FC = () => { // NOSONAR
   // Lobby / Waiting Room
   const [lobbyParticipants, setLobbyParticipants] = useState<LobbyParticipant[]>([]);
   const [showLobby, setShowLobby] = useState(false);
+  const [lobbyNotice, setLobbyNotice] = useState<string | null>(null);
 
   // Recording
   const [isRecording, setIsRecording] = useState(false);
@@ -346,38 +422,7 @@ const MeetingRoom: React.FC = () => { // NOSONAR
     if (blob.size < 1024) {
       blob = minimalRecordingBlob();
     }
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onloadend = async () => {
-        try {
-          const base64 = (reader.result as string).split(',')[1];
-          if (!base64) {
-            resolve();
-            return;
-          }
-          const res = await fetch(`${MEETING_SERVER_URL}/api/meetings/${appointmentId}/save-recording`, {
-            method: 'POST',
-            headers: getAuthHeaders(),
-            body: JSON.stringify({
-              audioBase64: base64,
-              mimeType: 'audio/webm',
-              durationMs: duration,
-              triggerTranscription: true,
-            }),
-          });
-          if (!res.ok) {
-            const errBody = await res.text().catch(() => '');
-            reject(new Error(`save-recording ${res.status}: ${errBody}`));
-            return;
-          }
-          resolve();
-        } catch (err) {
-          reject(err);
-        }
-      };
-      reader.onerror = () => reject(reader.error || new Error('FileReader failed'));
-      reader.readAsDataURL(blob);
-    });
+    return readBlobAsRecordingUpload(blob, MEETING_SERVER_URL, appointmentId, duration);
   }, [appointmentId]);
 
   // Post-meeting tab
@@ -527,6 +572,8 @@ const MeetingRoom: React.FC = () => { // NOSONAR
         if (prev.some(p => p.participantId === data.participant.participantId)) return prev;
         return [...prev, data.participant];
       });
+      setLobbyNotice(`${data.participant.participantName || 'Participant'} is waiting in lobby`);
+      setTimeout(() => setLobbyNotice(null), 5000);
       setShowLobby(true);
     } else if (data.action === 'admit' || data.action === 'reject') {
       setLobbyParticipants(prev =>
@@ -955,8 +1002,12 @@ const MeetingRoom: React.FC = () => { // NOSONAR
         setGuestName('');
         setTimeout(() => setGuestLinkCopied(false), 3000);
       } else {
-        const errBody = await res.json().catch(() => ({}));
-        setError((errBody as { error?: string }).error || 'Failed to create guest invite');
+        const errBody: unknown = await res.json().catch(() => ({}));
+        const errMsg =
+          errBody && typeof errBody === 'object' && 'error' in errBody && typeof (errBody as { error: unknown }).error === 'string'
+            ? (errBody as { error: string }).error
+            : 'Failed to create guest invite';
+        setError(errMsg);
       }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Guest invite failed';
@@ -1044,18 +1095,17 @@ const MeetingRoom: React.FC = () => { // NOSONAR
     setIsRecording(false);
 
     // Stop recording and await upload before /end (cloud E2E requires real recordingUrl)
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
-      await new Promise<void>((resolve) => {
-        mediaRecorderRef.current!.onstop = () => {
-          saveRecordingBlob(recordingChunksRef.current, meetingDuration * 1000)
-            .catch((err) => console.warn('[MeetingEnd] Recording save failed:', (err as Error).message))
-            .finally(() => resolve());
-        };
-        mediaRecorderRef.current!.stop();
-      });
+    const recorder = mediaRecorderRef.current;
+    if (recorder && recorder.state !== 'inactive') {
+      await stopRecorderAndUpload(
+        recorder,
+        recordingChunksRef.current,
+        meetingDuration * 1000,
+        saveRecordingBlob,
+      );
     } else if (wasRecording || meetingState.status === 'in_progress') {
       await saveRecordingBlob(recordingChunksRef.current, Math.max(meetingDuration * 1000, 10_000)).catch(
-        (err) => console.warn('[MeetingEnd] Recording save failed:', (err as Error).message),
+        (err) => console.warn('[MeetingEnd] Recording save failed:', errorMessageFromUnknown(err)),
       );
     }
 
@@ -1568,6 +1618,14 @@ const MeetingRoom: React.FC = () => { // NOSONAR
           <button onClick={() => setError(null)} aria-label="ปิดข้อผิดพลาด" title="ปิด" className="text-red-400 hover:text-white">✕</button>
         </div>
       )}
+      {lobbyNotice && (
+        <div
+          className="bg-purple-900/50 border-b border-purple-700 px-4 py-2 text-sm text-purple-200"
+          data-testid="lobby-notice"
+        >
+          {lobbyNotice}
+        </div>
+      )}
 
       {/* Main Content */}
       <div className="flex-1 flex overflow-hidden">
@@ -2048,7 +2106,7 @@ const MeetingRoom: React.FC = () => { // NOSONAR
                             }`}
                             data-testid={`lobby-role-badge-${p.role}`}
                           >
-                            {p.role === 'guest' ? 'Guest' : p.role === 'admin' ? 'Admin' : 'Patient'}
+                            {lobbyRoleLabel(p.role)}
                           </span>
                         </div>
                         <div className="text-xs text-gray-400">{p.email || 'ไม่มีอีเมล'}</div>

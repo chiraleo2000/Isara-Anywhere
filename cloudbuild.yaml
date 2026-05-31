@@ -31,7 +31,7 @@ substitutions:
   _DB_PORT: "5432"
   _DB_NAME: izara_phase1
   _DB_USER: postgres
-  _GEMINI_MODEL: gemini-2.5-flash-lite
+  _GEMINI_MODEL: gemini-3.1-flash-lite
   _JITSI_DOMAIN: meet.jit.si
   _PATIENT_SVC: izara-patient-portal-dev-testing
   _DOCTOR_SVC: izara-doctor-portal-dev-testing
@@ -161,7 +161,7 @@ steps:
       - --timeout=600
       - --cpu-boost
       - --set-env-vars=NODE_ENV=production,USE_POSTGRESQL=true,DB_HOST=${_DB_HOST},DB_PORT=${_DB_PORT},DB_NAME=${_DB_NAME},DB_USER=${_DB_USER},DB_SSL=false,JITSI_DOMAIN=${_JITSI_DOMAIN},GEMINI_MODEL=${_GEMINI_MODEL},CORS_ORIGINS=*,IZARA_DEV_TESTING=1,GOOGLE_TOKEN_VERIFIER_FIXTURE=1,RECORDINGS_DIR=/tmp/recordings,PIPELINE_RETRY_MAX=3,MIN_RECORDING_BYTES=1024,WHISPER_MODEL=whisper-1
-      - --set-secrets=GEMINI_API_KEY=gemini-api-key:latest,JWT_SECRET=jwt-secret:latest,DB_PASSWORD=db-password:latest,DATABASE_URL=database-url:latest
+      - --set-secrets=GEMINI_API_KEY=gemini-api-key:latest,JWT_SECRET=jwt-secret:latest,DB_PASSWORD=db-password:latest,DATABASE_URL=database-url:latest,GOOGLE_SPEECH_API_KEY=google-speech-api-key:latest,GCP_SERVICE_ACCOUNT_KEY=gcp-service-account-key:latest
     waitFor: [push-meeting-server]
 
   # Capture the meeting server URL for portals and write to /workspace
@@ -201,7 +201,7 @@ steps:
           --max-instances=2 \
           --timeout=300 \
           --set-env-vars="NODE_ENV=production,DB_HOST=${_DB_HOST},DB_PORT=${_DB_PORT},DB_NAME=${_DB_NAME},DB_USER=${_DB_USER},DB_SSL=false,USE_POSTGRESQL=true,VITE_USE_POSTGRESQL=true,GEMINI_MODEL=${_GEMINI_MODEL},GCP_PROJECT_ID=${PROJECT_ID},MEETING_SERVER_URL=$$MEETING_URL,VITE_MEETING_SERVER_URL=$$MEETING_URL,IZARA_DEV_TESTING=1,GOOGLE_TOKEN_VERIFIER_FIXTURE=1" \
-          --set-secrets=GEMINI_API_KEY=gemini-api-key:latest,VITE_GEMINI_API_KEY=gemini-api-key:latest,DB_PASSWORD=db-password:latest,DATABASE_URL=database-url:latest,JWT_SECRET=jwt-secret:latest,VITE_GOOGLE_MAPS_API_KEY=google-maps-api-key:latest,GOOGLE_CLIENT_ID=google-client-id:latest
+          --set-secrets=GEMINI_API_KEY=gemini-api-key:latest,VITE_GEMINI_API_KEY=gemini-api-key:latest,DB_PASSWORD=db-password:latest,DATABASE_URL=database-url:latest,JWT_SECRET=jwt-secret:latest,VITE_GOOGLE_MAPS_API_KEY=google-maps-api-key:latest,GOOGLE_CLIENT_ID=google-client-id:latest,GOOGLE_SPEECH_API_KEY=google-speech-api-key:latest
     waitFor: [push-patient-portal, get-meeting-url]
 
   - id: deploy-doctor-portal
@@ -226,7 +226,7 @@ steps:
           --execution-environment=gen2 \
           --cpu-boost \
           --set-env-vars="NODE_ENV=production,DB_HOST=${_DB_HOST},DB_PORT=${_DB_PORT},DB_NAME=${_DB_NAME},DB_USER=${_DB_USER},DB_SSL=false,USE_POSTGRESQL=true,VITE_USE_POSTGRESQL=true,JITSI_DOMAIN=${_JITSI_DOMAIN},GEMINI_MODEL=${_GEMINI_MODEL},GCP_PROJECT_ID=${PROJECT_ID},MEETING_SERVER_URL=$$MEETING_URL,VITE_MEETING_SERVER_URL=$$MEETING_URL,IZARA_DEV_TESTING=1,GOOGLE_TOKEN_VERIFIER_FIXTURE=1" \
-          --set-secrets=GEMINI_API_KEY=gemini-api-key:latest,VITE_GEMINI_API_KEY=gemini-api-key:latest,DB_PASSWORD=db-password:latest,DATABASE_URL=database-url:latest,JWT_SECRET=jwt-secret:latest,GOOGLE_CLIENT_ID=google-client-id:latest
+          --set-secrets=GEMINI_API_KEY=gemini-api-key:latest,VITE_GEMINI_API_KEY=gemini-api-key:latest,DB_PASSWORD=db-password:latest,DATABASE_URL=database-url:latest,JWT_SECRET=jwt-secret:latest,GOOGLE_CLIENT_ID=google-client-id:latest,GOOGLE_SPEECH_API_KEY=google-speech-api-key:latest,GCP_SERVICE_ACCOUNT_KEY=gcp-service-account-key:latest
     waitFor: [push-doctor-portal, get-meeting-url]
 
   # ============================================================

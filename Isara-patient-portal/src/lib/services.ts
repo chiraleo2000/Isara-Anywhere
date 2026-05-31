@@ -152,8 +152,8 @@ export const pdpaService = {
 };
 
 export const aiService = {
-  chat: (message: string, history?: any[], sessionId?: string) => 
-    api.post<{ reply: string; sessionId: string }>('/api/ai/chat', { message, conversationHistory: history, sessionId }),
+  chat: (message: string, history?: any[], sessionId?: string, language?: 'th' | 'en') => 
+    api.post<{ reply: string; sessionId: string }>('/api/ai/chat', { message, conversationHistory: history, sessionId, language }),
   symptomCheck: (symptoms: string, context?: any) => api.post<any>('/api/ai/symptom-checker', { symptoms, patientContext: context }),
   riskAssessment: (patientData: any) => api.post<any>('/api/ai/risk-assessment', { patientData }),
   // Chat history management - PostgreSQL persistent
@@ -370,14 +370,10 @@ export const notificationService = {
   
   // Mark all notifications as read
   markAllAsRead: async (userId: string) => {
-    const notifications = await api.get<Notification[]>(`/api/appointments/notifications/${userId}`);
-    const unread = notifications.filter((n: Notification) => !n.isRead);
-    await Promise.all(
-      unread.map((n: Notification) => 
-        api.put(`/api/appointments/notifications/${userId}/${n.id}/read`, {})
-      )
+    return api.put<{ success: boolean }>(
+      `/api/appointments/notifications/${userId}/read-all`,
+      {},
     );
-    return { success: true, marked: unread.length };
   },
 
   // Get unread count

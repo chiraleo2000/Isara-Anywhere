@@ -7,6 +7,7 @@
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
+import { getToken } from '../../services/authServices';
 
 interface MeetingResultsProps {
   meetingId: string;
@@ -82,6 +83,7 @@ interface MeetingResultsData {
 }
 
 type TabType = 'summary' | 'transcript' | 'chat';
+type ValidationAction = 'approve' | 'edit' | 'reject';
 
 const MEETING_SERVER_URL = (() => {
   if (globalThis.window !== undefined) {
@@ -99,9 +101,47 @@ const MEETING_SERVER_URL = (() => {
   return import.meta.env.VITE_MEETING_SERVER_URL || 'http://localhost:3020';
 })();
 
-const getToken = () => localStorage.getItem('token');
 const buildHeaders = (token: string | null) =>
   ({ 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) });
+
+/** Same-origin proxy on doctor portal; fallback to meeting server for local dev */
+async function fetchMeetingApi(path: string, init: RequestInit = {}): Promise<Response> {
+  const token = getToken();
+  const headers = {
+    ...buildHeaders(token),
+    ...(init.headers as Record<string, string> | undefined),
+  };
+  const opts = { ...init, headers };
+  try {
+    const res = await fetch(path, opts);
+    if (res.ok || res.status !== 404) return res;
+  } catch {
+    /* try meeting server */
+  }
+  return fetch(`${MEETING_SERVER_URL}${path}`, opts);
+}
+
+const RESULTS_FETCH_ATTEMPTS = 5;
+const RESULTS_FETCH_DELAY_MS = 2_000;
+
+async function fetchMeetingResultsWithRetry(path: string): Promise<MeetingResultsData> {
+  let lastError: Error | null = null;
+  for (let attempt = 0; attempt < RESULTS_FETCH_ATTEMPTS; attempt++) {
+    try {
+      const res = await fetchMeetingApi(path);
+      if (!res.ok) throw new Error(`Meeting results not found (${res.status})`);
+      const data = await res.json();
+      if (data.success) return data as MeetingResultsData;
+      throw new Error(data.error || 'Failed to load results');
+    } catch (err) {
+      lastError = err instanceof Error ? err : new Error('Failed to load meeting results');
+      if (attempt < RESULTS_FETCH_ATTEMPTS - 1) {
+        await new Promise((resolve) => setTimeout(resolve, RESULTS_FETCH_DELAY_MS));
+      }
+    }
+  }
+  throw lastError ?? new Error('Failed to load meeting results');
+}
 
 const formatDuration = (minutes: number | null) => {
   if (!minutes) return 'N/A';
@@ -238,9 +278,8 @@ async function regenerateSummary(lookupId: string): Promise<{
   summary?: string;
   structured?: MeetingResultsData['summary']['structured'];
 }> {
-  const res = await fetch(`${MEETING_SERVER_URL}/api/meetings/${lookupId}/generate-summary`, {
+  const res = await fetchMeetingApi(`/api/meetings/${lookupId}/generate-summary`, {
     method: 'POST',
-    headers: buildHeaders(getToken()),
   });
   return res.json();
 }
@@ -248,9 +287,8 @@ async function regenerateSummary(lookupId: string): Promise<{
 async function submitValidation(lookupId: string, action: string, editedSummary?: string): Promise<{ success?: boolean; validationStatus?: string; readyForPatient?: boolean }> {
   const body: Record<string, string> = { action };
   if (action === 'edit' && editedSummary) body.editedSummary = editedSummary;
-  const res = await fetch(`${MEETING_SERVER_URL}/api/meetings/${lookupId}/validate`, {
+  const res = await fetchMeetingApi(`/api/meetings/${lookupId}/validate`, {
     method: 'POST',
-    headers: buildHeaders(getToken()),
     body: JSON.stringify(body),
   });
   return res.json();
@@ -363,6 +401,43 @@ const SectionSummariesPanel: React.FC<{ sections: NonNullable<MeetingResultsData
   </div>
 );
 
+const SummaryValidationActions: React.FC<{
+  validationStatus: string | null;
+  isEditing: boolean;
+  actionLoading: string | null;
+  onToggleEditing: () => void;
+  onRegenerate: () => void;
+  onSubmitValidation: (action: ValidationAction) => void;
+}> = ({ validationStatus, isEditing, actionLoading, onToggleEditing, onRegenerate, onSubmitValidation }) => {
+  if (validationStatus) return null;
+  return (
+    <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t">
+      <button onClick={() => onSubmitValidation('approve')} disabled={!!actionLoading}
+        className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 flex items-center gap-1 text-sm">
+        {actionLoading === 'approve' ? '...' : '✅'} อนุมัติ
+      </button>
+      <button onClick={onToggleEditing} disabled={!!actionLoading}
+        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center gap-1 text-sm">
+        ✏️ {isEditing ? 'ยกเลิกแก้ไข' : 'แก้ไข'}
+      </button>
+      {isEditing && (
+        <button onClick={() => onSubmitValidation('edit')} disabled={!!actionLoading}
+          className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-50 flex items-center gap-1 text-sm">
+          {actionLoading === 'edit' ? '...' : '💾'} บันทึกแก้ไข
+        </button>
+      )}
+      <button onClick={() => onSubmitValidation('reject')} disabled={!!actionLoading}
+        className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 flex items-center gap-1 text-sm">
+        {actionLoading === 'reject' ? '...' : '❌'} ปฏิเสธ
+      </button>
+      <button type="button" data-testid="generate-summary-btn" onClick={onRegenerate} disabled={!!actionLoading}
+        className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 flex items-center gap-1 text-sm">
+        {actionLoading === 'regenerate' ? '...' : '🔄'} สร้างใหม่
+      </button>
+    </div>
+  );
+};
+
 /* ── Summary tab ──────────────────────────────────────────────── */
 const SummaryTab: React.FC<{
   summary: MeetingResultsData['summary'];
@@ -374,7 +449,7 @@ const SummaryTab: React.FC<{
   onEditedSummaryChange: (v: string) => void;
   onToggleEditing: () => void;
   onRegenerate: () => void;
-  onSubmitValidation: (action: 'approve' | 'edit' | 'reject') => void;
+  onSubmitValidation: (action: ValidationAction) => void;
   onGenerateInstruction: () => void;
 }> = ({ summary, validationStatus, isEditing, editedSummary, actionLoading, instructionResult,
        onEditedSummaryChange, onToggleEditing, onRegenerate, onSubmitValidation, onGenerateInstruction }) => {
@@ -434,32 +509,14 @@ const SummaryTab: React.FC<{
         </details>
       )}
 
-      {!validationStatus && (
-        <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t">
-          <button onClick={() => onSubmitValidation('approve')} disabled={!!actionLoading}
-            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 flex items-center gap-1 text-sm">
-            {actionLoading === 'approve' ? '...' : '✅'} อนุมัติ
-          </button>
-          <button onClick={onToggleEditing} disabled={!!actionLoading}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center gap-1 text-sm">
-            ✏️ {isEditing ? 'ยกเลิกแก้ไข' : 'แก้ไข'}
-          </button>
-          {isEditing && (
-            <button onClick={() => onSubmitValidation('edit')} disabled={!!actionLoading}
-              className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-50 flex items-center gap-1 text-sm">
-              {actionLoading === 'edit' ? '...' : '💾'} บันทึกแก้ไข
-            </button>
-          )}
-          <button onClick={() => onSubmitValidation('reject')} disabled={!!actionLoading}
-            className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 flex items-center gap-1 text-sm">
-            {actionLoading === 'reject' ? '...' : '❌'} ปฏิเสธ
-          </button>
-          <button type="button" data-testid="generate-summary-btn" onClick={onRegenerate} disabled={!!actionLoading}
-            className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 flex items-center gap-1 text-sm">
-            {actionLoading === 'regenerate' ? '...' : '🔄'} สร้างใหม่
-          </button>
-        </div>
-      )}
+      <SummaryValidationActions
+        validationStatus={validationStatus}
+        isEditing={isEditing}
+        actionLoading={actionLoading}
+        onToggleEditing={onToggleEditing}
+        onRegenerate={onRegenerate}
+        onSubmitValidation={onSubmitValidation}
+      />
 
       {isApproved && !instructionResult && (
         <div className="mt-4 pt-4 border-t">
@@ -496,21 +553,13 @@ const MeetingResults: React.FC<MeetingResultsProps> = ({ meetingId, appointmentI
   const lookupId = appointmentId || meetingId;
 
   const fetchResults = useCallback(async () => {
+    setLoading(true);
+    setError(null);
     try {
-      setLoading(true);
-      setError(null);
-      const token = getToken();
-      const res = await fetch(`${MEETING_SERVER_URL}/api/meetings/${lookupId}/results`, {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-      });
-      if (!res.ok) throw new Error('Meeting results not found');
-      const data = await res.json();
-      if (data.success) {
-        setResults(data);
-        if (data.summary?.text) setEditedSummary(data.summary.text);
-        if (data.summary?.validationStatus) setValidationStatus(data.summary.validationStatus);
-      }
-      else throw new Error(data.error || 'Failed to load results');
+      const data = await fetchMeetingResultsWithRetry(`/api/meetings/${lookupId}/results`);
+      setResults(data);
+      if (data.summary?.text) setEditedSummary(data.summary.text);
+      if (data.summary?.validationStatus) setValidationStatus(data.summary.validationStatus);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load meeting results');
     } finally {
@@ -550,7 +599,7 @@ const MeetingResults: React.FC<MeetingResultsProps> = ({ meetingId, appointmentI
     }
   };
 
-  const handleSubmitValidation = async (action: 'approve' | 'edit' | 'reject') => {
+  const handleSubmitValidation = async (action: ValidationAction) => {
     setActionLoading(action);
     try {
       const data = await submitValidation(lookupId, action, action === 'edit' ? editedSummary : undefined);
@@ -576,9 +625,8 @@ const MeetingResults: React.FC<MeetingResultsProps> = ({ meetingId, appointmentI
   const handleGenerateInstruction = async () => {
     setActionLoading('instruction');
     try {
-      const res = await fetch(`${MEETING_SERVER_URL}/api/meetings/${lookupId}/patient-instruction`, {
+      const res = await fetchMeetingApi(`/api/meetings/${lookupId}/patient-instruction`, {
         method: 'POST',
-        headers: buildHeaders(getToken()),
       });
       const data = await res.json();
       if (data.success && data.instructions) {
@@ -593,7 +641,7 @@ const MeetingResults: React.FC<MeetingResultsProps> = ({ meetingId, appointmentI
 
   if (loading) {
     return (
-      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" data-testid="meeting-results">
         <div className="bg-white rounded-xl p-8 text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600 mx-auto mb-4" />
           <p className="text-gray-600">กำลังโหลดผลการประชุม...</p>
@@ -604,10 +652,13 @@ const MeetingResults: React.FC<MeetingResultsProps> = ({ meetingId, appointmentI
 
   if (error || !results) {
     return (
-      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" data-testid="meeting-results">
         <div className="bg-white rounded-xl p-8 text-center max-w-md">
           <p className="text-red-600 mb-4">{error || 'ไม่พบผลการประชุม'}</p>
-          <button onClick={onClose} className="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300">ปิด</button>
+          <button type="button" onClick={fetchResults} className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 mr-2">
+            ลองใหม่
+          </button>
+          <button type="button" onClick={onClose} className="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300">ปิด</button>
         </div>
       </div>
     );
@@ -693,6 +744,7 @@ const MeetingResults: React.FC<MeetingResultsProps> = ({ meetingId, appointmentI
             <span className="text-sm text-gray-600">🎙️ บันทึกการประชุม:</span>
             <audio data-testid="recording-player" controls preload="none" className="h-8 flex-1">
               <source src={`${MEETING_SERVER_URL}${meeting.recordingUrl}`} type="audio/webm" />
+              <track kind="captions" label="Meeting recording" />
             </audio>
           </div>
         )}

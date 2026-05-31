@@ -182,7 +182,10 @@ export const DoctorNotificationBell: React.FC<DoctorNotificationBellProps> = ({
       });
       if (response.ok) {
         const data = await response.json();
-        const notifs = data.notifications || [];
+        const notifs = (data.notifications || []).map((n: Notification & { read_at?: string; readAt?: string }) => ({
+          ...n,
+          isRead: typeof n.isRead === 'boolean' ? n.isRead : Boolean(n.read_at || n.readAt),
+        }));
         setNotifications(notifs);
         setUnreadCount(notifs.filter((n: Notification) => !n.isRead).length || 0);
         console.log(`🔔 Loaded ${notifs.length} notifications for doctor ${user.id}`);

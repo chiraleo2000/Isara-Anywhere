@@ -11,7 +11,7 @@ import crypto from 'node:crypto';
 
 const PORT = 3020;
 const JITSI_DOMAIN = 'meet.jit.si';
-const GEMINI_MODEL = 'gemini-2.5-flash-lite';
+const GEMINI_MODEL = 'gemini-3.1-flash-lite';
 const DB_DEFAULT_PORT = 5433;
 const DB_NAME = 'izara_phase1';
 
@@ -105,7 +105,7 @@ describe('Meeting Server — Routes & Config', () => {
     });
 
     it('A03 — Gemini model correct', () => {
-      expect(GEMINI_MODEL).toBe('gemini-2.5-flash-lite');
+      expect(GEMINI_MODEL).toBe('gemini-3.1-flash-lite');
     });
 
     it('A04 — DB port is 5433', () => {

@@ -15,12 +15,23 @@
  */
 import {
   test, expect, assertFullHealth, snap,
-  navDoctor, waitForContent, assertHasData,
+  navDoctor, navPatient, waitForContent, assertHasData,
   PATIENT_URL, DOCTOR_URL,
 } from './helpers/multi-portal';
 
 test.describe('Group I — Admin, Users & Notifications', () => {
   test.describe.configure({ mode: 'serial' });
+
+  test('I0 — Patient /notifications route exists', async ({ portals }) => {
+    const { patient } = portals;
+
+    await navPatient(patient.page, '/', 'I00');
+    await assertFullHealth(patient.page, 'I00');
+    await patient.page.goto(`${PATIENT_URL}/notifications`, { waitUntil: 'domcontentloaded' });
+    await patient.page.waitForTimeout(1000);
+
+    expect(patient.page.url().includes('/notifications')).toBe(true);
+  });
 
   /* ═════════════════════════════════════════════════════════════════
      I1 — Admin: Manage Doctors → search → view → approve
@@ -176,8 +187,8 @@ test.describe('Group I — Admin, Users & Notifications', () => {
       } else {
         // fallback: navigate directly via URL
         const currentUrl = doctor.page.url();
-        const match = currentUrl.match(/\/doctor\/([^/]+)/);
-        const userId = match ? match[1] : '';
+        const match = /\/doctor\/([^/]+)/.exec(currentUrl);
+        const userId = match?.[1] ?? '';
         await doctor.page.goto(`${DOCTOR_URL}/doctor/${userId}/profile`, {
           waitUntil: 'domcontentloaded', timeout: 15_000
         });

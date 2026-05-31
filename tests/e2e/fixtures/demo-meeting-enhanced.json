@@ -171,7 +171,7 @@
   ],
   "aiSummary": {
     "generatedAt": "2026-01-27T09:16:00+07:00",
-    "model": "gemini-2.5-flash",
+    "model": "gemini-3.1-flash-lite",
     "chiefComplaint": "ปวดหัว 3 วัน มีไข้ต่ำ",
     "historyOfPresentIllness": "ผู้ป่วยมีอาการปวดหัวมา 3 วัน ปวดตลอดทั้งวันโดยเฉพาะตอนเช้า ร่วมกับมีไข้ต่ำๆ รู้สึกเพลีย ทานข้าวน้อยลง ไม่มีอาการคลื่นไส้อาเจียน",
     "physicalExam": "Temp: 37.5°C, BP: 120/80 mmHg, HR: 80 bpm, General appearance: Mild fatigue",

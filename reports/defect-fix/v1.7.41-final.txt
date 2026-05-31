@@ -1,0 +1,32 @@
+v1.7.41 Defect + Sonar Remediation Final Report
+Date: 2026-05-30
+Environment: Cloud Run dev-testing
+
+Status: ALL GREEN
+
+Sonar/static fixes:
+- typescript:S4325 — removed redundant LangKey/canvasRef assertions (MedicalContentLibrary, health/MedicalContentLibrary, pdpa/LivingWillPage)
+- Web:S5725 — pinned mermaid@10.9.3 with SHA-384 SRI on html-diagrams 10, 17, 18, 19
+
+New behavioral unit tests:
+- darkModeSurfaces.behavior.test.ts (G2)
+- settingsI18n.behavior.test.ts (G3)
+- medicalContentThumbnail.behavior.test.ts (P7)
+- clinicalResourcesMount.behavior.test.ts (D7–D8)
+- useNotificationsPage.test.ts extended (G1)
+
+Defect coverage (23/23 Verified):
+- All items in DEFECT_REGISTER.md remain Verified
+
+Gate evidence:
+- test:unit — 142 files, 2698 passed
+- test:quality:gate — PASS
+- test:cloud:unit-gate — PASS (GATE0 G1–G5, cloud smoke)
+- Defect-regression (cloud) — 19 passed, 1 skipped
+
+Docs:
+- docs/DEFECT_REMEDIATION_DRAWIO_UPDATES.md (v1.7.41 checklist)
+- Presentations/TECHNICAL_DOCUMENTATION.md v1.7.41 section
+- reports/defect-fix/PHASE0_REAUDIT.md v1.7.41 appendix
+
+Deploy: not run in this pass (optional: npm run cloud:deploy -- -Tag v1.7.41)

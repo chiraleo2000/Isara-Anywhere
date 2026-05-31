@@ -249,7 +249,15 @@ export default function AIDoctorPage() {
   }, []);
 
   // Start a new chat
-  const startNewChat = () => {
+  const startNewChat = async () => {
+    try {
+      if (sessionId) {
+        await aiService.clearChatHistory(sessionId);
+      }
+      await loadSessions();
+    } catch (error) {
+      console.error('[AI Chat] Failed to reset session history:', error);
+    }
     setMessages([]);
     setSessionId(null);
   };
@@ -319,7 +327,12 @@ export default function AIDoctorPage() {
 
     try {
       const history = messages.map((m) => ({ role: m.role, content: m.content }));
-      const response = await aiService.chat(userMessage.content, history, sessionId || undefined);
+      const response = await aiService.chat(
+        userMessage.content,
+        history,
+        sessionId || undefined,
+        language,
+      );
 
       // Store session ID from response
       if (response.sessionId && !sessionId) {

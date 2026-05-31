@@ -226,7 +226,7 @@ dotenv.config();
 // Get API key and model from environment variables (works in both local and production)
 // Priority: process.env (Cloud Run) > .env file parsing (local fallback)
 let GEMINI_API_KEY: string | null = process.env.VITE_GEMINI_API_KEY || process.env.GEMINI_API_KEY || null;
-let GEMINI_MODEL: string = process.env.VITE_GEMINI_MODEL || process.env.GEMINI_MODEL || 'gemini-2.5-flash-lite';
+let GEMINI_MODEL: string = process.env.VITE_GEMINI_MODEL || process.env.GEMINI_MODEL || 'gemini-3.1-flash-lite';
 
 // If not found in process.env, try to parse .env file (local development fallback)
 if (!GEMINI_API_KEY?.startsWith('AIza')) {
@@ -397,7 +397,8 @@ function getModel(config: AIConfig): GenerativeModel | null {
 // Helper: Build prompt with memory and conversation history
 async function buildChatPrompt(
   userId: string, sessionId: string, message: string,
-  conversationHistory?: ChatMessage[]
+  conversationHistory?: ChatMessage[],
+  language: 'th' | 'en' = 'th',
 ): Promise<string> {
   // Get persistent chat history from PostgreSQL if no conversationHistory provided
   let historyToUse = conversationHistory || [];
@@ -422,7 +423,11 @@ async function buildChatPrompt(
   }
 
   // Build prompt with system instruction, memory, and conversation history
-  let fullPrompt = AI_CONFIGS.chat.systemInstruction + '\n\n';
+  const languageInstruction =
+    language === 'en'
+      ? 'Reply in English. If user message language differs, reply in the same language as the user message.'
+      : 'ตอบเป็นภาษาไทย หากข้อความผู้ใช้เป็นภาษาอื่น ให้ตอบกลับในภาษาเดียวกับข้อความผู้ใช้';
+  let fullPrompt = AI_CONFIGS.chat.systemInstruction + '\n\n' + languageInstruction + '\n\n';
   
   if (memoryContext) {
     fullPrompt += memoryContext;
@@ -445,7 +450,7 @@ router.post('/chat', authMiddleware, async (req: Request, res: Response) => {
   const startTime = Date.now();
   
   try {
-    const { message, conversationHistory, sessionId } = req.body;
+    const { message, conversationHistory, sessionId, language } = req.body;
     const userId = (req as AuthenticatedRequest).user?.id || 'anonymous';
     const chatSessionId = sessionId || `session_${userId}_${Date.now()}`;
 
@@ -464,7 +469,14 @@ router.post('/chat', authMiddleware, async (req: Request, res: Response) => {
       });
     }
 
-    const fullPrompt = await buildChatPrompt(userId, chatSessionId, message, conversationHistory);
+    const normalizedLanguage: 'th' | 'en' = language === 'en' ? 'en' : 'th';
+    const fullPrompt = await buildChatPrompt(
+      userId,
+      chatSessionId,
+      message,
+      conversationHistory,
+      normalizedLanguage,
+    );
 
     console.log('[AI Chat] 🚀 Sending to Gemini...');
     

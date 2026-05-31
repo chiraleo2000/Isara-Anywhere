@@ -70,7 +70,7 @@ function validateAIResponse(response: unknown): boolean {
 }
 
 const GEMINI_CONFIG = {
-  model: 'gemini-2.5-flash-lite',
+  model: 'gemini-3.1-flash-lite',
   temperature: 0.3,
   maxOutputTokens: 4096,
 };
@@ -154,8 +154,8 @@ describe('Meeting Server — AI Summary', () => {
   });
 
   describe('E — Gemini Config', () => {
-    it('E01 — model is gemini-2.5-flash-lite', () => {
-      expect(GEMINI_CONFIG.model).toBe('gemini-2.5-flash-lite');
+    it('E01 — model is gemini-3.1-flash-lite', () => {
+      expect(GEMINI_CONFIG.model).toBe('gemini-3.1-flash-lite');
     });
 
     it('E02 — temperature is 0.3 (conservative)', () => {

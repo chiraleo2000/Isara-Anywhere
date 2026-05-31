@@ -69,7 +69,7 @@ runStep('app-security-scan', 'npm', ['run', 'security:app-scan']);
 
 const summary = {
   generatedAt: new Date().toISOString(),
-  projectVersion: '1.7.37',
+  projectVersion: '1.7.43',
   passed: !failed,
   steps,
   sonarLint: {

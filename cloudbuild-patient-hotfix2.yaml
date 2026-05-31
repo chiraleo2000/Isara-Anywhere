@@ -11,7 +11,7 @@ substitutions:
   _DB_PORT: "5432"
   _DB_NAME: izara_phase1
   _DB_USER: postgres
-  _GEMINI_MODEL: gemini-2.5-flash-lite
+  _GEMINI_MODEL: gemini-3.1-flash-lite
   _PATIENT_SVC: izara-patient-portal-dev-testing
   _MEETING_URL: "https://izara-meeting-server-dev-testing-724889190329.asia-southeast1.run.app"
 

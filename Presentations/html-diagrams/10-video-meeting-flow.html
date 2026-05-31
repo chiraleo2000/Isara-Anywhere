@@ -4,7 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Izara Diagram: 10-video-meeting-flow</title>
-    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <!-- sonar S5725: pinned mermaid@10.9.3 with SHA-384 SRI for offline diagram viewing -->
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.3/dist/mermaid.min.js" integrity="sha384-R63zfMfSwJF4xCR11wXii+QUsbiBIdiDzDbtxia72oGWfkT7WHJfmD/I/eeHPJyT" crossorigin="anonymous"></script>
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5; }
         .container { max-width: 100%; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
@@ -22,7 +23,7 @@
         <a href="javascript:location.reload()">🔄 Refresh</a>
     </div>
     <div class="container">
-        <h1>10-video-meeting-flow</h1>
+        <h1>10-video-meeting-flow (v1.7.38)</h1>
         <div class="mermaid">
             %%{init: {
   'theme': 'base',
@@ -51,6 +52,8 @@ sequenceDiagram
 
     rect rgb(255, 243, 224)
         Note over P,D: 📋 CONSENT & AGREEMENT
+        D->>DP: Open dashboard queue
+        DP->>DP: Navigate /doctor/:id/meeting/:appointmentId
         D->>DP: Start consultation
         DP->>MS: Create meeting room
         MS-->>DP: Room ID + invite link
@@ -103,9 +106,10 @@ sequenceDiagram
         DP->>MS: Request AI summary
         MS->>DB: Get full transcript
         DB-->>MS: Transcript data
-        MS->>AI: Generate SOAP summary (Gemini 2.5 Flash)
+        MS->>AI: Generate SOAP summary (Gemini 3.1 Flash Lite)
         AI-->>MS: SOAP suggestions + clinical notes
         MS-->>DP: AI summary response
+        DP->>MS: GET /api/ai/gemini/status (runtime key check)
         DP->>D: Display SOAP suggestions
     end
 

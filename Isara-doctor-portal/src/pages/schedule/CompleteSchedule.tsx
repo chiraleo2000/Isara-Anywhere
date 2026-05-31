@@ -60,8 +60,15 @@ export const CompleteSchedule: React.FC<CompleteScheduleProps> = ({ doctor }) =>
           const matchesDoctor = apt.doctorId === doctor.id || 
                                apt.assignedDoctorId === doctor.id ||
                                apt.adminAssignedDoctorId === doctor.id;
-          // Only show confirmed/scheduled appointments (assigned = pending confirmation)
-          const isActive = ['confirmed', 'scheduled'].includes(apt.status);
+          // Match dashboard logic so counts are consistent across views.
+          const isActive = [
+            'confirmed',
+            'scheduled',
+            'in_pool',
+            'pending',
+            'awaiting_doctor_response',
+            'assigned',
+          ].includes(apt.status);
           return matchesDoctor && isActive;
         });
         

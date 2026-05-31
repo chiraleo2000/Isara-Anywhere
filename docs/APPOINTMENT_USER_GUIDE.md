@@ -3,10 +3,10 @@
 
 ## Complete Workflow: From Booking to EMR & Lab Reports
 
-> **Cloud E2E Test Results: Round 2 in progress (residual failure tracked in `CLOUD_E2E_BUG_REPORT.md`)**
-> Tested on: `2026-05-22` | Environment: Google Cloud Run (asia-southeast1)
-> Groups D + E + F — Serial execution, 1 worker, real cloud infrastructure
-> Version: 1.7.3 | Unit Tests: 2,524/2,524 ✅ | UI Tests: 15/15 ✅
+> **Cloud E2E Test Results: PASS — full headed cloud suite (85/85, 2026-05-31)**
+> Tested on: `2026-05-31` | Environment: Google Cloud Run (asia-southeast1)
+> Groups A–P — headed Playwright, 1 worker, 212 screenshots → `docs/screenshots/`
+> Defect track: v1.7.48 | Unit Tests: **2736/2736** ✅ | UI Tests: **85/85** ✅
 
 ---
 
@@ -1163,6 +1163,32 @@ Verifies that:
 
 ## Cloud E2E Test Results
 
+### Full cloud headed suite (2026-05-31 — v1.7.48)
+
+```
+Environment:  Google Cloud Run (asia-southeast1)
+Command:      npm run test:cloud:full
+Test Mode:    $env:TEST_ENV='cloud'; PW_HEADED=1
+Workers:      1 (serial D→E→F chain)
+Browser:      Headed (Chrome/Edge/Firefox per fixture)
+Total Time:   7.7 minutes
+Result:       85/85 PASSED ✅
+Screenshots:  212 PNG in docs/screenshots/ (16 folders)
+```
+
+| Group | Focus | Tests |
+|-------|-------|-------|
+| A | Auth, health, role isolation | 10+ |
+| B–C | Patient / doctor portal depth | ✓ |
+| D | Appointment booking → admin assign → sync | D01–D22 |
+| E | Meeting clinical navigation | ✓ |
+| F | PHR + vital signs cross-portal | F00–F16 |
+| G–P | PDPA, content, admin, AI, Q meeting, lab, workflows | ✓ |
+| Defect-regression | PDF defect pack (separate run) | **36/36** (2026-05-30) |
+
+Evidence: `docs/UNIT_TEST_UI_COVERAGE.md`, `reports/defect-fix/v1.7.48-final.txt`
+
+---
 
 ### Full D+E+F Cloud Run Results (2026-04-03)
 
@@ -1259,5 +1285,5 @@ Result:       21/21 PASSED ✅
 
 ---
 
-*Generated from Cloud E2E test run on 2026-04-03 — 21/21 tests PASSED in 3.2 minutes*
-*Izara Telemedicine Platform v1.6.0*
+*Generated from Cloud E2E test run on 2026-05-31 — **85/85** headed tests PASSED in 7.7 minutes (v1.7.48)*  
+*Historical: 21/21 on 2026-04-03 · Izara Telemedicine Platform*

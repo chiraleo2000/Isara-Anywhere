@@ -1,0 +1,49 @@
+v1.7.48 Defect PDF Re-Audit Report
+Date: 2026-05-30
+Environment: Cloud Run dev-testing + local quality gates
+
+Status: ALL GREEN — 0 failed, 0 skipped
+
+=== PDF re-audit ===
+Source: Defect หมออิสระ.pdf
+Mapping: 23 defects in DEFECT_REGISTER.md — 0 orphans
+Evidence: reports/defect-fix/pdf-reaudit-v1.7.48.txt
+
+=== Quality gates (local, 2026-05-30) ===
+npm run test:quality:gate — PASS
+  Unit: 151 files, 2736 tests passed (includes clinicalComponentStructure.regression.test.ts)
+  Security hardening: PASS
+  Meeting server contract: PASS
+  sonar:lint — 0 errors
+
+=== Cloud gates (2026-05-30) ===
+Defect-regression Playwright — 36 passed, 0 skipped, 0 failed (2.8m)
+  Command: $env:TEST_ENV='cloud'; npx playwright test --project=Defect-regression --workers=1
+
+=== Cloud full headed (2026-05-31) ===
+npm run test:cloud:full — 85 passed, 0 skipped, 0 failed (7.7m)
+  Screenshots: docs/screenshots/ (212 PNG across 16 folders)
+  User guides rebuilt: USER_GUIDE_PATIENT_PPT_TH.pptx (76 imgs), USER_GUIDE_DOCTOR_WORD/PPT (93 imgs)
+  Note: USER_GUIDE_PATIENT_WORD_TH.docx locked — fresh copy at USER_GUIDE_PATIENT_WORD_TH_NEW.docx
+
+=== Unit + report (2026-05-31) ===
+npm run test:unit:report — 151 files, 2736 tests PASS
+docs/UNIT_TEST_UI_COVERAGE.md regenerated
+
+=== v1.7.48 code changes (Sonar / structure) ===
+- EmrEditorChrome.tsx, PrescribingModalChrome.tsx, LiveTranscriptionView.tsx (S6747 parser fix)
+- MeetingResults.tsx ValidationAction type alias (S4323)
+- technical_architecture_content.py ROLE_PATIENT / ROLE_DOCTOR (S1192)
+- .vscode/settings.json sonarlint.connectedMode.enabled=false for IDE
+
+=== User failure list — all 23 mapped ===
+Global: G1 i18n, G2 dark mode, G3 placeholders
+Patient: P1–P12 (AI, notifications, PHR, library, map, living will)
+Doctor: D1–D8 (notifications, schedule, Gemini, appointments, GCS, clinical)
+Meeting: M2 lobby admit UX
+
+=== Documentation ===
+- DEFECT_REGISTER.md → v1.7.48 coverage notes
+- Presentations/TECHNICAL_DOCUMENTATION.md → v1.7.48 section
+- Presentations/html-diagrams/23-defect-remediation-v1748.html
+- docs/UNIT_TEST_UI_COVERAGE.md → v1.7.48

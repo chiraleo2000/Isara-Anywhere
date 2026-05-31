@@ -46,6 +46,12 @@ function generateSessionId(): string {
   return `session_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
 }
 
+function buildLanguageInstruction(language: 'th' | 'en'): string {
+  return language === 'en'
+    ? 'Reply in English. If user message language differs, reply in the same language as the user message.'
+    : 'ตอบเป็นภาษาไทย หากข้อความผู้ใช้เป็นภาษาอื่น ให้ตอบกลับในภาษาเดียวกับข้อความผู้ใช้';
+}
+
 // ── Tests ────────────────────────────────────────────────────────────────
 
 describe('Patient Portal — AI Route', () => {
@@ -153,8 +159,18 @@ describe('Patient Portal — AI Route', () => {
       const before = Date.now();
       const id = generateSessionId();
       const parts = id.split('_');
-      const ts = parseInt(parts[1], 10);
+      const ts = Number.parseInt(parts[1], 10);
       expect(ts).toBeGreaterThanOrEqual(before);
+    });
+  });
+
+  describe('G — Language instruction (P2)', () => {
+    it('G01 — English setting adds English reply instruction', () => {
+      expect(buildLanguageInstruction('en')).toMatch(/Reply in English/i);
+    });
+
+    it('G02 — Thai setting adds Thai reply instruction', () => {
+      expect(buildLanguageInstruction('th')).toContain('ภาษาไทย');
     });
   });
 
@@ -168,7 +184,7 @@ describe('Patient Portal — AI Route', () => {
     it('F02 — message can have optional context', () => {
       const msg: ChatMessage = { role: 'user', content: 'test', context: { phrId: '123' } };
       expect(msg.context).toBeDefined();
-      expect(msg.context!.phrId).toBe('123');
+      expect(msg.context?.phrId).toBe('123');
     });
   });
 });

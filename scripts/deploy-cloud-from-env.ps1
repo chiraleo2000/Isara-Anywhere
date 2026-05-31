@@ -43,6 +43,9 @@ gcloud @args
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
 if (-not $Async) {
+    Write-Host "Shifting traffic to latest revisions..." -ForegroundColor Cyan
+    & "$PSScriptRoot\shift-cloud-traffic.ps1"
+    if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
     Write-Host "Running post-deploy smoke..." -ForegroundColor Cyan
     node scripts/cloud-smoke.mjs
 }

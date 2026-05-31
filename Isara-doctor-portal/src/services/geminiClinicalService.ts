@@ -2,7 +2,34 @@ import { GoogleGenerativeAI, GenerativeModel } from '@google/generative-ai';
 import { ClinicalAIResponse, DiagnosisCode, DrugInteraction, TranscriptSegment } from '../types';
 
 const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
-const GEMINI_MODEL = import.meta.env.VITE_GEMINI_MODEL || 'gemini-2.5-flash-lite';
+const GEMINI_MODEL = import.meta.env.VITE_GEMINI_MODEL || 'gemini-3.1-flash-lite';
+
+/** Prefer same-origin relative /api paths so Vite/nginx proxy always works. */
+function resolveApiBase(): string {
+  const configured = import.meta.env.VITE_API_URL || '';
+  if (!configured) return '';
+  if (typeof globalThis === 'undefined' || !globalThis.location?.origin) {
+    return configured;
+  }
+  try {
+    if (new URL(configured).origin === globalThis.location.origin) {
+      return '';
+    }
+  } catch {
+    return configured;
+  }
+  return configured;
+}
+
+const API_BASE = resolveApiBase();
+
+function getApiHeaders(): Record<string, string> {
+  const token = localStorage.getItem('token');
+  return {
+    'Content-Type': 'application/json',
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  };
+}
 
 // ============================================================================
 // TASK-SPECIFIC CONFIGURATIONS
@@ -65,6 +92,7 @@ class GeminiClinicalService {
   private readonly genAI: GoogleGenerativeAI | null = null;
   private readonly models: Map<string, GenerativeModel> = new Map();
   private readonly isConfigured: boolean = false;
+  private serverConfigured: boolean | null = null;
 
   constructor() {
     if (!GEMINI_API_KEY || GEMINI_API_KEY === 'xxx') {
@@ -120,7 +148,45 @@ class GeminiClinicalService {
    * Check if the service is properly configured
    */
   isApiConfigured(): boolean {
-    return this.isConfigured;
+    return this.isConfigured || this.serverConfigured === true;
+  }
+
+  async checkConfiguration(): Promise<boolean> {
+    if (this.isConfigured) return true;
+    try {
+      const resp = await fetch(`${API_BASE}/api/ai/gemini/status`, {
+        headers: getApiHeaders(),
+      });
+      if (!resp.ok) return false;
+      const data = await resp.json();
+      this.serverConfigured = Boolean(data?.configured);
+      return this.serverConfigured;
+    } catch {
+      this.serverConfigured = false;
+      return false;
+    }
+  }
+
+  private async generateViaServer(
+    prompt: string,
+    taskType: keyof typeof TASK_CONFIGS,
+  ): Promise<string | null> {
+    try {
+      const resp = await fetch(`${API_BASE}/api/ai/gemini/clinical`, {
+        method: 'POST',
+        headers: getApiHeaders(),
+        body: JSON.stringify({
+          prompt,
+          taskType,
+        }),
+      });
+      if (!resp.ok) return null;
+      const data = await resp.json();
+      this.serverConfigured = true;
+      return data?.text || null;
+    } catch {
+      return null;
+    }
   }
 
   // ==================== VOICE TRANSCRIPTION ====================
@@ -500,29 +566,27 @@ Return ONLY valid JSON:
 
   async askMedicalQuestion(question: string, context?: any): Promise<ClinicalAIResponse> {
     const model = this.getModelForTask('medical-qa');
-
-    if (!model) {
-      return {
-        type: 'medical-qa',
-        suggestions: ['AI service not configured. Please set up your Gemini API key to enable AI-powered responses.'],
-        details: {
-          answer: 'The AI clinical assistant is currently unavailable. Please configure the VITE_GEMINI_API_KEY environment variable to enable this feature.',
-          status: 'api_not_configured'
-        },
-        confidence: 0,
-      };
-    }
-
-    try {
-      const contextStr = context ? `\n\nContext: ${JSON.stringify(context, null, 2)}` : '';
-
-      const prompt = `Question: ${question}${contextStr}
+    const contextStr = context ? `\n\nContext: ${JSON.stringify(context, null, 2)}` : '';
+    const prompt = `Question: ${question}${contextStr}
 
 Provide a detailed, evidence-based answer. Include references to clinical guidelines when relevant.`;
 
-      const result = await model.generateContent(prompt);
-      const response = result.response;
-      const text = response.text();
+    try {
+      let text = '';
+      if (model) {
+        const result = await model.generateContent(prompt);
+        text = result.response.text();
+      } else {
+        text = (await this.generateViaServer(prompt, 'medical-qa')) || '';
+      }
+      if (!text) {
+        return {
+          type: 'medical-qa',
+          suggestions: ['AI service not configured. Configure server GEMINI_API_KEY or client VITE_GEMINI_API_KEY.'],
+          details: { answer: 'AI service is unavailable', status: 'api_not_configured' },
+          confidence: 0,
+        };
+      }
 
       return {
         type: 'medical-qa',
@@ -557,10 +621,6 @@ Provide a detailed, evidence-based answer. Include references to clinical guidel
   ): Promise<string> {
     const model = this.getModelForTask('clinical-chat');
 
-    if (!model) {
-      return this.getFallbackChatResponse(message, patientContext);
-    }
-
     try {
       // Get system instruction for clinical chat
       const systemPrompt = this.getSystemPrompt('clinical-chat');
@@ -590,9 +650,13 @@ Doctor's question: ${message}
 
 Provide a concise, clinically relevant response. Be helpful and actionable.`;
 
-      const result = await model.generateContent(prompt);
-      const response = result.response;
-      return response.text();
+      if (model) {
+        const result = await model.generateContent(prompt);
+        return result.response.text();
+      }
+
+      const serverText = await this.generateViaServer(prompt, 'clinical-chat');
+      return serverText || this.getFallbackChatResponse(message, patientContext);
 
     } catch (error: any) {
       console.error('Clinical chat error:', error);

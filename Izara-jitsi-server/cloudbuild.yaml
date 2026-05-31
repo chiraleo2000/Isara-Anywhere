@@ -38,8 +38,8 @@ steps:
       - '--min-instances=0'
       - '--max-instances=2'
       - '--timeout=600'
-      - '--set-env-vars=NODE_ENV=production,USE_POSTGRESQL=true,DB_HOST=35.240.157.230,DB_PORT=5432,DB_NAME=izara_phase1,DB_USER=postgres,DB_SSL=false,JITSI_DOMAIN=meet.jit.si,GEMINI_MODEL=gemini-2.5-flash-lite'
-      - '--set-secrets=GEMINI_API_KEY=gemini-api-key:latest,JWT_SECRET=jwt-secret:latest,DB_PASSWORD=db-password:latest,DATABASE_URL=database-url:latest'
+      - '--set-env-vars=NODE_ENV=production,USE_POSTGRESQL=true,DB_HOST=35.240.157.230,DB_PORT=5432,DB_NAME=izara_phase1,DB_USER=postgres,DB_SSL=false,JITSI_DOMAIN=meet.jit.si,GEMINI_MODEL=gemini-3.1-flash-lite,IZARA_DEV_TESTING=1'
+      - '--set-secrets=GEMINI_API_KEY=gemini-api-key:latest,JWT_SECRET=jwt-secret:latest,DB_PASSWORD=db-password:latest,DATABASE_URL=database-url:latest,GOOGLE_SPEECH_API_KEY=google-speech-api-key:latest'
       - '--cpu-boost'
 
 # Store images in Artifact Registry

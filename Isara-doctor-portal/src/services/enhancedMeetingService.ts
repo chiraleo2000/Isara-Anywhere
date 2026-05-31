@@ -7,7 +7,7 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import { aiClinicalService, type CopilotMessage, type CopilotContext } from './aiClinicalCopilot';
 
 const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
-const GEMINI_MODEL = import.meta.env.VITE_GEMINI_MODEL || 'gemini-2.5-flash-lite';
+const GEMINI_MODEL = import.meta.env.VITE_GEMINI_MODEL || 'gemini-3.1-flash-lite';
 const MEETING_SERVER_URL = import.meta.env.VITE_MEETING_SERVER_URL || (typeof globalThis !== 'undefined' && globalThis.location ? `${globalThis.location.protocol}//${globalThis.location.host}` : 'http://localhost:3020');
 const genAI = GEMINI_API_KEY?.startsWith('AIza') ? new GoogleGenerativeAI(GEMINI_API_KEY) : null;
 
@@ -297,7 +297,7 @@ ${this.context.patientInfo.medicalHistory ? `- ประวัติ: ${this.con
 
     try {
       const model = genAI.getGenerativeModel({
-        model: "gemini-2.5-flash-lite",
+        model: "gemini-3.1-flash-lite",
         generationConfig: {
           temperature: 0.8,
           maxOutputTokens: 150,
@@ -339,7 +339,7 @@ ${this.context.patientInfo.medicalHistory ? `- ประวัติ: ${this.con
 
     try {
       const model = genAI.getGenerativeModel({
-        model: "gemini-2.5-flash-lite",
+        model: "gemini-3.1-flash-lite",
         generationConfig: {
           temperature: 0.7,
           maxOutputTokens: 200,
@@ -555,7 +555,7 @@ ${conversationText}
 
     try {
       const model = genAI.getGenerativeModel({
-        model: "gemini-2.5-flash-lite",
+        model: "gemini-3.1-flash-lite",
         generationConfig: {
           temperature: 0.3, // Lower temperature for more consistent medical reports
           maxOutputTokens: 2000,

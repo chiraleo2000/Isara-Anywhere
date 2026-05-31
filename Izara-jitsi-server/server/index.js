@@ -64,8 +64,6 @@ import {
   verifyAccessToken,
   verifyScopedToken,
   signScopedToken,
-  requireRole,
-  JWT_ISSUER,
 } from './jwtPolicy.js';
 import { buildGuestPortalUrls, buildMeetingUrls, externalApiConfig } from './jitsiConfig.js';
 import { createPostMeetingPipeline } from './postMeetingPipeline.js';
@@ -137,7 +135,7 @@ if (!IS_DEV_TESTING && !process.env.JIBRI_WEBHOOK_SECRET) {
 }
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.5-flash-lite';
+const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-3.1-flash-lite';
 const JITSI_APP_ID = process.env.JITSI_APP_ID || process.env.JITSI_ISS || '';
 const JITSI_AUTH_SECRET = process.env.JITSI_JWT_SECRET || process.env.JITSI_APP_SECRET || '';
 const JITSI_SIGNING_SECRET = JITSI_AUTH_SECRET || JWT_SECRET;
@@ -967,9 +965,19 @@ app.post('/api/meetings/create', authenticateToken, async (req, res) => {
           // Reset transient lobby/host state when reusing an idempotent meeting.
           resetMeetingSessionState(m.id, m.appointment_id || appointmentId);
           registerMeetingLobbyAliases(m.id, m.appointment_id || appointmentId);
+          const reopenedStatus =
+            m.status === 'completed' || m.status === 'ended' ? 'scheduled' : (m.status || 'scheduled');
+          if (reopenedStatus !== m.status && dbAvailable) {
+            try {
+              await pool.query('UPDATE meeting_records SET status = $1 WHERE id = $2', [reopenedStatus, m.id]);
+            } catch (statusErr) {
+              console.warn(`[Meeting:${requestId}] status reopen skipped:`, statusErr.message);
+            }
+          }
           activeMeetings.set(m.id, {
             meetingId: m.id, appointmentId: m.appointment_id || appointmentId,
-            roomName: m.room_name, status: m.status || 'scheduled',
+            doctorId: m.doctor_id, patientId: m.patient_id,
+            roomName: m.room_name, status: reopenedStatus,
           });
           console.log(`[Meeting:${requestId}] returning existing meeting ${m.id} for appointment ${appointmentId}`);
           return res.json({
@@ -1762,7 +1770,6 @@ app.get('/api/meetings/:id/join-config', optionalAuth, async (req, res) => {
       ? createJitsiRoleJwt(roomName, { id: participantId || req.user?.id, name: displayName, email }, 'doctor')
       : null;
     const apiCfg = externalApiConfig(isHost ? 'doctor' : role, displayName);
-    const lobbyKey = resolveLobbyKeySync(id);
     const jitsiDomain = isHost ? JITSI_DOMAIN : JITSI_GUEST_DOMAIN;
 
     res.json({
@@ -1931,7 +1938,7 @@ app.post('/api/meetings/:id/guest-invite', authenticateToken, async (req, res) =
 });
 
 // Validate a guest invite token (used by GuestMeetingJoin page)
-app.get('/api/guest/meeting/:token', (req, res) => {
+app.get('/api/guest/meeting/:token', async (req, res) => {
   const { token } = req.params;
 
   try {
@@ -1940,10 +1947,27 @@ app.get('/api/guest/meeting/:token', (req, res) => {
       return res.status(400).json({ error: 'Invalid token type' });
     }
 
-    // Check meeting exists and is active
-    const meeting = activeMeetings.get(decoded.meetingId);
-    if (meeting?.status === 'completed') {
+    // Check meeting exists and is active (in-memory or DB)
+    let meeting = activeMeetings.get(decoded.meetingId);
+    if (meeting?.status === 'completed' || meeting?.status === 'ended') {
       return res.status(410).json({ error: 'Meeting has ended' });
+    }
+    if (!meeting && dbAvailable) {
+      try {
+        const row = await pool.query(
+          'SELECT id, room_name, status FROM meeting_records WHERE id::text = $1 LIMIT 1',
+          [decoded.meetingId],
+        );
+        if (row.rows.length > 0) {
+          const rec = row.rows[0];
+          if (rec.status === 'completed' || rec.status === 'ended') {
+            return res.status(410).json({ error: 'Meeting has ended' });
+          }
+          meeting = { room_name: rec.room_name, status: rec.status };
+        }
+      } catch {
+        /* allow token if DB lookup fails */
+      }
     }
 
     res.json({
@@ -4006,12 +4030,12 @@ app.get('/api/meetings/:id/consultation-result', authenticateToken, async (req, 
 
 // Google STT configuration endpoint
 app.get('/api/meetings/stt/config', (req, res) => {
-  const sttAvailable = !!process.env.GOOGLE_APPLICATION_CREDENTIALS || !!process.env.GOOGLE_SPEECH_API_KEY;
+  const sttAvailable = hasSttCredentials();
   res.json({
     success: true,
     sttAvailable,
     modes: ['web-speech-api', ...(sttAvailable ? ['google-cloud-stt'] : [])],
-    defaultMode: 'web-speech-api',
+    defaultMode: sttAvailable ? 'google-cloud-stt' : 'web-speech-api',
     features: {
       speakerDiarization: sttAvailable,
       multiLanguage: true,
@@ -4028,7 +4052,7 @@ app.post('/api/meetings/:id/transcribe-audio', authenticateToken, async (req, re
     const { audioBase64, language = 'th-TH', enableDiarization = true } = req.body;
 
     // Check if Google STT credentials are available
-    const hasCredentials = !!process.env.GOOGLE_APPLICATION_CREDENTIALS || !!process.env.GOOGLE_SPEECH_API_KEY;
+    const hasCredentials = hasSttCredentials();
 
     if (!hasCredentials) {
       // Graceful fallback — return info about using Web Speech API
@@ -4046,8 +4070,7 @@ app.post('/api/meetings/:id/transcribe-audio', authenticateToken, async (req, re
     let transcriptText = '';
     let segments = [];
     try {
-      const { SpeechClient } = await import('@google-cloud/speech');
-      const speechClient = new SpeechClient();
+      const speechClient = await createSpeechClient();
 
       const config = {
         encoding: 'WEBM_OPUS',
@@ -4516,7 +4539,6 @@ app.post('/api/meetings/:id/save-recording', authenticateToken, async (req, res)
 
     const recordingUrl = stored.recordingUrl;
     const storedOnDisk = fs.existsSync(stored.videoPath);
-    const storedInDb = true;
 
     let transcriptionResult = { mode: 'deferred', message: 'Use live Web Speech segments or async pipeline' };
     if (triggerPostMeetingPipeline || triggerTranscription) {
@@ -4968,7 +4990,7 @@ app.post('/api/recordings/:meetingId/share', authenticateToken, async (req, res)
       // Find the most recent recording for this meeting
       const meetingDir = path.join(RECORDINGS_DIR, meetingId);
       if (fs.existsSync(meetingDir) && fs.statSync(meetingDir).isDirectory()) {
-        const files = fs.readdirSync(meetingDir).sort().reverse();
+        const files = fs.readdirSync(meetingDir).sort((a, b) => b.localeCompare(a, 'en'));
         if (files.length > 0) { recordingExists = true; targetFile = files[0]; }
       }
     }

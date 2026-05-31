@@ -201,8 +201,8 @@ describe('Config — Default Values', () => {
     expect(maxTokens).toBe(8192);
   });
 
-  it('E04 — default Gemini model is gemini-2.5-flash-lite', () => {
-    const defaultModel = 'gemini-2.5-flash-lite';
+  it('E04 — default Gemini model is gemini-3.1-flash-lite', () => {
+    const defaultModel = 'gemini-3.1-flash-lite';
     expect(defaultModel).toContain('gemini');
     expect(defaultModel).toContain('flash');
   });

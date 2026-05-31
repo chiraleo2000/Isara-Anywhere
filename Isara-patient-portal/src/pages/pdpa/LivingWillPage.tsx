@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { useSettings } from '../../contexts/SettingsContext';
+import { useSettings, type Language } from '../../contexts/SettingsContext';
 import { pdpaService, doctorService } from '../../lib/services';
 import { Doctor } from '../../types';
 import {
@@ -63,8 +63,7 @@ const RELATIONSHIP_OPTIONS = [
   'อื่นๆ',
 ];
 
-// Type for language keys
-type LangKey = 'en' | 'th';
+type LangKey = Language;
 
 // i18n labels with proper typing
 const labels: Record<string, Record<LangKey, string>> = {
@@ -132,7 +131,7 @@ const RELATIONSHIP_OPTIONS_BILINGUAL: Array<Record<LangKey, string>> = [
 
 // Helper to safely access labels with language key
 function getLabel(key: string, lang: string): string {
-  const langKey = (lang === 'th' ? 'th' : 'en') as LangKey;
+  const langKey: LangKey = lang === 'th' ? 'th' : 'en';
   return labels[key]?.[langKey] ?? key;
 }
 
@@ -201,6 +200,20 @@ function saveCanvasSignature(
   if (!canvas) return;
   const dataUrl = canvas.toDataURL('image/png');
   setForm((prev) => ({ ...prev, digitalSignature: dataUrl }));
+}
+
+function setupSignatureCanvas(canvas: HTMLCanvasElement | null) {
+  if (!canvas) return;
+  const rect = canvas.getBoundingClientRect();
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width = Math.max(1, Math.floor(rect.width * dpr));
+  canvas.height = Math.max(1, Math.floor(rect.height * dpr));
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.lineWidth = 2;
+  ctx.lineCap = 'round';
+  ctx.strokeStyle = '#1a1a1a';
 }
 
 interface LoadLivingWillOptions {
@@ -421,7 +434,7 @@ function ProgressStepper({ step, isDark, language, onStepClick }: Readonly<{
   language: string;
   onStepClick: (num: number) => void;
 }>) {
-  const lang = language as LangKey;
+  const lang = language;
   const stepItems = [
     { num: 1, label: labels.step1[lang] },
     { num: 2, label: labels.step2[lang] },
@@ -481,7 +494,7 @@ function StepHealthcareProxy({ form, setForm, isDark, language, updateProxy, onN
   updateProxy: (type: 'primary' | 'alternate', field: keyof HealthcareProxy, value: string) => void;
   onNext: () => void;
 }>) {
-  const lang = language as LangKey;
+  const lang = language;
   return (
   <div className="space-y-6">
     <div className={`rounded-2xl border p-6 ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'}`}>
@@ -535,7 +548,10 @@ function StepHealthcareProxy({ form, setForm, isDark, language, updateProxy, onN
               id="proxy-primary-phone"
               type="tel"
               value={form.healthcareProxy.primary.phone}
-              onChange={(e) => updateProxy('primary', 'phone', e.target.value)}
+              inputMode="numeric"
+              pattern="[0-9]{9,10}"
+              maxLength={10}
+              onChange={(e) => updateProxy('primary', 'phone', e.target.value.replace(/\D/g, '').slice(0, 10))}
               className="w-full pl-10 p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500"
               placeholder="0xx-xxx-xxxx"
             />
@@ -662,7 +678,10 @@ function StepHealthcareProxy({ form, setForm, isDark, language, updateProxy, onN
                 id="proxy-alternate-phone"
                 type="tel"
                 value={form.healthcareProxy.alternate?.phone || ''}
-                onChange={(e) => updateProxy('alternate', 'phone', e.target.value)}
+                inputMode="numeric"
+                pattern="[0-9]{9,10}"
+                maxLength={10}
+                onChange={(e) => updateProxy('alternate', 'phone', e.target.value.replace(/\D/g, '').slice(0, 10))}
                 className="w-full p-3 border border-gray-200 rounded-xl"
                 placeholder="0xx-xxx-xxxx"
               />
@@ -929,7 +948,7 @@ function StepSignature({ canvasRef, form, startDrawing, draw, stopDrawing, clear
       <div className="border-2 border-dashed border-gray-300 rounded-xl p-2 mb-4 bg-gray-50">
         <canvas
           data-testid="living-will-signature"
-          ref={canvasRef as React.RefObject<HTMLCanvasElement>}
+          ref={canvasRef}
           width={500}
           height={200}
           className="w-full bg-white rounded-lg cursor-crosshair touch-none"
@@ -1446,6 +1465,13 @@ export default function LivingWillPage() {
   useEffect(() => {
     loadData();
   }, [user]);
+
+  useEffect(() => {
+    setupSignatureCanvas(canvasRef.current);
+    const onResize = () => setupSignatureCanvas(canvasRef.current);
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
 
   const handleRollback = async (versionId: string) => {
     await performRollback({

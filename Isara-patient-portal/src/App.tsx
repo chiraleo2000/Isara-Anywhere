@@ -14,6 +14,7 @@ import AIDoctorPage from './pages/AIDoctorPage';
 import MedicalContentLibrary from './pages/MedicalContentLibrary';
 import ProfilePage from './pages/ProfilePage';
 import SettingsPage from './pages/SettingsPage';
+import NotificationsPage from './pages/NotificationsPage';
 import PDPAPage from './pages/PDPAPage';
 import LivingWillPage from './pages/LivingWillPage';
 import TimelinePage from './pages/TimelinePage';
@@ -106,6 +107,7 @@ function AppRoutes() {
         <Route path="health-library" element={<MedicalContentLibrary />} />
         <Route path="profile" element={<ProfilePage />} />
         <Route path="settings" element={<SettingsPage />} />
+        <Route path="notifications" element={<NotificationsPage />} />
         <Route path="pdpa" element={<PDPAPage />} />
         <Route path="living-will" element={<LivingWillPage />} />
         <Route path="timeline" element={<TimelinePage />} />

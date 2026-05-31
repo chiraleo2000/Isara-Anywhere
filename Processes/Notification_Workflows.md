@@ -499,7 +499,7 @@ Configuration:
 ├── Supports Thai language (th-TH)
 ├── Recording: Local + GCS upload
 ├── Transcription: Google Cloud Speech-to-Text
-└── AI Summary: Gemini (gemini-2.5-flash-lite)
+└── AI Summary: Gemini (gemini-3.1-flash-lite)
 
 Meeting Link Format:
 <https://meet.jit.si/izara-{appointmentId}-{timestamp}-{random}>

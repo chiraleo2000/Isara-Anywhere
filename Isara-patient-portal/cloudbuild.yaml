@@ -52,7 +52,7 @@ steps:
       - "--execution-environment=gen2"
       - "--cpu-boost"
       - "--add-cloudsql-instances=${_CLOUDSQL}"
-      - "--set-env-vars=NODE_ENV=production,USE_EMBEDDED_PG=false,CLOUDSQL_INSTANCE=${_CLOUDSQL},DB_HOST=${_DB_HOST},DB_PORT=5432,DB_NAME=izara_phase1,DB_USER=postgres,DB_SSL=true,USE_POSTGRESQL=true,VITE_USE_POSTGRESQL=true,GEMINI_MODEL=gemini-2.5-flash-lite,GCP_PROJECT_ID=$PROJECT_ID,MEETING_SERVER_URL=${_MEETING_SERVER_URL},VITE_MEETING_SERVER_URL=${_MEETING_SERVER_URL},IZARA_DEV_TESTING=1,GOOGLE_TOKEN_VERIFIER_FIXTURE=1,NODE_OPTIONS=--max-old-space-size=768 --max-semi-space-size=64,UV_THREADPOOL_SIZE=4"
+      - "--set-env-vars=NODE_ENV=production,USE_EMBEDDED_PG=false,CLOUDSQL_INSTANCE=${_CLOUDSQL},DB_HOST=${_DB_HOST},DB_PORT=5432,DB_NAME=izara_phase1,DB_USER=postgres,DB_SSL=true,USE_POSTGRESQL=true,VITE_USE_POSTGRESQL=true,GEMINI_MODEL=gemini-3.1-flash-lite,GCP_PROJECT_ID=$PROJECT_ID,MEETING_SERVER_URL=${_MEETING_SERVER_URL},VITE_MEETING_SERVER_URL=${_MEETING_SERVER_URL},IZARA_DEV_TESTING=1,GOOGLE_TOKEN_VERIFIER_FIXTURE=1,NODE_OPTIONS=--max-old-space-size=768 --max-semi-space-size=64,UV_THREADPOOL_SIZE=4"
       - "--set-secrets=GEMINI_API_KEY=gemini-api-key:latest,VITE_GEMINI_API_KEY=gemini-api-key:latest,DB_PASSWORD=db-password:latest,DATABASE_URL=database-url:latest,JWT_SECRET=jwt-secret:latest,VITE_GOOGLE_MAPS_API_KEY=google-maps-api-key:latest,GOOGLE_CLIENT_ID=google-client-id:latest"
 
 images:

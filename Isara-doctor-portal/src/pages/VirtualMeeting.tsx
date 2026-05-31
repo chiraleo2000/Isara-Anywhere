@@ -862,7 +862,7 @@ const VirtualMeeting: React.FC<VirtualMeetingProps> = ({
             type="text"
             value={inputMessage}
             onChange={(e) => setInputMessage(e.target.value)}
-            onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+            onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSendMessage()}
             placeholder="พิมพ์ข้อความถึงแพทย์..."
             aria-label="พิมพ์ข้อความถึงแพทย์"
             disabled={isAITyping}

@@ -20,14 +20,16 @@ function Resolve-SourceFile([string]$name) {
 $pairs = @(
     @("USER_GUIDE_PATIENT_WORD_TH.docx", "USER_GUIDE_PATIENT_WORD_TH.pdf"),
     @("USER_GUIDE_DOCTOR_WORD_TH.docx", "USER_GUIDE_DOCTOR_WORD_TH.pdf"),
+    @("TECHNICAL_ARCHITECTURE_WORD_TH.docx", "TECHNICAL_ARCHITECTURE_WORD_TH.pdf"),
     @("USER_GUIDE_PATIENT_PPT_TH.pptx", "USER_GUIDE_PATIENT_PPT_TH.pdf"),
-    @("USER_GUIDE_DOCTOR_PPT_TH.pptx", "USER_GUIDE_DOCTOR_PPT_TH.pdf")
+    @("USER_GUIDE_DOCTOR_PPT_TH.pptx", "USER_GUIDE_DOCTOR_PPT_TH.pdf"),
+    @("TECHNICAL_ARCHITECTURE_PPT_TH.pptx", "TECHNICAL_ARCHITECTURE_PPT_TH.pdf")
 )
 
 Write-Host "=== Export Word guides to PDF (TH Sarabun New) ===" -ForegroundColor Cyan
 $word = New-Object -ComObject Word.Application
 $word.Visible = $false
-foreach ($p in $pairs[0..1]) {
+foreach ($p in $pairs[0..2]) {
     $src = Resolve-SourceFile $p[0]
     $dst = Join-Path $docs $p[1]
     Write-Host "  $([IO.Path]::GetFileName($src)) -> $($p[1])"
@@ -41,7 +43,7 @@ $word.Quit()
 Write-Host "=== Export PowerPoint guides to PDF (FC Iconic) ===" -ForegroundColor Cyan
 $pp = New-Object -ComObject PowerPoint.Application
 $pp.Visible = 0
-foreach ($p in $pairs[2..3]) {
+foreach ($p in $pairs[3..5]) {
     $src = Resolve-SourceFile $p[0]
     $dst = Join-Path $docs $p[1]
     Write-Host "  $([IO.Path]::GetFileName($src)) -> $($p[1])"
@@ -53,4 +55,4 @@ $pp.Quit()
 [System.Runtime.Interopservices.Marshal]::ReleaseComObject($pp) | Out-Null
 
 Write-Host "Done. PDF files:" -ForegroundColor Green
-Get-ChildItem USER_GUIDE_*_TH.pdf | ForEach-Object { Write-Host "  $($_.Name) ($([math]::Round($_.Length/1MB,1)) MB)" }
+Get-ChildItem *_TH.pdf, TECHNICAL_ARCHITECTURE_*.pdf -ErrorAction SilentlyContinue | ForEach-Object { Write-Host "  $($_.Name) ($([math]::Round($_.Length/1MB,1)) MB)" }

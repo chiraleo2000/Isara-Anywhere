@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Izara Diagram: 19-defect-remediation-v1739</title>
+    <!-- sonar S5725: pinned mermaid@10.9.3 with SHA-384 SRI for offline diagram viewing -->
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.3/dist/mermaid.min.js" integrity="sha384-R63zfMfSwJF4xCR11wXii+QUsbiBIdiDzDbtxia72oGWfkT7WHJfmD/I/eeHPJyT" crossorigin="anonymous"></script>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5; }
+        .container { max-width: 100%; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        h1 { color: #2c3e50; text-align: center; border-bottom: 2px solid #eee; padding-bottom: 15px; }
+        .mermaid { display: flex; justify-content: center; margin-top: 20px; }
+        .nav { margin-bottom: 20px; text-align: center; }
+        .nav a { margin: 0 10px; color: #3498db; text-decoration: none; font-weight: bold; }
+        .nav a:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <div class="nav">
+        <a href="index.html">Back to Index</a>
+        <span>|</span>
+        <a href="javascript:location.reload()">Refresh</a>
+    </div>
+    <div class="container">
+        <h1>19-defect-remediation-v1739</h1>
+        <div class="mermaid">
+            %%{init: {'theme': 'base'}}%%
+flowchart TB
+  pdf[Defect_PDF_23_items] --> register[DEFECT_REGISTER]
+  register --> patientFix[Patient_Portal_Fixes]
+  register --> doctorFix[Doctor_Portal_Fixes]
+  patientFix --> vitest[Vitest_2681_behavioral]
+  doctorFix --> vitest
+  vitest --> gates[Quality_Cloud_UI_Gates]
+  gates --> deploy[v1.7.39_Cloud_Run]
+  deploy --> pw[Playwright_Defect_regression_15]
+  pw --> verified[All_23_Verified]
+
+  subgraph notify [P3-P5 D1]
+    N1[read_at] --> N2[isRead]
+    N2 --> N3[read-all PUT]
+  end
+
+  subgraph ai [P1-P2]
+    A1[New Chat] --> A2[clearChatHistory]
+    A3[language en/th] --> A4[AI prompt branch]
+  end
+        </div>
+    </div>
+</body>
+</html>

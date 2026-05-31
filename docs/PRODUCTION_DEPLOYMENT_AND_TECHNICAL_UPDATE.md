@@ -5,8 +5,8 @@
 **Release track:** `v1.7.25-post-meeting-pipeline` (guest video, Izara lobby, encrypted recording → AI EMR)  
 **Target environment:** Google Cloud Run (`asia-southeast1`) + PostgreSQL + optional GCS  
 **Classification:** Internal — Operations & Engineering  
-**Last updated:** 2026-05-23  
-**Verification:** Two-round deep cloud E2E — **absolute full pass** (Groups Q01–Q02, lobby, recording pipeline)
+**Last updated:** 2026-05-31  
+**Verification:** Defect PDF re-audit v1.7.48 — unit **2736**, Defect-regression **36/36**, cloud full **85/85** headed (2026-05-31)
 
 ### Document typography (มาตรฐานรายงานภาษาไทย)
 
@@ -362,7 +362,7 @@ gcloud builds submit . --config=cloudbuild.yaml \
 | `DATABASE_URL` | `postgresql://...` | **Yes** | Or `DB_HOST` + `DB_PASSWORD` |
 | `DB_SSL` | `true` | No | Cloud SQL |
 | `GEMINI_API_KEY` | API key | **Yes** | Required for AI summary |
-| `GEMINI_MODEL` | `gemini-2.5-flash-lite` | No | |
+| `GEMINI_MODEL` | `gemini-3.1-flash-lite` | No | |
 | `JITSI_DOMAIN` | `meet.jit.si` | No | Do not self-host until Appendix A ready |
 | `JITSI_GUEST_DOMAIN` | `meet.jit.si` | No | Same as host for public SaaS |
 | `RECORDINGS_DIR` | `/tmp/recordings` | No | Ephemeral; use BYTEA + GCS |
@@ -663,7 +663,7 @@ curl -X POST -H "Authorization: Bearer $JWT" -H "Content-Type: application/json"
 
 | Symptom | Remediation |
 |---------|-------------|
-| Gemini 429 | Quota increase; `GEMINI_MODEL=gemini-2.5-flash-lite` |
+| Gemini 429 | Quota increase; `GEMINI_MODEL=gemini-3.1-flash-lite` |
 | Google STT denied | Enable API; verify `GCP_SERVICE_ACCOUNT_KEY` |
 | Whisper >25 MB | Use Google STT or live `meeting_transcripts` |
 | Upload timeout | Cloud Run `--timeout=600`; reduce recording size |
@@ -863,12 +863,25 @@ npm run test:e2e:meeting-lifecycle          # requires cloud credentials
 | 6 | Ops | `pipeline-status` | `stage: completed` |
 | 7 | Ops | `join-config` | `tokenAuthEnabled: false` on meet.jit.si |
 
+### C.5 Defect remediation verification (v1.7.48)
+
+| Gate | Date | Result |
+|------|------|--------|
+| PDF defect register (23 items) | 2026-05-30 | **Verified** — `reports/defect-fix/DEFECT_REGISTER.md` |
+| `npm run test:quality:gate` | 2026-05-30 | **PASS** — 151 files, 2736 unit tests |
+| Defect-regression Playwright | 2026-05-30 | **36/36** PASS |
+| `npm run test:cloud:full` (headed) | 2026-05-31 | **85/85** PASS, 212 PNG → `docs/screenshots/` |
+| User guides | 2026-05-31 | Patient PPT 76 imgs, Doctor DOCX/PPT 93 imgs |
+
+Ledger: `reports/defect-fix/v1.7.48-final.txt`, `docs/UNIT_TEST_UI_COVERAGE.md`
+
 ### C.4 Document control
 
 | Version | Date | Changes |
 |---------|------|---------|
 | 1.0 | 2026-05-23 | Initial handoff |
 | 1.1 | 2026-05-23 | Structural review, encryption, E2E map, demo cleanup, Thai doc regeneration |
+| 1.2 | 2026-05-31 | v1.7.48 defect re-audit; cloud full 85/85 headed; 212 UI screenshots |
 
 **Related artifacts:**
 

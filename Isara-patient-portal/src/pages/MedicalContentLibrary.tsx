@@ -7,7 +7,7 @@
  */
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { useSettings } from '../contexts/SettingsContext';
+import { useSettings, type Language } from '../contexts/SettingsContext';
 
 // In production, use relative URLs (proxied by nginx)
 // In development, use relative URLs (proxied by vite) 
@@ -46,7 +46,7 @@ interface ContentCategory {
   description?: string;
 }
 
-type LangKey = 'en' | 'th';
+type LangKey = Language;
 
 interface ContentCardProps {
   article: MedicalContentArticle;
@@ -194,7 +194,7 @@ function FeaturedCard({ article, language, onClick }: Readonly<ContentCardProps>
   const catInfo = getCategoryInfo(article.category);
   const title = localizedText(article.title, article.titleTh, language);
   const summary = localizedText(article.summary, article.summaryTh, language);
-  const lang = language as LangKey;
+  const lang = language;
 
   return (
     <button
@@ -224,7 +224,7 @@ function ContentCard({ article, isDark, language, onClick }: Readonly<ContentCar
   const catInfo = getCategoryInfo(article.category);
   const title = localizedText(article.title, article.titleTh, language);
   const summary = localizedText(article.summary, article.summaryTh, language);
-  const lang = language as LangKey;
+  const lang = language;
 
   const cardBg = isDark ? 'bg-gray-800' : 'bg-white';
   const thumbGradient = isDark ? 'bg-gradient-to-br from-gray-700 to-gray-800' : 'bg-gradient-to-br from-gray-100 to-gray-200';
@@ -243,7 +243,16 @@ function ContentCard({ article, isDark, language, onClick }: Readonly<ContentCar
       {/* Thumbnail */}
       <div className={`relative h-48 ${thumbGradient}`}>
         {article.thumbnail ? (
-          <img src={article.thumbnail} alt={article.title} className="w-full h-full object-cover" />
+          <img
+            src={article.thumbnail}
+            alt={article.title}
+            className="w-full h-full object-cover"
+            onError={(e) => {
+              if (e.currentTarget instanceof HTMLImageElement) {
+                e.currentTarget.style.display = 'none';
+              }
+            }}
+          />
         ) : (
           <div className="w-full h-full flex items-center justify-center">
             <span className="text-6xl">{getTypeIcon(article.type)}</span>
@@ -314,7 +323,7 @@ function ArticleModalBody({ article, isDark, language }: Readonly<{
   const title = localizedText(article.title, article.titleTh, language);
   const summary = localizedText(article.summary, article.summaryTh, language);
   const mainContent = localizedText(article.content, article.contentTh, language);
-  const lang = language as LangKey;
+  const lang = language;
   const ml = MODAL_LABELS[lang];
   const hasAltTitle = article.titleTh && article.title !== article.titleTh;
   const altTitle = language === 'en' ? article.titleTh : article.title;
@@ -337,7 +346,16 @@ function ArticleModalBody({ article, isDark, language }: Readonly<{
         </div>
       )}
       {showThumbnail && (
-        <img src={article.thumbnail} alt={article.title} className="w-full h-64 object-cover rounded-lg mb-6" />
+        <img
+          src={article.thumbnail}
+          alt={article.title}
+          className="w-full h-64 object-cover rounded-lg mb-6"
+          onError={(e) => {
+            if (e.currentTarget instanceof HTMLImageElement) {
+              e.currentTarget.style.display = 'none';
+            }
+          }}
+        />
       )}
 
       <h1 className={`text-2xl font-bold mb-2 ${titleCls}`}>{title}</h1>
@@ -388,7 +406,7 @@ function ArticleViewModal({ article, isDark, language, onClose }: Readonly<{
   onClose: () => void;
 }>) {
   const catInfo = getCategoryInfo(article.category);
-  const lang = language as LangKey;
+  const lang = language;
 
   const cardBg = isDark ? 'bg-gray-800' : 'bg-white';
   const borderCls = isDark ? 'border-gray-700' : '';
@@ -440,7 +458,7 @@ function getContentErrorMessage(err: unknown, lang: LangKey): string {
 const MedicalContentLibrary: React.FC = () => {
   const { theme, language } = useSettings();
   const isDark = theme === 'dark';
-  const lang = language as LangKey;
+  const lang = language;
   
   const [content, setContent] = useState<MedicalContentArticle[]>([]);
   const [loading, setLoading] = useState(true);

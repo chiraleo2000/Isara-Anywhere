@@ -152,7 +152,7 @@ All 5 services run via `docker-compose up --build`:
 | `USE_GCS` | `false` | GCS disabled for live data |
 | `DEMO_MODE` | `false` | Real PostgreSQL (no mocks) |
 | `JWT_SECRET` | Shared across all portals | Session authentication |
-| `GEMINI_MODEL` | `gemini-2.5-flash-lite` | AI model selection |
+| `GEMINI_MODEL` | `gemini-3.1-flash-lite` | AI model selection |
 | `JITSI_DOMAIN` | `meet.jit.si` | Free Jitsi video |
 | `RATE_LIMIT_MAX` | `999999` | High limit for dev/testing |
 

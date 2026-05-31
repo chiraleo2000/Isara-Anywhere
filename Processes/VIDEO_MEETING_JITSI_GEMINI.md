@@ -425,7 +425,7 @@ This document describes the video meeting implementation using:
 | Video Conferencing | Jitsi Meet (meet.jit.si) | **$0** (FREE) |
 | Transcription | **Web Speech API** (browser-based) | **$0** (FREE) |
 | Chat Messaging | Jitsi + Socket.IO | **$0** (FREE) |
-| EMR Summary | Gemini AI (gemini-2.5-flash-lite) | ~$0.001/1K tokens |
+| EMR Summary | Gemini AI (gemini-3.1-flash-lite) | ~$0.001/1K tokens |
 | CDS Recommendations | Gemini AI | ~$0.001/1K tokens |
 | Patient Instruction Sheet | Gemini AI | ~$0.001/1K tokens |
 | Recording | Jitsi Built-in Local Recording | **$0** (FREE) |
@@ -903,7 +903,7 @@ POST /api/meetings/:id/stop-transcription
 
 ```typescript
 const GEMINI_CONFIG = {
-  model: 'gemini-2.5-flash-lite',
+  model: 'gemini-3.1-flash-lite',
   apiKey: process.env.VITE_GEMINI_API_KEY,
   temperature: 0.3,
   maxTokens: 8192
@@ -954,7 +954,7 @@ POST /api/video-meeting/:appointmentId/summarize
   },
   "metadata": {
     "generatedAt": "2025-01-15T10:30:00Z",
-    "model": "gemini-2.5-flash-lite",
+    "model": "gemini-3.1-flash-lite",
     "language": "th"
   }
 }
@@ -985,7 +985,7 @@ VITE_JITSI_APP_ID=izara-telemedicine
 
 # Gemini AI Configuration (for summary, CDS, patient instructions)
 VITE_GEMINI_API_KEY=your-gemini-api-key
-VITE_GEMINI_MODEL=gemini-2.5-flash-lite
+VITE_GEMINI_MODEL=gemini-3.1-flash-lite
 VITE_GEMINI_TEMPERATURE=0.3
 VITE_GEMINI_MAX_TOKENS=8192
 

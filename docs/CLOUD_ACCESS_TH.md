@@ -1,7 +1,7 @@
 # การเข้าถึงระบบ (Cloud — dev-testing)
 
-> อัปเดต: 29 พฤษภาคม 2569 | Environment: Google Cloud Run (asia-southeast1) | Project: izara-telemedicine  
-> **Source repo:** v1.7.37 · **Cloud Run image tag:** v1.7.37 · Gates: unit 2646, cloud unit, UI showup + responsive (2026-05-29)
+> อัปเดต: 31 พฤษภาคม 2569 | Environment: Google Cloud Run (asia-southeast1) | Project: izara-telemedicine  
+> **Defect track:** v1.7.48 · Gates: unit **2736**, Defect-regression **36/36**, cloud full **85/85** headed (2026-05-31)
 
 ## บริการที่ให้บริการ (URL ที่ใช้งานจริง)
 

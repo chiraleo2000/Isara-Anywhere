@@ -169,14 +169,23 @@ router.post('/test', async (req: Request, res: Response) => {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    const { title, message, type } = req.body;
+    const { title, message, type, data: extraData } = req.body as {
+      title?: string;
+      message?: string;
+      type?: string;
+      data?: Record<string, unknown>;
+    };
 
     const notification = await NotificationService.createNotification({
       userId: user.id,
       title: title || 'Test Notification',
       message: message || 'This is a test notification',
       type: type || 'info',
-      data: { source: 'test', timestamp: new Date().toISOString() }
+      data: {
+        source: 'test',
+        timestamp: new Date().toISOString(),
+        ...(extraData && typeof extraData === 'object' ? extraData : {}),
+      },
     });
     
     res.json({ success: true, notification });

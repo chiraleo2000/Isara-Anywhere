@@ -143,7 +143,7 @@ Izara-jitsi-server/
 | `PORT` | 3020 | Server port |
 | `JITSI_DOMAIN` | meet.jit.si | Jitsi Meet domain |
 | `GEMINI_API_KEY` | — | Google Gemini AI API key |
-| `GEMINI_MODEL` | gemini-2.5-flash-lite | AI model |
+| `GEMINI_MODEL` | gemini-3.1-flash-lite | AI model |
 | `DATABASE_URL` | — | PostgreSQL connection string |
 | `JWT_SECRET` | — | JWT signing secret |
 

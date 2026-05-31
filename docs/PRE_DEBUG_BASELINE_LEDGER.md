@@ -2,12 +2,16 @@
 
 | Field | Value |
 |-------|-------|
-| Environment | local |
-| Generated | 2026-05-29T05:31:07.245Z |
-| Commit | 9b14bee4 |
+| Environment | local + cloud (dev-testing) |
+| Generated | 2026-05-31T10:08:21Z |
+| Defect track | v1.7.48 |
 
-| Passed | 41 |
+| Passed | 85 (cloud full headed) + 2736 (unit) |
 | Failed | 0 |
+
+## Cloud full headed (2026-05-31)
+
+`npm run test:cloud:full` — **85 passed**, 7.7m, 212 PNG → `docs/screenshots/`
 
 ## Failures
 

@@ -92,9 +92,9 @@ export async function assertJitsiMediaActive(page: Page, label: string): Promise
       }
     }
     const jitsiJoined =
-      typeof (window as unknown as { APP?: { conference?: { isJoined?: () => boolean } } }).APP
+      typeof (globalThis as unknown as { APP?: { conference?: { isJoined?: () => boolean } } }).APP
         ?.conference?.isJoined === 'function' &&
-      (window as unknown as { APP: { conference: { isJoined: () => boolean } } }).APP.conference.isJoined();
+      (globalThis as unknown as { APP: { conference: { isJoined: () => boolean } } }).APP.conference.isJoined();
     if (jitsiJoined) return true;
     const hasJitsiFrame = document.querySelector(
       '[data-testid="jitsi-meeting-container"] iframe, [data-testid="jitsi-guest-container"] iframe',
@@ -271,6 +271,31 @@ export async function pollRecordingUrlCloud(
   doctorId?: string,
 ): Promise<string> {
   return ensureRecordingPersisted(request, meetingUrl, meetingKey, token, { doctorId });
+}
+
+/** Wait until GET /results returns success with meeting payload */
+export async function waitForMeetingResultsReady(
+  request: {
+    get: (url: string, opts?: object) => Promise<{ ok: () => boolean; json: () => Promise<unknown> }>;
+  },
+  meetingUrl: string,
+  meetingKey: string,
+  token: string,
+  timeoutMs = 120_000,
+): Promise<void> {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    const res = await request.get(`${meetingUrl}/api/meetings/${meetingKey}/results`, {
+      headers: { Authorization: `Bearer ${token}` },
+      timeout: 15_000,
+    });
+    if (res.ok()) {
+      const data = (await res.json()) as { success?: boolean; meeting?: { id?: string } };
+      if (data.success && data.meeting?.id) return;
+    }
+    await new Promise((r) => setTimeout(r, 2_000));
+  }
+  throw new Error(`meeting results not ready within ${timeoutMs}ms for ${meetingKey}`);
 }
 
 /** Wait until meeting ended in results */

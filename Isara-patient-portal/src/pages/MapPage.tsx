@@ -31,6 +31,87 @@ type MapGlobal = typeof globalThis & { google?: typeof google; L?: any };
 const mapGlobal = globalThis as MapGlobal;
 
 const MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '';
+/** Cloud Build may set VITE_GOOGLE_MAPS_MAP_ID; AdvancedMarker requires a Map ID in GCP. */
+const MAPS_MAP_ID = import.meta.env.VITE_GOOGLE_MAPS_MAP_ID || '';
+
+type MapPinHandle = {
+  title: string;
+  setMap: (map: google.maps.Map | null) => void;
+  setPosition: (pos: google.maps.LatLngLiteral) => void;
+  setVisible: (visible: boolean) => void;
+  addListener: (event: string, handler: () => void) => void;
+};
+
+function placeIsOpenNow(place: google.maps.places.PlaceResult): boolean | undefined {
+  const hours = place.opening_hours;
+  if (!hours) return undefined;
+  if (typeof hours.isOpen === 'function') return hours.isOpen();
+  return undefined;
+}
+
+function supportsAdvancedMarkers(): boolean {
+  return Boolean(MAPS_MAP_ID && mapGlobal.google?.maps?.marker?.AdvancedMarkerElement);
+}
+
+function createMapPin(opts: {
+  map: google.maps.Map;
+  position: google.maps.LatLngLiteral;
+  title: string;
+  fillColor: string;
+  scale?: number;
+  zIndex?: number;
+  animation?: google.maps.Animation;
+}): MapPinHandle {
+  const { map, position, title, fillColor, scale = 10, zIndex } = opts;
+  if (supportsAdvancedMarkers()) {
+    const pin = new google.maps.marker.PinElement({
+      background: fillColor,
+      borderColor: '#ffffff',
+      glyphColor: '#ffffff',
+      scale: Math.max(0.6, scale / 10),
+    });
+    const adv = new google.maps.marker.AdvancedMarkerElement({
+      map,
+      position,
+      title,
+      content: pin.element,
+      zIndex,
+    });
+    return {
+      title,
+      setMap: (m) => {
+        adv.map = m;
+      },
+      setPosition: (pos) => {
+        adv.position = pos;
+      },
+      setVisible: (visible) => {
+        adv.map = visible ? map : null;
+      },
+      addListener: (event, handler) => {
+        adv.addListener(event, handler);
+      },
+    };
+  }
+  const legacy = new google.maps.Circle({
+    map,
+    center: position,
+    radius: Math.max(8, scale),
+    fillColor,
+    fillOpacity: 1,
+    strokeColor: '#ffffff',
+    strokeWeight: 2,
+    clickable: true,
+    zIndex,
+  });
+  return {
+    title,
+    setMap: (m) => legacy.setMap(m),
+    setPosition: (pos) => legacy.setCenter(pos),
+    setVisible: (visible) => legacy.setMap(visible ? map : null),
+    addListener: (event, handler) => legacy.addListener(event, handler),
+  };
+}
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -67,7 +148,7 @@ const calcDistance = (lat1: number, lng1: number, lat2: number, lng2: number): n
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 };
 
-const formatDist = (km: number, lang: string = 'th') => {
+const formatDist = (km: number, lang = 'th') => {
   const smallUnit = lang === 'th' ? 'ม.' : 'm';
   const largeUnit = lang === 'th' ? 'กม.' : 'km';
   return km < 1 ? `${Math.round(km * 1000)} ${smallUnit}` : `${km.toFixed(1)} ${largeUnit}`;
@@ -77,6 +158,12 @@ const getToggleClass = (isActive: boolean, isDarkMode: boolean, activeClass: str
   if (isActive) return activeClass;
   return isDarkMode ? darkClass : lightClass;
 };
+
+const FACILITY_TYPES = new Set<Facility['type']>(['hospital', 'clinic', 'pharmacy', 'health_center']);
+
+function toFacilityType(raw: string): Facility['type'] {
+  return FACILITY_TYPES.has(raw as Facility['type']) ? (raw as Facility['type']) : 'clinic';
+}
 
 const markerColors: Record<string, string> = { hospital: '#DC2626', clinic: '#2563EB', pharmacy: '#16A34A', health_center: '#9333EA' };
 const labelsTH: Record<string, string> = { hospital: 'โรงพยาบาล', clinic: 'คลินิก', pharmacy: 'ร้านยา', health_center: 'ศูนย์สุขภาพ' };
@@ -96,7 +183,19 @@ const iconMap: Record<string, typeof Building2> = { hospital: Building2, clinic:
 /*  Google Maps loader                                                 */
 /* ------------------------------------------------------------------ */
 let mapsLoadPromise: Promise<void> | null = null;
-function loadGoogleMapsScript(apiKey: string, lang: string): Promise<void> {
+let mapsLoadedLang = '';
+function loadGoogleMapsScript(apiKey: string, lang = 'th'): Promise<void> {
+  const targetLang = lang;
+  if (mapsLoadedLang && mapsLoadedLang !== targetLang) {
+    const existing = document.querySelector('script[src*="maps.googleapis.com"]');
+    if (existing) existing.remove();
+    mapsLoadPromise = null;
+    mapsLoadedLang = '';
+    if (mapGlobal.google) {
+      // Force re-init with requested locale.
+      delete mapGlobal.google;
+    }
+  }
   if (mapGlobal.google?.maps?.places) return Promise.resolve();
   if (mapsLoadPromise !== null) return mapsLoadPromise;
   mapsLoadPromise = new Promise((resolve, reject) => {
@@ -112,12 +211,13 @@ function loadGoogleMapsScript(apiKey: string, lang: string): Promise<void> {
       return;
     }
     const s = document.createElement('script');
-    s.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places&language=${lang || 'th'}`;
+    s.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places,marker&language=${targetLang}`;
     s.async = true;
     s.onload = () => {
       const timer = setInterval(() => {
         if (mapGlobal.google?.maps?.places) {
           clearInterval(timer);
+          mapsLoadedLang = targetLang;
           resolve();
         }
       }, 50);
@@ -194,15 +294,15 @@ function mapPlaceToFacility(
   return {
     id: p.place_id || `gp-${Math.random()}`,
     name: p.name || 'Unknown',
-    type: facilityType as Facility['type'],
+    type: toFacilityType(facilityType),
     address: p.vicinity || '',
     rating: p.rating,
     ratingCount: p.user_ratings_total,
-    isOpen: p.opening_hours?.open_now,
+    isOpen: placeIsOpenNow(p),
     distance: dist,
     distanceText: formatDist(dist, lang),
     location: { lat, lng },
-  } as Facility;
+  };
 }
 
 /* ------------------------------------------------------------------ */
@@ -549,10 +649,10 @@ export default function MapPage() {
   const leafletMap = useRef<any>(null);
   const leafletMarkers = useRef<any[]>([]);
   const placesService = useRef<google.maps.places.PlacesService | null>(null);
-  const markersRef = useRef<google.maps.Marker[]>([]);
+  const markersRef = useRef<MapPinHandle[]>([]);
   const infoWindowRef = useRef<google.maps.InfoWindow | null>(null);
-  const userMarkerRef = useRef<google.maps.Marker | null>(null);
-  const pulseMarkerRef = useRef<google.maps.Marker | null>(null);
+  const userMarkerRef = useRef<MapPinHandle | null>(null);
+  const pulseMarkerRef = useRef<MapPinHandle | null>(null);
   const rangeCircleRef = useRef<google.maps.Circle | null>(null);
 
   const [search, setSearch] = useState('');
@@ -617,20 +717,23 @@ export default function MapPage() {
     markersRef.current = [];
     if (mapInstance.current) {
       infoWindowRef.current ??= new google.maps.InfoWindow();
+      const map = mapInstance.current;
       list.forEach((f) => {
-        const m = new google.maps.Marker({
+        const pin = createMapPin({
+          map,
           position: f.location,
-          map: mapInstance.current,
           title: f.name,
-          icon: { path: google.maps.SymbolPath.CIRCLE, scale: 10, fillColor: markerColors[f.type] || '#666', fillOpacity: 1, strokeColor: '#fff', strokeWeight: 2 },
+          fillColor: markerColors[f.type] || '#666',
+          scale: 10,
           animation: google.maps.Animation.DROP,
         });
-        m.addListener('click', () => {
+        pin.addListener('click', () => {
           setSelectedId(f.id);
           infoWindowRef.current?.setContent(buildInfoContent(f, lbl.navigate));
-          infoWindowRef.current?.open(mapInstance.current, m);
+          infoWindowRef.current?.setPosition(f.location);
+          infoWindowRef.current?.open(map);
         });
-        markersRef.current.push(m);
+        markersRef.current.push(pin);
       });
     }
 
@@ -680,20 +783,29 @@ export default function MapPage() {
     if (!mapRef.current || mapInstance.current) return;
     const zoomMap: Record<number, number> = { 1: 16, 3: 14, 5: 13, 10: 12, 15: 11, 20: 10 };
     const map = new google.maps.Map(mapRef.current, {
-      center: loc, zoom: zoomMap[range] || 13, mapTypeControl: false, streetViewControl: false,
+      center: loc,
+      zoom: zoomMap[range] || 13,
+      mapTypeControl: false,
+      streetViewControl: false,
+      ...(MAPS_MAP_ID ? { mapId: MAPS_MAP_ID } : {}),
     });
     mapInstance.current = map;
     placesService.current = new google.maps.places.PlacesService(map);
 
-    userMarkerRef.current = new google.maps.Marker({
-      position: loc, map, title: lbl.youAreHere,
-      icon: { path: google.maps.SymbolPath.CIRCLE, scale: 12, fillColor: '#3B82F6', fillOpacity: 1, strokeColor: '#fff', strokeWeight: 3 },
+    userMarkerRef.current = createMapPin({
+      map,
+      position: loc,
+      title: lbl.youAreHere,
+      fillColor: '#3B82F6',
+      scale: 12,
       zIndex: 1000,
     });
-    // Pulse ring marker around user location
-    pulseMarkerRef.current = new google.maps.Marker({
-      position: loc, map,
-      icon: { path: google.maps.SymbolPath.CIRCLE, scale: 24, fillColor: '#3B82F6', fillOpacity: 0.25, strokeWeight: 0 },
+    pulseMarkerRef.current = createMapPin({
+      map,
+      position: loc,
+      title: lbl.youAreHere,
+      fillColor: '#3B82F6',
+      scale: 24,
       zIndex: 999,
     });
     setMapReady(true);
@@ -765,7 +877,12 @@ export default function MapPage() {
       if (!cancelled) loadFacilities(loc, range);
     })();
 
-    return () => { cancelled = true; markersRef.current.forEach((m) => m.setMap(null)); };
+    return () => {
+      cancelled = true;
+      markersRef.current.forEach((m) => m.setMap(null));
+      userMarkerRef.current?.setMap(null);
+      pulseMarkerRef.current?.setMap(null);
+    };
   }, []);
 
   /* ---- Range change ---- */
@@ -822,8 +939,10 @@ export default function MapPage() {
     if (mapInstance.current) {
       mapInstance.current.setCenter(f.location);
       mapInstance.current.setZoom(16);
-      const m = markersRef.current.find((x) => x.getTitle() === f.name);
-      if (m) google.maps.event.trigger(m, 'click');
+      infoWindowRef.current ??= new google.maps.InfoWindow();
+      infoWindowRef.current.setContent(buildInfoContent(f, lbl.navigate));
+      infoWindowRef.current.setPosition(f.location);
+      infoWindowRef.current.open(mapInstance.current);
     }
     if (leafletMap.current) {
       leafletMap.current.setView([f.location.lat, f.location.lng], 16);

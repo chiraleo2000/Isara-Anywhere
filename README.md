@@ -1,6 +1,6 @@
 # Izara Telemedicine Platform (อิสระ เทเลเมดิซิน)
 
-![Version](https://img.shields.io/badge/release-v1.7.33-blue.svg)
+![Version](https://img.shields.io/badge/release-v1.7.40-blue.svg)
 ![Tests](https://img.shields.io/badge/unit%20tests-2597%20passing-brightgreen.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 ![Node](https://img.shields.io/badge/node-%3E%3D22.0.0-brightgreen.svg)
@@ -300,21 +300,38 @@ npm run cleanup:cloud-test   # after E2E — purge test rows + re-seed baseline 
 
 ---
 
-## Quality gates (v1.7.37+)
+## Quality gates (v1.7.40+)
 
 ```powershell
-npm run test:unit              # 2646 Vitest tests
+npm run test:unit              # 2698 Vitest tests (incl. defect + Sonar fixes)
 npm run test:unit:coverage     # lcov for SonarLint
 npm run sonar:lint             # coverage + eslint sonarjs + app-scan
 npm run test:quality:gate      # full local quality gate
 npm run test:cloud:unit-gate   # unit + cloud smoke + GATE0
 ```
 
+**Defect remediation (`Defect หมออิสระ.pdf`, 23 items):** see [`reports/defect-fix/DEFECT_REGISTER.md`](reports/defect-fix/DEFECT_REGISTER.md), [`reports/defect-fix/v1.7.41-final.txt`](reports/defect-fix/v1.7.41-final.txt), and draw.io updates [`docs/DEFECT_REMEDIATION_DRAWIO_UPDATES.md`](docs/DEFECT_REMEDIATION_DRAWIO_UPDATES.md). Cloud UI: `$env:TEST_ENV='cloud'; npx playwright test --project=Defect-regression --workers=1`.
+
 SonarLint: open repo root; uses [`sonar-project.properties`](sonar-project.properties) (includes `server/`). See [`reports/sonar/sonarlint-summary.md`](reports/sonar/sonarlint-summary.md).
 
 ---
 
 ## Changelog (recent)
+
+### v1.7.41 (May 30, 2026)
+
+- Sonar IDE: S4325 type assertions removed; S5725 Mermaid SRI on html-diagrams 10/17/18/19
+- Behavioral Vitest: G2/G3/P7/D7–D8; 2698 unit tests; Defect-regression cloud 19 passed
+
+### v1.7.40 (May 30, 2026)
+
+- Sonar/static pass: tsconfig deprecations, Maps AdvancedMarker, NotificationsPage hook, appointment PUT helper
+- Deploy tag v1.7.40; draw.io update instructions in `docs/DEFECT_REMEDIATION_DRAWIO_UPDATES.md`
+
+### v1.7.39 (May 29, 2026)
+
+- Defect PDF full closure: doctor notification `isRead` parity, behavioral Vitest, `Defect-regression` Playwright (15 tests), deploy tag v1.7.39
+- Diagram: [`Presentations/html-diagrams/19-defect-remediation-v1739.html`](Presentations/html-diagrams/19-defect-remediation-v1739.html)
 
 ### v1.7.37 (May 28, 2026)
 

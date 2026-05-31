@@ -1,0 +1,44 @@
+v1.7.42 Gemini 3.1 Model Migration Final Report
+Date: 2026-05-30
+Environment: Cloud Run dev-testing (tag v1.7.42)
+
+Status: ALL GREEN
+
+Model migration:
+- Canonical model: gemini-3.1-flash-lite (replaced gemini-2.5-flash / gemini-2.5-flash-lite / typo flash-lite-lite)
+- Live .env synced (root, doctor, patient, jitsi)
+- Google API smoke: 200 OK on gemini-3.1-flash-lite
+- D3 fixes retained: public GET /api/ai/gemini/status, resolveApiBase(), sync isApiConfigured init
+- Debug instrumentation removed from geminiClinicalService, GeminiAIStudio, mainApiServer
+
+New tests:
+- tests/unit/cross-portal/geminiModelConfig.regression.test.ts (11 tests)
+- tests/unit/doctor-portal/geminiServerProxy.regression.test.ts (extended)
+- tests/group-Defect-gemini.ui-test.ts (D3a/D3b — DG2/DG3 screenshots)
+
+Defect coverage (23/23 Verified):
+- D3 reinforced with model migration + group-Defect-gemini UI regression
+- All items in DEFECT_REGISTER.md remain Verified
+
+Gate evidence:
+- test:unit — 143 files, 2709 passed
+- test:quality:gate — PASS
+- test:cloud:unit-gate — PASS (GATE0 G1–G5, cloud smoke)
+- Defect pack (cloud, --project=Defect-regression) — 21 passed, 1 skipped
+- test:gate:ui-showup — 41/41 passed (4.9m, exit 0)
+- test:gate:responsive-cloud — 41/41 passed (4.9m, exit 0)
+
+Screenshots:
+- docs/screenshots/group-defect/DG2-gemini-connected.png (D3a)
+- docs/screenshots/group-defect/DG3-gemini-reply.png (D3b)
+
+Deploy:
+- npm run cloud:deploy -- -Tag v1.7.42 — Cloud Build SUCCESS (3m47s)
+- Post-deploy traffic shift: doctor rev 00142-jws, patient rev 00117-n9w (100%)
+- GET /api/ai/gemini/status → {"configured":true,"model":"gemini-3.1-flash-lite"}
+- Post-deploy smoke: all 3 services 200
+
+Docs:
+- Presentations/TECHNICAL_DOCUMENTATION.md v1.7.42 section
+- docs/UNIT_TEST_UI_COVERAGE.md v1.7.42
+- Presentations/html-diagrams/20-gemini-31-migration.html
