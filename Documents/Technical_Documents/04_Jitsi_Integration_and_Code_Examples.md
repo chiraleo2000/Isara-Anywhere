@@ -1,7 +1,7 @@
 # การเชื่อมโยง Jitsi และโค้ดตัวอย่าง (Jitsi Integration & Code Examples)
 
 > **อัปเดต:** 2 มิถุนายน 2569 | **ขอบเขต:** As-is ตาม codebase Isara-Anywhere เท่านั้น  
-> **เอกสารก่อนหน้า:** [01 Architecture](01_System_Architecture_and_Workflow.md) · [02 Auth](02_Authentication_and_Authorization.md) · [03 Data Storage](03_Data_Storage_Architecture.md)
+> **เอกสารก่อนหน้า:** [01 Architecture](01_System_Architecture_and_Workflow.md) · [02 Auth](02_Authentication_and_Authorization.md) · [03 Data Storage](03_Data_Storage_Architecture.md) · **ขั้นตอนเต็ม:** [05 Appendix](05_Appendix_Full_Process_Steps.md)
 
 ---
 

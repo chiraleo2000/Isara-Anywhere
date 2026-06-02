@@ -2,7 +2,7 @@
 
 > **อัปเดต:** 2 มิถุนายน 2569 | **ขอบเขต:** As-is ตาม codebase Isara-Anywhere เท่านั้น (ไม่มีข้อเสนอแนะเพิ่ม)  
 > **โปรเจกต์ Google Cloud:** `izara-telemedicine` | **ภูมิภาค:** `asia-southeast1`  
-> **เอกสารถัดไปในชุด:** [02 Authentication](02_Authentication_and_Authorization.md) · [03 Data Storage](03_Data_Storage_Architecture.md) · [04 Jitsi](04_Jitsi_Integration_and_Code_Examples.md)
+> **เอกสารถัดไปในชุด:** [02 Authentication](02_Authentication_and_Authorization.md) · [03 Data Storage](03_Data_Storage_Architecture.md) · [04 Jitsi](04_Jitsi_Integration_and_Code_Examples.md) · [05 Full Process Steps](05_Appendix_Full_Process_Steps.md)
 
 ---
 
@@ -703,7 +703,7 @@ sequenceDiagram
 
 ## 15. ภาคผนวก — สังเคราะห์จาก Processes/Pages และ Processes/*.md
 
-> **ขอบเขต:** สรุป As-is จากสเปกใน `Processes/` — รายละเอียดขั้นตอน 8–12 รายการ, `data-testid`, และ API เต็มอยู่ในไฟล์ต้นฉบับแต่ละหน้า
+> **ขอบเขต:** สรุป As-is จากสเปกใน `Processes/` — **ขั้นตอนและ Workflow เต็ม** อยู่ใน [05_Appendix_Full_Process_Steps.md](05_Appendix_Full_Process_Steps.md) (สร้างด้วย `python scripts/build-appendix-process-steps.py`)
 
 ### 15.1 สายงานหลัก Phase 1 (Meeting → EMR → Patient)
 

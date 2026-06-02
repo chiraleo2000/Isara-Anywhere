@@ -2,7 +2,7 @@
 
 > **อัปเดต:** 2 มิถุนายน 2569 | **ขอบเขต:** As-is บน Google Cloud เท่านั้น  
 > **หมายเหตุสำคัญ:** โปรเจกต์นี้ **ไม่มี Nextcloud** ใน codebase — การจัดเก็บไฟล์ใช้ PostgreSQL, ดิสก์ชั่วคราวบน Meeting Server, และ GCS (เมื่อตั้ง env)  
-> **เอกสารก่อนหน้า:** [02 Authentication](02_Authentication_and_Authorization.md) · **ถัดไป:** [04 Jitsi](04_Jitsi_Integration_and_Code_Examples.md)
+> **เอกสารก่อนหน้า:** [02 Authentication](02_Authentication_and_Authorization.md) · **ถัดไป:** [04 Jitsi](04_Jitsi_Integration_and_Code_Examples.md) · **ขั้นตอนเต็ม:** [05 Appendix](05_Appendix_Full_Process_Steps.md)
 
 ---
 

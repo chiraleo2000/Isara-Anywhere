@@ -18,5 +18,6 @@
 | 2 | [02_Authentication_and_Authorization.md](Technical_Documents/02_Authentication_and_Authorization.md) | RBAC, session/JWT, Google SSO codes, PDPA, state + security boundary |
 | 3 | [03_Data_Storage_Architecture.md](Technical_Documents/03_Data_Storage_Architecture.md) | PostgreSQL/Cloud SQL, BYTEA/GCS, NOTIFY, backup, ER + draw.io |
 | 4 | [04_Jitsi_Integration_and_Code_Examples.md](Technical_Documents/04_Jitsi_Integration_and_Code_Examples.md) | Lobby, API, โค้ดทีมพี่เบียร์/พี่ต้นชนินทร์, flowchart + topology |
+| 5 | [05_Appendix_Full_Process_Steps.md](Technical_Documents/05_Appendix_Full_Process_Steps.md) | **ขั้นตอน + Workflow เต็ม** จาก `Processes/Pages` และ `Processes/*.md` |
 
-แต่ละไฟล์มี **§ ภาคผนวก** สรุปสาระจาก `Processes/Pages` (37+ หน้า) และ `Processes/*.md` (workflow ระดับระบบ) — รายละเอียดขั้นตอนเต็มยังอยู่ใน `Processes/` ต้นฉบับ
+ไฟล์ 01–04 มี **§ ภาคผนวก** สรุปสาระ — รายละเอียดขั้นตอนครบอยู่ใน **05** (อัปเดต: `python scripts/build-appendix-process-steps.py`)
