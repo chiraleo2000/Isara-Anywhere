@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -17,9 +17,9 @@
 </head>
 <body>
     <div class="nav">
-        <a href="index.html">🔙 Back to Index</a>
+        <a href="index.html">Back to Index</a>
         <span>|</span>
-        <a href="javascript:location.reload()">🔄 Refresh</a>
+        <a href="javascript:location.reload()">Refresh</a>
     </div>
     <div class="container">
         <h1>01-system-architecture</h1>
@@ -39,55 +39,50 @@
 }}%%
 
 flowchart TB
-    subgraph USERS["👥 USERS"]
+    subgraph USERS["ðŸ‘¥ USERS"]
         direction LR
-        P["🧑‍🤝‍🧑 Patients<br/>ผู้ป่วย"]
-        D["👨‍⚕️ Doctors<br/>แพทย์"]
-        A["🔧 Admins<br/>ผู้ดูแล"]
+        P["ðŸ§‘â€ðŸ¤â€ðŸ§‘ Patients<br/>à¸œà¸¹à¹‰à¸›à¹ˆà¸§à¸¢"]
+        D["ðŸ‘¨â€âš•ï¸ Doctors<br/>à¹à¸žà¸—à¸¢à¹Œ"]
+        A["ðŸ”§ Admins<br/>à¸œà¸¹à¹‰à¸”à¸¹à¹à¸¥"]
     end
 
-    subgraph MOBILE["📱 MOBILE APP (Expo 52 + React Native)"]
+    subgraph MOBILE["ðŸ“± MOBILE APP (Expo 52 + React Native)"]
         direction LR
-        M_PAT["🩺 Patient App<br/>Health, AI Chat, Appointments"]
-        M_DOC["👨‍⚕️ Doctor App<br/>Queue, Patients, Schedule"]
+        M_PAT["ðŸ©º Patient App<br/>Health, AI Chat, Appointments"]
+        M_DOC["ðŸ‘¨â€âš•ï¸ Doctor App<br/>Queue, Patients, Schedule"]
     end
 
-    subgraph CONTAINERS["🐳 DOCKER CONTAINERS (Local/Cloud Run)"]
+    subgraph CONTAINERS["ðŸ³ DOCKER CONTAINERS (Local/Cloud Run)"]
         direction TB
-        subgraph PP_CONT["🏥 Patient Portal (Port 3005)"]
-            PP_FE["📱 React Frontend<br/>TypeScript + Vite"]
-            PP_BE["⚙️ Express Backend<br/>Node.js 22"]
+        subgraph PP_CONT["ðŸ¥ Patient Portal (Port 3005)"]
+            PP_FE["ðŸ“± React Frontend<br/>TypeScript + Vite"]
+            PP_BE["âš™ï¸ Express Backend<br/>Node.js 22"]
         end
-        subgraph DP_CONT["👨‍⚕️ Doctor Portal (Port 3010)"]
-            DP_FE["💻 React Frontend<br/>TypeScript + Vite"]
-            DP_BE["⚙️ Express Backend<br/>Node.js 22"]
+        subgraph DP_CONT["ðŸ‘¨â€âš•ï¸ Doctor Portal (Port 3010)"]
+            DP_FE["ðŸ’» React Frontend<br/>TypeScript + Vite"]
+            DP_BE["âš™ï¸ Express Backend<br/>Node.js 22"]
         end
-        subgraph MS_CONT["📹 Meeting Server (Port 3020)"]
-            MS["🎥 Jitsi + Node.js<br/>Video & Transcription"]
+        subgraph MS_CONT["ðŸ“¹ Meeting Server (Port 3020)"]
+            MS["ðŸŽ¥ Jitsi + Node.js<br/>Video & Transcription"]
         end
     end
 
-    subgraph DATA_LAYER["💾 DATA LAYER"]
+    subgraph DATA_LAYER["ðŸ’¾ DATA LAYER"]
         direction LR
-        POSTGRES[("🐘 PostgreSQL 18<br/>+ pgvector<br/>Port: 5433")]
-        GCS["📦 Google Cloud Storage<br/>5 Buckets<br/>(Docs, Images, Recordings)"]
+        POSTGRES[("ðŸ˜ PostgreSQL 18<br/>+ pgvector<br/>Port: 5433")]
+        GCS["ðŸ“¦ Google Cloud Storage<br/>5 Buckets<br/>(Docs, Images, Recordings)"]
     end
 
-    subgraph AI_SERVICES["🤖 AI SERVICES"]
+    subgraph AI_SERVICES["ðŸ¤– AI SERVICES"]
         direction LR
-        GEMINI["🧠 Gemini 2.5 Flash<br/>Health Assistant<br/>Transcript Summary<br/>SOAP Generation"]
-        WSA["🎤 Web Speech API<br/>Browser-based STT<br/>Real-time Transcription"]
+        GEMINI["ðŸ§  Gemini 2.5 Flash<br/>Health Assistant<br/>Transcript Summary"]
+        STT["ðŸŽ¤ Speech-to-Text<br/>Real-time Transcription"]
     end
 
-    subgraph REALTIME["🔌 REAL-TIME"]
+    subgraph EXTERNAL["ðŸ”— EXTERNAL SERVICES"]
         direction LR
-        SOCKETIO["⚡ Socket.IO<br/>Lobby Management<br/>Live Transcripts<br/>Meeting Events"]
-    end
-
-    subgraph EXTERNAL["🔗 EXTERNAL SERVICES"]
-        direction LR
-        MAPS["🗺️ Google Maps<br/>Healthcare Locations"]
-        EMAIL["📧 Email Service<br/>Notifications"]
+        MAPS["ðŸ—ºï¸ Google Maps<br/>Healthcare Locations"]
+        EMAIL["ðŸ“§ Email Service<br/>Notifications"]
     end
 
     %% User connections
@@ -120,13 +115,8 @@ flowchart TB
     %% Backend to AI
     PP_BE -.-> GEMINI
     DP_BE -.-> GEMINI
-    DP_FE -.-> WSA
+    MS -.-> STT
     MS -.-> GEMINI
-
-    %% Real-time connections
-    PP_FE -.-> SOCKETIO
-    DP_FE -.-> SOCKETIO
-    SOCKETIO -.-> MS
 
     %% Backend to External
     PP_BE -.-> MAPS
@@ -156,8 +146,8 @@ flowchart TB
         </div>
     </div>
     <script>
-        mermaid.initialize({ 
-            startOnLoad: true, 
+        mermaid.initialize({
+            startOnLoad: true,
             theme: 'base',
             securityLevel: 'loose',
             themeVariables: {

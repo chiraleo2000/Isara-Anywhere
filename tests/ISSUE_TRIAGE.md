@@ -12,7 +12,7 @@
 | User guides | Regenerated — **Word Sarabun 16 pt**, **PPT FC Iconic**, ขั้นตอน/กระบวนการละเอียด (`build-portal-user-guides.py`) |
 | Demo cleanup (final) | `npm run cleanup:cloud-test` หลังอัปเดตเอกสาร |
 
-Groups exercised: A, B, C, D, D-host, E, F, G, H, I, J, K, M, N, O, P — headed UI (`PW_HEADED=1`), PNGs under `docs/screenshots/group-*`.
+Groups exercised: A, B, C, D, D-host, E, F, G, H, I, J, K, M, N, O, P — headed UI (`PW_HEADED=1`), PNGs under `Documents/docs/screenshots/group-*`.
 
 ## Expanded Testing Program (Waves 0–5) — 2026-05-22
 

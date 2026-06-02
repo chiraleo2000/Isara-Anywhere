@@ -5,7 +5,7 @@
 
 > **Cloud E2E Test Results: PASS — full headed cloud suite (85/85, 2026-05-31)**
 > Tested on: `2026-05-31` | Environment: Google Cloud Run (asia-southeast1)
-> Groups A–P — headed Playwright, 1 worker, 212 screenshots → `docs/screenshots/`
+> Groups A–P — headed Playwright, 1 worker, 212 screenshots → `Documents/docs/screenshots/`
 > Defect track: v1.7.48 | Unit Tests: **2736/2736** ✅ | UI Tests: **85/85** ✅
 
 ---
@@ -1173,7 +1173,7 @@ Workers:      1 (serial D→E→F chain)
 Browser:      Headed (Chrome/Edge/Firefox per fixture)
 Total Time:   7.7 minutes
 Result:       85/85 PASSED ✅
-Screenshots:  212 PNG in docs/screenshots/ (16 folders)
+Screenshots:  212 PNG in Documents/docs/screenshots/ (16 folders)
 ```
 
 | Group | Focus | Tests |
@@ -1186,7 +1186,7 @@ Screenshots:  212 PNG in docs/screenshots/ (16 folders)
 | G–P | PDPA, content, admin, AI, Q meeting, lab, workflows | ✓ |
 | Defect-regression | PDF defect pack (separate run) | **36/36** (2026-05-30) |
 
-Evidence: `docs/markdown/testing/UNIT_TEST_UI_COVERAGE.md`, `reports/defect-fix/v1.7.48-final.txt`
+Evidence: `Documents/docs/markdown/testing/UNIT_TEST_UI_COVERAGE.md`, `reports/defect-fix/v1.7.48-final.txt`
 
 ---
 

@@ -178,7 +178,7 @@ SLIDES: list[dict] = [
                 ["Sonar", "SonarLint + sonar-project.properties", "S1874/S6594 แก้แล้ว; S6747 suppress"],
                 ["Cloud API", "test:cloud:unit-gate + GATE0", "78 cloud unit + G1–G5"],
                 ["Defect UI", "Playwright Defect-regression", "34 passed, 2 skipped (cloud)"],
-                ["เอกสาร", "draw.io + DOCX/PPTX/PDF", "docs/diagrams/diagrams.drawio — ไม่ใช้ HTML diagram"],
+                ["เอกสาร", "draw.io + DOCX/PPTX/PDF", "Documents/docs/diagrams/diagrams.drawio — ไม่ใช้ HTML diagram"],
             ],
         ),
         "body": [

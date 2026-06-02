@@ -25,8 +25,8 @@ python scripts/build-portal-user-guides.py
 
 | Output | Typography |
 |--------|------------|
-| `docs/guides/patient|doctor/USER_GUIDE_*_WORD_TH.docx` | **TH Sarabun New** — body **16 pt**, H1 **18 pt**, title **22 pt**, line spacing **1.15** |
-| `docs/guides/patient|doctor/USER_GUIDE_*_PPT_TH.pptx` | **FC Iconic** — title **32 pt**, body **18 pt**, speaker notes **16 pt** |
+| `Documents/Documents/docs/guides/patient|doctor/USER_GUIDE_*_WORD_TH.docx` | **TH Sarabun New** — body **16 pt**, H1 **18 pt**, title **22 pt**, line spacing **1.15** |
+| `Documents/Documents/docs/guides/patient|doctor/USER_GUIDE_*_PPT_TH.pptx` | **FC Iconic** — title **32 pt**, body **18 pt**, speaker notes **16 pt** |
 | `Processes/Pages/**/*.md` | Thai **คำอธิบายและบริบท** + **ขั้นตอนการใช้งาน (ละเอียด)** per page |
 
 **Last regeneration:** 2026-05-23 (demo data purged; process pages force-refreshed)
@@ -870,10 +870,10 @@ npm run test:e2e:meeting-lifecycle          # requires cloud credentials
 | PDF defect register (23 items) | 2026-05-30 | **Verified** — `reports/defect-fix/DEFECT_REGISTER.md` |
 | `npm run test:quality:gate` | 2026-05-30 | **PASS** — 151 files, 2736 unit tests |
 | Defect-regression Playwright | 2026-05-30 | **36/36** PASS |
-| `npm run test:cloud:full` (headed) | 2026-05-31 | **85/85** PASS, 212 PNG → `docs/screenshots/` |
+| `npm run test:cloud:full` (headed) | 2026-05-31 | **85/85** PASS, 212 PNG → `Documents/docs/screenshots/` |
 | User guides | 2026-05-31 | Patient PPT 76 imgs, Doctor DOCX/PPT 93 imgs |
 
-Ledger: `reports/defect-fix/v1.7.48-final.txt`, `docs/markdown/testing/UNIT_TEST_UI_COVERAGE.md`
+Ledger: `reports/defect-fix/v1.7.48-final.txt`, `Documents/docs/markdown/testing/UNIT_TEST_UI_COVERAGE.md`
 
 ### C.4 Document control
 
@@ -885,8 +885,8 @@ Ledger: `reports/defect-fix/v1.7.48-final.txt`, `docs/markdown/testing/UNIT_TEST
 
 **Related artifacts:**
 
-- `docs/guides/doctor/USER_GUIDE_DOCTOR_WORD_TH.docx` / `docs/guides/doctor/USER_GUIDE_DOCTOR_PPT_TH.pptx` (Sarabun 16 pt / FC Iconic)
-- `docs/guides/patient/USER_GUIDE_PATIENT_WORD_TH.docx` / `docs/guides/patient/USER_GUIDE_PATIENT_PPT_TH.pptx`
+- `Documents/Documents/docs/guides/doctor/USER_GUIDE_DOCTOR_WORD_TH.docx` / `Documents/Documents/docs/guides/doctor/USER_GUIDE_DOCTOR_PPT_TH.pptx` (Sarabun 16 pt / FC Iconic)
+- `Documents/Documents/docs/guides/patient/USER_GUIDE_PATIENT_WORD_TH.docx` / `Documents/Documents/docs/guides/patient/USER_GUIDE_PATIENT_PPT_TH.pptx`
 - `Phase2/PRODUCTION_READINESS_SIGNOFF.md`
 - `cloudbuild.yaml`
 

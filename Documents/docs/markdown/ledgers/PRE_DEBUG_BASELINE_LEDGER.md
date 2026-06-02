@@ -11,7 +11,7 @@
 
 ## Cloud full headed (2026-05-31)
 
-`npm run test:cloud:full` — **85 passed**, 7.7m, 212 PNG → `docs/screenshots/`
+`npm run test:cloud:full` — **85 passed**, 7.7m, 212 PNG → `Documents/docs/screenshots/`
 
 ## Failures
 

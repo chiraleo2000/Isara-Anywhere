@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -17,9 +17,9 @@
 </head>
 <body>
     <div class="nav">
-        <a href="index.html">🔙 Back to Index</a>
+        <a href="index.html">Back to Index</a>
         <span>|</span>
-        <a href="javascript:location.reload()">🔄 Refresh</a>
+        <a href="javascript:location.reload()">Refresh</a>
     </div>
     <div class="container">
         <h1>04-appointment-workflow</h1>
@@ -38,16 +38,16 @@
 
 sequenceDiagram
     autonumber
-    participant P as 🧑‍🤝‍🧑 Patient
-    participant PP as 📱 Patient Portal
-    participant AI as 🤖 Gemini AI
-    participant DB as 🗄️ Database
-    participant DP as 💻 Doctor Portal
-    participant D as 👨‍⚕️ Doctor
-    participant MS as 📹 Meeting Server
+    participant P as ðŸ§‘â€ðŸ¤â€ðŸ§‘ Patient
+    participant PP as ðŸ“± Patient Portal
+    participant AI as ðŸ¤– Gemini AI
+    participant DB as ðŸ—„ï¸ Database
+    participant DP as ðŸ’» Doctor Portal
+    participant D as ðŸ‘¨â€âš•ï¸ Doctor
+    participant MS as ðŸ“¹ Meeting Server
 
     rect rgb(227, 242, 253)
-        Note over P,AI: 📝 SYMPTOM COLLECTION & AI TRIAGE
+        Note over P,AI: ðŸ“ SYMPTOM COLLECTION & AI TRIAGE
         P->>PP: Enter symptoms
         PP->>AI: Analyze symptoms
         AI-->>PP: Suggested specialty + urgency
@@ -55,7 +55,7 @@ sequenceDiagram
     end
 
     rect rgb(232, 245, 233)
-        Note over P,DB: 📅 BOOKING PROCESS
+        Note over P,DB: ðŸ“… BOOKING PROCESS
         P->>PP: Select doctor & time slot
         PP->>DB: Check availability
         DB-->>PP: Slot available
@@ -64,7 +64,7 @@ sequenceDiagram
     end
 
     rect rgb(255, 243, 224)
-        Note over DB,D: ✅ DOCTOR CONFIRMATION
+        Note over DB,D: âœ… DOCTOR CONFIRMATION
         DB->>DP: New appointment notification
         DP->>D: Show pending request
         D->>DP: Confirm/Reject
@@ -74,25 +74,20 @@ sequenceDiagram
     end
 
     rect rgb(224, 247, 250)
-        Note over P,MS: 📹 VIDEO CONSULTATION
-        D->>DP: Start consultation
-        DP->>MS: Create meeting room
-        MS-->>DP: Room ID + invite link
-        D->>DP: Share invite to patient
-        P->>PP: Click invite link
-        PP->>PP: Show consent agreement
-        P->>PP: Accept recording consent
-        PP->>MS: Join meeting → Lobby
-        MS->>DP: Patient in lobby
-        D->>DP: Admit patient
-        MS->>PP: Lobby admitted
-        PP->>MS: Join video (Jitsi WebRTC)
-        D->>DP: Enable transcription (Web Speech API)
-        MS->>MS: Real-time transcript via Socket.IO
+        Note over P,MS: ðŸ“¹ VIDEO CONSULTATION
+        P->>PP: Join meeting (at scheduled time)
+        D->>DP: Join meeting
+        PP->>MS: Request room (JWT auth)
+        DP->>MS: Request room (JWT auth)
+        MS-->>PP: Jitsi room URL
+        MS-->>DP: Jitsi room URL
+        P->>MS: Connect to video call
+        D->>MS: Connect to video call
+        MS->>MS: Real-time transcription
     end
 
     rect rgb(243, 229, 245)
-        Note over D,DB: 📋 POST-CONSULTATION
+        Note over D,DB: ðŸ“‹ POST-CONSULTATION
         MS-->>DP: Transcript + AI summary
         D->>DP: Complete SOAP notes
         D->>DP: E-prescription
@@ -105,8 +100,8 @@ sequenceDiagram
         </div>
     </div>
     <script>
-        mermaid.initialize({ 
-            startOnLoad: true, 
+        mermaid.initialize({
+            startOnLoad: true,
             theme: 'base',
             securityLevel: 'loose',
             themeVariables: {

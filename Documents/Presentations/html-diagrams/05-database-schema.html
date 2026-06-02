@@ -1,4 +1,30 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Izara Diagram: 05-database-schema</title><script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script><style>body{font-family:'Segoe UI',Tahoma,sans-serif;margin:0;padding:20px;background:#f5f5f5}.container{max-width:100%;margin:0 auto;background:#fff;padding:20px;border-radius:8px;box-shadow:0 2px 4px rgba(0,0,0,.1)}h1{color:#2c3e50;text-align:center;border-bottom:2px solid #eee;padding-bottom:15px}.mermaid{display:flex;justify-content:center;margin-top:20px}.nav{margin-bottom:20px;text-align:center}.nav a{margin:0 10px;color:#3498db;text-decoration:none;font-weight:700}</style></head><body><div class="nav"><a href="index.html">Back to Index</a> | <a href="javascript:location.reload()">Refresh</a></div><div class="container"><h1>05-database-schema</h1><div class="mermaid">%%{init: {
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Izara Diagram: 05-database-schema</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5; }
+        .container { max-width: 100%; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        h1 { color: #2c3e50; text-align: center; border-bottom: 2px solid #eee; padding-bottom: 15px; }
+        .mermaid { display: flex; justify-content: center; margin-top: 20px; }
+        .nav { margin-bottom: 20px; text-align: center; }
+        .nav a { margin: 0 10px; color: #3498db; text-decoration: none; font-weight: bold; }
+        .nav a:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <div class="nav">
+        <a href="index.html">Back to Index</a>
+        <span>|</span>
+        <a href="javascript:location.reload()">Refresh</a>
+    </div>
+    <div class="container">
+        <h1>05-database-schema</h1>
+        <div class="mermaid">
+            %%{init: {
   'theme': 'base',
   'themeVariables': {
     'primaryColor': '#F3E5F5',
@@ -72,7 +98,7 @@ erDiagram
     users ||--o{ sync_queue : queues
     users ||--o| user_settings : configures
 
-    %% TABLE DEFINITIONS (42 tables — matching izara-database.sql)
+    %% TABLE DEFINITIONS (42 tables â€” matching izara-database.sql)
     users {
         varchar id PK
         varchar email UK
@@ -282,4 +308,21 @@ erDiagram
         boolean auto_sync
         varchar last_active_role
     }
-</div></div><script>mermaid.initialize({startOnLoad:true,theme:'base',securityLevel:'loose',themeVariables:{primaryColor:'#E3F2FD',secondaryColor:'#E8F5E9',tertiaryColor:'#FFF3E0',fontSize:'16px'}});</script></body></html>
+
+        </div>
+    </div>
+    <script>
+        mermaid.initialize({
+            startOnLoad: true,
+            theme: 'base',
+            securityLevel: 'loose',
+            themeVariables: {
+                primaryColor: '#E3F2FD',
+                secondaryColor: '#E8F5E9',
+                tertiaryColor: '#FFF3E0',
+                fontSize: '16px'
+            }
+        });
+    </script>
+</body>
+</html>

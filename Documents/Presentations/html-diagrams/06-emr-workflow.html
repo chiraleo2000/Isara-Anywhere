@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -17,9 +17,9 @@
 </head>
 <body>
     <div class="nav">
-        <a href="index.html">🔙 Back to Index</a>
+        <a href="index.html">Back to Index</a>
         <span>|</span>
-        <a href="javascript:location.reload()">🔄 Refresh</a>
+        <a href="javascript:location.reload()">Refresh</a>
     </div>
     <div class="container">
         <h1>06-emr-workflow</h1>
@@ -37,45 +37,45 @@
 }}%%
 
 flowchart TB
-    subgraph VIDEO["📹 VIDEO CONSULTATION"]
-        V1["🎥 Jitsi Meeting"]
-        V2["🎤 Real-time Transcription"]
-        V3["👥 Multi-participant Support"]
+    subgraph VIDEO["ðŸ“¹ VIDEO CONSULTATION"]
+        V1["ðŸŽ¥ Jitsi Meeting"]
+        V2["ðŸŽ¤ Real-time Transcription"]
+        V3["ðŸ‘¥ Multi-participant Support"]
     end
 
-    subgraph AI_PROCESS["🤖 AI PROCESSING"]
-        A1["📝 Transcript Analysis<br/>(Gemini 2.5 Flash)"]
-        A2["📊 Clinical Summary<br/>Generation"]
-        A3["💡 Suggested SOAP<br/>Components"]
+    subgraph AI_PROCESS["ðŸ¤– AI PROCESSING"]
+        A1["ðŸ“ Transcript Analysis<br/>(Gemini 2.5 Flash)"]
+        A2["ðŸ“Š Clinical Summary<br/>Generation"]
+        A3["ðŸ’¡ Suggested SOAP<br/>Components"]
     end
 
-    subgraph EMR["🩺 EMR DOCUMENTATION"]
-        E1["📋 SOAP Notes Template"]
+    subgraph EMR["ðŸ©º EMR DOCUMENTATION"]
+        E1["ðŸ“‹ SOAP Notes Template"]
         E2["S: Subjective<br/>(Patient complaints)"]
         E3["O: Objective<br/>(Findings, vitals)"]
         E4["A: Assessment<br/>(Diagnosis, ICD-10)"]
         E5["P: Plan<br/>(Treatment, follow-up)"]
     end
 
-    subgraph ORDERS["📝 CLINICAL ORDERS"]
-        O1["💊 E-Prescription"]
-        O2["🧪 Lab Orders"]
-        O3["🔬 Imaging Orders"]
-        O4["📅 Follow-up Appointment"]
+    subgraph ORDERS["ðŸ“ CLINICAL ORDERS"]
+        O1["ðŸ’Š E-Prescription"]
+        O2["ðŸ§ª Lab Orders"]
+        O3["ðŸ”¬ Imaging Orders"]
+        O4["ðŸ“… Follow-up Appointment"]
     end
 
-    subgraph CDS["⚠️ CLINICAL DECISION SUPPORT"]
-        C1["💊 Drug Interaction Check"]
-        C2["⚠️ Allergy Alerts"]
-        C3["📋 Dosage Validation"]
-        C4["✅ Man-in-the-Loop<br/>Approval"]
+    subgraph CDS["âš ï¸ CLINICAL DECISION SUPPORT"]
+        C1["ðŸ’Š Drug Interaction Check"]
+        C2["âš ï¸ Allergy Alerts"]
+        C3["ðŸ“‹ Dosage Validation"]
+        C4["âœ… Man-in-the-Loop<br/>Approval"]
     end
 
-    subgraph SIGN["✍️ FINALIZATION"]
-        S1["👨‍⚕️ Doctor Review"]
-        S2["✍️ Digital Signature"]
-        S3["🔒 Record Lock"]
-        S4["📧 Patient Notification"]
+    subgraph SIGN["âœï¸ FINALIZATION"]
+        S1["ðŸ‘¨â€âš•ï¸ Doctor Review"]
+        S2["âœï¸ Digital Signature"]
+        S3["ðŸ”’ Record Lock"]
+        S4["ðŸ“§ Patient Notification"]
     end
 
     %% Flow
@@ -112,8 +112,8 @@ flowchart TB
         </div>
     </div>
     <script>
-        mermaid.initialize({ 
-            startOnLoad: true, 
+        mermaid.initialize({
+            startOnLoad: true,
             theme: 'base',
             securityLevel: 'loose',
             themeVariables: {

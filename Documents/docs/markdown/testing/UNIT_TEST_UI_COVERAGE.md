@@ -21,7 +21,7 @@
 
 - `tests/unit/cross-portal/clinicalComponentStructure.regression.test.ts` — EmrEditorChrome / PrescribingModalChrome / LiveTranscriptionView extraction; ValidationAction; Python ROLE_* constants
 - Cloud Defect-regression: **36/36** PASS (2026-05-30)
-- Cloud full headed: **85/85** PASS (2026-05-31) — groups A–P, screenshots → `docs/screenshots/`
+- Cloud full headed: **85/85** PASS (2026-05-31) — groups A–P, screenshots → `Documents/docs/screenshots/`
 
 ## Unit domain → UI proof mapping
 
@@ -43,43 +43,43 @@ Vitest validates logic in isolation; Playwright screenshots prove the same flows
 
 ### group-A
 
-- ![A01 admin dashboard](../docs/screenshots/group-A/A01-admin-dashboard.png)
-- ![A01 doctor dashboard](../docs/screenshots/group-A/A01-doctor-dashboard.png)
-- ![A01 patient dashboard](../docs/screenshots/group-A/A01-patient-dashboard.png)
-- ![A02 patient sidebar](../docs/screenshots/group-A/A02-patient-sidebar.png)
-- ![A03 doctor sidebar](../docs/screenshots/group-A/A03-doctor-sidebar.png)
-- ![A04 admin sidebar](../docs/screenshots/group-A/A04-admin-sidebar.png)
-- ![A07 role isolation](../docs/screenshots/group-A/A07-role-isolation.png)
-- ![A09 doctor stats](../docs/screenshots/group-A/A09-doctor-stats.png)
-- ![A09 patient stats](../docs/screenshots/group-A/A09-patient-stats.png)
-- ![A2b auth registration](../docs/screenshots/group-A/A2b-auth-registration.png)
+- ![A01 admin dashboard](../Documents/docs/screenshots/group-A/A01-admin-dashboard.png)
+- ![A01 doctor dashboard](../Documents/docs/screenshots/group-A/A01-doctor-dashboard.png)
+- ![A01 patient dashboard](../Documents/docs/screenshots/group-A/A01-patient-dashboard.png)
+- ![A02 patient sidebar](../Documents/docs/screenshots/group-A/A02-patient-sidebar.png)
+- ![A03 doctor sidebar](../Documents/docs/screenshots/group-A/A03-doctor-sidebar.png)
+- ![A04 admin sidebar](../Documents/docs/screenshots/group-A/A04-admin-sidebar.png)
+- ![A07 role isolation](../Documents/docs/screenshots/group-A/A07-role-isolation.png)
+- ![A09 doctor stats](../Documents/docs/screenshots/group-A/A09-doctor-stats.png)
+- ![A09 patient stats](../Documents/docs/screenshots/group-A/A09-patient-stats.png)
+- ![A2b auth registration](../Documents/docs/screenshots/group-A/A2b-auth-registration.png)
 
 ### group-S
 
-- ![S01 patient dashboard](../docs/screenshots/group-S/S01-patient-dashboard.png)
-- ![S02 doctor dashboard](../docs/screenshots/group-S/S02-doctor-dashboard.png)
-- ![S03 patient deep routes](../docs/screenshots/group-S/S03-patient-deep-routes.png)
-- ![S04 doctor deep views](../docs/screenshots/group-S/S04-doctor-deep-views.png)
+- ![S01 patient dashboard](../Documents/docs/screenshots/group-S/S01-patient-dashboard.png)
+- ![S02 doctor dashboard](../Documents/docs/screenshots/group-S/S02-doctor-dashboard.png)
+- ![S03 patient deep routes](../Documents/docs/screenshots/group-S/S03-patient-deep-routes.png)
+- ![S04 doctor deep views](../Documents/docs/screenshots/group-S/S04-doctor-deep-views.png)
 
 ## Sample workflow screenshots
 
 ### workflows/auth-login
 
-- ![auth-login/WF01-patient-login-page.png](../docs/screenshots/workflows/auth-login/WF01-patient-login-page.png)
-- ![auth-login/WF02-patient-dashboard-after-login.png](../docs/screenshots/workflows/auth-login/WF02-patient-dashboard-after-login.png)
-- ![auth-login/WF02-patient-login-filled.png](../docs/screenshots/workflows/auth-login/WF02-patient-login-filled.png)
-- ![auth-login/WF03-patient-dashboard.png](../docs/screenshots/workflows/auth-login/WF03-patient-dashboard.png)
-- ![auth-login/WF08-doctor-login-page.png](../docs/screenshots/workflows/auth-login/WF08-doctor-login-page.png)
-- ![auth-login/WF09-doctor-dashboard.png](../docs/screenshots/workflows/auth-login/WF09-doctor-dashboard.png)
+- ![auth-login/WF01-patient-login-page.png](../Documents/docs/screenshots/workflows/auth-login/WF01-patient-login-page.png)
+- ![auth-login/WF02-patient-dashboard-after-login.png](../Documents/docs/screenshots/workflows/auth-login/WF02-patient-dashboard-after-login.png)
+- ![auth-login/WF02-patient-login-filled.png](../Documents/docs/screenshots/workflows/auth-login/WF02-patient-login-filled.png)
+- ![auth-login/WF03-patient-dashboard.png](../Documents/docs/screenshots/workflows/auth-login/WF03-patient-dashboard.png)
+- ![auth-login/WF08-doctor-login-page.png](../Documents/docs/screenshots/workflows/auth-login/WF08-doctor-login-page.png)
+- ![auth-login/WF09-doctor-dashboard.png](../Documents/docs/screenshots/workflows/auth-login/WF09-doctor-dashboard.png)
 
 ### workflows/appointment-lifecycle
 
-- ![appointment-lifecycle/WF04-patient-appointments-empty.png](../docs/screenshots/workflows/appointment-lifecycle/WF04-patient-appointments-empty.png)
-- ![appointment-lifecycle/WF05-book-appointment-step1.png](../docs/screenshots/workflows/appointment-lifecycle/WF05-book-appointment-step1.png)
-- ![appointment-lifecycle/WF10-appointment-management-pool.png](../docs/screenshots/workflows/appointment-lifecycle/WF10-appointment-management-pool.png)
-- ![appointment-lifecycle/WF11-appointment-confirmed.png](../docs/screenshots/workflows/appointment-lifecycle/WF11-appointment-confirmed.png)
-- ![appointment-lifecycle/WF12-health-meeting-queue.png](../docs/screenshots/workflows/appointment-lifecycle/WF12-health-meeting-queue.png)
-- ![appointment-lifecycle/WF12b-doctor-notifications.png](../docs/screenshots/workflows/appointment-lifecycle/WF12b-doctor-notifications.png)
+- ![appointment-lifecycle/WF04-patient-appointments-empty.png](../Documents/docs/screenshots/workflows/appointment-lifecycle/WF04-patient-appointments-empty.png)
+- ![appointment-lifecycle/WF05-book-appointment-step1.png](../Documents/docs/screenshots/workflows/appointment-lifecycle/WF05-book-appointment-step1.png)
+- ![appointment-lifecycle/WF10-appointment-management-pool.png](../Documents/docs/screenshots/workflows/appointment-lifecycle/WF10-appointment-management-pool.png)
+- ![appointment-lifecycle/WF11-appointment-confirmed.png](../Documents/docs/screenshots/workflows/appointment-lifecycle/WF11-appointment-confirmed.png)
+- ![appointment-lifecycle/WF12-health-meeting-queue.png](../Documents/docs/screenshots/workflows/appointment-lifecycle/WF12-health-meeting-queue.png)
+- ![appointment-lifecycle/WF12b-doctor-notifications.png](../Documents/docs/screenshots/workflows/appointment-lifecycle/WF12b-doctor-notifications.png)
 
 ## Commands
 

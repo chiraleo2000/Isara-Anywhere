@@ -70,7 +70,13 @@ if (Test-Path $authStates) {
 
 # --- Docs: editor temp, draw.io autosave, Office locks, build intermediates ---
 $docJunk = @()
-$docJunk += Get-ChildItem -Path (Join-Path $root "docs") -Recurse -Force -File -ErrorAction SilentlyContinue |
+$docRoots = @(
+    (Join-Path $root "Documents\docs"),
+    (Join-Path $root "Documents\Presentations")
+)
+foreach ($docRoot in $docRoots) {
+    if (-not (Test-Path $docRoot)) { continue }
+    $docJunk += Get-ChildItem -Path $docRoot -Recurse -Force -File -ErrorAction SilentlyContinue |
     Where-Object {
         $_.Name -match '^\.\$' -or
         $_.Name -like '~$*' -or
@@ -78,6 +84,7 @@ $docJunk += Get-ChildItem -Path (Join-Path $root "docs") -Recurse -Force -File -
         $_.Name -match '_BUILD\.(docx|pptx)$'
     } |
     Select-Object -ExpandProperty FullName
+}
 Remove-FilesSafe $docJunk
 
 Write-Host "--- Guide intermediates (guides:cleanup-old) ---" -ForegroundColor Cyan
@@ -146,6 +153,6 @@ Remove-PathSafe -Path $datedShowup -Label "reports\cloud-unit-gate\ui-showup\202
 Remove-PathSafe -Path (Join-Path $root "reports\doctor-rev104-extract") -Label "reports\doctor-rev104-extract"
 
 Write-Host ""
-Write-Host "Kept: docs/, Processes/, Presentations/, reports/cloud-unit-gate/, reports/defect-fix/, latest JSON per round folder" -ForegroundColor Green
+Write-Host "Kept: Documents/, Processes/, reports/cloud-unit-gate/, reports/defect-fix/, latest JSON per round folder" -ForegroundColor Green
 Write-Host "Regenerate Playwright cache: npm run test:e2e" -ForegroundColor DarkGray
 if (-not $DryRun) { Write-Host "Done." -ForegroundColor Green }

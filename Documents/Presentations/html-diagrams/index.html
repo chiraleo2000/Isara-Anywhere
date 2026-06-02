@@ -2,12 +2,10 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Izara Telemedicine v1.5.9 - System Diagrams</title>
+    <title>Izara Telemedicine - System Diagrams</title>
     <style>
         body { font-family: 'Segoe UI', sans-serif; max-width: 1200px; margin: 0 auto; padding: 40px; background: #f0f2f5; }
-        h1 { color: #1a1a1a; text-align: center; margin-bottom: 10px; }
-        .version { text-align: center; color: #666; margin-bottom: 30px; }
+        h1 { color: #1a1a1a; text-align: center; margin-bottom: 40px; }
         .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
         .card { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); transition: transform 0.2s; }
         .card:hover { transform: translateY(-5px); box-shadow: 0 5px 15px rgba(0,0,0,0.15); }
@@ -15,15 +13,11 @@
         .card h3 { margin: 0 0 10px 0; color: #2196F3; }
         .card p { margin: 0; color: #666; font-size: 0.9em; }
         .dbml-section { margin-top: 40px; background: #fff; padding: 25px; border-radius: 10px; }
-        .section-heading { margin-top: 30px; margin-bottom: 15px; color: #333; border-bottom: 2px solid #2196F3; padding-bottom: 8px; }
         code { background: #eee; padding: 2px 5px; border-radius: 4px; }
     </style>
 </head>
 <body>
-    <h1>🏥 Izara Telemedicine - Architecture Visualizations</h1>
-    <p class="version">Version 1.7.41 | May 30, 2026 | 2698 Unit + Defect-regression 19/19 (cloud) | Mermaid SRI pinned @10.9.3</p>
-    
-    <h2 class="section-heading">Core Diagrams (12 Mermaid Sources)</h2>
+    <h1>Izara Telemedicine - Architecture Visualizations</h1>
     <div class="grid">        <div class="card">
             <a href="01-system-architecture.html">
                 <h3>01-system-architecture</h3>
@@ -84,117 +78,40 @@
                 <h3>12-prescription-workflow</h3>
                 <p>View workflow diagram</p>
             </a>
-        </div>            <div class="card">
-            <a href="05-consultation-workflow.html">
-                <h3>05-consultation-workflow</h3>
-                <p>Extended workflow diagram</p>
-            </a>
-        </div>        <div class="card">
-            <a href="07-prescribing-workflow.html">
-                <h3>07-prescribing-workflow</h3>
-                <p>Extended workflow diagram</p>
-            </a>
-        </div>        <div class="card">
-            <a href="08-content-workflow.html">
-                <h3>08-content-workflow</h3>
-                <p>Extended workflow diagram</p>
-            </a>
-        </div>        <div class="card">
-            <a href="09-gcs-bucket-architecture.html">
-                <h3>09-gcs-bucket-architecture</h3>
-                <p>Extended workflow diagram</p>
-            </a>
-        </div>        <div class="card">
-            <a href="10-gcp-services.html">
-                <h3>10-gcp-services</h3>
-                <p>Extended workflow diagram</p>
-            </a>
-        </div>        <div class="card">
-            <a href="11-google-services.html">
-                <h3>11-google-services</h3>
-                <p>Extended workflow diagram</p>
-            </a>
-        </div>        <div class="card">
-            <a href="12-lab-imaging-workflow.html">
-                <h3>12-lab-imaging-workflow</h3>
-                <p>Extended workflow diagram</p>
-            </a>
-        </div>        <div class="card">
-            <a href="13-auth-workflow.html">
-                <h3>13-auth-workflow</h3>
-                <p>Extended workflow diagram</p>
-            </a>
-        </div>        <div class="card">
-            <a href="14-phr-workflow.html">
-                <h3>14-phr-workflow</h3>
-                <p>Extended workflow diagram</p>
-            </a>
-        </div>        <div class="card">
-            <a href="15-healthcare-map-workflow.html">
-                <h3>15-healthcare-map-workflow</h3>
-                <p>Extended workflow diagram</p>
-            </a>
-        </div>        <div class="card">
-            <a href="16-data-sync-workflow.html">
-                <h3>16-data-sync-workflow</h3>
-                <p>Extended workflow diagram</p>
-            </a>
-        </div>        <div class="card">
-            <a href="17-testing-quality-gate.html">
-                <h3>17-testing-quality-gate</h3>
-                <p>Unit + UI gate + Sonar coverage (v1.7.37)</p>
-            </a>
-        </div>        <div class="card">
-            <a href="18-defect-remediation-v1738.html">
-                <h3>18-defect-remediation-v1738</h3>
-                <p>Defect TDD remediation flows (v1.7.38)</p>
-            </a>
-        </div>        <div class="card">
-            <a href="19-defect-remediation-v1739.html">
-                <h3>19-defect-remediation-v1739</h3>
-                <p>Defect closure v1.7.39 — behavioral tests + deploy</p>
-            </a>
-        </div>        <div class="card">
-            <a href="20-gemini-31-migration.html">
-                <h3>20-gemini-31-migration</h3>
-                <p>Gemini 3.1-flash-lite migration (v1.7.42)</p>
-            </a>
-        </div>        <div class="card">
-            <a href="21-defect-remediation-v1743.html">
-                <h3>21-defect-remediation-v1743</h3>
-                <p>Full reset pass — LivingWill canonical + Sonar clearance (v1.7.43)</p>
-            </a>
-        </div>        <div class="card">
-            <a href="22-defect-remediation-v1744.html">
-                <h3>22-defect-remediation-v1744</h3>
-                <p>Behavioral tests + Playwright defect suites (v1.7.44)</p>
-            </a>
-        </div>        <div class="card">
-            <a href="23-defect-remediation-v1748.html">
-                <h3>23-defect-remediation-v1748</h3>
-                <p>PDF re-audit + Sonar clinical extraction (v1.7.48)</p>
-            </a>
-        </div>    </div>
+        </div>
+        <div class="card"><a href="05-consultation-workflow.html"><h3>05-consultation-workflow</h3><p>Extended workflow diagram</p></a></div>
+        <div class="card"><a href="07-prescribing-workflow.html"><h3>07-prescribing-workflow</h3><p>Extended workflow diagram</p></a></div>
+        <div class="card"><a href="08-content-workflow.html"><h3>08-content-workflow</h3><p>Extended workflow diagram</p></a></div>
+        <div class="card"><a href="09-gcs-bucket-architecture.html"><h3>09-gcs-bucket-architecture</h3><p>Extended workflow diagram</p></a></div>
+        <div class="card"><a href="10-gcp-services.html"><h3>10-gcp-services</h3><p>Extended workflow diagram</p></a></div>
+        <div class="card"><a href="11-google-services.html"><h3>11-google-services</h3><p>Extended workflow diagram</p></a></div>
+        <div class="card"><a href="12-lab-imaging-workflow.html"><h3>12-lab-imaging-workflow</h3><p>Extended workflow diagram</p></a></div>
+        <div class="card"><a href="13-auth-workflow.html"><h3>13-auth-workflow</h3><p>Extended workflow diagram</p></a></div>
+        <div class="card"><a href="14-phr-workflow.html"><h3>14-phr-workflow</h3><p>Extended workflow diagram</p></a></div>
+        <div class="card"><a href="15-healthcare-map-workflow.html"><h3>15-healthcare-map-workflow</h3><p>Extended workflow diagram</p></a></div>
+        <div class="card"><a href="16-data-sync-workflow.html"><h3>16-data-sync-workflow</h3><p>Extended workflow diagram</p></a></div>
+        <div class="card"><a href="17-testing-quality-gate.html"><h3>17-testing-quality-gate</h3><p>Extended workflow diagram</p></a></div>
+        <div class="card"><a href="18-defect-remediation-v1738.html"><h3>18-defect-remediation-v1738</h3><p>Extended workflow diagram</p></a></div>
+        <div class="card"><a href="19-defect-remediation-v1739.html"><h3>19-defect-remediation-v1739</h3><p>Extended workflow diagram</p></a></div>
+        <div class="card"><a href="20-gemini-31-migration.html"><h3>20-gemini-31-migration</h3><p>Extended workflow diagram</p></a></div>
+        <div class="card"><a href="21-defect-remediation-v1743.html"><h3>21-defect-remediation-v1743</h3><p>Extended workflow diagram</p></a></div>
+        <div class="card"><a href="22-defect-remediation-v1744.html"><h3>22-defect-remediation-v1744</h3><p>Extended workflow diagram</p></a></div>
+        <div class="card"><a href="23-defect-remediation-v1748.html"><h3>23-defect-remediation-v1748</h3><p>Extended workflow diagram</p></a></div>
+    </div>
+    <p class="version" style="text-align:center;color:#666;">v1.7.48 Â· Documents hub: <a href="../../README.md">README</a></p>
+
+    <h2 style="margin-top:30px;border-bottom:2px solid #2196F3;padding-bottom:8px;">Documentation bundles</h2>
     <div class="grid">
-        <div class="card">
-            <a href="../../docs/markdown/testing/UNIT_TEST_UI_COVERAGE.md">
-                <h3>Unit + UI Coverage</h3>
-                <p>Full unit run + screenshot cross-reference</p>
-            </a>
-        </div>
-        <div class="card">
-            <a href="../../tests/UNIT_TEST_COVERAGE_REPORT.md">
-                <h3>Unit Test Report</h3>
-                <p>Vitest groups mapped to Playwright PNGs</p>
-            </a>
-        </div>
+        <div class="card"><a href="../../Technical_Documents/01_System_Architecture_and_Workflow.md"><h3>Technical_Documents 01-05 (TH)</h3><p>As-is on Google Cloud</p></a></div>
+        <div class="card"><a href="../../Documents/docs/diagrams/diagrams.drawio"><h3>draw.io master</h3><p>12-tab deck + PNG export</p></a></div>
+        <div class="card"><a href="../TECHNICAL_DOCUMENTATION.md"><h3>TECHNICAL_DOCUMENTATION.md</h3><p>English overview + testing</p></a></div>
+        <div class="card"><a href="../../Documents/docs/markdown/testing/UNIT_TEST_UI_COVERAGE.md"><h3>Unit + UI coverage</h3><p>Screenshot cross-reference</p></a></div>
     </div>
 
     <div class="dbml-section">
-        <h2>💾 Database Schema</h2>
-        <p>The complete database schema is defined in DBML format with 42 tables across auth, patient, doctor, clinical, AI, content, audit, and mobile domains.</p>
-        <p><strong>File:</strong> <code>database/izara-complete-schema-v4.dbml</code></p>
-        <p>Visualize with <a href="https://dbdiagram.io" target="_blank" rel="noopener noreferrer">dbdiagram.io</a> or the VS Code DBML extension.</p>
+        <h2>Database Schema</h2>
+        <p>DBML: <code>Presentations/database/izara-complete-schema-v4.dbml</code></p>
+        <p>Regenerate appendix: <code>python scripts/build-appendix-process-steps.py</code></p>
     </div>
 </body>
 </html>

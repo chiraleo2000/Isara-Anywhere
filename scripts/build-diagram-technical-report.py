@@ -9,7 +9,7 @@ from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from docs_paths import MD_OPERATIONS, TECH_PPT, TECH_WORD  # noqa: E402
+from docs_paths import DIAGRAMS_EXPORT, MD_OPERATIONS, TECH_PPT, TECH_WORD  # noqa: E402
 from diagram_technical_report_content import (  # noqa: E402
     CLOSING,
     DATE_TH,
@@ -50,7 +50,7 @@ _ppt_fill_table = _bpg._ppt_fill_table
 _ppt_set_font = _bpg._ppt_set_font
 _set_run_font = _bpg._set_run_font
 
-PAGES_DIR = REPO / "docs" / "diagrams" / "export" / "pages"
+PAGES_DIR = DIAGRAMS_EXPORT / "pages"
 DOCX_OUT = TECH_WORD / "TECHNICAL_DIAGRAM_REPORT_TH.docx"
 PPTX_OUT = TECH_PPT / "TECHNICAL_DIAGRAM_REPORT_PPT_TH.pptx"
 MD_OUT = MD_OPERATIONS / "TECHNICAL_DIAGRAM_REPORT_TH.md"
@@ -140,7 +140,7 @@ def build_word(pages: list[dict]) -> None:
         [
             ["เวอร์ชัน", VERSION],
             ["วันที่จัดทำ", DATE_TH],
-            ["แหล่งแผนภาพ", "docs/diagrams/diagrams.drawio"],
+            ["แหล่งแผนภาพ", "Documents/docs/diagrams/diagrams.drawio"],
             ["จำนวนหน้าแผนภาพ", str(n)],
             ["Word รายงาน", str(DOCX_OUT.name)],
             ["PowerPoint", str(PPTX_OUT.name)],

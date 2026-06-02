@@ -2,7 +2,7 @@
 # Export draw.io diagrams to PNG/PDF (requires draw.io Desktop or drawio CLI on PATH).
 param(
     [string]$DrawIoExe = "",
-    [string]$OutDir = "docs/diagrams/export"
+    [string]$OutDir = "Documents/docs/diagrams/export"
 )
 
 $ErrorActionPreference = "Stop"
@@ -10,10 +10,10 @@ $root = Split-Path -Parent $PSScriptRoot
 Set-Location $root
 
 $diagrams = @(
-    "docs/diagrams/Isara_Anywhere_System_Diagram.drawio",
-    "docs/diagrams/Isara_Anywhere_Full_Diagram.drawio",
-    "docs/diagrams/Isara_Anywhere_Complete_Diagram.drawio",
-    "docs/diagrams/diagrams.drawio"
+    "Documents/docs/diagrams/Isara_Anywhere_System_Diagram.drawio",
+    "Documents/docs/diagrams/Isara_Anywhere_Full_Diagram.drawio",
+    "Documents/docs/diagrams/Isara_Anywhere_Complete_Diagram.drawio",
+    "Documents/docs/diagrams/diagrams.drawio"
 )
 
 New-Item -ItemType Directory -Force -Path $OutDir | Out-Null

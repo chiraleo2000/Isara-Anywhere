@@ -12,13 +12,13 @@ Automated checks keep documentation consistent across `Processes/`, `docs/`, and
 | PowerPoint (`.pptx`) | **FC Iconic** | Title **32 pt**, body **18 pt**, speaker notes **16 pt** |
 
 Generate user guides: `python scripts/build-portal-user-guides.py`  
-Generate **technical architecture** Word/PPT: `npm run guides:technical` → `docs/technical/word/TECHNICAL_ARCHITECTURE_WORD_TH.docx`, `docs/technical/ppt/TECHNICAL_ARCHITECTURE_PPT_TH.pptx`  
+Generate **technical architecture** Word/PPT: `npm run guides:technical` → `Documents/docs/technical/word/TECHNICAL_ARCHITECTURE_WORD_TH.docx`, `Documents/docs/technical/ppt/TECHNICAL_ARCHITECTURE_PPT_TH.pptx`  
 Enrich `Processes/Pages/**/*.md` with detailed steps: `python scripts/enrich-process-pages.py --force-steps`  
-HTML slides (Sarabun 16 pt): `docs/technical/slides/TECHNICAL_ARCHITECTURE_SLIDES.html` · Speaker notes: `docs/technical/slides/TECHNICAL_ARCHITECTURE_SLIDES.md` · Diagrams: `docs/diagrams/diagrams.drawio`
+HTML slides (Sarabun 16 pt): `Documents/docs/technical/slides/TECHNICAL_ARCHITECTURE_SLIDES.html` · Speaker notes: `Documents/docs/technical/slides/TECHNICAL_ARCHITECTURE_SLIDES.md` · Diagrams: `Documents/docs/diagrams/diagrams.drawio`
 
 **After cloud / Code Breaker testing:** purge demo data only (no re-seed): `npm run cleanup:cloud-test-only` (requires valid `DB_PASSWORD` in `.env`)
 
-**Current doc build:** v1.7.48 · Unit **2736** · Cloud full **85/85** headed (2026-05-31) · Word `TH Sarabun New` 16 pt · PPT `FC Iconic` 32/18/16 pt · Technical deck regenerated · Screenshots **212** PNG in `docs/screenshots/`
+**Current doc build:** v1.7.48 · Unit **2736** · Cloud full **85/85** headed (2026-05-31) · Word `TH Sarabun New` 16 pt · PPT `FC Iconic` 32/18/16 pt · Technical deck regenerated · Screenshots **212** PNG in `Documents/docs/screenshots/`
 
 ---
 

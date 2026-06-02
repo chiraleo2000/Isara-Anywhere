@@ -1,194 +1,85 @@
-# 📊 IZARA Telemedicine Platform - Presentation Materials
+# IZARA Telemedicine — Presentation Materials
 
-> **Version:** 1.7.37 | **Updated:** 28 May 2026
-> **Status:** Cloud dev-testing green — rev `00137-zdl`
-> **Tests:** **2,645** unit (114 files) + **41** gate UI (A-auth + 7 viewports) + GATE0 — see [docs/markdown/testing/UNIT_TEST_UI_COVERAGE.md](../docs/markdown/testing/UNIT_TEST_UI_COVERAGE.md)
-> **Diagrams:** [html-diagrams/17-testing-quality-gate.html](html-diagrams/17-testing-quality-gate.html) — unit ↔ UI ↔ cloud connections
-> **Code Quality:** SonarLint IDE + `npm run sonar:lint`
+> **Version:** 1.7.48 · **Updated:** 2 June 2026  
+> **Status:** Defect PDF — 23/23 verified · **2736** unit tests  
+> **Documents hub:** [../README.md](../README.md) · **Thai As-is:** [../Technical_Documents/](../Technical_Documents/)
 
 ---
 
+## Primary references
 
-
-## 📘 Documentation
-
-The primary technical reference is located at:
-**[TECHNICAL_DOCUMENTATION.md](TECHNICAL_DOCUMENTATION.md)**
-
-This document covers:
-
-1. System Architecture
-2. Database Schema (42 tables, v4.0)
-3. User Management & RBAC
-4. Core Workflows
-5. DevOps & Deployment
-6. **Testing** (3,352 tests: 2,013 unit across 58 files + 1,124 local E2E across 32 specs + 215 cloud tests across 10 specs)
+| Document | Language | Audience |
+|----------|----------|----------|
+| [TECHNICAL_DOCUMENTATION.md](TECHNICAL_DOCUMENTATION.md) | English | Architecture, testing, deployment overview |
+| [../Technical_Documents/](../Technical_Documents/) | Thai | As-is GCP architecture (01–05) |
+| [../docs/README.md](../Documents/docs/README.md) | TH/EN | Word/PPT guides, draw.io, screenshots |
+| [PRESENTATION_SCRIPT.md](PRESENTATION_SCRIPT.md) | Thai | 30–45 min stakeholder script |
+| [RELEASE_NOTES.md](RELEASE_NOTES.md) | English | Archived v1.7.38–v1.7.47 notes |
 
 ---
 
+## Live URLs
 
-
-## 🌐 Live URLs
-
-
-
-### Local Environment (Docker)
+### Local (Docker)
 
 | Service | URL |
-| --------- | ----- |
-| Patient Portal | <http://localhost:3005> |
-| Doctor Portal | <http://localhost:3010> |
-| Meeting Server | <http://localhost:3020> |
+|---------|-----|
+| Patient Portal | http://localhost:3005 |
+| Doctor Portal | http://localhost:3010 |
+| Meeting Server | http://localhost:3020 |
 | PostgreSQL | localhost:5433 |
-| pgAdmin | <http://localhost:5050> |
+| pgAdmin | http://localhost:5050 |
 
-
-
-
-### Cloud Environment (Google Cloud Run)
+### Cloud (dev-testing)
 
 | Service | URL |
-| --------- | ----- |
-| Patient Portal | <https://izara-patient-portal-dev-testing-724889190329.asia-southeast1.run.app> |
-| Doctor Portal | <https://izara-doctor-portal-dev-testing-724889190329.asia-southeast1.run.app> |
-| Meeting Server | <https://izara-meeting-server-dev-testing-724889190329.asia-southeast1.run.app> |
-| pgAdmin | <https://izara-pgadmin-dev-testing-724889190329.asia-southeast1.run.app> |
-| PostgreSQL VM | 35.240.157.230:5432 |
+|---------|-----|
+| Patient Portal | https://izara-patient-portal-dev-testing-724889190329.asia-southeast1.run.app |
+| Doctor Portal | https://izara-doctor-portal-dev-testing-724889190329.asia-southeast1.run.app |
+| Meeting Server | https://izara-meeting-server-dev-testing-724889190329.asia-southeast1.run.app |
 
+Details: [../Documents/docs/markdown/operations/CLOUD_ACCESS_TH.md](../Documents/docs/markdown/operations/CLOUD_ACCESS_TH.md)
 
 ---
 
-
-
-## 📁 Folder Structure
+## Folder structure
 
 ```text
 Presentations/
-├── TECHNICAL_DOCUMENTATION.md    # 🌟 MAIN TECHNICAL REFERENCE
-├── PRESENTATION_SCRIPT.md        # Presentation script & guide
-├── README.md                     # This file
+├── TECHNICAL_DOCUMENTATION.md
+├── PRESENTATION_SCRIPT.md
+├── RELEASE_NOTES.md
+├── README.md
+├── generate-diagrams.ps1
+├── compact_template.html
 ├── database/
-│   └── izara-complete-schema-v4.dbml  # Database schema (DBML)
-├── diagrams/                     # 12 Mermaid workflow diagrams (.mmd)
-│   ├── 01-system-architecture.mmd
-│   ├── 02-patient-features.mmd
-│   ├── 03-doctor-features.mmd
-│   ├── 04-appointment-workflow.mmd
-│   ├── 05-database-schema.mmd
-│   ├── 06-emr-workflow.mmd
-│   ├── 07-ai-integration.mmd
-│   ├── 08-security-rbac.mmd
-│   ├── 09-deployment-architecture.mmd
-│   ├── 10-video-meeting-flow.mmd
-│   ├── 11-phr-management.mmd
-│   └── 12-prescription-workflow.mmd
-└── html-diagrams/                # 🌐 24 Interactive HTML Diagrams
-    ├── index.html                # Start here — gallery of all diagrams
-    ├── 01–12 *.html              # Core diagrams (from .mmd sources)
-    └── 13–24 *.html              # Extended workflow diagrams
+│   └── izara-complete-schema-v4.dbml
+├── diagrams/              # 12 core .mmd sources
+└── html-diagrams/         # 01–23 interactive HTML (+ index.html)
 ```
 
 ---
 
+## Quick usage
 
+| Task | Action |
+|------|--------|
+| View diagrams | Open [html-diagrams/index.html](html-diagrams/index.html) |
+| Regenerate HTML from Mermaid | `.\Documents\Presentations\generate-diagrams.ps1` |
+| draw.io PNG (12 pages) | `npm run diagrams:export` (from repo root) |
+| Technical overview | Read [TECHNICAL_DOCUMENTATION.md](TECHNICAL_DOCUMENTATION.md) |
+| DB schema (DBML) | [database/izara-complete-schema-v4.dbml](database/izara-complete-schema-v4.dbml) |
+| Full process steps (TH) | [../Technical_Documents/05_Appendix_Full_Process_Steps.md](../Technical_Documents/05_Appendix_Full_Process_Steps.md) |
 
-## 🛠️ Quick Usage
+---
 
+## Testing cross-reference
 
+- Coverage: [../Documents/docs/markdown/testing/UNIT_TEST_UI_COVERAGE.md](../Documents/docs/markdown/testing/UNIT_TEST_UI_COVERAGE.md)
+- Diagram: [html-diagrams/17-testing-quality-gate.html](html-diagrams/17-testing-quality-gate.html)
+- Latest defect diagram: [html-diagrams/23-defect-remediation-v1748.html](html-diagrams/23-defect-remediation-v1748.html)
 
-### View Diagrams
-
-Open **[html-diagrams/index.html](html-diagrams/index.html)** in your browser.
-
-
-
-### Technical Overview
-
-Read **[TECHNICAL_DOCUMENTATION.md](TECHNICAL_DOCUMENTATION.md)**
-
-
-
-### Database Schema
-
-View **[database/izara-complete-schema-v4.dbml](database/izara-complete-schema-v4.dbml)**
-(Visualize with [dbdiagram.io](<https://dbdiagram.io)> or VS Code DBML extension)
-
-
-
-### Regenerate HTML Diagrams
-
-```powershell
-.\generate-diagrams.ps1
+```bash
+npm run test:quality:gate
+npm run cleanup:project    # prune doc junk + caches
 ```
-
-
-
-### Run All Tests
-
-```powershell
-
-
-# Unit tests (2,013 tests, ~4.3s)
-cd tests/unit && npx vitest run
-
-
-
-# E2E tests (1,124 tests, ~4.2 min, requires Docker)
-cd tests/e2e && $env:CI="true"; npx playwright test --project=Local
-```
-
----
-
-
-
-## 🎯 Key Diagrams
-
-| # | Diagram | Description |
-| --- | --------- | ------------- |
-| 01 | System Architecture | High-level platform overview |
-| 02 | Patient Features | Patient portal capabilities |
-| 03 | Doctor Features | Doctor portal capabilities |
-| 04 | Appointment Workflow | Booking & confirmation flow |
-| 05 | Database Schema | PostgreSQL schema overview |
-| 06 | EMR Workflow | SOAP notes & AI summary |
-| 07 | AI Integration | Gemini AI features (Chat, CDS) |
-| 08 | Security & RBAC | Roles & permissions |
-| 09 | Deployment Architecture | Docker & Cloud Run |
-| 10 | Video Meeting Flow | Jitsi + transcription + AI |
-| 11 | PHR Management | Personal health records |
-| 12 | Prescription Workflow | E-prescribe with CDS |
-
-
----
-
-
-
-## 📋 Test Credentials (5 Demo Accounts)
-
-| Role | Email | Password | Portal |
-| ------ | ------- | ---------- | ------- |
-| Patient 1 (Demo) | `demo.test@gmail.com` | P@ssw0rd | Patient |
-| Patient 2 (Somchai) | `Somchai.Mankong@gmail.com` | P@ssw0rd | Patient |
-| Patient 3 (Anan) | `Anan.Khayanrian@gmail.com` | P@ssw0rd | Patient |
-| Doctor | `doctor.test@izara.com` | IzaraDoctor@2024 | Doctor |
-| Admin | `admin.test@izara.com` | IzaraAdmin@2024 | Doctor |
-
-
----
-
-
-
-## 🔗 Service URLs
-
-| Service | Local | Cloud |
-| --------- | ------- | ------- |
-| Patient Portal | <http://localhost:3005> | <https://izara-patient-portal-*.run.app> |
-| Doctor Portal | <http://localhost:3010> | <https://izara-doctor-portal-*.run.app> |
-| PostgreSQL | localhost:5433 | GCE VM (35.240.157.230) |
-
-
----
-
-
-
-### Last Updated: March 27, 2026

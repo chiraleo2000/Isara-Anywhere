@@ -35,7 +35,7 @@ Cloud-first hardening with immutable error ledgers, production-grade Group Q (UI
 | Process pages v1.7.26 | `enrich-process-pages.py --force-steps` — TH Sarabun / FC Iconic standards + detailed steps |
 | User guides v1.7.26 | `build-portal-user-guides.py` — Word 16pt + PPT FC Iconic regenerated |
 | `Processes/Pages/**` | 39 pages — มาตรฐานเอกสาร + คำอธิบาย + ขั้นตอนละเอียด (`enrich-process-pages.py --force-steps`) |
-| User guides | `docs/guides/patient|doctor/USER_GUIDE_*_WORD_TH.docx` (TH Sarabun New **16 pt**), `*_PPT_TH.pptx` (**FC Iconic**) v1.7.25 |
+| User guides | `Documents/Documents/docs/guides/patient|doctor/USER_GUIDE_*_WORD_TH.docx` (TH Sarabun New **16 pt**), `*_PPT_TH.pptx` (**FC Iconic**) v1.7.25 |
 
 ## Teams-like meeting production (2026-05-23)
 

@@ -2,7 +2,7 @@
 # Export canonical USER_GUIDE_*.docx / *.pptx to PDF (Word + PowerPoint required).
 $ErrorActionPreference = "Stop"
 $root = Split-Path -Parent $PSScriptRoot
-$docs = Join-Path $root "docs"
+$docs = Join-Path $root "Documents\docs"
 
 function Resolve-SourceFile([string]$relativePath) {
     $path = Join-Path $docs $relativePath
@@ -58,4 +58,4 @@ $pp.Quit()
 
 Write-Host "Done. PDF files:" -ForegroundColor Green
 Get-ChildItem (Join-Path $docs "guides"), (Join-Path $docs "technical/pdf") -Recurse -Filter "*.pdf" -ErrorAction SilentlyContinue |
-    ForEach-Object { Write-Host "  $($_.FullName.Replace($docs + '\', 'docs/')) ($([math]::Round($_.Length/1MB,1)) MB)" }
+    ForEach-Object { Write-Host "  $($_.FullName.Replace($docs + '\', 'Documents/docs/')) ($([math]::Round($_.Length/1MB,1)) MB)" }

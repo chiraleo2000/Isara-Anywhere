@@ -1,10 +1,11 @@
-"""Canonical paths under docs/ (reorganized by type + content)."""
+"""Canonical paths under Documents/docs/ (reorganized by type + content)."""
 from __future__ import annotations
 
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]
-DOCS = REPO / "docs"
+DOCUMENTS = REPO / "Documents"
+DOCS = DOCUMENTS / "docs"
 
 # User guides (patient / doctor)
 GUIDES = DOCS / "guides"

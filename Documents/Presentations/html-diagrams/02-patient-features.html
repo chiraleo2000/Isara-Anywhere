@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -17,9 +17,9 @@
 </head>
 <body>
     <div class="nav">
-        <a href="index.html">🔙 Back to Index</a>
+        <a href="index.html">Back to Index</a>
         <span>|</span>
-        <a href="javascript:location.reload()">🔄 Refresh</a>
+        <a href="javascript:location.reload()">Refresh</a>
     </div>
     <div class="container">
         <h1>02-patient-features</h1>
@@ -39,54 +39,52 @@
 }}%%
 
 flowchart TB
-    subgraph PP["📱 PATIENT PORTAL"]
+    subgraph PP["ðŸ“± PATIENT PORTAL"]
         direction TB
         
-        subgraph AUTH["🔐 Authentication"]
+        subgraph AUTH["ðŸ” Authentication"]
             A1["Login / Register"]
             A2["Profile Management"]
             A3["Password Reset"]
         end
         
-        subgraph APPT["📅 Appointments"]
-            B1["🔍 Symptom Input<br/>(AI Triage)"]
-            B2["👨‍⚕️ Doctor Selection"]
-            B3["📆 Slot Booking"]
-            B4["✅ Confirmation"]
-            B5["� Recording Consent"]
-            B6["🚪 Meeting Lobby"]
-            B7["�📹 Video Call<br/>(Jitsi)"]
+        subgraph APPT["ðŸ“… Appointments"]
+            B1["ðŸ” Symptom Input<br/>(AI Triage)"]
+            B2["ðŸ‘¨â€âš•ï¸ Doctor Selection"]
+            B3["ðŸ“† Slot Booking"]
+            B4["âœ… Confirmation"]
+            B5["ðŸ“¹ Video Call<br/>(Jitsi)"]
         end
         
-        subgraph PHR["📋 Health Records"]
-            C1["📊 Personal Health Record"]
-            C2["💉 Vital Signs"]
-            C3["💊 Medications"]
-            C4["🩺 Allergies"]
-            C5["📜 Living Will"]
+        subgraph PHR["ðŸ“‹ Health Records"]
+            C1["ðŸ“Š Personal Health Record"]
+            C2["ðŸ’‰ Vital Signs"]
+            C3["ðŸ’Š Medications"]
+            C4["ðŸ©º Allergies"]
+            C5["ðŸ“œ Living Will"]
         end
         
-        subgraph AI_ASSIST["🤖 AI Assistant"]
-            D1["💬 Health Chat<br/>(Gemini AI)"]
-            D2["📄 Document Analysis"]
-            D3["❓ Symptom Checker"]
+        subgraph AI_ASSIST["ðŸ¤– AI Assistant"]
+            D1["ðŸ’¬ Health Chat<br/>(Gemini AI)"]
+            D2["ðŸ“„ Document Analysis"]
+            D3["â“ Symptom Checker"]
         end
         
-        subgraph CONTENT["📚 Content"]
-            E1["📖 Medical Articles"]
-            E2["🗺️ Hospital Map"]
-            E3["👨‍⚕️ Consultant Directory"]
+        subgraph CONTENT["ðŸ“š Content"]
+            E1["ðŸ“– Medical Articles"]
+            E2["ðŸ—ºï¸ Hospital Map"]
+            E3["ðŸ‘¨â€âš•ï¸ Consultant Directory"]
         end
         
-        subgraph NOTIFY["🔔 Notifications"]
-            F1["📧 Appointment Reminders"]
-            F2["💊 Medication Alerts"]
-            F3["📋 Results Ready"]
+        subgraph NOTIFY["ðŸ”” Notifications"]
+            F1["ðŸ“§ Appointment Reminders"]
+            F2["ðŸ’Š Medication Alerts"]
+            F3["ðŸ“‹ Results Ready"]
         end
     end
 
     A1 --> B1
-    B1 --> B2 --> B3 --> B4 --> B5 --> B6 --> B7
+    B1 --> B2 --> B3 --> B4 --> B5
     A1 --> C1
     C1 --> C2
     C1 --> C3
@@ -104,7 +102,7 @@ flowchart TB
     classDef notifyStyle fill:#E0F7FA,stroke:#0097A7,stroke-width:2px,color:#006064
 
     class A1,A2,A3 authStyle
-    class B1,B2,B3,B4,B5,B6,B7 apptStyle
+    class B1,B2,B3,B4,B5 apptStyle
     class C1,C2,C3,C4,C5 phrStyle
     class D1,D2,D3 aiStyle
     class E1,E2,E3 contentStyle
@@ -113,8 +111,8 @@ flowchart TB
         </div>
     </div>
     <script>
-        mermaid.initialize({ 
-            startOnLoad: true, 
+        mermaid.initialize({
+            startOnLoad: true,
             theme: 'base',
             securityLevel: 'loose',
             themeVariables: {

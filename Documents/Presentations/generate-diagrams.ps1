@@ -8,14 +8,14 @@
     It also generates an index.html for easy navigation.
 #>
 
-$diagramsDir = Join-Path $PSScriptRoot "..\Presentations\diagrams"
-$outputDir = Join-Path $PSScriptRoot "..\Presentations\html-diagrams"
+$diagramsDir = Join-Path $PSScriptRoot "diagrams"
+$outputDir = Join-Path $PSScriptRoot "html-diagrams"
 # Create output directory if it doesn't exist
 if (!(Test-Path $outputDir)) {
     New-Item -ItemType Directory -Path $outputDir | Out-Null
 }
 
-$htmlTemplate = @"
+$htmlTemplate = @'
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -35,9 +35,9 @@ $htmlTemplate = @"
 </head>
 <body>
     <div class="nav">
-        <a href="index.html">🔙 Back to Index</a>
+        <a href="index.html">Back to Index</a>
         <span>|</span>
-        <a href="javascript:location.reload()">🔄 Refresh</a>
+        <a href="javascript:location.reload()">Refresh</a>
     </div>
     <div class="container">
         <h1>{{TITLE}}</h1>
@@ -46,8 +46,8 @@ $htmlTemplate = @"
         </div>
     </div>
     <script>
-        mermaid.initialize({ 
-            startOnLoad: true, 
+        mermaid.initialize({
+            startOnLoad: true,
             theme: 'base',
             securityLevel: 'loose',
             themeVariables: {
@@ -60,9 +60,9 @@ $htmlTemplate = @"
     </script>
 </body>
 </html>
-"@
+'@
 
-$indexContent = @"
+$indexContent = @'
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -82,10 +82,9 @@ $indexContent = @"
     </style>
 </head>
 <body>
-    <h1>🏥 Izara Telemedicine - Architecture Visualizations</h1>
-    
+    <h1>Izara Telemedicine - Architecture Visualizations</h1>
     <div class="grid">
-"@
+'@
 
 $files = Get-ChildItem -Path $diagramsDir -Filter "*.mmd" | Sort-Object Name
 
@@ -113,46 +112,41 @@ foreach ($file in $files) {
 "@
 }
 
-$indexContent += @"
+$generatedNames = @($files | ForEach-Object { $_.BaseName })
+$extraHtmlFiles = Get-ChildItem -Path $outputDir -Filter "*.html" |
+    Where-Object { $_.BaseName -ne "index" -and $_.BaseName -notin $generatedNames } |
+    Sort-Object Name
+
+foreach ($extraFile in $extraHtmlFiles) {
+    $bn = $extraFile.BaseName
+    $indexContent += "`n        <div class=`"card`"><a href=`"$bn.html`"><h3>$bn</h3><p>Extended workflow diagram</p></a></div>"
+}
+
+$indexContent += @'
+
+    </div>
+    <p class="version" style="text-align:center;color:#666;">v1.7.48 · Documents hub: <a href="../../README.md">README</a></p>
+
+    <h2 style="margin-top:30px;border-bottom:2px solid #2196F3;padding-bottom:8px;">Documentation bundles</h2>
+    <div class="grid">
+        <div class="card"><a href="../../Technical_Documents/01_System_Architecture_and_Workflow.md"><h3>Technical_Documents 01-05 (TH)</h3><p>As-is on Google Cloud</p></a></div>
+        <div class="card"><a href="../../Documents/docs/diagrams/diagrams.drawio"><h3>draw.io master</h3><p>12-tab deck + PNG export</p></a></div>
+        <div class="card"><a href="../TECHNICAL_DOCUMENTATION.md"><h3>TECHNICAL_DOCUMENTATION.md</h3><p>English overview + testing</p></a></div>
+        <div class="card"><a href="../../Documents/docs/markdown/testing/UNIT_TEST_UI_COVERAGE.md"><h3>Unit + UI coverage</h3><p>Screenshot cross-reference</p></a></div>
     </div>
 
     <div class="dbml-section">
-        <h2>💾 Database Schema</h2>
-        <p>The complete database schema is defined in DBML format with 20+ tables across auth, patient, doctor, clinical, AI, and audit domains.</p>
-        <p><strong>File:</strong> <code>database/izara-complete-schema-v4.dbml</code></p>
-        <p>Visualize with <a href="https://dbdiagram.io" target="_blank">dbdiagram.io</a> or the VS Code DBML extension.</p>
+        <h2>Database Schema</h2>
+        <p>DBML: <code>Presentations/database/izara-complete-schema-v4.dbml</code></p>
+        <p>Regenerate appendix: <code>python scripts/build-appendix-process-steps.py</code></p>
     </div>
 </body>
 </html>
-"@
+'@
 
-# Also add cards for any existing HTML files not generated from .mmd sources
-$generatedNames = $files | ForEach-Object { $_.BaseName }
-$extraHtmlFiles = Get-ChildItem -Path $outputDir -Filter "*.html" | 
-    Where-Object { $_.BaseName -ne "index" -and $_.BaseName -notin $generatedNames } | 
-    Sort-Object Name
+$indexPath = Join-Path $outputDir "index.html"
+$indexContent | Out-File -FilePath $indexPath -Encoding UTF8
 
-if ($extraHtmlFiles.Count -gt 0) {
-    # Insert extra diagram cards before the closing </div> of the grid
-    $extraCards = ""
-    foreach ($extraFile in $extraHtmlFiles) {
-        $extraCards += @"
-        <div class="card">
-            <a href="$($extraFile.Name)">
-                <h3>$($extraFile.BaseName)</h3>
-                <p>Extended workflow diagram</p>
-            </a>
-        </div>
-"@
-    }
-    # Insert before the grid closing tag
-    $indexContent = $indexContent -replace "</div>\s*<div class=`"dbml-section`"", "$extraCards    </div>`n`n    <div class=`"dbml-section`""
-}
-
-$indexContent | Out-File -FilePath (Join-Path $outputDir "index.html") -Encoding UTF8
-
-Write-Host "✅ Generated $($files.Count) HTML diagrams from .mmd sources"
-if ($extraHtmlFiles.Count -gt 0) {
-    Write-Host "📎 Also indexed $($extraHtmlFiles.Count) additional HTML diagrams"
-}
-Write-Host "📁 Output: $outputDir"
+Write-Host "Generated $($files.Count) core HTML diagrams from .mmd"
+Write-Host "Indexed $($extraHtmlFiles.Count) extended HTML diagrams"
+Write-Host "Output: $outputDir"

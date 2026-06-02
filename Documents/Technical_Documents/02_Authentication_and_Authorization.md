@@ -1,8 +1,7 @@
 # การจัดการสิทธิ (Authentication & Authorization)
 
-> **อัปเดต:** 2 มิถุนายน 2569 | **ขอบเขต:** As-is ตาม codebase Isara-Anywhere เท่านั้น  
-> **เอกสารก่อนหน้า:** [01 System Architecture](01_System_Architecture_and_Workflow.md)  
-> **เอกสารถัดไป:** [03 Data Storage](03_Data_Storage_Architecture.md) · **ขั้นตอนเต็ม:** [05 Appendix](05_Appendix_Full_Process_Steps.md)
+> **อัปเดต:** 2 มิถุนายน 2569 | **ชุด:** `Documents/Technical_Documents` · [ดัชนี](../README.md)  
+> **ก่อนหน้า:** [01](01_System_Architecture_and_Workflow.md) · **ถัดไป:** [03](03_Data_Storage_Architecture.md) · [05 ขั้นตอน](05_Appendix_Full_Process_Steps.md)
 
 ---
 

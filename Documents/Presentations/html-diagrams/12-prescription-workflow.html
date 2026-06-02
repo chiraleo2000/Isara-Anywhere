@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -17,9 +17,9 @@
 </head>
 <body>
     <div class="nav">
-        <a href="index.html">🔙 Back to Index</a>
+        <a href="index.html">Back to Index</a>
         <span>|</span>
-        <a href="javascript:location.reload()">🔄 Refresh</a>
+        <a href="javascript:location.reload()">Refresh</a>
     </div>
     <div class="container">
         <h1>12-prescription-workflow</h1>
@@ -37,42 +37,42 @@
 }}%%
 
 flowchart TB
-    subgraph CONSULT["📹 CONSULTATION"]
-        C1["🩺 Complete examination"]
-        C2["📋 Diagnosis confirmed"]
+    subgraph CONSULT["ðŸ“¹ CONSULTATION"]
+        C1["ðŸ©º Complete examination"]
+        C2["ðŸ“‹ Diagnosis confirmed"]
     end
 
-    subgraph PRESCRIBE["💊 PRESCRIPTION CREATION"]
-        P1["💊 Select medication"]
-        P2["📏 Set dosage"]
-        P3["📅 Set duration"]
-        P4["📝 Add instructions"]
+    subgraph PRESCRIBE["ðŸ’Š PRESCRIPTION CREATION"]
+        P1["ðŸ’Š Select medication"]
+        P2["ðŸ“ Set dosage"]
+        P3["ðŸ“… Set duration"]
+        P4["ðŸ“ Add instructions"]
     end
 
-    subgraph CDS["⚠️ CLINICAL DECISION SUPPORT"]
-        D1{"🔍 Drug-Drug<br/>Interaction?"}
-        D2{"⚠️ Patient<br/>Allergies?"}
-        D3{"📏 Dosage<br/>Appropriate?"}
-        D4["✅ All checks passed"]
-        D5["⚠️ Warning displayed"]
+    subgraph CDS["âš ï¸ CLINICAL DECISION SUPPORT"]
+        D1{"ðŸ” Drug-Drug<br/>Interaction?"}
+        D2{"âš ï¸ Patient<br/>Allergies?"}
+        D3{"ðŸ“ Dosage<br/>Appropriate?"}
+        D4["âœ… All checks passed"]
+        D5["âš ï¸ Warning displayed"]
     end
 
-    subgraph REVIEW["👨‍⚕️ DOCTOR REVIEW"]
-        R1["📋 Review warnings"]
-        R2["✅ Override with reason"]
-        R3["✍️ Digital signature"]
+    subgraph REVIEW["ðŸ‘¨â€âš•ï¸ DOCTOR REVIEW"]
+        R1["ðŸ“‹ Review warnings"]
+        R2["âœ… Override with reason"]
+        R3["âœï¸ Digital signature"]
     end
 
-    subgraph DISPATCH["📤 DISPATCH"]
-        S1["📧 Send to pharmacy"]
-        S2["📱 Notify patient"]
-        S3["📋 Add to PHR"]
+    subgraph DISPATCH["ðŸ“¤ DISPATCH"]
+        S1["ðŸ“§ Send to pharmacy"]
+        S2["ðŸ“± Notify patient"]
+        S3["ðŸ“‹ Add to PHR"]
     end
 
-    subgraph PATIENT_VIEW["👤 PATIENT VIEW"]
-        PV1["📱 View prescription"]
-        PV2["🔔 Medication reminders"]
-        PV3["📊 Track adherence"]
+    subgraph PATIENT_VIEW["ðŸ‘¤ PATIENT VIEW"]
+        PV1["ðŸ“± View prescription"]
+        PV2["ðŸ”” Medication reminders"]
+        PV3["ðŸ“Š Track adherence"]
     end
 
     %% Main flow
@@ -118,8 +118,8 @@ flowchart TB
         </div>
     </div>
     <script>
-        mermaid.initialize({ 
-            startOnLoad: true, 
+        mermaid.initialize({
+            startOnLoad: true,
             theme: 'base',
             securityLevel: 'loose',
             themeVariables: {

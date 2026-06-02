@@ -6,7 +6,7 @@
 
 รายงานทางเทคนิคฉบับนี้จัดทำขึ้นเพื่ออธิบายสถาปัตยกรรม กระบวนการทำงาน และการเชื่อมโยงของระบบ Izara Anywhere (อิสระ เทเลเมดิซิน)
 ให้ผู้อ่านที่ไม่จำเป็นต้องเป็นนักพัฒนาสามารถติดตามได้เป็นฉบับเดียว โดยใช้ภาษาไทยเป็นหลัก และอ้างอิงแผนภาพ
-12 แท็บแรกจากไฟล์ docs/diagrams/diagrams.drawio เท่านั้น
+12 แท็บแรกจากไฟล์ Documents/docs/diagrams/diagrams.drawio เท่านั้น
 
 หมายเหตุสำคัญ: ไฟล์ diagrams.drawio อาจมีมากกว่า 12 แท็บ (เช่น แท็บที่ 13 เกี่ยวกับการทดสอบ)
 แต่รายงาน Word และ PowerPoint ฉบับนี้ตั้งใจไม่แก้ไขไฟล์แผนภาพ และไม่นำแท็บหลังจากลำดับที่ 12 มาประกอบ
@@ -57,7 +57,7 @@ Meeting Server (เซิร์ฟเวอร์ประชุม) เป็�
 
 การ deploy บนคลาวด์ใช้ชื่อบริการ izara-patient-portal-dev-testing, izara-doctor-portal-dev-testing และ izara-meeting-server-dev-testing บน asia-southeast1 การพัฒนาในเครื่องใช้ docker-compose โดยพอร์ตหลักคือ 3005 (ผู้ป่วย) 3010 (แพทย์) และ 3020 (ประชุม)
 
-หลัง deploy หรือแก้ไข configuration ควรรัน npm run cloud:smoke เพื่อตรวจ health ทั้งสามบริการ ก่อนให้ผู้ใช้ทดสอบจริง รายละเอียด URL และบัญชี demo อยู่ใน docs/markdown/operations/URLS_AND_DEFAULT_USERS.md
+หลัง deploy หรือแก้ไข configuration ควรรัน npm run cloud:smoke เพื่อตรวจ health ทั้งสามบริการ ก่อนให้ผู้ใช้ทดสอบจริง รายละเอียด URL และบัญชี demo อยู่ใน Documents/docs/markdown/operations/URLS_AND_DEFAULT_USERS.md
 
 เมื่อทราบแล้วว่าใครใช้พอร์ทัลใดและข้อมูลรวมศูนย์ที่ไหน บทถัดไปจะขยายรายละเอียดทุกโมดูลฟังก์ชันภายในแต่ละพอร์ทัลและบริการภายนอกที่เชื่อมต่อ
 
@@ -129,7 +129,7 @@ Doctor Portal บน production ใช้ unified image: nginx ฟังพอ�
 
 การเข้า PHR ของผู้ป่วยโดยแพทย์ต้องมี active appointment ที่เกี่ยวข้อง มิฉะนั้น RBAC บล็อกและบันทึก audit_logs Living Will แพทย์เห็นได้เฉพาะเมื่อผู้ป่วยเปิด is_shared_with_doctors
 
-Demo users และ URL สำหรับทดสอบ: docs/markdown/operations/URLS_AND_DEFAULT_USERS.md แผนภาพแสดง branch แยก Patient login vs Doctor login และจุดรออนุมัติแพทย์
+Demo users และ URL สำหรับทดสอบ: Documents/docs/markdown/operations/URLS_AND_DEFAULT_USERS.md แผนภาพแสดง branch แยก Patient login vs Doctor login และจุดรออนุมัติแพทย์
 
 เมื่อผู้ใช้เข้าระบบและมีสิทธิ์ครบแล้ว กระบวนการหลักคือการจองและดำเนินการนัดหมาย — บทถัดไปอธิบาย state machine ของ appointments
 
@@ -149,7 +149,7 @@ Demo users และ URL สำหรับทดสอบ: docs/markdown/operat
 
 ทุก transition สำคัญ trigger PostgreSQL NOTIFY → Socket.IO Dashboard และ Queue ของแพทย์อัปเดตโดยไม่ต้อง refresh หน้า v1.7.48 เพิ่ม PUT read-all สำหรับ notifications แก้ปัญหา isRead ไม่ sync
 
-meet_link และ jitsi_room_name สร้างเมื่อเข้าสู่ช่วงประชุม รายละเอียดขั้นตอนผู้ใช้: Processes/Appointment_Workflows.md และ screenshot กลุ่ม D ใน docs/screenshots/group-D/
+meet_link และ jitsi_room_name สร้างเมื่อเข้าสู่ช่วงประชุม รายละเอียดขั้นตอนผู้ใช้: Processes/Appointment_Workflows.md และ screenshot กลุ่ม D ใน Documents/docs/screenshots/group-D/
 
 สถานะที่ยกเลิก: cancelled — ต้องแจ้งเตือนทั้งสองฝ่ายและไม่ให้เข้าประชุม Admin Pool แสดงนัดที่รอมอบหมาย Doctor Queue แสดงนัดที่รับแล้ว
 
@@ -325,7 +325,7 @@ API: POST /api/living-will, GET สำหรับแพทย์ตาม patie
 
 ขั้น 12: ผู้ป่วยดู timeline, PHR อัปเดต, instruction sheet ภาษาไทย
 
-แผนภาพสอดคล้อง Playwright groups A–P ใน docs/screenshots/ — ใช้เป็นดัชนีทดสอบ UI อ้างอิง Processes/FULL_WORKFLOW_CONTRACT.md
+แผนภาพสอดคล้อง Playwright groups A–P ใน Documents/docs/screenshots/ — ใช้เป็นดัชนีทดสอบ UI อ้างอิง Processes/FULL_WORKFLOW_CONTRACT.md
 
 แบ่งช่วง: ก่อนพบ (1–7) ระหว่างพบ (8–9) หลังพบ (10–12) — จุดตัดสำคัญ Pool assign, Jitsi, EMR sign
 
@@ -338,5 +338,5 @@ API: POST /api/living-will, GET สำหรับแพทย์ตาม patie
 ทีมพัฒนาเมื่อปรับโค้ดที่ส่งผลต่อสถาปัตยกรรม ควรอัปเดตแผนภาพใน draw.io ด้วยตนเอง
 จากนั้นรัน npm run diagrams:report เพื่อ export PNG 12 แท็บแรกและส regenerate Word + PowerPoint ฉบับนี้
 
-เอกสารที่เกี่ยวข้อง: docs/markdown/operations/URLS_AND_DEFAULT_USERS.md, Processes/VIDEO_MEETING_JITSI_GEMINI.md,
+เอกสารที่เกี่ยวข้อง: Documents/docs/markdown/operations/URLS_AND_DEFAULT_USERS.md, Processes/VIDEO_MEETING_JITSI_GEMINI.md,
 scripts/database/izara-database.sql, Presentations/TECHNICAL_DOCUMENTATION.md

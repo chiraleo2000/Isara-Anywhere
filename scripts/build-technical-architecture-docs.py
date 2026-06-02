@@ -70,7 +70,7 @@ def build_word(docx_path: Path) -> None:
             ["แบบอักษรเนื้อหา", f"{WORD_FONT} {WORD_BODY_PT} pt"],
             ["ระยะบรรทัด", str(WORD_LINE_SPACING)],
             ["สไลด์นำเสนอ", f"{PPT_FONT} หัวข้อ {PPT_TITLE_PT} pt / เนื้อหา {PPT_BODY_PT} pt"],
-            ["แผนภาพ", "docs/diagrams/diagrams.drawio (13 หน้า)"],
+            ["แผนภาพ", "Documents/docs/diagrams/diagrams.drawio (13 หน้า)"],
             ["ล้างข้อมูลทดสอบ", "npm run cleanup:cloud-test-only"],
         ],
     )

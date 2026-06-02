@@ -3,11 +3,13 @@
 
 ## Presentation Script & Guide
 
-> **Version:** 1.7.37 | **Date:** May 2026
-> **Status:** 2646 unit tests + 41 cloud UI gate tests passing; doctor `00137-zdl`, patient `00112-mrm`
-> **Duration:** 30-45 minutes
+> **Version:** 1.7.48 | **Date:** June 2026
+> **Status:** 2736 unit tests; Defect-regression 36/36 cloud
+> **Duration:** 30–45 minutes
 > **Audience:** Stakeholders, Technical Team, Medical Staff
-> **Visuals:** [html-diagrams/17-testing-quality-gate.html](html-diagrams/17-testing-quality-gate.html) | [UNIT_TEST_UI_COVERAGE.md](../docs/markdown/testing/UNIT_TEST_UI_COVERAGE.md)
+> **Visuals:** [html-diagrams/17-testing-quality-gate.html](html-diagrams/17-testing-quality-gate.html) · [23-defect-remediation-v1748.html](html-diagrams/23-defect-remediation-v1748.html)
+> **Thai technical (As-is):** [../Technical_Documents/01_System_Architecture_and_Workflow.md](../Technical_Documents/01_System_Architecture_and_Workflow.md) · [05 process steps](../Technical_Documents/05_Appendix_Full_Process_Steps.md)
+> **Coverage:** [UNIT_TEST_UI_COVERAGE.md](../Documents/docs/markdown/testing/UNIT_TEST_UI_COVERAGE.md)
 
 ---
 

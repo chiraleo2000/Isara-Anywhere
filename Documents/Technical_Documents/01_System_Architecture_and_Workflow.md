@@ -1,8 +1,9 @@
 # โครงสร้างระบบและขั้นตอนการทำงาน (System Architecture & Workflow)
 
-> **อัปเดต:** 2 มิถุนายน 2569 | **ขอบเขต:** As-is ตาม codebase Isara-Anywhere เท่านั้น (ไม่มีข้อเสนอแนะเพิ่ม)  
-> **โปรเจกต์ Google Cloud:** `izara-telemedicine` | **ภูมิภาค:** `asia-southeast1`  
-> **เอกสารถัดไปในชุด:** [02 Authentication](02_Authentication_and_Authorization.md) · [03 Data Storage](03_Data_Storage_Architecture.md) · [04 Jitsi](04_Jitsi_Integration_and_Code_Examples.md) · [05 Full Process Steps](05_Appendix_Full_Process_Steps.md)
+> **อัปเดต:** 2 มิถุนายน 2569 | **ชุดเอกสาร:** `Documents/Technical_Documents` (แท็ก `v1.0-docs`)  
+> **ขอบเขต:** As-is ตาม codebase — ไม่มีข้อเสนอแนะ · **GCP:** `izara-telemedicine` / `asia-southeast1`  
+> **ดัชนี:** [Documents/README.md](../README.md) · [docs/README.md](../Documents/docs/README.md) · [Presentations](../Presentations/README.md)  
+> **ถัดไป:** [02](02_Authentication_and_Authorization.md) · [03](03_Data_Storage_Architecture.md) · [04](04_Jitsi_Integration_and_Code_Examples.md) · [05 ขั้นตอนเต็ม](05_Appendix_Full_Process_Steps.md)
 
 ---
 
@@ -301,7 +302,7 @@ Init DB โหลดจาก `scripts/database/izara-database.sql` และ mi
 
 ### 7.2 Google Cloud (dev-testing ที่ใช้งานจริง)
 
-จาก `Documents/docs/markdown/operations/CLOUD_ACCESS_TH.md`:
+จาก `Documents/Documents/docs/markdown/operations/CLOUD_ACCESS_TH.md`:
 
 | บริการ | URL (ตัวอย่าง) |
 |--------|----------------|
@@ -697,7 +698,8 @@ sequenceDiagram
 | `Processes/FULL_WORKFLOW_HARDENING_COMPLETION_REPORT.md` | รายงาน hardening | §11 |
 | `Processes/TWO_ROUND_CLOUD_TESTING.md` | ทดสอบ cloud 2 รอบ | (อ้างอิง QA) |
 | `docker-compose.yml` | บริการ local | §7.1 |
-| `Documents/docs/markdown/operations/CLOUD_ACCESS_TH.md` | URL cloud จริง | §7.2 |
+| `Documents/Documents/docs/markdown/operations/CLOUD_ACCESS_TH.md` | URL cloud จริง | §7.2 |
+| `Documents/Technical_Documents/05_Appendix_Full_Process_Steps.md` | ขั้นตอน Processes เต็ม | §15 + 05 |
 
 ---
 

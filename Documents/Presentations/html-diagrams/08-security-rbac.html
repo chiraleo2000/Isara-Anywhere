@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -17,9 +17,9 @@
 </head>
 <body>
     <div class="nav">
-        <a href="index.html">🔙 Back to Index</a>
+        <a href="index.html">Back to Index</a>
         <span>|</span>
-        <a href="javascript:location.reload()">🔄 Refresh</a>
+        <a href="javascript:location.reload()">Refresh</a>
     </div>
     <div class="container">
         <h1>08-security-rbac</h1>
@@ -37,56 +37,56 @@
 }}%%
 
 flowchart TB
-    subgraph AUTH["🔐 AUTHENTICATION"]
+    subgraph AUTH["ðŸ” AUTHENTICATION"]
         direction TB
-        A1["📧 Email/Password<br/>(bcrypt hashing)"]
-        A2["🔑 JWT Tokens<br/>(Access + Refresh)"]
-        A3["⏰ Session Management<br/>(PostgreSQL)"]
-        A4["🔒 Password Policy<br/>(History, Complexity)"]
+        A1["ðŸ“§ Email/Password<br/>(bcrypt hashing)"]
+        A2["ðŸ”‘ JWT Tokens<br/>(Access + Refresh)"]
+        A3["â° Session Management<br/>(PostgreSQL)"]
+        A4["ðŸ”’ Password Policy<br/>(History, Complexity)"]
     end
 
-    subgraph ROLES["👥 USER ROLES"]
+    subgraph ROLES["ðŸ‘¥ USER ROLES"]
         direction LR
-        R1["🧑‍🤝‍🧑 PATIENT"]
-        R2["👨‍⚕️ DOCTOR"]
-        R3["🔧 ADMIN"]
-        R4["👑 SUPER_ADMIN"]
+        R1["ðŸ§‘â€ðŸ¤â€ðŸ§‘ PATIENT"]
+        R2["ðŸ‘¨â€âš•ï¸ DOCTOR"]
+        R3["ðŸ”§ ADMIN"]
+        R4["ðŸ‘‘ SUPER_ADMIN"]
     end
 
-    subgraph PATIENT_PERMS["🧑‍🤝‍🧑 PATIENT PERMISSIONS"]
-        PP1["✅ View own PHR"]
-        PP2["✅ Book appointments"]
-        PP3["✅ Join video calls"]
-        PP4["✅ Use AI assistant"]
-        PP5["✅ Manage living will"]
-        PP6["❌ View other patients"]
-        PP7["❌ Access admin panel"]
+    subgraph PATIENT_PERMS["ðŸ§‘â€ðŸ¤â€ðŸ§‘ PATIENT PERMISSIONS"]
+        PP1["âœ… View own PHR"]
+        PP2["âœ… Book appointments"]
+        PP3["âœ… Join video calls"]
+        PP4["âœ… Use AI assistant"]
+        PP5["âœ… Manage living will"]
+        PP6["âŒ View other patients"]
+        PP7["âŒ Access admin panel"]
     end
 
-    subgraph DOCTOR_PERMS["👨‍⚕️ DOCTOR PERMISSIONS"]
-        DP1["✅ View assigned patients"]
-        DP2["✅ Manage appointments"]
-        DP3["✅ Write prescriptions"]
-        DP4["✅ Create medical encounters"]
-        DP5["✅ Order labs/imaging"]
-        DP6["⏳ Requires approval"]
-        DP7["❌ Access other doctors"]
+    subgraph DOCTOR_PERMS["ðŸ‘¨â€âš•ï¸ DOCTOR PERMISSIONS"]
+        DP1["âœ… View assigned patients"]
+        DP2["âœ… Manage appointments"]
+        DP3["âœ… Write prescriptions"]
+        DP4["âœ… Create medical encounters"]
+        DP5["âœ… Order labs/imaging"]
+        DP6["â³ Requires approval"]
+        DP7["âŒ Access other doctors"]
     end
 
-    subgraph ADMIN_PERMS["🔧 ADMIN PERMISSIONS"]
-        AP1["✅ Approve doctors"]
-        AP2["✅ Manage content"]
-        AP3["✅ View audit logs"]
-        AP4["✅ User management"]
-        AP5["❌ Delete PHI"]
-        AP6["❌ Access medical records"]
+    subgraph ADMIN_PERMS["ðŸ”§ ADMIN PERMISSIONS"]
+        AP1["âœ… Approve doctors"]
+        AP2["âœ… Manage content"]
+        AP3["âœ… View audit logs"]
+        AP4["âœ… User management"]
+        AP5["âŒ Delete PHI"]
+        AP6["âŒ Access medical records"]
     end
 
-    subgraph DATA_PROTECTION["🛡️ DATA PROTECTION"]
-        D1["🔒 Row-Level Security<br/>(PostgreSQL RLS)"]
-        D2["🔐 Encryption at Rest<br/>(AES-256)"]
-        D3["🔐 TLS 1.3<br/>(In Transit)"]
-        D4["📋 Audit Logging<br/>(All Actions)"]
+    subgraph DATA_PROTECTION["ðŸ›¡ï¸ DATA PROTECTION"]
+        D1["ðŸ”’ Row-Level Security<br/>(PostgreSQL RLS)"]
+        D2["ðŸ” Encryption at Rest<br/>(AES-256)"]
+        D3["ðŸ” TLS 1.3<br/>(In Transit)"]
+        D4["ðŸ“‹ Audit Logging<br/>(All Actions)"]
     end
 
     AUTH --> ROLES
@@ -114,8 +114,8 @@ flowchart TB
         </div>
     </div>
     <script>
-        mermaid.initialize({ 
-            startOnLoad: true, 
+        mermaid.initialize({
+            startOnLoad: true,
             theme: 'base',
             securityLevel: 'loose',
             themeVariables: {

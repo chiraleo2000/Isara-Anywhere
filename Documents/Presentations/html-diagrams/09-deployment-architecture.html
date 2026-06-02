@@ -1,4 +1,30 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Izara Diagram: 09-deployment-architecture</title><script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script><style>body{font-family:'Segoe UI',Tahoma,sans-serif;margin:0;padding:20px;background:#f5f5f5}.container{max-width:100%;margin:0 auto;background:#fff;padding:20px;border-radius:8px;box-shadow:0 2px 4px rgba(0,0,0,.1)}h1{color:#2c3e50;text-align:center;border-bottom:2px solid #eee;padding-bottom:15px}.mermaid{display:flex;justify-content:center;margin-top:20px}.nav{margin-bottom:20px;text-align:center}.nav a{margin:0 10px;color:#3498db;text-decoration:none;font-weight:700}</style></head><body><div class="nav"><a href="index.html">Back to Index</a> | <a href="javascript:location.reload()">Refresh</a></div><div class="container"><h1>09-deployment-architecture</h1><div class="mermaid">%%{init: {
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Izara Diagram: 09-deployment-architecture</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5; }
+        .container { max-width: 100%; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        h1 { color: #2c3e50; text-align: center; border-bottom: 2px solid #eee; padding-bottom: 15px; }
+        .mermaid { display: flex; justify-content: center; margin-top: 20px; }
+        .nav { margin-bottom: 20px; text-align: center; }
+        .nav a { margin: 0 10px; color: #3498db; text-decoration: none; font-weight: bold; }
+        .nav a:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <div class="nav">
+        <a href="index.html">Back to Index</a>
+        <span>|</span>
+        <a href="javascript:location.reload()">Refresh</a>
+    </div>
+    <div class="container">
+        <h1>09-deployment-architecture</h1>
+        <div class="mermaid">
+            %%{init: {
   'theme': 'base',
   'themeVariables': {
     'primaryColor': '#ECEFF1',
@@ -11,69 +37,69 @@
 }}%%
 
 flowchart TB
-    subgraph LOCAL["💻 LOCAL DEVELOPMENT"]
+    subgraph LOCAL["ðŸ’» LOCAL DEVELOPMENT"]
         direction TB
-        L1["🐳 Docker Compose"]
-        L2["📱 Patient Portal<br/>localhost:3005"]
-        L3["💻 Doctor Portal<br/>localhost:3010"]
-        L4["📹 Meeting Server<br/>localhost:3020"]
-        L5["🗄️ PostgreSQL 18<br/>localhost:5433"]
-        L6["🔧 pgAdmin 4<br/>localhost:5050"]
+        L1["ðŸ³ Docker Compose"]
+        L2["ðŸ“± Patient Portal<br/>localhost:3005"]
+        L3["ðŸ’» Doctor Portal<br/>localhost:3010"]
+        L4["ðŸ“¹ Meeting Server<br/>localhost:3020"]
+        L5["ðŸ—„ï¸ PostgreSQL 18<br/>localhost:5433"]
+        L6["ðŸ”§ pgAdmin 4<br/>localhost:5050"]
     end
 
-    subgraph MOBILE_DEV["📱 MOBILE DEVELOPMENT"]
+    subgraph MOBILE_DEV["ðŸ“± MOBILE DEVELOPMENT"]
         direction LR
-        MD1["📲 Expo 52 Dev Server<br/>localhost:8081"]
-        MD2["🤖 Android Studio<br/>Emulator"]
-        MD3["🍎 iOS Simulator<br/>Xcode"]
-        MD4["🧪 Playwright Mobile<br/>Viewport Testing"]
+        MD1["ðŸ“² Expo 52 Dev Server<br/>localhost:8081"]
+        MD2["ðŸ¤– Android Studio<br/>Emulator"]
+        MD3["ðŸŽ iOS Simulator<br/>Xcode"]
+        MD4["ðŸ§ª Playwright Mobile<br/>Viewport Testing"]
     end
 
-    subgraph CLI["⚡ UNIFIED CLI (izara-cli.ps1)"]
+    subgraph CLI["âš¡ UNIFIED CLI (izara-cli.ps1)"]
         direction LR
-        C1["🚀 start"]
-        C2["🛑 stop"]
-        C3["🗄️ db"]
-        C4["🔄 reset"]
-        C5["🧪 test"]
+        C1["ðŸš€ start"]
+        C2["ðŸ›‘ stop"]
+        C3["ðŸ—„ï¸ db"]
+        C4["ðŸ”„ reset"]
+        C5["ðŸ§ª test"]
     end
 
-    subgraph GCP["☁️ GOOGLE CLOUD PLATFORM"]
+    subgraph GCP["â˜ï¸ GOOGLE CLOUD PLATFORM"]
         direction TB
-        subgraph CLOUDRUN["🚀 Cloud Run (asia-southeast1)"]
-            CR1["📱 patient-portal-service"]
-            CR2["💻 doctor-portal-service"]
-            CR3["📹 jitsi-server-service"]
+        subgraph CLOUDRUN["ðŸš€ Cloud Run (asia-southeast1)"]
+            CR1["ðŸ“± patient-portal-service"]
+            CR2["ðŸ’» doctor-portal-service"]
+            CR3["ðŸ“¹ jitsi-server-service"]
         end
-        subgraph STORAGE["📦 Cloud Storage"]
-            S1["📄 izara-documents"]
-            S2["🖼️ izara-images"]
-            S3["🎥 izara-recordings"]
-            S4["🧪 izara-lab-results"]
-            S5["🔬 izara-imaging-results"]
+        subgraph STORAGE["ðŸ“¦ Cloud Storage"]
+            S1["ðŸ“„ izara-documents"]
+            S2["ðŸ–¼ï¸ izara-images"]
+            S3["ðŸŽ¥ izara-recordings"]
+            S4["ðŸ§ª izara-lab-results"]
+            S5["ðŸ”¬ izara-imaging-results"]
         end
-        subgraph DATABASE["🗄️ Cloud SQL VM"]
-            DB1[("🐘 PostgreSQL 18<br/>+ pgvector<br/>35.240.157.230:5432")]
+        subgraph DATABASE["ðŸ—„ï¸ Cloud SQL VM"]
+            DB1[("ðŸ˜ PostgreSQL 18<br/>+ pgvector<br/>35.240.157.230:5432")]
         end
-        subgraph PGADMIN["🔧 pgAdmin"]
+        subgraph PGADMIN["ðŸ”§ pgAdmin"]
             PA1["pgAdmin 4<br/>Cloud Run Service"]
         end
     end
 
-    subgraph CICD["🔄 CI/CD PIPELINE"]
+    subgraph CICD["ðŸ”„ CI/CD PIPELINE"]
         direction LR
-        CI1["📝 Cloud Build<br/>cloudbuild.yaml"]
-        CI2["🐳 Artifact Registry<br/>asia-southeast1-docker"]
-        CI3["🚀 Deploy to Cloud Run<br/>v1.5.10"]
+        CI1["ðŸ“ Cloud Build<br/>cloudbuild.yaml"]
+        CI2["ðŸ³ Artifact Registry<br/>asia-southeast1-docker"]
+        CI3["ðŸš€ Deploy to Cloud Run<br/>v1.5.10"]
     end
 
-    subgraph TESTING["🧪 TESTING (215 Cloud Tests)"]
+    subgraph TESTING["ðŸ§ª TESTING (215 Cloud Tests)"]
         direction LR
-        T1["📸 UI Screenshots: 39"]
-        T2["🔄 Multi-User Workflows: 42"]
-        T3["📹 Meeting Tests: 27"]
-        T4["📋 Workflow Screenshots: 25"]
-        T5["📄 UI Pages: 44"]
+        T1["ðŸ“¸ UI Screenshots: 39"]
+        T2["ðŸ”„ Multi-User Workflows: 42"]
+        T3["ðŸ“¹ Meeting Tests: 27"]
+        T4["ðŸ“‹ Workflow Screenshots: 25"]
+        T5["ðŸ“„ UI Pages: 44"]
     end
 
     %% Local Development Flow
@@ -124,4 +150,21 @@ flowchart TB
     class S1,S2,S3,S4,S5 storageStyle
     class DB1 dbStyle
     class CI1,CI2,CI3 cicdStyle
-</div></div><script>mermaid.initialize({startOnLoad:true,theme:'base',securityLevel:'loose',themeVariables:{primaryColor:'#E3F2FD',secondaryColor:'#E8F5E9',tertiaryColor:'#FFF3E0',fontSize:'16px'}});</script></body></html>
+
+        </div>
+    </div>
+    <script>
+        mermaid.initialize({
+            startOnLoad: true,
+            theme: 'base',
+            securityLevel: 'loose',
+            themeVariables: {
+                primaryColor: '#E3F2FD',
+                secondaryColor: '#E8F5E9',
+                tertiaryColor: '#FFF3E0',
+                fontSize: '16px'
+            }
+        });
+    </script>
+</body>
+</html>

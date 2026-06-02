@@ -14,8 +14,8 @@ Cross-check: `reports/defect-fix/pdf-reaudit-v1.7.48.txt` (0 orphan defects).
 |------|--------|-------|
 | `npm run test:quality:gate` | **PASS** | 151 files, **2736** unit tests; sonar:lint 0 errors |
 | Defect-regression Playwright (cloud) | **PASS** — **36 passed, 0 skipped** | 2026-05-30 run (2.8m) |
-| Full cloud Playwright headed (`test:cloud:full`) | **PASS** — **85 passed, 0 skipped** | 2026-05-31 run (7.7m); 212 PNG in `docs/screenshots/` |
-| Unit report (`test:unit:report`) | **PASS** | 2026-05-31 — `docs/markdown/testing/UNIT_TEST_UI_COVERAGE.md` refreshed |
+| Full cloud Playwright headed (`test:cloud:full`) | **PASS** — **85 passed, 0 skipped** | 2026-05-31 run (7.7m); 212 PNG in `Documents/docs/screenshots/` |
+| Unit report (`test:unit:report`) | **PASS** | 2026-05-31 — `Documents/docs/markdown/testing/UNIT_TEST_UI_COVERAGE.md` refreshed |
 | User guides rebuild | **PASS** | Patient PPT 76 imgs, Doctor DOCX/PPT 93 imgs; patient DOCX → `_NEW.docx` (lock) |
 
 ## v1.7.48 code changes
@@ -47,7 +47,7 @@ Cross-check: `reports/defect-fix/pdf-reaudit-v1.7.47.txt` (0 orphan defects).
 | `npm run test:quality:gate` | **PASS** | 150 files, **2731** unit tests; sonar:lint 0 errors |
 | `npm run verify:cloud-meeting-ai` | **PASS** | sttAvailable=true |
 | Defect-regression Playwright (cloud) | **PASS** — **36 passed, 0 skipped** | `requirePatientAuth` / `izara_user` |
-| `npm run test:cloud:full` (cloud) | **PASS** — **85 passed, 0 skipped** | Headed screenshots → docs/screenshots/ |
+| `npm run test:cloud:full` (cloud) | **PASS** — **85 passed, 0 skipped** | Headed screenshots → Documents/docs/screenshots/ |
 
 ## Deploy parity (v1.7.47)
 

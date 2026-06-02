@@ -64,8 +64,8 @@
 
 | Portal | Word (.docx) | Word PDF | PowerPoint (.pptx) | Slides PDF |
 | ------ | ------------ | -------- | ------------------ | ---------- |
-| **Patient** | [USER_GUIDE_PATIENT_WORD_TH.docx](../../guides/patient/USER_GUIDE_PATIENT_WORD_TH.docx) | [USER_GUIDE_PATIENT_WORD_TH.pdf](../../guides/patient/USER_GUIDE_PATIENT_WORD_TH.pdf) · [GitHub](https://github.com/chiraleo2000/Isara-Anywhere/blob/main/docs/guides/patient/USER_GUIDE_PATIENT_WORD_TH.pdf) | [USER_GUIDE_PATIENT_PPT_TH.pptx](../../guides/patient/USER_GUIDE_PATIENT_PPT_TH.pptx) | [USER_GUIDE_PATIENT_PPT_TH.pdf](../../guides/patient/USER_GUIDE_PATIENT_PPT_TH.pdf) · [GitHub](https://github.com/chiraleo2000/Isara-Anywhere/blob/main/docs/guides/patient/USER_GUIDE_PATIENT_PPT_TH.pdf) |
-| **Doctor / Admin** | [USER_GUIDE_DOCTOR_WORD_TH.docx](../../guides/doctor/USER_GUIDE_DOCTOR_WORD_TH.docx) | [USER_GUIDE_DOCTOR_WORD_TH.pdf](../../guides/doctor/USER_GUIDE_DOCTOR_WORD_TH.pdf) · [GitHub](https://github.com/chiraleo2000/Isara-Anywhere/blob/main/docs/guides/doctor/USER_GUIDE_DOCTOR_WORD_TH.pdf) | [USER_GUIDE_DOCTOR_PPT_TH.pptx](../../guides/doctor/USER_GUIDE_DOCTOR_PPT_TH.pptx) | [USER_GUIDE_DOCTOR_PPT_TH.pdf](../../guides/doctor/USER_GUIDE_DOCTOR_PPT_TH.pdf) · [GitHub](https://github.com/chiraleo2000/Isara-Anywhere/blob/main/docs/guides/doctor/USER_GUIDE_DOCTOR_PPT_TH.pdf) |
+| **Patient** | [USER_GUIDE_PATIENT_WORD_TH.docx](../../guides/patient/USER_GUIDE_PATIENT_WORD_TH.docx) | [USER_GUIDE_PATIENT_WORD_TH.pdf](../../guides/patient/USER_GUIDE_PATIENT_WORD_TH.pdf) · [GitHub](https://github.com/chiraleo2000/Isara-Anywhere/blob/main/Documents/docs/guides/patient/USER_GUIDE_PATIENT_WORD_TH.pdf) | [USER_GUIDE_PATIENT_PPT_TH.pptx](../../guides/patient/USER_GUIDE_PATIENT_PPT_TH.pptx) | [USER_GUIDE_PATIENT_PPT_TH.pdf](../../guides/patient/USER_GUIDE_PATIENT_PPT_TH.pdf) · [GitHub](https://github.com/chiraleo2000/Isara-Anywhere/blob/main/Documents/docs/guides/patient/USER_GUIDE_PATIENT_PPT_TH.pdf) |
+| **Doctor / Admin** | [USER_GUIDE_DOCTOR_WORD_TH.docx](../../guides/doctor/USER_GUIDE_DOCTOR_WORD_TH.docx) | [USER_GUIDE_DOCTOR_WORD_TH.pdf](../../guides/doctor/USER_GUIDE_DOCTOR_WORD_TH.pdf) · [GitHub](https://github.com/chiraleo2000/Isara-Anywhere/blob/main/Documents/docs/guides/doctor/USER_GUIDE_DOCTOR_WORD_TH.pdf) | [USER_GUIDE_DOCTOR_PPT_TH.pptx](../../guides/doctor/USER_GUIDE_DOCTOR_PPT_TH.pptx) | [USER_GUIDE_DOCTOR_PPT_TH.pdf](../../guides/doctor/USER_GUIDE_DOCTOR_PPT_TH.pdf) · [GitHub](https://github.com/chiraleo2000/Isara-Anywhere/blob/main/Documents/docs/guides/doctor/USER_GUIDE_DOCTOR_PPT_TH.pdf) |
 
 - **Word:** TH Sarabun New **16 pt** — ตารางจริง + **สารบัญ** (อัปเดต F9 ใน Word)
 - **PowerPoint:** **FC Iconic** — หนึ่งสไลด์ต่อขั้นตอน พร้อมตารางขั้นตอน + บันทึกวิทยากร 16 pt
@@ -103,13 +103,13 @@ doctor.test@izara.com / IzaraDoctor@2024 (doctor)
 admin.test@izara.com / IzaraAdmin@2024 (admin)
 somchai.prasert@izara.com / IzaraDoctor@2024 (doctor)
 
-# User guides — Word / PPTX / PDF (docs/guides/)
-Patient Word:   docs/guides/patient/USER_GUIDE_PATIENT_WORD_TH.docx
-Patient Word PDF: docs/guides/patient/USER_GUIDE_PATIENT_WORD_TH.pdf
-Patient PPT:    docs/guides/patient/USER_GUIDE_PATIENT_PPT_TH.pptx
-Patient PPT PDF:  docs/guides/patient/USER_GUIDE_PATIENT_PPT_TH.pdf
-Doctor Word:    docs/guides/doctor/USER_GUIDE_DOCTOR_WORD_TH.docx
-Doctor Word PDF:  docs/guides/doctor/USER_GUIDE_DOCTOR_WORD_TH.pdf
-Doctor PPT:     docs/guides/doctor/USER_GUIDE_DOCTOR_PPT_TH.pptx
-Doctor PPT PDF:   docs/guides/doctor/USER_GUIDE_DOCTOR_PPT_TH.pdf
+# User guides — Word / PPTX / PDF (Documents/docs/guides/)
+Patient Word:   Documents/docs/guides/patient/USER_GUIDE_PATIENT_WORD_TH.docx
+Patient Word PDF: Documents/docs/guides/patient/USER_GUIDE_PATIENT_WORD_TH.pdf
+Patient PPT:    Documents/docs/guides/patient/USER_GUIDE_PATIENT_PPT_TH.pptx
+Patient PPT PDF:  Documents/docs/guides/patient/USER_GUIDE_PATIENT_PPT_TH.pdf
+Doctor Word:    Documents/docs/guides/doctor/USER_GUIDE_DOCTOR_WORD_TH.docx
+Doctor Word PDF:  Documents/docs/guides/doctor/USER_GUIDE_DOCTOR_WORD_TH.pdf
+Doctor PPT:     Documents/docs/guides/doctor/USER_GUIDE_DOCTOR_PPT_TH.pptx
+Doctor PPT PDF:   Documents/docs/guides/doctor/USER_GUIDE_DOCTOR_PPT_TH.pdf
 ```

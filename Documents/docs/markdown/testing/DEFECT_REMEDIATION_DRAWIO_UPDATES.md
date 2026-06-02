@@ -117,7 +117,7 @@ Mark each file when sections 1–6 above are applied. Do not edit XML in git fro
 | `Isara_Anywhere_Complete_Diagram.drawio` | [ ] | [ ] | [ ] | [ ] | [ ] | [ ] | [ ] |
 | `diagrams.drawio` | [ ] | [ ] | [ ] | [ ] | [ ] | [ ] | [ ] |
 
-**Screenshot evidence (cloud defect pack):** `docs/screenshots/group-defect/` — DN1/DN3 (notifications), DA1/DA2 (AI), DM1 (doctor lobby), DG1 (i18n), DG2/DG3 (Gemini D3).
+**Screenshot evidence (cloud defect pack):** `Documents/docs/screenshots/group-defect/` — DN1/DN3 (notifications), DA1/DA2 (AI), DM1 (doctor lobby), DG1 (i18n), DG2/DG3 (Gemini D3).
 
 **v1.7.42 code verification:** Gemini 3.1-flash-lite migration; traffic shift to revision 00142; gates in `reports/defect-fix/v1.7.42-final.txt`.
 
@@ -136,7 +136,7 @@ Mark each file when sections 1–6 above are applied. Do not edit XML in git fro
 
 **Diagram labels:** `notificationRouting`, `getNotificationTarget`, DN4 Playwright
 
-**Screenshot evidence (v1.7.44):** `docs/screenshots/group-defect/` — DT1–DT3 (theme), DA1–DA3 (appointments), DC1–DC2 (clinical), DN4 (bell), DM2 (admit)
+**Screenshot evidence (v1.7.44):** `Documents/docs/screenshots/group-defect/` — DT1–DT3 (theme), DA1–DA3 (appointments), DC1–DC2 (clinical), DN4 (bell), DM2 (admit)
 
 **v1.7.44 code verification:** Behavioral Vitest + Playwright defect suites; gates in `reports/defect-fix/v1.7.44-final.txt`.
 
@@ -213,7 +213,7 @@ Mark each file when sections 1–6 above are applied. Do not edit XML in git fro
 | `Isara_Anywhere_Complete_Diagram.drawio` | [ ] | [ ] | [ ] | [ ] |
 | `diagrams.drawio` | [ ] | [ ] | [ ] | [ ] |
 
-**Screenshot evidence:** `docs/screenshots/group-defect/` — DN2/DN5 (mark-all-read), DM1/DM2 (Jitsi lobby)
+**Screenshot evidence:** `Documents/docs/screenshots/group-defect/` — DN2/DN5 (mark-all-read), DM1/DM2 (Jitsi lobby)
 
 **v1.7.46 code verification:** gates in `reports/defect-fix/v1.7.46-final.txt`.
 
@@ -236,7 +236,7 @@ Mark each file when sections 1–6 above are applied. Do not edit XML in git fro
 | Unit | 151 files, **2736** PASS |
 | Defect-regression | **36/36** PASS |
 | `test:cloud:full` | **85/85** PASS (7.7m) |
-| Screenshots | **212** PNG → `docs/screenshots/` |
+| Screenshots | **212** PNG → `Documents/docs/screenshots/` |
 
 **Diagram labels:** `EmrEditorChrome`, `LiveTranscriptionView`, `ValidationAction`, Vitest **2736**, Playwright **85 + 36**
 
@@ -249,6 +249,6 @@ Mark each file when sections 1–6 above are applied. Do not edit XML in git fro
 | `Isara_Anywhere_Complete_Diagram.drawio` | [ ] | [ ] | [ ] | [ ] |
 | `diagrams.drawio` | [ ] | [ ] | [ ] | [ ] |
 
-**Screenshot evidence:** all `docs/screenshots/group-*` folders refreshed 2026-05-31; defect pack in `group-defect/`.
+**Screenshot evidence:** all `Documents/docs/screenshots/group-*` folders refreshed 2026-05-31; defect pack in `group-defect/`.
 
 **v1.7.48 code verification:** gates in `reports/defect-fix/v1.7.48-final.txt`.

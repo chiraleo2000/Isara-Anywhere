@@ -1,8 +1,8 @@
 # ภาคผนวก — ขั้นตอนกระบวนการเต็ม (Full Process Steps)
 
-> **อัปเดต:** สร้างอัตโนมัติจาก `Processes/Pages` และ `Processes/*.md`
-> **ขอบเขต:** As-is — ไม่มีข้อเสนอแนะเพิ่ม
-> **เอกสารหลัก:** [01 Architecture](01_System_Architecture_and_Workflow.md) · [02 Auth](02_Authentication_and_Authorization.md) · [03 Storage](03_Data_Storage_Architecture.md) · [04 Jitsi](04_Jitsi_Integration_and_Code_Examples.md)
+> **อัปเดต:** 2 มิถุนายน 2569 — สร้างอัตโนมัติจาก `Processes/Pages` และ `Processes/*.md`  
+> **ชุด:** `Documents/Technical_Documents` · [ดัชนี](../README.md) · **สร้างซ้ำ:** `python scripts/build-appendix-process-steps.py`  
+> **เอกสารหลัก:** [01](01_System_Architecture_and_Workflow.md) · [02](02_Authentication_and_Authorization.md) · [03](03_Data_Storage_Architecture.md) · [04](04_Jitsi_Integration_and_Code_Examples.md)
 
 เอกสารนี้รวบรวม **Workflow** และ **ขั้นตอนการใช้งาน (สรุป)** จากสเปก Processes — รายละเอียด `data-testid` และ boilerplate ENRICH เต็มอยู่ในไฟล์ต้นฉบับแต่ละหน้า
 

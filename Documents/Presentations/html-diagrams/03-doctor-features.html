@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -17,9 +17,9 @@
 </head>
 <body>
     <div class="nav">
-        <a href="index.html">🔙 Back to Index</a>
+        <a href="index.html">Back to Index</a>
         <span>|</span>
-        <a href="javascript:location.reload()">🔄 Refresh</a>
+        <a href="javascript:location.reload()">Refresh</a>
     </div>
     <div class="container">
         <h1>03-doctor-features</h1>
@@ -39,57 +39,55 @@
 }}%%
 
 flowchart TB
-    subgraph DP["💻 DOCTOR PORTAL"]
+    subgraph DP["ðŸ’» DOCTOR PORTAL"]
         direction TB
         
-        subgraph AUTH["🔐 Authentication"]
+        subgraph AUTH["ðŸ” Authentication"]
             A1["Login"]
             A2["Doctor Registration<br/>(Pending Approval)"]
             A3["Profile & Credentials"]
         end
         
-        subgraph QUEUE["📋 Queue Management"]
-            B1["📅 Today's Appointments"]
-            B2["⏳ Pending Requests"]
-            B3["✅ Confirm / ❌ Reject"]
-            B4["📊 Patient Queue"]
+        subgraph QUEUE["ðŸ“‹ Queue Management"]
+            B1["ðŸ“… Today's Appointments"]
+            B2["â³ Pending Requests"]
+            B3["âœ… Confirm / âŒ Reject"]
+            B4["ðŸ“Š Patient Queue"]
         end
         
-        subgraph CONSULT["📹 Consultation"]
-            C1["🎥 Jitsi Video Call"]
-            C2["🎤 Web Speech API<br/>Transcription"]
-            C3["📝 Real-time Notes"]
-            C4["👥 Multi-participant"]
-            C5["🚪 Lobby Management<br/>(Admit/Reject)"]
-            C6["🔗 Patient Invite<br/>Link Sharing"]
+        subgraph CONSULT["ðŸ“¹ Consultation"]
+            C1["ðŸŽ¥ Jitsi Video Call"]
+            C2["ðŸŽ¤ AI Transcription"]
+            C3["ðŸ“ Real-time Notes"]
+            C4["ðŸ‘¥ Multi-participant"]
         end
         
-        subgraph EMR["🩺 EMR System"]
-            D1["📋 SOAP Notes"]
-            D2["🔍 Patient History"]
-            D3["📊 AI Summary"]
-            D4["✍️ Doctor Signature"]
+        subgraph EMR["ðŸ©º EMR System"]
+            D1["ðŸ“‹ SOAP Notes"]
+            D2["ðŸ” Patient History"]
+            D3["ðŸ“Š AI Summary"]
+            D4["âœï¸ Doctor Signature"]
         end
         
-        subgraph PRESCRIBE["💊 Prescribing"]
-            E1["💊 E-Prescription"]
-            E2["⚠️ Drug Interaction Check"]
-            E3["🔔 CDS Alerts"]
-            E4["✅ Man-in-the-Loop"]
+        subgraph PRESCRIBE["ðŸ’Š Prescribing"]
+            E1["ðŸ’Š E-Prescription"]
+            E2["âš ï¸ Drug Interaction Check"]
+            E3["ðŸ”” CDS Alerts"]
+            E4["âœ… Man-in-the-Loop"]
         end
         
-        subgraph ORDERS["🧪 Orders"]
-            F1["🧪 Lab Orders"]
-            F2["🔬 Imaging Orders"]
-            F3["📊 Result Review"]
-            F4["🤖 AI Analysis"]
+        subgraph ORDERS["ðŸ§ª Orders"]
+            F1["ðŸ§ª Lab Orders"]
+            F2["ðŸ”¬ Imaging Orders"]
+            F3["ðŸ“Š Result Review"]
+            F4["ðŸ¤– AI Analysis"]
         end
         
-        subgraph ADMIN["🔧 Admin Panel"]
-            G1["👨‍⚕️ Doctor Approval"]
-            G2["📝 Content Management"]
-            G3["📊 Analytics"]
-            G4["⚙️ System Settings"]
+        subgraph ADMIN["ðŸ”§ Admin Panel"]
+            G1["ðŸ‘¨â€âš•ï¸ Doctor Approval"]
+            G2["ðŸ“ Content Management"]
+            G3["ðŸ“Š Analytics"]
+            G4["âš™ï¸ System Settings"]
         end
     end
 
@@ -120,8 +118,8 @@ flowchart TB
         </div>
     </div>
     <script>
-        mermaid.initialize({ 
-            startOnLoad: true, 
+        mermaid.initialize({
+            startOnLoad: true,
             theme: 'base',
             securityLevel: 'loose',
             themeVariables: {

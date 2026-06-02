@@ -2,7 +2,7 @@
 # One-time / idempotent docs/ layout: separate file types and content areas.
 $ErrorActionPreference = "Stop"
 $root = Split-Path -Parent $PSScriptRoot
-$docs = Join-Path $root "docs"
+$docs = Join-Path $root "Documents\docs"
 
 $dirs = @(
     "guides/patient", "guides/doctor",
@@ -74,4 +74,4 @@ Move-IfExists "DEFECT_REMEDIATION_DRAWIO_UPDATES.md" "markdown/testing/DEFECT_RE
 Move-IfExists "PRE_DEBUG_BASELINE_LEDGER.md" "markdown/ledgers/PRE_DEBUG_BASELINE_LEDGER.md"
 Move-IfExists "SECURITY_SCANNING_LEDGER.md" "markdown/ledgers/SECURITY_SCANNING_LEDGER.md"
 
-Write-Host "Done. See docs/README.md" -ForegroundColor Green
+Write-Host "Done. See Documents/docs/README.md" -ForegroundColor Green

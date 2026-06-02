@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -17,9 +17,9 @@
 </head>
 <body>
     <div class="nav">
-        <a href="index.html">🔙 Back to Index</a>
+        <a href="index.html">Back to Index</a>
         <span>|</span>
-        <a href="javascript:location.reload()">🔄 Refresh</a>
+        <a href="javascript:location.reload()">Refresh</a>
     </div>
     <div class="container">
         <h1>07-ai-integration</h1>
@@ -37,49 +37,48 @@
 }}%%
 
 flowchart TB
-    subgraph GEMINI["🧠 GEMINI 2.5 FLASH"]
+    subgraph GEMINI["ðŸ§  GEMINI 2.5 FLASH"]
         direction TB
-        G1["🤖 Language Model<br/>Multi-modal Support"]
+        G1["ðŸ¤– Language Model<br/>Multi-modal Support"]
     end
 
-    subgraph PATIENT_AI["📱 PATIENT PORTAL AI"]
+    subgraph PATIENT_AI["ðŸ“± PATIENT PORTAL AI"]
         direction TB
-        P1["💬 Health Assistant Chat"]
-        P2["📄 Document Analysis<br/>(Medical Records)"]
-        P3["🔍 Symptom Assessment<br/>& Triage"]
-        P4["❓ Health Q&A"]
+        P1["ðŸ’¬ Health Assistant Chat"]
+        P2["ðŸ“„ Document Analysis<br/>(Medical Records)"]
+        P3["ðŸ” Symptom Assessment<br/>& Triage"]
+        P4["â“ Health Q&A"]
     end
 
-    subgraph DOCTOR_AI["💻 DOCTOR PORTAL AI"]
+    subgraph DOCTOR_AI["ðŸ’» DOCTOR PORTAL AI"]
         direction TB
-        D1["📝 Transcript Summary"]
-        D2["📋 SOAP Note Suggestions"]
-        D3["💊 CDS Recommendations"]
-        D4["📊 Patient History Analysis"]
+        D1["ðŸ“ Transcript Summary"]
+        D2["ðŸ“‹ SOAP Note Suggestions"]
+        D3["ðŸ’Š CDS Recommendations"]
+        D4["ðŸ“Š Patient History Analysis"]
     end
 
-    subgraph MEETING_AI["📹 VIDEO MEETING AI"]
+    subgraph MEETING_AI["ðŸ“¹ VIDEO MEETING AI"]
         direction TB
-        M1["🎤 Web Speech API<br/>(Browser-based STT)"]
-        M2["📝 Live Transcription<br/>(Socket.IO Broadcast)"]
-        M3["🌐 Multi-language Support"]
-        M4["🧠 SOAP Summary<br/>(Gemini Post-Meeting)"]
+        M1["ðŸŽ¤ Speech-to-Text<br/>(Real-time)"]
+        M2["ðŸ“ Live Transcription"]
+        M3["ðŸŒ Multi-language Support"]
     end
 
-    subgraph SAFETY["⚠️ SAFETY MEASURES"]
+    subgraph SAFETY["âš ï¸ SAFETY MEASURES"]
         direction TB
-        S1["👨‍⚕️ Man-in-the-Loop"]
-        S2["⚠️ Medical Disclaimer"]
-        S3["🔒 No Diagnosis/Rx<br/>Without Doctor"]
-        S4["📋 Audit Logging"]
+        S1["ðŸ‘¨â€âš•ï¸ Man-in-the-Loop"]
+        S2["âš ï¸ Medical Disclaimer"]
+        S3["ðŸ”’ No Diagnosis/Rx<br/>Without Doctor"]
+        S4["ðŸ“‹ Audit Logging"]
     end
 
-    subgraph DATA_CONTEXT["📊 CONTEXT SOURCES"]
+    subgraph DATA_CONTEXT["ðŸ“Š CONTEXT SOURCES"]
         direction TB
-        C1["📋 Patient PHR"]
-        C2["💊 Medication History"]
-        C3["🩺 Allergy Information"]
-        C4["📖 Encounter History"]
+        C1["ðŸ“‹ Patient PHR"]
+        C2["ðŸ’Š Medication History"]
+        C3["ðŸ©º Allergy Information"]
+        C4["ðŸ“– Encounter History"]
     end
 
     %% Connections
@@ -95,7 +94,6 @@ flowchart TB
 
     M1 --> M2
     M2 --> D1
-    M2 --> M4
 
     D1 --> D2 --> D3
     D3 --> S1
@@ -122,8 +120,8 @@ flowchart TB
         </div>
     </div>
     <script>
-        mermaid.initialize({ 
-            startOnLoad: true, 
+        mermaid.initialize({
+            startOnLoad: true,
             theme: 'base',
             securityLevel: 'loose',
             themeVariables: {

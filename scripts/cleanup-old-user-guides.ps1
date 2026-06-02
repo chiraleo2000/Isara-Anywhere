@@ -1,7 +1,7 @@
 #!/usr/bin/env pwsh
 # Remove legacy / duplicate user-guide artifacts under docs/guides/
 $ErrorActionPreference = "SilentlyContinue"
-$docs = Join-Path (Split-Path $PSScriptRoot -Parent) "docs"
+$docs = Join-Path (Split-Path $PSScriptRoot -Parent) "Documents\docs"
 
 $patterns = @(
     "*_NEW.docx", "*_NEW.pptx",
@@ -43,4 +43,4 @@ foreach ($sub in @("patient", "doctor")) {
     }
 }
 
-Write-Host "Canonical: docs/guides/patient|doctor/*.docx|pptx|pdf" -ForegroundColor Green
+Write-Host "Canonical: Documents/docs/guides/patient|doctor/*.docx|pptx|pdf" -ForegroundColor Green
