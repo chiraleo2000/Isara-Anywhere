@@ -7,8 +7,8 @@ import sys
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]
-DOCS = REPO / "docs"
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+from docs_paths import TECH_PPT, TECH_WORD  # noqa: E402
 
 from technical_architecture_content import DATE_TH, SLIDES, VERSION  # noqa: E402
 from user_guide_process_context import (  # noqa: E402
@@ -70,7 +70,7 @@ def build_word(docx_path: Path) -> None:
             ["แบบอักษรเนื้อหา", f"{WORD_FONT} {WORD_BODY_PT} pt"],
             ["ระยะบรรทัด", str(WORD_LINE_SPACING)],
             ["สไลด์นำเสนอ", f"{PPT_FONT} หัวข้อ {PPT_TITLE_PT} pt / เนื้อหา {PPT_BODY_PT} pt"],
-            ["แผนภาพ", "docs/diagrams.drawio (10 หน้า)"],
+            ["แผนภาพ", "docs/diagrams/diagrams.drawio (13 หน้า)"],
             ["ล้างข้อมูลทดสอบ", "npm run cleanup:cloud-test-only"],
         ],
     )
@@ -151,8 +151,8 @@ def build_ppt(out_path: Path) -> None:
 
 def main() -> int:
     print("=== Build Technical Architecture docs (TH) ===")
-    docx = DOCS / "TECHNICAL_ARCHITECTURE_WORD_TH.docx"
-    pptx = DOCS / "TECHNICAL_ARCHITECTURE_PPT_TH.pptx"
+    docx = TECH_WORD / "TECHNICAL_ARCHITECTURE_WORD_TH.docx"
+    pptx = TECH_PPT / "TECHNICAL_ARCHITECTURE_PPT_TH.pptx"
     build_word(docx)
     build_ppt(pptx)
     print("Done.")

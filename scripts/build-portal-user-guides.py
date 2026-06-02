@@ -11,9 +11,8 @@ import sys
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]
-DOCS = REPO / "docs"
-
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+from docs_paths import DOCS, GUIDES_DOCTOR, GUIDES_PATIENT  # noqa: E402
 from user_guide_catalog import (  # noqa: E402
     DATE_TH,
     DOCTOR_SHOTS,
@@ -1021,19 +1020,19 @@ def build_portal(portal: str) -> None:
         shots = existing_shots(PATIENT_SHOTS)
         url = PATIENT_URL
         groups = UI_GROUPS_PATIENT
-        word_out = DOCS / "USER_GUIDE_PATIENT_WORD_TH.md"
-        docx_out = DOCS / "USER_GUIDE_PATIENT_WORD_TH.docx"
-        ppt_md_out = DOCS / "USER_GUIDE_PATIENT_PPT_TH.md"
-        pptx_out = DOCS / "USER_GUIDE_PATIENT_PPT_TH.pptx"
+        word_out = GUIDES_PATIENT / "USER_GUIDE_PATIENT_WORD_TH.md"
+        docx_out = GUIDES_PATIENT / "USER_GUIDE_PATIENT_WORD_TH.docx"
+        ppt_md_out = GUIDES_PATIENT / "USER_GUIDE_PATIENT_PPT_TH.md"
+        pptx_out = GUIDES_PATIENT / "USER_GUIDE_PATIENT_PPT_TH.pptx"
         doc_title = "คู่มือผู้ป่วย Isara Anywhere"
     else:
         shots = existing_shots(DOCTOR_SHOTS)
         url = DOCTOR_URL
         groups = UI_GROUPS_DOCTOR
-        word_out = DOCS / "USER_GUIDE_DOCTOR_WORD_TH.md"
-        docx_out = DOCS / "USER_GUIDE_DOCTOR_WORD_TH.docx"
-        ppt_md_out = DOCS / "USER_GUIDE_DOCTOR_PPT_TH.md"
-        pptx_out = DOCS / "USER_GUIDE_DOCTOR_PPT_TH.pptx"
+        word_out = GUIDES_DOCTOR / "USER_GUIDE_DOCTOR_WORD_TH.md"
+        docx_out = GUIDES_DOCTOR / "USER_GUIDE_DOCTOR_WORD_TH.docx"
+        ppt_md_out = GUIDES_DOCTOR / "USER_GUIDE_DOCTOR_PPT_TH.md"
+        pptx_out = GUIDES_DOCTOR / "USER_GUIDE_DOCTOR_PPT_TH.pptx"
         doc_title = "คู่มือแพทย์และผู้ดูแล Isara Anywhere"
 
     print(f"\n=== {portal.upper()} ({len(shots)} screenshots) ===")
@@ -1050,7 +1049,7 @@ def main() -> int:
     print("=== Build Isara Anywhere Portal User Guides (TH) ===")
     build_portal("patient")
     build_portal("doctor")
-    print("\nDone. Output files in docs/")
+    print("\nDone. Output: docs/guides/patient|doctor/, docs/technical/")
     return 0
 
 

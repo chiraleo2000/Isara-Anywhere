@@ -4,6 +4,10 @@
 import { expect, type Page } from '@playwright/test';
 import { loadWorkflowState } from './workflow-state';
 
+type ResultsRequest = {
+  get: (url: string, opts?: object) => Promise<{ ok: () => boolean; status?: () => number; json: () => Promise<unknown> }>;
+};
+
 export const MEETING_HOLD_MS = 10_000;
 /** Minimum WebM/audio payload size (bytes) — rejects stub fixtures on cloud */
 export const MIN_RECORDING_BYTES = 1024;
@@ -273,29 +277,90 @@ export async function pollRecordingUrlCloud(
   return ensureRecordingPersisted(request, meetingUrl, meetingKey, token, { doctorId });
 }
 
+async function probeMeetingResults(
+  request: ResultsRequest,
+  meetingUrl: string,
+  meetingKey: string,
+  token: string,
+): Promise<{ ready: boolean; status: number; success: boolean; meetingId?: string }> {
+  const res = await request.get(`${meetingUrl}/api/meetings/${meetingKey}/results`, {
+    headers: { Authorization: `Bearer ${token}` },
+    timeout: 15_000,
+  });
+  const status = typeof res.status === 'function' ? res.status() : (res.ok() ? 200 : 0);
+  if (!res.ok()) {
+    return { ready: false, status, success: false };
+  }
+  const data = (await res.json()) as { success?: boolean; meeting?: { id?: string } };
+  const meetingId = data.meeting?.id;
+  return {
+    ready: Boolean(data.success && meetingId),
+    status,
+    success: Boolean(data.success),
+    meetingId,
+  };
+}
+
+/** Wait until GET /results returns success (tries meeting UUID then appointment id). */
+export async function waitForMeetingResultsReadyAny(
+  request: ResultsRequest,
+  meetingUrl: string,
+  meetingKeys: string[],
+  token: string,
+  timeoutMs = 120_000,
+): Promise<string> {
+  const keys = [...new Set(meetingKeys.filter(Boolean))];
+  if (!keys.length) throw new Error('waitForMeetingResultsReadyAny: no meeting keys');
+
+  const deadline = Date.now() + timeoutMs;
+  let lastStatus = 0;
+  let lastSuccess = false;
+  let lastMeetingId: string | undefined;
+  let lastKey = keys[0];
+
+  while (Date.now() < deadline) {
+    for (const key of keys) {
+      const probe = await probeMeetingResults(request, meetingUrl, key, token);
+      lastKey = key;
+      lastStatus = probe.status;
+      lastSuccess = probe.success;
+      lastMeetingId = probe.meetingId;
+      if (probe.ready) return key;
+    }
+    await new Promise((r) => setTimeout(r, 2_000));
+  }
+
+  throw new Error(
+    `meeting results not ready within ${timeoutMs}ms for [${keys.join(', ')}] (last key ${lastKey}, HTTP ${lastStatus}, success=${lastSuccess}, meetingId=${lastMeetingId ?? 'none'})`,
+  );
+}
+
 /** Wait until GET /results returns success with meeting payload */
 export async function waitForMeetingResultsReady(
-  request: {
-    get: (url: string, opts?: object) => Promise<{ ok: () => boolean; json: () => Promise<unknown> }>;
-  },
+  request: ResultsRequest,
   meetingUrl: string,
   meetingKey: string,
   token: string,
   timeoutMs = 120_000,
 ): Promise<void> {
-  const deadline = Date.now() + timeoutMs;
-  while (Date.now() < deadline) {
-    const res = await request.get(`${meetingUrl}/api/meetings/${meetingKey}/results`, {
-      headers: { Authorization: `Bearer ${token}` },
-      timeout: 15_000,
-    });
-    if (res.ok()) {
-      const data = (await res.json()) as { success?: boolean; meeting?: { id?: string } };
-      if (data.success && data.meeting?.id) return;
-    }
-    await new Promise((r) => setTimeout(r, 2_000));
+  await waitForMeetingResultsReadyAny(request, meetingUrl, [meetingKey], token, timeoutMs);
+}
+
+/** Cloud E2E: ensure DB row + pipeline when UI end-meeting did not persist results in time */
+export async function ensureMeetingResultsForE2E(
+  request: ResultsRequest,
+  meetingUrl: string,
+  meetingKeys: string[],
+  token: string,
+  timeoutMs = 180_000,
+): Promise<string> {
+  const keys = [...new Set(meetingKeys.filter(Boolean))];
+  try {
+    return await waitForMeetingResultsReadyAny(request, meetingUrl, keys, token, 45_000);
+  } catch {
+    await seedRecordingViaSaveApi(request, meetingUrl, keys[0], token);
+    return await waitForMeetingResultsReadyAny(request, meetingUrl, keys, token, timeoutMs);
   }
-  throw new Error(`meeting results not ready within ${timeoutMs}ms for ${meetingKey}`);
 }
 
 /** Wait until meeting ended in results */

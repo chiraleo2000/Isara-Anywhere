@@ -1,0 +1,90 @@
+{
+  "scale": 2,
+  "border": 15,
+  "pages": [
+    {
+      "index": 1,
+      "name": "1. System Overview (Portal Map)",
+      "id": "1748-sys",
+      "file": "01-1-system-overview-portal-map.png",
+      "bytes": 364524
+    },
+    {
+      "index": 2,
+      "name": "2. Full Platform Diagram",
+      "id": "1748-full",
+      "file": "02-2-full-platform-diagram.png",
+      "bytes": 345850
+    },
+    {
+      "index": 3,
+      "name": "3. System Architecture",
+      "id": "1748-complete-1",
+      "file": "03-3-system-architecture.png",
+      "bytes": 331901
+    },
+    {
+      "index": 4,
+      "name": "4. Login &amp; Auth Flow",
+      "id": "1748-complete-2",
+      "file": "04-4-login-and-auth-flow.png",
+      "bytes": 234332
+    },
+    {
+      "index": 5,
+      "name": "5. Appointment Workflow",
+      "id": "1748-complete-3",
+      "file": "05-5-appointment-workflow.png",
+      "bytes": 253444
+    },
+    {
+      "index": 6,
+      "name": "6. AI Meeting Pipeline",
+      "id": "1748-complete-4",
+      "file": "06-6-ai-meeting-pipeline.png",
+      "bytes": 230929
+    },
+    {
+      "index": 7,
+      "name": "7. Realtime &amp; Notifications",
+      "id": "1748-complete-5",
+      "file": "07-7-realtime-and-notifications.png",
+      "bytes": 199138
+    },
+    {
+      "index": 8,
+      "name": "8. Deployment Architecture",
+      "id": "1748-complete-6",
+      "file": "08-8-deployment-architecture.png",
+      "bytes": 201658
+    },
+    {
+      "index": 9,
+      "name": "9. Health Records (PHR-EMR)",
+      "id": "1713",
+      "file": "09-9-health-records-phr-emr.png",
+      "bytes": 339381
+    },
+    {
+      "index": 10,
+      "name": "10. Living Will",
+      "id": "1714",
+      "file": "10-10-living-will.png",
+      "bytes": 249715
+    },
+    {
+      "index": 11,
+      "name": "11. Database ERD",
+      "id": "1716",
+      "file": "11-11-database-erd.png",
+      "bytes": 221446
+    },
+    {
+      "index": 12,
+      "name": "12. E2E Workflow Steps",
+      "id": "1718",
+      "file": "12-12-e2e-workflow-steps.png",
+      "bytes": 133487
+    }
+  ]
+}

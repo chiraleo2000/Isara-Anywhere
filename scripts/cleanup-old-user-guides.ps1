@@ -1,5 +1,5 @@
 #!/usr/bin/env pwsh
-# Remove legacy / duplicate user-guide artifacts under docs/
+# Remove legacy / duplicate user-guide artifacts under docs/guides/
 $ErrorActionPreference = "SilentlyContinue"
 $docs = Join-Path (Split-Path $PSScriptRoot -Parent) "docs"
 
@@ -14,30 +14,33 @@ $patterns = @(
     "USER_GUIDE_DOCTOR_TH.md"
 )
 
-foreach ($pat in $patterns) {
-    Get-ChildItem -Path $docs -Filter $pat -File | ForEach-Object {
-        Remove-Item $_.FullName -Force
-        Write-Host "Removed $($_.Name)" -ForegroundColor Gray
+foreach ($sub in @("patient", "doctor")) {
+    $dir = Join-Path $docs "guides/$sub"
+    if (-not (Test-Path $dir)) { continue }
+    foreach ($pat in $patterns) {
+        Get-ChildItem -Path $dir -Filter $pat -File -ErrorAction SilentlyContinue | ForEach-Object {
+            Remove-Item $_.FullName -Force
+            Write-Host "Removed guides/$sub/$($_.Name)" -ForegroundColor Gray
+        }
     }
-}
-
-foreach ($base in @("USER_GUIDE_PATIENT_WORD_TH", "USER_GUIDE_PATIENT_PPT_TH")) {
-    foreach ($ext in @("docx", "pptx")) {
-        $can = Join-Path $docs "$base.$ext"
-        $new = Join-Path $docs "${base}_NEW.$ext"
+    $prefix = if ($sub -eq "patient") { "USER_GUIDE_PATIENT" } else { "USER_GUIDE_DOCTOR" }
+    foreach ($kind in @(@("WORD", "docx"), @("PPT", "pptx"))) {
+        $label = $kind[0]; $ext = $kind[1]
+        $can = Join-Path $dir "${prefix}_${label}_TH.$ext"
+        $new = Join-Path $dir "${prefix}_${label}_TH_NEW.$ext"
         if ((Test-Path $new) -and (Test-Path $can)) {
             try {
                 Remove-Item $can -Force
-                Rename-Item $new $can
-                Write-Host "Promoted ${base}_NEW.$ext -> $base.$ext" -ForegroundColor Cyan
+                Rename-Item $new (Split-Path $can -Leaf)
+                Write-Host "Promoted $(Split-Path $new -Leaf) -> $(Split-Path $can -Leaf)" -ForegroundColor Cyan
             } catch {
-                Write-Host "Keep ${base}_NEW.$ext (close $base.$ext first)" -ForegroundColor Yellow
+                Write-Host "Keep $(Split-Path $new -Leaf) (close $(Split-Path $can -Leaf) first)" -ForegroundColor Yellow
             }
         } elseif ((Test-Path $new) -and -not (Test-Path $can)) {
-            Rename-Item $new $can
-            Write-Host "Renamed ${base}_NEW.$ext -> $base.$ext" -ForegroundColor Cyan
+            Rename-Item $new (Split-Path $can -Leaf)
+            Write-Host "Renamed $(Split-Path $new -Leaf) -> $(Split-Path $can -Leaf)" -ForegroundColor Cyan
         }
     }
 }
 
-Write-Host "Canonical: USER_GUIDE_*_WORD_TH.docx, USER_GUIDE_*_PPT_TH.pptx, *_TH.pdf" -ForegroundColor Green
+Write-Host "Canonical: docs/guides/patient|doctor/*.docx|pptx|pdf" -ForegroundColor Green

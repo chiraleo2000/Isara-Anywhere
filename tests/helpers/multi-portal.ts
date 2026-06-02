@@ -556,7 +556,23 @@ export async function joinIzaraMeetingInApp(
     await expect(loading, `[${label}] meeting init`).toBeHidden({ timeout: initTimeout });
   }
 
+  const jitsiContainer = page.getByTestId('jitsi-meeting-container');
+  if (await jitsiContainer.isVisible({ timeout: 5_000 }).catch(() => false)) {
+    return;
+  }
   if (await page.locator('iframe').first().isVisible({ timeout: 5_000 }).catch(() => false)) {
+    return;
+  }
+
+  // After HOST admit (Group Q01f): patient is on host-waiting, not agreement/pre-join
+  const hostWaitingEarly = page.getByTestId('host-waiting-screen');
+  if (await hostWaitingEarly.isVisible({ timeout: 5_000 }).catch(() => false)) {
+    await expect(hostWaitingEarly, `[${label}] host-waiting until Jitsi connects`).toBeHidden({
+      timeout: lobbyTimeout,
+    });
+    await expect(jitsiContainer, `[${label}] Jitsi after host-waiting`).toBeVisible({
+      timeout: iframeTimeout,
+    });
     return;
   }
 
@@ -1185,6 +1201,16 @@ async function warmupPortalSessions(
     const timeout = scaleTimeout(baseNavTimeout, entry.role);
     await gotoWithRetry(entry.page, entry.url, timeout, entry.storageStatePath, entry.label);
   }
+}
+
+/** Navigate with retry — cloud DNS/network flake (ERR_NETWORK_CHANGED, timeouts). */
+export async function gotoCloudWithRetry(
+  page: Page,
+  url: string,
+  label: string,
+  timeoutMs = IS_CLOUD ? 90_000 : 30_000,
+): Promise<void> {
+  await gotoWithRetry(page, url, timeoutMs, '', label, IS_CLOUD ? 4 : 3);
 }
 
 /** Navigate a page with retry — handles redirect-to-login by re-injecting auth */

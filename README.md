@@ -10,7 +10,7 @@
 
 Full-stack telemedicine for Thailand: video consultations (Jitsi), PHR/EMR, e-prescribing, AI clinical tools, appointment pool, and PDPA-aware data handling.
 
-**Quick links:** [URLs & demo users](docs/URLS_AND_DEFAULT_USERS.md) · [Technical diagrams (draw.io)](docs/diagrams.drawio) · [Architecture slides (Sarabun 16pt)](docs/TECHNICAL_ARCHITECTURE_SLIDES.html) · [Architecture Word TH](docs/TECHNICAL_ARCHITECTURE_WORD_TH.docx) · [Architecture PPT TH (FC Iconic)](docs/TECHNICAL_ARCHITECTURE_PPT_TH.pptx) · [Patient Word (TH)](docs/USER_GUIDE_PATIENT_WORD_TH.docx) · [Doctor Word (TH)](docs/USER_GUIDE_DOCTOR_WORD_TH.docx) · [Patient PPT (TH)](docs/USER_GUIDE_PATIENT_PPT_TH.pptx) · [Doctor PPT (TH)](docs/USER_GUIDE_DOCTOR_PPT_TH.pptx) · [Cloud access (TH)](docs/CLOUD_ACCESS_TH.md) · [Process pages](Processes/Pages/README.md) · [Markdown guide](docs/MARKDOWN_GUIDE.md)
+**Quick links:** [Docs index](Documents/docs/README.md) · [Diagram technical report — Word](Documents/docs/technical/word/TECHNICAL_DIAGRAM_REPORT_TH.docx) · [Diagram report — PPT](Documents/docs/technical/ppt/TECHNICAL_DIAGRAM_REPORT_PPT_TH.pptx) · [URLs & demo users](Documents/docs/markdown/operations/URLS_AND_DEFAULT_USERS.md) · [Technical diagrams (draw.io)](Documents/docs/diagrams/diagrams.drawio) · [Architecture slides (Sarabun 16pt)](Documents/docs/technical/slides/TECHNICAL_ARCHITECTURE_SLIDES.html) · [Architecture Word TH](Documents/docs/technical/word/TECHNICAL_ARCHITECTURE_WORD_TH.docx) · [Architecture PPT TH (FC Iconic)](Documents/docs/technical/ppt/TECHNICAL_ARCHITECTURE_PPT_TH.pptx) · [Patient Word (TH)](Documents/docs/guides/patient/USER_GUIDE_PATIENT_WORD_TH.docx) · [Doctor Word (TH)](Documents/docs/guides/doctor/USER_GUIDE_DOCTOR_WORD_TH.docx) · [Patient PPT (TH)](Documents/docs/guides/patient/USER_GUIDE_PATIENT_PPT_TH.pptx) · [Doctor PPT (TH)](Documents/docs/guides/doctor/USER_GUIDE_DOCTOR_PPT_TH.pptx) · [Cloud access (TH)](Documents/docs/markdown/operations/CLOUD_ACCESS_TH.md) · [Process pages](Processes/Pages/README.md) · [Markdown guide](Documents/docs/markdown/operations/MARKDOWN_GUIDE.md)
 
 ---
 
@@ -40,7 +40,7 @@ Full-stack telemedicine for Thailand: video consultations (Jitsi), PHR/EMR, e-pr
 | Doctor | `00132-ts6` | `v1.7.12` | Cloud SQL · port **8080** (nginx unified) |
 | Meeting | latest | `v1.7.12` | Cloud SQL |
 
-Region: `asia-southeast1` · Project: `izara-telemedicine`. Health: `npm run cloud:smoke`. Details: [docs/CLOUD_ACCESS_TH.md](docs/CLOUD_ACCESS_TH.md).
+Region: `asia-southeast1` · Project: `izara-telemedicine`. Health: `npm run cloud:smoke`. Details: [Documents/docs/markdown/operations/CLOUD_ACCESS_TH.md](Documents/docs/markdown/operations/CLOUD_ACCESS_TH.md).
 
 ### Local (Docker Compose)
 
@@ -246,7 +246,7 @@ Isara-Anywhere/
 │   ├── unit/               # Vitest
 │   └── e2e/                # Playwright specs 01–31
 ├── Processes/              # Workflow & GATE docs
-├── docs/                   # User guides (TH), cloud access, markdown guide
+├── Documents/docs/                   # User guides (TH), cloud access, markdown guide
 ├── specs/                  # Spec kit
 ├── scripts/                # Deploy, markdown-fixer, validation
 └── docker-compose.yml
@@ -258,17 +258,18 @@ Isara-Anywhere/
 
 | Document | Audience |
 | -------- | -------- |
-| [URLs & demo users + user guides](docs/URLS_AND_DEFAULT_USERS.md) | Cloud/local URLs, demo accounts, **Word / PPT / PDF** links |
-| [USER_GUIDE_PATIENT_WORD_TH.docx](docs/USER_GUIDE_PATIENT_WORD_TH.docx) | Patients — Word (**TH Sarabun New 16 pt**) |
-| [USER_GUIDE_PATIENT_PPT_TH.pptx](docs/USER_GUIDE_PATIENT_PPT_TH.pptx) | Patients — slides (**FC Iconic**) |
-| [USER_GUIDE_DOCTOR_WORD_TH.docx](docs/USER_GUIDE_DOCTOR_WORD_TH.docx) | Doctor/Admin — Word (**TH Sarabun New 16 pt**) |
-| [USER_GUIDE_DOCTOR_PPT_TH.pptx](docs/USER_GUIDE_DOCTOR_PPT_TH.pptx) | Doctor/Admin — slides (**FC Iconic**) |
-| [CLOUD_ACCESS_TH.md](docs/CLOUD_ACCESS_TH.md) | Cloud URLs & health checks |
-| [APPOINTMENT_USER_GUIDE.md](docs/APPOINTMENT_USER_GUIDE.md) | Appointment flows |
+| [Docs index](Documents/docs/README.md) | Full layout by type + content |
+| [URLs & demo users + user guides](Documents/docs/markdown/operations/URLS_AND_DEFAULT_USERS.md) | Cloud/local URLs, demo accounts, **Word / PPT / PDF** links |
+| [Patient Word guide](Documents/docs/guides/patient/USER_GUIDE_PATIENT_WORD_TH.docx) | Patients — Word (**TH Sarabun New 16 pt**) |
+| [Patient PPT guide](Documents/docs/guides/patient/USER_GUIDE_PATIENT_PPT_TH.pptx) | Patients — slides (**FC Iconic**) |
+| [Doctor Word guide](Documents/docs/guides/doctor/USER_GUIDE_DOCTOR_WORD_TH.docx) | Doctor/Admin — Word (**TH Sarabun New 16 pt**) |
+| [Doctor PPT guide](Documents/docs/guides/doctor/USER_GUIDE_DOCTOR_PPT_TH.pptx) | Doctor/Admin — slides (**FC Iconic**) |
+| [CLOUD_ACCESS_TH.md](Documents/docs/markdown/operations/CLOUD_ACCESS_TH.md) | Cloud URLs & health checks |
+| [APPOINTMENT_USER_GUIDE.md](Documents/docs/markdown/operations/APPOINTMENT_USER_GUIDE.md) | Appointment flows |
 | [GATE0_IMPLEMENTATION_STATUS.md](Processes/GATE0_IMPLEMENTATION_STATUS.md) | Release gate status |
 | [FULL_WORKFLOW_CONTRACT.md](Processes/FULL_WORKFLOW_CONTRACT.md) | End-to-end contracts |
 | [VIDEO_MEETING_JITSI_GEMINI.md](Processes/VIDEO_MEETING_JITSI_GEMINI.md) | Video + AI pipeline |
-| [MARKDOWN_GUIDE.md](docs/MARKDOWN_GUIDE.md) | Doc linting & auto-fix |
+| [MARKDOWN_GUIDE.md](Documents/docs/markdown/operations/MARKDOWN_GUIDE.md) | Doc linting & auto-fix |
 | [SPEC_KIT.md](specs/SPEC_KIT.md) | Full specification |
 
 Regenerate Word/PPT from passing UI screenshots:
@@ -310,7 +311,7 @@ npm run test:quality:gate      # full local quality gate
 npm run test:cloud:unit-gate   # unit + cloud smoke + GATE0
 ```
 
-**Defect remediation (`Defect หมออิสระ.pdf`, 23 items):** see [`reports/defect-fix/DEFECT_REGISTER.md`](reports/defect-fix/DEFECT_REGISTER.md), [`reports/defect-fix/v1.7.41-final.txt`](reports/defect-fix/v1.7.41-final.txt), and draw.io updates [`docs/DEFECT_REMEDIATION_DRAWIO_UPDATES.md`](docs/DEFECT_REMEDIATION_DRAWIO_UPDATES.md). Cloud UI: `$env:TEST_ENV='cloud'; npx playwright test --project=Defect-regression --workers=1`.
+**Defect remediation (`Defect หมออิสระ.pdf`, 23 items):** see [`reports/defect-fix/DEFECT_REGISTER.md`](reports/defect-fix/DEFECT_REGISTER.md), [`reports/defect-fix/v1.7.41-final.txt`](reports/defect-fix/v1.7.41-final.txt), and draw.io updates [`Documents/docs/markdown/testing/DEFECT_REMEDIATION_DRAWIO_UPDATES.md`](Documents/docs/markdown/testing/DEFECT_REMEDIATION_DRAWIO_UPDATES.md). Cloud UI: `$env:TEST_ENV='cloud'; npx playwright test --project=Defect-regression --workers=1`.
 
 SonarLint: open repo root; uses [`sonar-project.properties`](sonar-project.properties) (includes `server/`). See [`reports/sonar/sonarlint-summary.md`](reports/sonar/sonarlint-summary.md).
 
@@ -326,12 +327,12 @@ SonarLint: open repo root; uses [`sonar-project.properties`](sonar-project.prope
 ### v1.7.40 (May 30, 2026)
 
 - Sonar/static pass: tsconfig deprecations, Maps AdvancedMarker, NotificationsPage hook, appointment PUT helper
-- Deploy tag v1.7.40; draw.io update instructions in `docs/DEFECT_REMEDIATION_DRAWIO_UPDATES.md`
+- Deploy tag v1.7.40; draw.io update instructions in `Documents/docs/markdown/testing/DEFECT_REMEDIATION_DRAWIO_UPDATES.md`
 
 ### v1.7.39 (May 29, 2026)
 
 - Defect PDF full closure: doctor notification `isRead` parity, behavioral Vitest, `Defect-regression` Playwright (15 tests), deploy tag v1.7.39
-- Diagram: [`Presentations/html-diagrams/19-defect-remediation-v1739.html`](Presentations/html-diagrams/19-defect-remediation-v1739.html)
+- Diagram: [`Documents/Presentations/html-diagrams/19-defect-remediation-v1739.html`](Documents/Presentations/html-diagrams/19-defect-remediation-v1739.html)
 
 ### v1.7.37 (May 28, 2026)
 
@@ -339,7 +340,7 @@ SonarLint: open repo root; uses [`sonar-project.properties`](sonar-project.prope
 - Unit tests: sanitize middleware regression, PHR timeline degraded mode, responsive breakpoints
 - Patient `/api/phr/:id/timeline` returns 200 `[]` for demo patients on DB errors (fixes cloud S03 500)
 - Responsive UI: doctor login/dashboard padding, ResponsiveLayout mobile gutters, patient 44px touch nav
-- **Docs:** [docs/UNIT_TEST_UI_COVERAGE.md](docs/UNIT_TEST_UI_COVERAGE.md) (2646 unit + UI screenshots), diagram [Presentations/html-diagrams/17-testing-quality-gate.html](Presentations/html-diagrams/17-testing-quality-gate.html), TH Word/PPT via `npm run guides:technical`
+- **Docs:** [Documents/docs/markdown/testing/UNIT_TEST_UI_COVERAGE.md](Documents/docs/markdown/testing/UNIT_TEST_UI_COVERAGE.md) (2646 unit + UI screenshots), diagram [Documents/Presentations/html-diagrams/17-testing-quality-gate.html](Documents/Presentations/html-diagrams/17-testing-quality-gate.html), TH Word/PPT via `npm run guides:technical`
 
 ### v1.7.18 (May 22, 2026)
 
@@ -363,14 +364,14 @@ SonarLint: open repo root; uses [`sonar-project.properties`](sonar-project.prope
 - Cloud UI screenshot suites; camera/mic Permissions-Policy fixes
 - 3,300+ combined unit + E2E + UI tests at full pass targets
 
-Older entries: git history and [Presentations/TECHNICAL_DOCUMENTATION.md](Presentations/TECHNICAL_DOCUMENTATION.md).
+Older entries: git history and [Documents/Presentations/TECHNICAL_DOCUMENTATION.md](Documents/Presentations/TECHNICAL_DOCUMENTATION.md).
 
 ---
 
 ## Contributing
 
 1. Fork → feature branch → commit → push → pull request
-2. For markdown changes: `node scripts/markdown-fixer.js --check-only` (see [docs/MARKDOWN_GUIDE.md](docs/MARKDOWN_GUIDE.md))
+2. For markdown changes: `node scripts/markdown-fixer.js --check-only` (see [Documents/docs/markdown/operations/MARKDOWN_GUIDE.md](Documents/docs/markdown/operations/MARKDOWN_GUIDE.md))
 
 ---
 

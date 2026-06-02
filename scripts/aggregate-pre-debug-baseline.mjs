@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Aggregate Playwright pre-debug baseline results into docs/PRE_DEBUG_BASELINE_LEDGER.md
+ * Aggregate Playwright pre-debug baseline results into docs/markdown/ledgers/PRE_DEBUG_BASELINE_LEDGER.md
  * Usage: node scripts/aggregate-pre-debug-baseline.mjs [--env local|cloud]
  */
 import fs from 'node:fs';
@@ -55,7 +55,7 @@ function flatten(suites, out = []) {
 function main() {
   const { env } = parseArgs();
   const report = loadReport();
-  const ledgerPath = path.join(root, 'docs', 'PRE_DEBUG_BASELINE_LEDGER.md');
+  const ledgerPath = path.join(root, 'docs', 'markdown', 'ledgers', 'PRE_DEBUG_BASELINE_LEDGER.md');
   const now = new Date().toISOString();
   const lines = [
     '# Pre-Debug Baseline Ledger',

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Full unit-test report + UI screenshot cross-reference for docs/presentations.
- * Writes: docs/UNIT_TEST_UI_COVERAGE.md, tests/UNIT_TEST_COVERAGE_REPORT.md
+ * Writes: docs/markdown/testing/UNIT_TEST_UI_COVERAGE.md, tests/UNIT_TEST_COVERAGE_REPORT.md
  */
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
@@ -131,7 +131,7 @@ if (catalog.workflows?.length) {
 
 md += `## Commands\n\n\`\`\`powershell\nnpm run test:unit\nnpm run test:unit:report\nnpm run test:gate:ui-showup\nnpm run test:cloud:unit-gate\n\`\`\`\n`;
 
-const docsPath = path.join(root, 'docs', 'UNIT_TEST_UI_COVERAGE.md');
+const docsPath = path.join(root, 'docs', 'markdown', 'testing', 'UNIT_TEST_UI_COVERAGE.md');
 const testsPath = path.join(root, 'tests', 'UNIT_TEST_COVERAGE_REPORT.md');
 fs.writeFileSync(docsPath, md);
 fs.writeFileSync(testsPath, md.replace('../docs/screenshots/', 'docs/screenshots/').replace('../reports/', 'reports/'));

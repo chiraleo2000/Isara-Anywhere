@@ -5,7 +5,8 @@
 #>
 param(
     [int]$Workers = 1,
-    [switch]$SkipHealthGate
+    [switch]$SkipHealthGate,
+    [switch]$SkipReseed
 )
 
 $ErrorActionPreference = "Stop"
@@ -29,6 +30,14 @@ $args = @('--workers', $Workers, '--headed') + ($projects | ForEach-Object { "--
 
 Write-Host "=== Cloud full coverage (headed) ===" -ForegroundColor Cyan
 Write-Host "Projects: $($projects -join ', ')" -ForegroundColor Gray
+
+if (-not $SkipReseed -and $env:CLOUD_SKIP_RESEED -ne '1') {
+    Write-Host "`n=== Cloud DB reseed (demo + SSO fixture users for Group N) ===" -ForegroundColor Cyan
+    npm run cleanup:cloud-test
+    if ($LASTEXITCODE -ne 0) {
+        Write-Warning "cleanup:cloud-test returned $LASTEXITCODE (continuing - SSO tests may 404)"
+    }
+}
 
 & "$root/scripts/run-cloud-tests.ps1" @args
 $code = $LASTEXITCODE

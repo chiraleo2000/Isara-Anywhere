@@ -1,4 +1,0 @@
-﻿@ UI showup gate 2026-05-27T23:38:00.7094665+07:00
-22 Playwright tests passed (A-auth + S-responsive mobile/tablet/desktop).
-Cloud tag: v1.7.33
-

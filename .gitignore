@@ -58,6 +58,10 @@ tests/e2e/cloud-test-snapshots/
 *.tmp
 *.temp
 .cache/
+docs/diagrams/.$*
+docs/**/*_BUILD.docx
+docs/**/*_BUILD.pptx
+docs/**/~$*
 
 # Credentials (NEVER commit service account keys!)
 credentials/
@@ -92,18 +96,23 @@ test-logs/
 Presentations/IZARA_User_Guide.pdf
 Presentations/IZARA_User_Guide.docx
 
-# User guide build intermediates & PDF exports (source of truth: .docx / .pptx in docs/)
-docs/USER_GUIDE_PATIENT_WORD_TH.md
-docs/USER_GUIDE_DOCTOR_WORD_TH.md
-docs/USER_GUIDE_PATIENT_PPT_TH.md
-docs/USER_GUIDE_DOCTOR_PPT_TH.md
-docs/USER_GUIDE_*_NEW.docx
-docs/USER_GUIDE_*_NEW.pptx
+# User guide build intermediates (source of truth: docs/guides/**)
+docs/guides/**/USER_GUIDE_PATIENT_WORD_TH.md
+docs/guides/**/USER_GUIDE_DOCTOR_WORD_TH.md
+docs/guides/**/USER_GUIDE_PATIENT_PPT_TH.md
+docs/guides/**/USER_GUIDE_DOCTOR_PPT_TH.md
+docs/guides/**/*_NEW.docx
+docs/guides/**/*_NEW.pptx
+docs/guides/**/*.docx.building
+docs/guides/**/*.pptx.building
+docs/guides/**/USER_GUIDE_PPT_SCRIPT_TH.*
+docs/guides/**/USER_GUIDE_WORD_REPORT_TH.*
+docs/guides/**/*Portal_*Sample*
+docs/guides/**/USER_GUIDE_PATIENT_TH.md
+docs/guides/**/USER_GUIDE_DOCTOR_TH.md
+# Legacy flat paths (pre-reorg)
+docs/USER_GUIDE_*.md
+docs/USER_GUIDE_*_NEW.*
 docs/*.docx.building
 docs/*.pptx.building
-docs/USER_GUIDE_PPT_SCRIPT_TH.*
-docs/USER_GUIDE_WORD_REPORT_TH.*
-docs/*Portal_*Sample*
-docs/USER_GUIDE_PATIENT_TH.md
-docs/USER_GUIDE_DOCTOR_TH.md
-# PDF exports: committed under docs/USER_GUIDE_*_TH.pdf (user-maintained or npm run guides:pdf)
+# PDF exports: committed under docs/guides/** and docs/technical/pdf/

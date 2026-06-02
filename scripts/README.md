@@ -25,6 +25,7 @@ Legacy one-off scripts live under [`archive/deprecated/`](archive/deprecated/) (
 | `build-technical-architecture-docs.py` | `npm run guides:technical` | Technical architecture docs |
 | `user_guide_process_context.py` | (imported by builders) | Font/size constants |
 | `technical_architecture_content.py` | (imported) | Technical slide content |
+| `cleanup-project.ps1` | `npm run cleanup:project` | Remove caches & stale artifacts (keeps docs + latest reports) |
 | `cleanup-old-user-guides.ps1` | `npm run guides:cleanup-old` | Prune old guide outputs |
 | `export-user-guide-pdf.ps1` | `npm run guides:pdf` | Export PDF from Word |
 | `database/db-tool.cjs` | `npm run seed` | Local DB seed (repo data only) |

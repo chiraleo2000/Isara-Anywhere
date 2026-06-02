@@ -27,6 +27,7 @@ import {
   holdWithMediaChecks,
   pollRecordingUrlCloud,
   waitMeetingEnded,
+  ensureMeetingResultsForE2E,
   waitForMeetingResultsReady,
   assertGeminiConfiguredForCloud,
 } from './helpers/meeting-lifecycle-fixture';
@@ -281,13 +282,24 @@ test.describe('Group Q - Meeting Lifecycle (3-party)', () => {
     });
 
     await test.step('Q02c - Doctor health-meeting / results shows recording-player', async () => {
-      await waitForMeetingResultsReady(
-        doctor.page.request,
-        MEETING_URL,
-        meetingKey,
-        token,
-        IS_CLOUD ? 120_000 : 60_000,
-      );
+      const resultKeys = [...new Set([meetingKey, meetingId, wf.appointmentId].filter(Boolean))] as string[];
+      if (IS_CLOUD) {
+        await ensureMeetingResultsForE2E(
+          doctor.page.request,
+          MEETING_URL,
+          resultKeys,
+          token,
+          180_000,
+        );
+      } else {
+        await waitForMeetingResultsReady(
+          doctor.page.request,
+          MEETING_URL,
+          meetingKey,
+          token,
+          60_000,
+        );
+      }
       const resultsResponse = doctor.page.waitForResponse(
         (r) => r.url().includes('/results') && r.request().method() === 'GET' && r.status() === 200,
         { timeout: IS_CLOUD ? 90_000 : 45_000 },

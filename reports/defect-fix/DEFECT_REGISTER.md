@@ -86,6 +86,6 @@
 
 - v1.7.41: Sonar S4325/S5725 clearance + 4 new behavioral Vitest files (2698 unit tests).
 
-- Evidence: `reports/defect-fix/v1.7.41-final.txt`, `docs/DEFECT_REMEDIATION_DRAWIO_UPDATES.md`
+- Evidence: `reports/defect-fix/v1.7.41-final.txt`, `docs/markdown/testing/DEFECT_REMEDIATION_DRAWIO_UPDATES.md`
 
 

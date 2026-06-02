@@ -8,7 +8,7 @@
  * if it cannot be loaded (no silent skips).
  */
 import { test, expect, type Page } from '@playwright/test';
-import { PATIENT_URL, DOCTOR_URL } from './helpers/multi-portal';
+import { PATIENT_URL, DOCTOR_URL, gotoCloudWithRetry } from './helpers/multi-portal';
 
 const IS_CLOUD = process.env.TEST_ENV === 'cloud';
 
@@ -65,10 +65,7 @@ test.describe('Group K — Accessibility (WCAG 2.1 AA)', () => {
   });
 
   test('K3 — Patient portal root page is keyboard-navigable', async ({ page }) => {
-    await page.goto(`${PATIENT_URL}/login`, {
-      waitUntil: 'domcontentloaded',
-      timeout: IS_CLOUD ? 90_000 : 30_000,
-    });
+    await gotoCloudWithRetry(page, `${PATIENT_URL}/login`, 'K3/patient-login');
     const focusable = page.locator('a[href], button, input, select, textarea, [tabindex]:not([tabindex="-1"])');
     await expect(focusable.first()).toBeVisible({ timeout: IS_CLOUD ? 30_000 : 15_000 });
     for (let i = 0; i < 12; i++) {

@@ -17,6 +17,7 @@ import {
   PATIENT_URL, DOCTOR_URL, MEETING_URL,
   ROLE_BROWSER_MATRIX, getRoleBrowserSpec,
   refreshPatientSession, waitForContent,
+  gotoCloudWithRetry,
 } from './helpers/multi-portal';
 
 const IS_CLOUD = process.env.TEST_ENV === 'cloud';
@@ -303,11 +304,11 @@ test.describe('Group A — Auth & Access Verification', () => {
     const ctx = await browser.newContext();
     const page = await ctx.newPage();
     try {
-      await page.goto(`${PATIENT_URL}/register`, { waitUntil: 'domcontentloaded', timeout: 30_000 });
+      await gotoCloudWithRetry(page, `${PATIENT_URL}/register`, 'A2b/register');
       await assertFullHealth(page, 'A2b/register');
       await expect(page.locator('#register-email')).toBeVisible({ timeout: 10_000 });
 
-      await page.goto(`${PATIENT_URL}/reset-password`, { waitUntil: 'domcontentloaded', timeout: 30_000 });
+      await gotoCloudWithRetry(page, `${PATIENT_URL}/reset-password`, 'A2b/reset-password');
       await assertFullHealth(page, 'A2b/reset-password');
       await expect(
         page.getByText(/โทเค็น|รีเซ็ตรหัสผ่าน|reset password/i).first(),
