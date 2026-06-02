@@ -44,7 +44,11 @@ $code = $LASTEXITCODE
 
 if ($code -eq 0) {
     Write-Host "`n=== Regenerating portal user guides ===" -ForegroundColor Cyan
+    & "$root/scripts/reorganize-docs.ps1"
     python "$root/scripts/build-portal-user-guides.py"
+    if ($LASTEXITCODE -ne 0) {
+        Write-Warning "build-portal-user-guides.py failed (exit $LASTEXITCODE); E2E passed"
+    }
 }
 
 exit $code

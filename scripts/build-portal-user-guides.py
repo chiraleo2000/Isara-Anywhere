@@ -1037,6 +1037,9 @@ def build_portal(portal: str) -> None:
 
     print(f"\n=== {portal.upper()} ({len(shots)} screenshots) ===")
 
+    for out in (word_out, ppt_md_out, docx_out.parent, pptx_out.parent):
+        out.parent.mkdir(parents=True, exist_ok=True)
+
     # Intermediate .md is gitignored; deliverables are .docx / .pptx only
     word_out.write_text(word_md(portal, shots, url, groups), encoding="utf-8")
     ppt_md_out.write_text(ppt_md(portal, shots, url), encoding="utf-8")

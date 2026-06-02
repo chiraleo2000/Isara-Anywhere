@@ -1,256 +1,442 @@
 # การจัดการสิทธิ (Authentication & Authorization)
 
-> **อัปเดต:** 2 มิถุนายน 2569 | **ขอบเขต:** As-is ตาม codebase Isara-Anywhere เท่านั้น
+> **อัปเดต:** 2 มิถุนายน 2569 | **ขอบเขต:** As-is ตาม codebase Isara-Anywhere เท่านั้น  
+> **เอกสารก่อนหน้า:** [01 System Architecture](01_System_Architecture_and_Workflow.md)  
+> **เอกสารถัดไป:** [03 Data Storage](03_Data_Storage_Architecture.md)
 
 ---
 
 ## สารบัญ
 
 1. [ภาพรวม](#1-ภาพรวม)
-2. [โครงสร้าง RBAC](#2-โครงสร้าง-rbac)
-3. [การยืนยันตัวตน (Authentication)](#3-การยืนยันตัวตน-authentication)
-4. [การอนุญาต (Authorization)](#4-การอนุญาต-authorization)
-5. [Token และ Session](#5-token-และ-session)
-6. [แผนภาพ Mermaid — สถานะการเข้าสู่ระบบ](#6-แผนภาพ-mermaid--สถานะการเข้าสู่ระบบ)
-7. [แผนภาพ draw.io — ขอบเขตความปลอดภัย](#7-แผนภาพ-drawio--ขอบเขตความปลอดภัย)
+2. [โมเดลการยืนยันตัวตน — สองแบบในระบบเดียว](#2-โมเดลการยืนยันตัวตน--สองแบบในระบบเดียว)
+3. [โครงสร้าง RBAC](#3-โครงสร้าง-rbac)
+4. [การยืนยันตัวตน (Authentication) แยกพอร์ทัล](#4-การยืนยันตัวตน-authentication-แยกพอร์ทัล)
+5. [Google SSO — กฎและรหัสตอบกลับ](#5-google-sso--กฎและรหัสตอบกลับ)
+6. [การอนุญาต (Authorization)](#6-การอนุญาต-authorization)
+7. [Token, Session และ Refresh](#7-token-session-และ-refresh)
+8. [ความปลอดภัยเพิ่มเติม (As-is)](#8-ความปลอดภัยเพิ่มเติม-as-is)
+9. [แผนภาพ Mermaid — สถานะการเข้าสู่ระบบ](#9-แผนภาพ-mermaid--สถานะการเข้าสู่ระบบ)
+10. [แผนภาพ draw.io — ขอบเขตความปลอดภัย](#10-แผนภาพ-drawio--ขอบเขตความปลอดภัย)
+11. [เอกสารอ้างอิง](#11-เอกสารอ้างอิง)
+12. [ภาคผนวก — สังเคราะห์จาก Processes (Auth/User/PDPA)](#12-ภาคผนวก--สังเคราะห์จาก-processes-authuserpdpa)
 
 ---
 
 ## 1. ภาพรวม
 
-ระบบ Izara ใช้ **การยืนยันตัวตนแบบกำหนดเองบน Express** ไม่ใช้ Passport.js
+ระบบ Izara **ไม่ใช้ Passport.js** — ใช้ middleware บน Express ที่เขียนเอง + `jsonwebtoken` + PostgreSQL
 
-- **ผู้ป่วย:** token แบบ opaque string เก็บในตาราง `sessions`
-- **แพทย์/แอดมิน:** JWT (HS256) + refresh token ในตาราง `refresh_tokens`
-- **Google SSO:** ส่ง Google ID token มาที่ backend แล้วตรวจด้วย `google-auth-library`
+| พอร์ทัล | วิธียืนยันตัวตน | ตารางหลัก | ไฟล์หลัก |
+|---------|----------------|-----------|----------|
+| **Patient** | Session token (opaque string) | `sessions` | `Isara-patient-portal/server/routes/auth.ts` |
+| **Doctor / Admin** | JWT HS256 + refresh token | `sessions`, `refresh_tokens` | `Isara-doctor-portal/server/authServer.cjs` |
+| **Meeting API** | JWT เดียวกับ Doctor (`JWT_SECRET`) | — | `Izara-jitsi-server/server/jwtPolicy.js` |
+| **GCS API (ถ้าเปิด)** | JWT | — | `Isara-doctor-portal/server/gcsApiServer.cjs` |
+
+**Authorization** ใช้ร่วมกัน: บทบาทจาก `users.role`, middleware ตรวจ token, OWASP `ROLE_PERMISSIONS`, และ PDPA `patient_consents` สำหรับข้อมูลผู้ป่วย
 
 ---
 
-## 2. โครงสร้าง RBAC
+## 2. โมเดลการยืนยันตัวตน — สองแบบในระบบเดียว
 
-### 2.1 บทบาทในตาราง `users`
+```text
+┌─────────────────────────────────────────────────────────────────┐
+│                    PATIENT PORTAL                                │
+│  Login → bcrypt → INSERT sessions → คืน opaque token            │
+│  ทุก API: Authorization: Bearer <opaque> → validateSession()    │
+└─────────────────────────────────────────────────────────────────┘
 
-| ค่า `role` | พอร์ทัล | คำอธิบาย |
-|------------|---------|----------|
-| `patient` | Patient Portal | ผู้ป่วย — ลงทะเบียนผ่าน `/api/auth/register` |
-| `doctor` | Doctor Portal | แพทย์ — อาจมี `approval_status` เป็น `pending` จนแอดมินอนุมัติ |
-| `admin` | Doctor Portal | ผู้ดูแล — `is_admin = true` หรือ `role = 'admin'` |
+┌─────────────────────────────────────────────────────────────────┐
+│                    DOCTOR / ADMIN PORTAL                         │
+│  Login → authServer → bcrypt + lockout → JWT (3h) + refresh     │
+│  Main API: Authorization: Bearer <JWT> → jwt.verify()           │
+│  Auth Server: /auth/verify รองรับ session row หรือ JWT fallback │
+└─────────────────────────────────────────────────────────────────┘
+```
 
-### 2.2 สิทธิ์ตาม OWASP Middleware
+**เหตุผลที่แยก (ตามที่ implement จริง):** Patient Portal ออกแบบ session-first; Doctor Portal ออกแบบ JWT-first สำหรับ API หลักและ refresh rotation
 
-จาก `Isara-patient-portal/server/middleware/owasp-middleware.ts` (Doctor portal มีชุดคล้ายกันใน `security/owasp-middleware.cjs`):
+---
 
-| บทบาท | สิทธิ์ที่กำหนด |
-|--------|----------------|
+## 3. โครงสร้าง RBAC
+
+### 3.1 บทบาทในตาราง `users`
+
+คอลัมน์ `role` มี CHECK constraint: `'doctor'`, `'admin'`, `'patient'` (จาก `izara-database.sql`)
+
+| ค่า `role` | พอร์ทัล | ฟิลด์เสริม | คำอธิบาย |
+|------------|---------|------------|----------|
+| `patient` | Patient | `patient_id` = `users.id` | ผู้ป่วย — ลงทะเบียนที่ `/api/auth/register` |
+| `doctor` | Doctor | `doctor_id`, `approval_status`, `is_approved` | แพทย์ — อาจ `pending` จนแอดมินอนุมัติ |
+| `admin` | Doctor (เมนู admin) | `is_admin`, `admin_privileges` JSONB | ผู้ดูแลระบบ |
+
+**Admin ไม่ใช่ role แยกใน deployment** — ใช้ Doctor Portal เดียวกัน ตรวจด้วย `role === 'admin'` **หรือ** `is_admin === true`
+
+### 3.2 สิทธิ์ OWASP — Patient Portal
+
+จาก `Isara-patient-portal/server/middleware/owasp-middleware.ts`:
+
+| บทบาท | สิทธิ์ (`ROLE_PERMISSIONS`) |
+|--------|------------------------------|
 | `admin` | `read:all`, `write:all`, `delete:all`, `manage:users`, `view:audit` |
-| `doctor` | `read:patients`, `write:emr`, `read:appointments`, `write:appointments` (+ prescribing/lab ใน doctor portal) |
+| `doctor` | `read:patients`, `write:emr`, `read:appointments`, `write:appointments` |
 | `patient` | `read:own`, `write:own`, `read:appointments`, `write:appointments`, `read:phr`, `write:phr` |
 
-ฟังก์ชัน `checkPermission(requiredPermission)` ใช้ตรวจสิทธิ์ก่อนเข้าถึงบาง route
+ฟังก์ชัน `checkPermission('read:phr')` ตรวจก่อนเข้า route ที่กำหนด
+
+### 3.3 สิทธิ์ OWASP — Doctor Portal
+
+จาก `Isara-doctor-portal/server/security/owasp-middleware.cjs` (ชุดสิทธิ์กว้างกว่า):
+
+| บทบาท | สิทธิ์ |
+|--------|--------|
+| `admin` | `read:all`, `write:all`, `delete:all`, `manage:users`, `manage:doctors`, `approve:doctors`, `view:audit` |
+| `doctor` | `read:patients`, `write:emr`, `write:prescriptions`, `write:laborders`, `read:appointments`, `write:appointments` |
+| `patient` | `read:own`, `write:own`, `read:appointments`, `write:appointments` |
+
+### 3.4 การแยกสิทธิ์ระดับ Route (ตัวอย่างจริง)
+
+| การกระทำ | เงื่อนไข As-is |
+|----------|----------------|
+| อนุมัติแพทย์ | `authenticateToken` + `requireAdmin` |
+| เปิด PHR/EMR ผู้ป่วย | `authenticateToken` + `validateDoctorPatientAccess` + consent |
+| API ประชุมสร้างห้อง | `authenticateToken` บน Meeting Server |
+| Lobby admit/reject | `authenticateToken` (host) |
 
 ---
 
-## 3. การยืนยันตัวตน (Authentication)
+## 4. การยืนยันตัวตน (Authentication) แยกพอร์ทัล
 
-### 3.1 ผู้ป่วย
+### 4.1 ผู้ป่วย — ขั้นตอนละเอียด
 
-| ขั้นตอน | รายละเอียด |
-|---------|------------|
-| หน้า UI | `Isara-patient-portal/src/pages/auth/LoginPage.tsx` |
-| API | `POST /api/auth/login` |
-| ตรวจรหัสผ่าน | bcrypt |
-| ผลลัพธ์ | แถวใน `sessions` อายุ 7 วัน, คืน `{ user, token }` |
-| เก็บฝั่ง client | `localStorage`: `auth_token`, `izara_user` |
+| ลำดับ | ขั้นตอน | รายละเอียด |
+|-------|---------|------------|
+| 1 | UI | `LoginPage.tsx` / `RegisterPage.tsx` |
+| 2 | Rate limit | `authRateLimit` บน production (`RATE_LIMIT_MAX` ต่อ IP) |
+| 3 | Login API | `POST /api/auth/login` body: `{ email, password }` |
+| 4 | ตรวจรหัสผ่าน | `bcrypt.compare` กับ `users.password_hash` |
+| 5 | Session | invalidate session เก่า (ถ้ามี logic) → `INSERT INTO sessions` อายุ **7 วัน** |
+| 6 | Token format | `token_${Date.now()}_...` (opaque) |
+| 7 | Response | `{ user, token }` |
+| 8 | Client | `AuthContext.tsx` เก็บ `auth_token`, `izara_user` ใน `localStorage` |
+| 9 | Protected routes | `authMiddleware` ทุก `/api/*` ที่ต้องล็อกอิน |
 
-### 3.2 แพทย์และแอดมิน
+**Register:** `POST /api/auth/register` → `role = 'patient'` แบบ hard-code → สร้างแถว `phr` → auto-login session
 
-| ขั้นตอน | รายละเอียด |
-|---------|------------|
-| หน้า UI | `Isara-doctor-portal/src/pages/auth/LoginPage.tsx` |
-| Auth API | `POST /auth/login` → `authServer.cjs` |
-| ตรวจรหัสผ่าน | bcrypt + lockout (`login_attempts`, `locked_until`) |
-| ผลลัพธ์ | JWT 3 ชม. + `refreshToken` + แถว `sessions` (ถ้ามี) |
-| เก็บฝั่ง client | `localStorage`: `token`, `izara_refresh_token`, `izara_current_user` |
+**Reset password:** `password_resets` table — token ครั้งเดียว + `expires_at`
 
-### 3.3 Google SSO (ทั้งสองพอร์ทัล)
+### 4.2 แพทย์และแอดมิน — ขั้นตอนละเอียด
+
+| ลำดับ | ขั้นตอน | รายละเอียด |
+|-------|---------|------------|
+| 1 | UI | `LoginPage.tsx`, `AuthProvider.tsx` |
+| 2 | Login API | `POST /auth/login` → `authServer.cjs` (พอร์ต **3011** แยกจาก main 3010) |
+| 3 | Lockout | `login_attempts`, `locked_until` บน `users` |
+| 4 | Approval | ถ้า `approval_status = pending` → 403 `PENDING_APPROVAL` |
+| 5 | JWT | `generateJWT()` — อายุ **3 ชม.** |
+| 6 | Refresh | `INSERT refresh_tokens` — hash SHA-256, อายุ **30 วัน** |
+| 7 | Session row | `pgCreateSession()` (optional parallel track) |
+| 8 | Client | `token`, `izara_refresh_token`, `izara_current_user` |
+| 9 | Main API | nginx proxy → `mainApiServer.cjs` → `authenticateToken` |
+
+**Register แพทย์:** `POST /auth/register` → `role = 'doctor'`, มัก `approval_status = 'pending'`, `is_approved = false`
+
+**Verify session หลัง reload:** `GET /auth/verify` — ตรวจ session DB หรือ JWT
+
+### 4.3 การลงทะเบียนแพทย์และการอนุมัติ (Admin)
+
+| Endpoint (ตัวอย่าง) | Middleware | ผลลัพธ์ |
+|---------------------|------------|---------|
+| `GET /auth/admin/pending-doctors` | `authenticateToken`, `requireAdmin` | รายการรออนุมัติ |
+| `POST /auth/admin/approve-doctor` | `requireAdmin` | `approval_status = approved` |
+| `POST /auth/admin/reject-doctor` | `requireAdmin` | `approval_status = rejected` |
+| `POST /auth/admin/update-role` | `requireAdmin` | เปลี่ยน role/privileges |
+
+---
+
+## 5. Google SSO — กฎและรหัสตอบกลับ
+
+ใช้ `@react-oauth/google` ฝั่ง client ส่ง **Google ID token** มาที่ backend ตรวจด้วย `google-auth-library` (`verifyIdToken`)
 
 | พอร์ทัล | Endpoint |
 |---------|----------|
-| ผู้ป่วย | `POST /api/auth/google-auth` |
-| แพทย์ | `POST /auth/google-auth` |
+| Patient | `POST /api/auth/google-auth` body: `{ idToken, portal: 'patient' }` |
+| Doctor | `POST /auth/google-auth` body: `{ idToken }` |
 
-กฎที่ backend บังคับ (As-is):
+### 5.1 กฎที่ backend บังคับ (Doctor — จาก `authServer.cjs`)
 
-- อีเมลต้องมีในระบบแล้ว (ไม่สร้างบัญชีใหม่อัตโนมัติ)
-- บัญชีต้องมีรหัสผ่านจริง (ไม่ใช่ `!google-sso!` เท่านั้น)
-- แพทย์ที่ `approval_status = pending` ได้รับ `PENDING_APPROVAL`
-- แพทย์ที่ถูกปฏิเสธได้รับ `ACCOUNT_REJECTED`
+| รหัส `code` | HTTP | ความหมาย |
+|-------------|------|----------|
+| `MISSING_TOKEN` | 400 | ไม่ส่ง idToken |
+| `SSO_DISABLED` | 503 | ไม่ตั้ง `GOOGLE_CLIENT_ID` |
+| `INVALID_GOOGLE_TOKEN` | 401 | verify ล้มเหลว |
+| `EMAIL_NOT_VERIFIED` | 403 | email Google ยังไม่ verify |
+| `NOT_REGISTERED` | 404 | ไม่มีบัญชีในระบบ — **ไม่สร้างอัตโนมัติ** |
+| `PASSWORD_NOT_SET` | 403 | บัญชีเป็น stub `!google-sso!` เท่านั้น |
+| `GOOGLE_ACCOUNT_MISMATCH` | 409 | `google_sub` ไม่ตรงกับที่เคยผูก |
+| `ROLE_MISMATCH` | 403 | ไม่ใช่ doctor/admin |
+| `PENDING_APPROVAL` | 403 | แพทย์รออนุมัติ |
+| `ACCOUNT_REJECTED` | 403 | ถูกปฏิเสธ |
+| `ACCOUNT_DEACTIVATED` | 403 | `is_active = false` |
 
-### 3.4 การลงทะเบียนแพทย์ใหม่
+เมื่อสำเร็จ: ออก **JWT + refresh + session** เหมือน login รหัสผ่าน
 
-- `POST /auth/register` → `role = 'doctor'`, มัก `approval_status = 'pending'`
-- แอดมินอนุมัติผ่าน route ที่มี `requireAdmin`
+### 5.2 Patient Google SSO
+
+กฎคล้ายกัน (existing email only, password required) — คืน **session token** แทน JWT
+
+### 5.3 Config ฝั่ง client
+
+- `GET /auth/public-config` หรือ config service — คืน `googleClientId`, `googleSsoEnabled`
+- Env: `GOOGLE_CLIENT_ID` / `VITE_GOOGLE_CLIENT_ID`
 
 ---
 
-## 4. การอนุญาต (Authorization)
+## 6. การอนุญาต (Authorization)
 
-### 4.1 Middleware หลัก
+### 6.1 Middleware หลัก
 
 | Middleware | ไฟล์ | การทำงาน |
 |------------|------|-----------|
-| `authMiddleware` | Patient `middleware/auth.ts` | อ่าน `Authorization: Bearer` → `AuthService.validateSession(token)` |
-| `authenticateToken` | Doctor `mainApiServer.cjs` | `jwt.verify` ด้วย `JWT_SECRET`, issuer `izara-telemedicine` |
-| `requireAdmin` | `authServer.cjs` | ต้อง `role === 'admin'` หรือ `isAdmin` |
-| `requireRole(...)` | Meeting `jwtPolicy.js` | ตรวจ role สำหรับ API ประชุม |
+| `authMiddleware` | Patient `middleware/auth.ts` | `Bearer` → `AuthService.validateSession(token)` → `req.user` |
+| `authenticateToken` | Doctor `mainApiServer.cjs`, `authServer.cjs` | `jwt.verify(JWT_SECRET, issuer: izara-telemedicine, HS256)` |
+| `requireAdmin` | `authServer.cjs` | `req.user.role === 'admin' \|\| req.user.isAdmin` |
+| `requireRole(...)` | Meeting `jwtPolicy.js` | ชุด role ที่อนุญาต + ขยาย doctor/moderator |
+| `checkPermission` | OWASP middleware | ตรวจ string permission |
+| `verifyResourceOwnership` | OWASP | patient อ่านได้เฉพาะของตัวเอง; admin bypass |
 
-### 4.2 การเข้าถึงข้อมูลผู้ป่วย (PDPA)
+### 6.2 PDPA — `validateDoctorPatientAccess`
 
-`validateDoctorPatientAccess` ใน `mainApiServer.cjs` ตรวจ `patient_consents` ว่า `granted = true` และ `status = 'active'` ก่อนเปิด PHR/EMR
+ใน `mainApiServer.cjs` ก่อนเปิด PHR/EMR/EHR:
 
-### 4.3 การแยก route ตามบทบาท (UI)
+```sql
+SELECT id FROM patient_consents
+ WHERE patient_id = $1 AND doctor_id = $2
+   AND granted = true AND status = 'active'
+```
 
-- Patient Portal: `App.tsx` redirect ไป `/login` ถ้ายังไม่ล็อกอิน
-- Doctor Portal: `AuthProvider.tsx` redirect ไป `/doctor/{id}/dashboard` หรือ `/patient/...` ตาม role
+ถ้าไม่มี consent → **403** — แพทย์ไม่เห็นข้อมูลผู้ป่วยคนนั้น
+
+### 6.3 การแยก route ฝั่ง UI
+
+| พอร์ทัล | กลไก |
+|---------|------|
+| Patient | `App.tsx` — ไม่มี token → redirect `/login` |
+| Doctor | `AuthProvider.tsx` — restore จาก localStorage → `/auth/verify` → redirect ตาม role |
+| Admin pages | component ตรวจ `user.isAdmin \|\| user.role === 'admin'` |
+
+### 6.4 Meeting Server — การยืนยันตัวตน API
+
+```javascript
+// jwtPolicy.js — สรุป
+createAuthenticateToken(JWT_SECRET)  // 401 ถ้าไม่มี Bearer
+requireRole('doctor', 'admin')       // 403 ถ้า role ไม่ตรง
+```
+
+`req.user` มาจาก JWT payload: `userId`, `role`, `isAdmin`, `doctorId`
 
 ---
 
-## 5. Token และ Session
+## 7. Token, Session และ Refresh
 
-### 5.1 การตั้งค่า JWT (แพทย์/แอดมิน/Meeting)
+### 7.1 ตัวแปร Environment (JWT)
 
-| ค่า env | ค่าในระบบ |
-|---------|-----------|
-| `JWT_SECRET` / `VITE_JWT_SECRET` | คีย์ลงนาม (บังคับ) |
-| `JWT_ISSUER` | `izara-telemedicine` |
-| `JWT_EXPIRES_IN` | `3h` |
-| Algorithm | HS256 เท่านั้น |
+| ตัวแปร | ค่าในระบบ | หมายเหตุ |
+|---------|-----------|----------|
+| `JWT_SECRET` / `VITE_JWT_SECRET` | บังคับ — process อาจ exit ถ้าไม่มี | ใช้ร่วม Doctor + Meeting |
+| `JWT_ISSUER` | `izara-telemedicine` | ต้องตรงทุก service |
+| `JWT_EXPIRES_IN` | `3h` | access token แพทย์ |
+| Algorithm | **HS256 เท่านั้น** | ไม่รับ alg อื่น |
 
-Payload JWT จาก `generateJWT()`:
+**Payload JWT** (`generateJWT`):
 
 ```javascript
 {
-  userId, email, role, name,
-  doctorId, isAdmin
+  userId: user.id,
+  email: user.email,
+  role: user.role,
+  name: user.name,
+  doctorId: user.doctor_id || null,
+  isAdmin: user.is_admin || false
 }
 ```
 
-### 5.2 Refresh Token
+### 7.2 Refresh Token Rotation
 
-- `POST /auth/refresh` — เก็บ hash ใน `refresh_tokens`, อายุ 30 วัน, มีการ rotate
+| รายการ | ค่า |
+|--------|-----|
+| Endpoint | `POST /auth/refresh` |
+| เก็บ | `refresh_tokens.token_hash` (SHA-256 ของ raw token) |
+| อายุ | 30 วัน (`REFRESH_TOKEN_EXPIRES_DAYS`) |
+| Client ส่ง | `refreshToken` ใน body |
+| ผลลัพธ์ | JWT ใหม่ + refresh ใหม่ (rotation) |
 
-### 5.3 Session ผู้ป่วย
+### 7.3 Session ผู้ป่วย
 
-- Token รูปแบบ `token_${timestamp}_...`
-- ตรวจใน SQL: `sessions.token` และ `expires_at > NOW()` และ `logged_out_at IS NULL`
+| รายการ | ค่า |
+|--------|-----|
+| ตาราง | `sessions` |
+| ตรวจ | `token = $1 AND expires_at > NOW() AND logged_out_at IS NULL` |
+| Logout | ตั้ง `logged_out_at` |
 
-### 5.4 Timeout ฝั่ง client
+### 7.4 localStorage keys (As-is)
 
-- Patient: `izara_patient_last_activity` ใน `AuthContext.tsx`
-- Doctor: inactivity ~3 ชม. ใน `authServices.ts` / `useAuth.ts`
+| พอร์ทัล | Keys |
+|---------|------|
+| Patient | `auth_token`, `izara_user`, `izara_patient_last_activity` |
+| Doctor | `token`, `izara_refresh_token`, `izara_current_user`, keys กิจกรรม/inactivity |
 
-### 5.5 WebSocket (Auth Server)
+### 7.5 Client-side Inactivity
 
-Socket.IO บน auth server ตรวจ session แล้ว join room `user-{user_id}`
+| พอร์ทัล | พฤติกรรม |
+|---------|----------|
+| Patient | `AuthContext` — timeout จาก `izara_patient_last_activity` |
+| Doctor | `authServices.ts` / `useAuth.ts` — ~**3 ชั่วโมง** ไม่มีกิจกรรม → logout |
+
+### 7.6 WebSocket บน Auth Server
+
+Socket.IO บน `authServer.cjs`:
+
+- Client ส่ง token ตอน connect
+- Server `pgValidateSession(token)` หรือ verify JWT
+- Join room `user-{user_id}` สำหรับแจ้งเตือน/auth events
 
 ---
 
-## 6. แผนภาพ Mermaid — สถานะการเข้าสู่ระบบ
+## 8. ความปลอดภัยเพิ่มเติม (As-is)
+
+| หัวข้อ | การทำงานใน codebase |
+|--------|---------------------|
+| Rate limiting | Patient auth routes — per-IP ใน production |
+| Login lockout | Doctor — `login_attempts` / `locked_until` |
+| Audit | `securityAuditLog` ใน OWASP middleware (ACCESS_DENIED, GOOGLE_SSO_UNKNOWN_EMAIL) |
+| CORS | กำหนดต่อ service ใน env |
+| ไม่มี Passport | ไม่พบ `passport` ใน dependencies หลัก |
+| Meeting guest token | `verifyScopedToken` สำหรับ invite ที่ไม่มี issuer |
+
+---
+
+## 9. แผนภาพ Mermaid — สถานะการเข้าสู่ระบบ
 
 ```mermaid
 stateDiagram-v2
     [*] --> Unauthenticated
 
-    Unauthenticated --> Authenticating : กรอก credentials หรือ Google
+    state Unauthenticated {
+        [*] --> AtLoginPage
+    }
 
-    Authenticating --> PatientAuthenticated : patient login OK
-    Authenticating --> DoctorAuthenticated : doctor login OK + approved
-    Authenticating --> AdminAuthenticated : admin login OK
-    Authenticating --> PendingApproval : doctor pending
-    Authenticating --> Rejected : doctor rejected
-    Authenticating --> Unauthenticated : invalid credentials
-    Authenticating --> Unauthenticated : NOT_REGISTERED Google
-    Authenticating --> Unauthenticated : PASSWORD_NOT_SET
+    Unauthenticated --> AuthenticatingPassword : email + password
+    Unauthenticated --> AuthenticatingGoogle : Google ID token
 
-    PendingApproval --> Unauthenticated : logout
-    Rejected --> Unauthenticated : logout
+    AuthenticatingPassword --> PatientAuthenticated : patient OK
+    AuthenticatingPassword --> DoctorAuthenticated : doctor OK approved
+    AuthenticatingPassword --> AdminAuthenticated : admin OK
+    AuthenticatingPassword --> PendingApproval : doctor pending
+    AuthenticatingPassword --> Rejected : doctor rejected
+    AuthenticatingPassword --> Locked : locked_until active
+    AuthenticatingPassword --> Unauthenticated : wrong password
+
+    AuthenticatingGoogle --> PatientAuthenticated : patient SSO OK
+    AuthenticatingGoogle --> DoctorAuthenticated : doctor SSO OK
+    AuthenticatingGoogle --> Unauthenticated : NOT_REGISTERED
+    AuthenticatingGoogle --> Unauthenticated : PASSWORD_NOT_SET
+    AuthenticatingGoogle --> PendingApproval : PENDING_APPROVAL
+    AuthenticatingGoogle --> Unauthenticated : GOOGLE_ACCOUNT_MISMATCH
+
+    Locked --> Unauthenticated : wait / admin unlock
 
     PatientAuthenticated --> Unauthenticated : logout / session expire
     DoctorAuthenticated --> Unauthenticated : logout / JWT expire
     AdminAuthenticated --> Unauthenticated : logout / JWT expire
 
-    note right of PatientAuthenticated
-        sessions.token opaque 7d
-    end note
-
-    note right of DoctorAuthenticated
-        JWT 3h + refresh_tokens
-    end note
+    state PatientAuthenticated {
+        note right: sessions.token 7d opaque
+    }
+    state DoctorAuthenticated {
+        note right: JWT 3h + refresh 30d
+    }
 ```
 
 ---
 
-## 7. แผนภาพ draw.io — ขอบเขตความปลอดภัย
+## 10. แผนภาพ draw.io — ขอบเขตความปลอดภัย
 
 ```xml
-<mxfile host="app.diagrams.net" agent="Isara-Auth-Boundary" version="21.0.0">
+<mxfile host="app.diagrams.net" agent="Isara-Auth-Boundary-v2" version="21.0.0">
   <diagram name="Security Boundaries" id="auth-boundary-as-is">
-    <mxGraphModel dx="1100" dy="700" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1200" pageHeight="800" math="0" shadow="0">
+    <mxGraphModel dx="1200" dy="800" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1300" pageHeight="900" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
-        <mxCell id="zone_public" value="Zone 1 — Public (เบราว์เซอร์)" style="swimlane;startSize=30;fillColor=#FFEBEE;strokeColor=#C62828;dashed=1;" vertex="1" parent="1">
-          <mxGeometry x="40" y="60" width="280" height="200" as="geometry" />
+        <mxCell id="title" value="Izara — ขอบเขตความปลอดภัย Authentication (As-is)" style="text;html=1;align=center;fontSize=16;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="250" y="15" width="800" height="35" as="geometry" />
         </mxCell>
-        <mxCell id="browser" value="React SPA&#xa;localStorage token/session" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="zone_public">
-          <mxGeometry x="30" y="50" width="220" height="60" as="geometry" />
+        <mxCell id="zone_public" value="Zone 1 — Untrusted (Browser)" style="swimlane;startSize=30;fillColor=#FFEBEE;strokeColor=#C62828;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="70" width="300" height="240" as="geometry" />
         </mxCell>
-        <mxCell id="google" value="Google OAuth ID Token" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF9C4;" vertex="1" parent="zone_public">
-          <mxGeometry x="30" y="130" width="220" height="50" as="geometry" />
+        <mxCell id="browser" value="React SPA&#xa;localStorage: token / session" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="zone_public">
+          <mxGeometry x="25" y="45" width="250" height="55" as="geometry" />
         </mxCell>
-        <mxCell id="zone_api" value="Zone 2 — Portal API (Cloud Run)" style="swimlane;startSize=30;fillColor=#E3F2FD;strokeColor=#1565C0;" vertex="1" parent="1">
-          <mxGeometry x="360" y="60" width="300" height="280" as="geometry" />
+        <mxCell id="google" value="Google OAuth&#xa;ID Token (client-side)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF9C4;" vertex="1" parent="zone_public">
+          <mxGeometry x="25" y="115" width="250" height="45" as="geometry" />
         </mxCell>
-        <mxCell id="patient_api" value="Patient API :3005&#xa;authMiddleware → sessions" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="zone_api">
-          <mxGeometry x="30" y="50" width="240" height="50" as="geometry" />
+        <mxCell id="guest" value="Guest join link&#xa;(scoped JWT / invite)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE0B2;" vertex="1" parent="zone_public">
+          <mxGeometry x="25" y="175" width="250" height="45" as="geometry" />
         </mxCell>
-        <mxCell id="main_api" value="Doctor Main API :3010&#xa;authenticateToken JWT" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="zone_api">
-          <mxGeometry x="30" y="115" width="240" height="50" as="geometry" />
+        <mxCell id="zone_edge" value="Zone 2 — Edge (Cloud Run HTTPS)" style="swimlane;startSize=30;fillColor=#E3F2FD;strokeColor=#1565C0;" vertex="1" parent="1">
+          <mxGeometry x="380" y="70" width="340" height="320" as="geometry" />
         </mxCell>
-        <mxCell id="meeting_api" value="Meeting Server :3020&#xa;jwtPolicy requireRole" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="zone_api">
-          <mxGeometry x="30" y="180" width="240" height="50" as="geometry" />
+        <mxCell id="patient_api" value="Patient API :3005&#xa;authMiddleware → sessions" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="zone_edge">
+          <mxGeometry x="25" y="45" width="290" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="main_api" value="Doctor Main API :3010&#xa;authenticateToken (JWT)" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="zone_edge">
+          <mxGeometry x="25" y="110" width="290" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="meeting_api" value="Meeting :3020&#xa;jwtPolicy + requireRole" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="zone_edge">
+          <mxGeometry x="25" y="175" width="290" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="pdpa" value="validateDoctorPatientAccess&#xa;patient_consents" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#BBDEFB;" vertex="1" parent="zone_edge">
+          <mxGeometry x="25" y="240" width="290" height="45" as="geometry" />
         </mxCell>
         <mxCell id="zone_auth" value="Zone 3 — Auth Server :3011" style="swimlane;startSize=30;fillColor=#E8F5E9;strokeColor=#2E7D32;" vertex="1" parent="1">
-          <mxGeometry x="360" y="360" width="300" height="120" as="geometry" />
+          <mxGeometry x="380" y="410" width="340" height="130" as="geometry" />
         </mxCell>
-        <mxCell id="auth_srv" value="login / refresh / google-auth&#xa;requireAdmin" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="zone_auth">
-          <mxGeometry x="30" y="45" width="240" height="60" as="geometry" />
+        <mxCell id="auth_srv" value="login | refresh | google-auth&#xa;register | requireAdmin routes" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="zone_auth">
+          <mxGeometry x="25" y="45" width="290" height="65" as="geometry" />
         </mxCell>
-        <mxCell id="zone_data" value="Zone 4 — Data (Cloud SQL)" style="swimlane;startSize=30;fillColor=#F3E5F5;strokeColor=#6A1B9A;" vertex="1" parent="1">
-          <mxGeometry x="700" y="60" width="260" height="420" as="geometry" />
+        <mxCell id="zone_data" value="Zone 4 — Trusted Data (Cloud SQL)" style="swimlane;startSize=30;fillColor=#F3E5F5;strokeColor=#6A1B9A;" vertex="1" parent="1">
+          <mxGeometry x="760" y="70" width="280" height="470" as="geometry" />
         </mxCell>
-        <mxCell id="users_tbl" value="users (role, is_admin)" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="zone_data">
-          <mxGeometry x="30" y="50" width="200" height="40" as="geometry" />
+        <mxCell id="users_tbl" value="users&#xa;role, is_admin, approval_status" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="zone_data">
+          <mxGeometry x="30" y="50" width="220" height="45" as="geometry" />
         </mxCell>
-        <mxCell id="sessions_tbl" value="sessions (patient token)" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="zone_data">
-          <mxGeometry x="30" y="105" width="200" height="40" as="geometry" />
+        <mxCell id="sessions_tbl" value="sessions&#xa;patient opaque token" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="zone_data">
+          <mxGeometry x="30" y="110" width="220" height="45" as="geometry" />
         </mxCell>
-        <mxCell id="refresh_tbl" value="refresh_tokens (doctor)" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="zone_data">
-          <mxGeometry x="30" y="160" width="200" height="40" as="geometry" />
+        <mxCell id="refresh_tbl" value="refresh_tokens&#xa;SHA-256 hash" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="zone_data">
+          <mxGeometry x="30" y="170" width="220" height="45" as="geometry" />
         </mxCell>
-        <mxCell id="consent_tbl" value="patient_consents (PDPA)" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="zone_data">
-          <mxGeometry x="30" y="215" width="200" height="40" as="geometry" />
+        <mxCell id="consent_tbl" value="patient_consents&#xa;PDPA grant" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="zone_data">
+          <mxGeometry x="30" y="230" width="220" height="45" as="geometry" />
         </mxCell>
-        <mxCell id="b1" value="HTTPS Bearer" style="endArrow=classic;" edge="1" parent="1" source="browser" target="patient_api">
+        <mxCell id="audit_tbl" value="audit_logs / securityAuditLog" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="zone_data">
+          <mxGeometry x="30" y="290" width="220" height="45" as="geometry" />
+        </mxCell>
+        <mxCell id="b1" value="Bearer session" style="endArrow=classic;" edge="1" parent="1" source="browser" target="patient_api">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="b2" value="HTTPS Bearer JWT" style="endArrow=classic;" edge="1" parent="1" source="browser" target="main_api">
+        <mxCell id="b2" value="Bearer JWT" style="endArrow=classic;" edge="1" parent="1" source="browser" target="main_api">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="b3" value="login" style="endArrow=classic;" edge="1" parent="1" source="browser" target="auth_srv">
+        <mxCell id="b3" value="login/refresh" style="endArrow=classic;" edge="1" parent="1" source="browser" target="auth_srv">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="b4" value="SQL" style="endArrow=classic;" edge="1" parent="1" source="auth_srv" target="sessions_tbl">
+        <mxCell id="b4" value="SQL TLS" style="endArrow=classic;" edge="1" parent="1" source="auth_srv" target="sessions_tbl">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="b5" value="Bearer JWT" style="endArrow=classic;" edge="1" parent="1" source="browser" target="meeting_api">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
       </root>
@@ -261,9 +447,69 @@ stateDiagram-v2
 
 ---
 
-## เอกสารอ้างอิงใน repo
+## 11. เอกสารอ้างอิง
 
-- `Isara-doctor-portal/server/authServer.cjs`
-- `Isara-doctor-portal/server/mainApiServer.cjs`
-- `Isara-patient-portal/server/routes/auth.ts`
-- `Izara-jitsi-server/server/jwtPolicy.js`
+| ไฟล์ | เนื้อหา |
+|------|---------|
+| `Isara-doctor-portal/server/authServer.cjs` | Login, JWT, Google SSO, admin, refresh |
+| `Isara-doctor-portal/server/mainApiServer.cjs` | API JWT, PDPA guard |
+| `Isara-doctor-portal/server/security/owasp-middleware.cjs` | RBAC doctor |
+| `Isara-patient-portal/server/routes/auth.ts` | Patient auth + Google |
+| `Isara-patient-portal/server/middleware/auth.ts` | Session middleware |
+| `Izara-jitsi-server/server/jwtPolicy.js` | Meeting API auth |
+| `Processes/User_management_Workflows.md` | สเปก workflow ผู้ใช้ |
+| `Processes/FULL_WORKFLOW_CONTRACT.md` §1 Auth | regression must-pass |
+
+---
+
+## 12. ภาคผนวก — สังเคราะห์จาก Processes (Auth/User/PDPA)
+
+### 12.1 หน้าจอที่เกี่ยวกับการยืนยันตัวตนและผู้ใช้
+
+| สเปก Processes | ขั้นตอนหลัก (As-is) | Endpoint / ตาราง |
+|----------------|---------------------|------------------|
+| `Patient-Portal/01_Login_Page.md` | email+password หรือ Google → เก็บ token `localStorage` | `POST /api/auth/login`, `sessions` |
+| `Patient-Portal/02_Register_Page.md` | ข้อมูลส่วนตัว + PDPA checkbox | `POST /api/auth/register` |
+| `Patient-Portal/03_Reset_Password_Page.md` | อีเมล → ลิงก์ token | `password_resets` |
+| `Patient-Portal/12_Profile_Page.md` | แก้ชื่อ/รูป — ต้องมี session | `PATCH` profile APIs |
+| `Doctor-Portal/01_Login_Page.md` | tab login/register, lockout | `POST /auth/login` → JWT |
+| `Doctor-Portal/02_Reset_Password_Page.md` | forgot → `/reset-password?token=` | `POST /auth/reset-password` |
+| `Doctor-Portal/16_Doctor_Profile_Page.md` | แก้ `doctor_profiles` | JWT บน Main API |
+| `Doctor-Portal/18_Admin_Doctor_Management.md` | approve/reject แพทย์ใหม่ | `requireAdmin`, `approval_status` |
+| `Doctor-Portal/19_Doctors_Management_Page.md` | ดูรายชื่อแพทย์ | admin/doctor directory |
+
+### 12.2 Google SSO (จากสเปกหน้า Login ทั้งสองพอร์ทัล)
+
+| `code` ตอบกลับ | ความหมาย | การปฏิบัติของ UI |
+|----------------|----------|------------------|
+| (success) | token ถูกต้อง | redirect dashboard |
+| `GOOGLE_ACCOUNT_NOT_FOUND` | ไม่มีบัญชี | แนะนำ register |
+| `GOOGLE_EMAIL_MISMATCH` | อีเมลไม่ตรง | แสดงข้อความ |
+| `DOCTOR_PENDING_APPROVAL` | แพทย์รออนุมัติ | หน้ารอ (Doctor) |
+| `DOCTOR_NOT_APPROVED` | ถูกปฏิเสธ | บล็อกเข้า |
+
+### 12.3 PDPA และความยินยอม (`Patient-Portal/10_PDPA_Page.md`)
+
+- ผู้ป่วนเปิด/ปิดการแชร์ข้อมูลต่อแพทย์ → `patient_consents.granted`
+- แพทย์เปิด PHR/EMR ต้องผ่าน `validateDoctorPatientAccess` ใน `mainApiServer.cjs`
+- Living Will (`11_Living_Will_Page.md`) แยกตาราง `living_wills` — ไม่แทน consent ทั่วไป
+
+### 12.4 สิทธิ์ Admin (จาก `00_Doctor_Portal_Overview` + `17`–`18`)
+
+| การกระทำ | Middleware | หมายเหตุ |
+|----------|------------|----------|
+| อนุมัติแพทย์ | `requireAdmin` บน authServer | อัปเดต `is_approved`, `approval_status` |
+| มอบหมายนัด pool | admin routes Main API | ไม่ได้เป็น Jitsi HOST |
+| ดูผู้ป่วยทั้งหมด | `role === 'admin'` | OWASP ขยายสิทธิ์อ่าน |
+
+### 12.5 Must-pass จาก `FULL_WORKFLOW_CONTRACT.md` (โดเมน Auth)
+
+- Patient login/register/reset สร้าง session ถูกต้อง
+- Doctor/admin login แยก route guard
+- Google SSO โหลดปุ่มและจัดการ redirect/fallback
+- API ปฏิเสธ JWT/session ที่หายหรือผิด
+- ผู้ป่วยเข้า route แพทย์ไม่ได้ (และกลับกัน)
+
+---
+
+**ไฟล์ถัดไป:** [03_Data_Storage_Architecture.md](03_Data_Storage_Architecture.md)
