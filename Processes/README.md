@@ -1,9 +1,9 @@
 # 📄 Izara Telemedicine — Comprehensive Workflows, Processes & Architecture
 
-**Version:** 1.6.0
-**Last Updated:** March 31, 2026
+**Version:** 1.7.51
+**Last Updated:** June 8, 2026
 **Focus:** Web Application Only (Patient Portal + Doctor Portal + Meeting Server)
-**Status:** ✅ Phase 1 Complete — All Workflows Verified + Full DB Schema
+**Status:** ✅ Phase 1 Complete — Calendar sync on confirm, 3-party meeting lifecycle, zero-skip local Docker gate (2982 unit + 35 E2E core)
 
 ---
 
@@ -1731,14 +1731,21 @@ Ensures consistent data across the three independent services via PostgreSQL as 
 | DOC-SIRIPORN-001 | Endocrinology | Bumrungrad Hospital | 4.9 (200 reviews) | ฿800 |
 
 
-### 11.3 Playwright Test Suite
+### 11.3 Automated Test Suite (June 8, 2026 — v1.7.51)
 
-| Category | Tests | Description |
+| Category | Count | Description |
 | ---------- | -------| ------------- |
-| Local Tests | 941 | Full feature coverage |
-| Cloud Tests | 311 | Cloud Run deployment verification |
-| Fetch Detection | 35 | API endpoint validation |
-| **Total** | **1,287** | All passing ✅ |
+| Vitest (Docker `test:unit:docker`) | **2982** | Unit + integration across doctor/patient/cross-portal/meeting-server |
+| Meeting-server HTTP contracts | **78** | `test:meeting-server:contract` |
+| Local E2E core pipeline | **35 passed, 0 skipped** | A-auth → D (incl. **D4cal** calendar) → D-doctor-host → Q (3-party 10s) → E → F → L (**L1 unskipped**) |
+| Jitsi prejoin + role matrix (J + R) | **16/16** | Patient lobby + JWT moderator rules |
+| Cloud full Playwright (headed) | **85/85** | Cloud Run verification (2026-05-31) |
+| Docker Group W multi-browser | **18/18** | Chromium + Firefox + WebKit (2026-06-05) |
+| Quality gate | PASS | `npm run test:quality:gate` (Sonar) |
+
+**Key workflow tests:** `group-D-appointment-workflows` (D4cal), `group-Q-meeting-lifecycle` (Q01f 3-party), `group-L-lab-ordering` (L1 login JWT), `group-J-patient-jitsi-prejoin`, `group-R-jitsi-role-permissions`
+
+**Evidence:** `reports/defect-fix/DEFECT_REGISTER.md` · Matrix: `tests/PROCESS_COVERAGE_MATRIX.md` · Coverage doc: `Documents/docs/markdown/testing/UNIT_TEST_UI_COVERAGE.md`
 
 
 ### 11.4 Access URLs
@@ -1758,14 +1765,15 @@ Ensures consistent data across the three independent services via PostgreSQL as 
 
 | Document | Description | Key Scenarios |
 | ---------- | -------------| --------------- |
-| [Appointment_Workflows.md](Appointment_Workflows.md) | Booking → assignment → confirmation → meeting → follow-up | 14 end-to-end scenarios |
+| [Appointment_Workflows.md](Appointment_Workflows.md) | Booking → assignment → confirmation → **calendar sync** → meeting → follow-up | 14+ scenarios incl. D4cal |
 | [User_management_Workflows.md](User_management_Workflows.md) | Registration, login, roles, admin approval, password reset | Patient & doctor registration, admin approval, account locking |
 | [Health_Records_Processes.md](Health_Records_Processes.md) | PHR, EMR (SOAP), prescriptions, lab orders, imaging | Self-entry, AI-generated EMR, drug interactions, lab flags |
 | [VIDEO_MEETING_JITSI_GEMINI.md](VIDEO_MEETING_JITSI_GEMINI.md) | Video meeting, Jitsi integration, transcription, AI summary | Multi-party meeting, lobby, transcript streaming, AI SOAP pipeline |
+| [POST_MEETING_WORKFLOW.md](POST_MEETING_WORKFLOW.md) | Post-meeting recording, Gemini summary, MeetingResults, patient delivery | End meeting → results_ready pipeline |
 | [Medicine_Content_Processes.md](Medicine_Content_Processes.md) | Medical content CRUD, approval workflow, patient library | Thai-first policy, admin approval, RAG indexing |
 | [Clinical_Resources_&_Medical_Library_Workflows.md](Clinical_Resources_&_Medical_Library_Workflows.md) | Clinical guidelines, protocols, RAG knowledge base | Doctor CRUD, admin approval, AI search |
 | [Medical_Consultants_Workflows.md](Medical_Consultants_Workflows.md) | Specialist directory, consultant management | Admin CRUD, doctor rating, availability toggle |
-| [Notification_Workflows.md](Notification_Workflows.md) | In-app, email, push notifications, preferences | 15+ event types, real-time via NOTIFY, polling fallback |
+| [Notification_Workflows.md](Notification_Workflows.md) | In-app, email, push notifications, preferences | 16+ event types incl. `schedule_entry_ready` + `calendarEventUrl` on confirm |
 | [Data_Sync_Documentation.md](Data_Sync_Documentation.md) | PostgreSQL sync, NOTIFY triggers, audit trail | 8 triggers, Socket.IO events, cross-portal sync |
 
 
@@ -1806,7 +1814,14 @@ Ensures consistent data across the three independent services via PostgreSQL as 
 ## 🆕 Version History
 
 
-### v1.5.9 (March 2026) — Current
+### v1.7.51 (June 8, 2026) — Current
+
+- Calendar sync on doctor confirm: `calendarEventUrl`, doctor `/schedule`, patient MiniCalendar + detail link
+- 3-party meeting E2E Q01f (10s A/V hold); L1 unskip via doctor login JWT
+- Local gate: **2982** Vitest, **35** E2E core (0 skipped), J+R **16/16**
+- Docs: `Appointment_Workflows` §6, `Notification_Workflows` §3.4, `04_Schedule_Page`, `05_Appointments_Page`, `Documents/` technical + testing ledgers
+
+### v1.5.9 (March 2026)
 
 
 - All Phase 1 features verified and tested (1,287 Playwright tests)

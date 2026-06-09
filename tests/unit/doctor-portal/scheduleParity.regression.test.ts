@@ -12,15 +12,19 @@ const schedulePath = path.resolve(
   '../../../Isara-doctor-portal/src/pages/schedule/CompleteSchedule.tsx',
 );
 
+/** Calendar schedule shows confirmed visits only; dashboard tracks broader queue statuses. */
+const SCHEDULE_CALENDAR_STATUSES = ['confirmed', 'scheduled'];
+
 describe('doctor schedule parity regression guard', () => {
-  it('uses aligned active appointment statuses in dashboard and schedule', () => {
+  it('dashboard tracks queue statuses; schedule shows confirmed calendar entries', () => {
     const dashboardSource = fs.readFileSync(dashboardPath, 'utf8');
     const scheduleSource = fs.readFileSync(schedulePath, 'utf8');
 
-    const dashboardHasAwaiting = /awaiting_doctor_response/.test(dashboardSource);
-    const scheduleHasAwaiting = /awaiting_doctor_response/.test(scheduleSource);
-
-    expect(dashboardHasAwaiting).toBe(true);
-    expect(scheduleHasAwaiting).toBe(true);
+    expect(/awaiting_doctor_response/.test(dashboardSource)).toBe(true);
+    for (const status of SCHEDULE_CALENDAR_STATUSES) {
+      expect(scheduleSource).toContain(`'${status}'`);
+    }
+    expect(scheduleSource).toContain('resolveAppointmentSchedule');
+    expect(scheduleSource).toContain('doctor_id');
   });
 });

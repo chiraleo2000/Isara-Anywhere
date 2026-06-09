@@ -300,32 +300,26 @@ async function ensureBucketExists(bucketName) {
 }
 
 // ============================================================================
-// JWT AUTHENTICATION MIDDLEWARE
+// SESSION AUTHENTICATION MIDDLEWARE
 // ============================================================================
-const jwt = require('jsonwebtoken');
+const PostgresDataService = require('./services/postgresDataService.cjs');
+const {
+  validateSessionToken,
+  sessionRowToReqUser,
+} = require('./sessionAuth.cjs');
 
-const GCS_JWT_SECRET = process.env.JWT_SECRET || process.env.VITE_JWT_SECRET;
-if (!GCS_JWT_SECRET) {
-  console.error('[GCS-API][SECURITY] FATAL: JWT_SECRET not set. Exiting.');
-  process.exit(1);
-}
-const GCS_JWT_SECRET_FINAL = GCS_JWT_SECRET;
-
-function authenticateToken(req, res, next) {
+async function authenticateToken(req, res, next) {
   const authHeader = req.headers['authorization'];
   const token = authHeader?.split(' ')[1];
   if (!token) {
     return res.status(401).json({ error: 'No token provided' });
   }
   try {
-    const decoded = jwt.verify(token, GCS_JWT_SECRET_FINAL, {
-      algorithms: ['HS256']
-    });
-    req.user = {
-      id: decoded.userId || decoded.id || decoded.sub,
-      email: decoded.email,
-      role: decoded.role || 'doctor'
-    };
+    const row = await validateSessionToken(PostgresDataService.pool, token);
+    if (!row) {
+      return res.status(401).json({ error: 'Session expired or invalid' });
+    }
+    req.user = sessionRowToReqUser(row);
     next();
   } catch (error) {
     console.warn('[GCS-API] Authentication failed:', error.message);

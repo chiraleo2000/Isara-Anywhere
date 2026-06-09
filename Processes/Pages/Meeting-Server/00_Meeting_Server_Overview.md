@@ -1092,3 +1092,18 @@ npm run test:e2e:meeting-lifecycle   # meeting pages only; needs D→D-host firs
 
 **Matrix row:** `00_Meeting_Server_Overview` in [tests/PROCESS_COVERAGE_MATRIX.md](../../tests/PROCESS_COVERAGE_MATRIX.md)
 
+---
+
+## Detailed Workflow — Key Endpoints (v1.7.51)
+
+| Endpoint | Purpose |
+|----------|---------|
+| `GET /api/meetings/:id/join-config?role=doctor\|patient` | JWT + room + displayName |
+| `POST /api/meetings/:id/host-present` | Mark doctor in Jitsi (after videoConferenceJoined) |
+| `GET /api/meetings/:id/host-ready` | Patient poll before Jitsi mount |
+| `POST /api/meetings/:id/lobby/join` | Patient/guest Izara lobby |
+| `POST /api/meetings/:id/end` | End meeting `{ generateSummary: true }` |
+| `GET /api/meetings/:id/results` | MeetingResults page data |
+
+Host-ready is **not** set on socket `join-meeting` alone (v1.7.51).
+

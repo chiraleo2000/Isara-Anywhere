@@ -1,7 +1,7 @@
 # Izara Telemedicine Platform (อิสระ เทเลเมดิซิน)
 
-![Version](https://img.shields.io/badge/release-v1.7.40-blue.svg)
-![Tests](https://img.shields.io/badge/unit%20tests-2597%20passing-brightgreen.svg)
+![Version](https://img.shields.io/badge/release-v1.7.50-blue.svg)
+![Tests](https://img.shields.io/badge/unit%20tests-2938%20passing-brightgreen.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 ![Node](https://img.shields.io/badge/node-%3E%3D22.0.0-brightgreen.svg)
 ![Database](https://img.shields.io/badge/database-PostgreSQL%2018-blue.svg)
@@ -106,12 +106,14 @@ docker-compose up -d --build
 
 Open patient portal at http://localhost:3005 and doctor portal at http://localhost:3010.
 
+Copy `.env.example` → `.env` (or use `.env.test` for Vitest). Required keys are validated at boot via `scripts/env/schema.js` (`JWT_SECRET` ≥ 32 chars, `GEMINI_API_KEY` including placeholder `xxxxx`).
+
 ### Required environment keys (`.env.docker`)
 
 | Variable | Purpose |
 | -------- | ------- |
 | `VITE_GOOGLE_MAPS_API_KEY` | Healthcare map |
-| `VITE_GEMINI_API_KEY` / `GEMINI_API_KEY` | AI features |
+| `VITE_GEMINI_API_KEY` / `GEMINI_API_KEY` | AI features (dev placeholder: `xxxxx` in `.env.example`) |
 | `GOOGLE_SPEECH_API_KEY` | Meeting transcription |
 | `VITE_GOOGLE_CLIENT_ID` | Google Sign-In |
 
@@ -142,7 +144,7 @@ Current cloud focus: **GATE 0** appointment sync and Jitsi meeting reliability b
 - **Meeting server (v1.7.11):** Jitsi identity, `join-config`, recording → STT; meeting create JWT fix (Round 2)
 - **Jitsi:** Display names from Izara registration; Izara lobby; patient `/meeting/:id` and guest `/guest-join/:id`; doctor is **HOST** (`moderator`) on confirmed visits
 - **Appointments:** Single PostgreSQL pool; statuses `in_pool` → `awaiting_doctor_response` → `confirmed`; realtime via `pg_notify` + Socket.IO (+ optional Redis adapter)
-- **Tests:** **2,563** unit tests passing (Vitest); cloud smoke + `verify:gate0` — see bug report for residual E2E items
+- **Tests:** **2938** Vitest + **78** meeting-server contracts (Docker verified); cloud smoke + `verify:gate0` — see [UNIT_TEST_UI_COVERAGE.md](Documents/docs/markdown/testing/UNIT_TEST_UI_COVERAGE.md)
 
 Details: [Processes/GATE0_IMPLEMENTATION_STATUS.md](Processes/GATE0_IMPLEMENTATION_STATUS.md), [Processes/TWO_ROUND_CLOUD_TESTING.md](Processes/TWO_ROUND_CLOUD_TESTING.md), [CLOUD_E2E_BUG_REPORT.md](CLOUD_E2E_BUG_REPORT.md).
 
@@ -181,14 +183,37 @@ Details: [Processes/GATE0_IMPLEMENTATION_STATUS.md](Processes/GATE0_IMPLEMENTATI
 
 | Layer | Tool | Scope |
 | ----- | ---- | ----- |
-| Unit | Vitest (`tests/unit/`) | API, auth, workflows, security, meeting contracts |
+| Unit | Vitest (`tests/unit/`) | **2938** tests · 167 files · API, auth, workflows, queue/JWT hardening |
+| Meeting contracts | Vitest (`tests/unit/meeting-server/`) | **78** HTTP + JWT role tests |
+| Process registry | `processWorkflowRegistry.ts` + PCOV gate | 44 process docs → Vitest mapping |
 | Cloud UI | Playwright (`tests/group-*.ui-test.ts`) | Groups A–P + **Q** (meeting lifecycle P0) |
-| Coverage | [tests/PROCESS_COVERAGE_MATRIX.md](tests/PROCESS_COVERAGE_MATRIX.md) | 40 page specs + workflow docs |
+| Coverage | [tests/PROCESS_COVERAGE_MATRIX.md](tests/PROCESS_COVERAGE_MATRIX.md) | Process pages + workflow docs |
 
-**Expanded program (Waves 0–5):** meeting P0 (Group Q), doctor/patient unit packs, process audit, per-page § Automated verification under `Processes/Pages/`.
+### Local Docker (recommended for full suite)
+
+Requires Docker Desktop and `.env` (or `.env.docker`) with placeholders — **never commit real secrets**.
+
+```bash
+# Full Vitest in node:20-alpine (2938 tests)
+npm run test:unit:docker
+
+# Memory-safe grouped run (same tests, 4 shards)
+npm run test:unit:docker:grouped
+
+# Rebuild docker-compose stack + unit + meeting-server contracts (3016 total)
+npm run test:unit:docker:deploy
+
+# Browser E2E in Docker (headless Playwright)
+npm run test:e2e:docker:queue-traceability
+npm run test:e2e:docker:patient-jitsi-prejoin
+```
+
+On Windows PowerShell, run from repo root. The grouped runner uses `npx cross-env` internally for Vitest env flags.
+
+### Other test commands
 
 ```powershell
-# Unit (all)
+# Unit (host — requires tests/unit/node_modules)
 cd tests/unit && npx vitest run
 
 # Cloud serial pipeline (appointments → host → meeting Q → clinical → PHR)
@@ -207,8 +232,12 @@ npm run test:unit:wave4
 npm run test:audit:process
 python scripts/append-page-automated-verification.py
 
-# Meeting server HTTP contracts
+# Meeting server HTTP contracts + JWT role tests
 npm run test:meeting-server:contract
+npm run test:unit:meeting-acceptance
+
+# Queue lifecycle + env schema + Jitsi roles
+cd tests/unit && npx vitest run doctor-portal/queueLifecycle.integration.test.ts doctor-portal/queueAcceptTraceability.test.ts config/envSchema.test.ts meeting-server/jitsiRoleJwt.test.ts
 ```
 
 Canonical contract: [Processes/FULL_WORKFLOW_CONTRACT.md](Processes/FULL_WORKFLOW_CONTRACT.md).  
@@ -301,10 +330,13 @@ npm run cleanup:cloud-test   # after E2E — purge test rows + re-seed baseline 
 
 ---
 
-## Quality gates (v1.7.40+)
+## Quality gates (v1.7.50+)
 
 ```powershell
-npm run test:unit              # 2698 Vitest tests (incl. defect + Sonar fixes)
+npm run test:unit              # 2938 Vitest tests (process registry + queue/JWT hardening)
+npm run test:unit:docker       # same suite inside node:20-alpine container
+npm run test:unit:docker:grouped # memory-safe 4-group shard
+npm run test:unit:docker:deploy # rebuild docker-compose stack + full unit + 78 meeting contracts
 npm run test:unit:coverage     # lcov for SonarLint
 npm run sonar:lint             # coverage + eslint sonarjs + app-scan
 npm run test:quality:gate      # full local quality gate
@@ -318,6 +350,12 @@ SonarLint: open repo root; uses [`sonar-project.properties`](sonar-project.prope
 ---
 
 ## Changelog (recent)
+
+### v1.7.50 (June 5, 2026)
+
+- Queue accept traceability: `includeAccepted=true`, 7-day accepted window, `derivePoolStatus` → `accepted`
+- Jitsi JWT roles: doctor `owner`/moderator, patient `member`, guest invite token required
+- Process test registry: **2938** Vitest + **78** meeting-server contracts; Docker grouped runner
 
 ### v1.7.41 (May 30, 2026)
 

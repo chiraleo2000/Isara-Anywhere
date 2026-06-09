@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, ReactNode, useCallback, useMemo } from 'react';
 import { User } from '../types';
+import { resolveApiBaseUrl } from '../utils/resolveApiBaseUrl';
 
 interface AuthContextType {
   user: User | null;
@@ -73,12 +74,7 @@ function getDeviceId(): string {
 
 // Use relative paths for API calls - Vite proxy will forward /api to backend
 // This works in both development (via proxy) and production (same origin)
-const getApiUrl = (path: string) => {
-  // In development, use relative path so Vite proxy handles it
-  // In production, VITE_API_URL can be set to the backend URL
-  const baseUrl = import.meta.env.VITE_API_URL || '';
-  return `${baseUrl}${path}`;
-};
+const getApiUrl = (path: string) => `${resolveApiBaseUrl()}${path}`;
 
 export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
   const [user, setUser] = useState<User | null>(null);

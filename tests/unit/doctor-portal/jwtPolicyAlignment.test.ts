@@ -1,35 +1,18 @@
 import { describe, it, expect } from 'vitest';
 
-const ISSUER = 'izara-telemedicine';
-
-/** Mirror mainApiServer / authServer JWT claim shape checks. */
-function parseJwtPayload(token: string): Record<string, unknown> | null {
-  const parts = token.split('.');
-  if (parts.length !== 3) return null;
-  try {
-    const json = Buffer.from(parts[1], 'base64url').toString('utf8');
-    return JSON.parse(json) as Record<string, unknown>;
-  } catch {
-    return null;
-  }
+/** Opaque session tokens are 64-char hex strings (32 random bytes). */
+function isOpaqueSessionToken(token: string): boolean {
+  return /^[a-f0-9]{64}$/i.test(token);
 }
 
-describe('jwtPolicyAlignment', () => {
-  it('expects issuer claim in doctor portal tokens', () => {
-    const header = Buffer.from(JSON.stringify({ alg: 'HS256', typ: 'JWT' })).toString('base64url');
-    const payload = Buffer.from(
-      JSON.stringify({ userId: 'd1', role: 'doctor', iss: ISSUER, exp: Math.floor(Date.now() / 1000) + 3600 }),
-    ).toString('base64url');
-    const token = `${header}.${payload}.sig`;
-    const decoded = parseJwtPayload(token);
-    expect(decoded?.iss).toBe(ISSUER);
-    expect(decoded?.userId).toBe('d1');
+describe('sessionAuthAlignment', () => {
+  it('expects opaque session token format from login', () => {
+    const token = 'a'.repeat(64);
+    expect(isOpaqueSessionToken(token)).toBe(true);
   });
 
-  it('rejects tokens missing issuer in strict mode', () => {
-    const header = Buffer.from(JSON.stringify({ alg: 'HS256' })).toString('base64url');
-    const payload = Buffer.from(JSON.stringify({ userId: 'd1', role: 'doctor' })).toString('base64url');
-    const decoded = parseJwtPayload(`${header}.${payload}.sig`);
-    expect(decoded?.iss).toBeUndefined();
+  it('rejects JWT-shaped tokens as session tokens', () => {
+    const jwtShaped = 'header.payload.signature';
+    expect(isOpaqueSessionToken(jwtShaped)).toBe(false);
   });
 });

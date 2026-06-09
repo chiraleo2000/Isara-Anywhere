@@ -4,9 +4,11 @@
 ## Complete Workflow: From Booking to EMR & Lab Reports
 
 > **Cloud E2E Test Results: PASS — full headed cloud suite (85/85, 2026-05-31)**
-> Tested on: `2026-05-31` | Environment: Google Cloud Run (asia-southeast1)
+> **Docker Multi-Browser E2E: PASS — Group W (18/18, Chromium + Firefox + WebKit, 2026-06-05)**
+> Tested on: `2026-05-31` (cloud) · `2026-06-05` (Docker local) | Environment: Cloud Run + Docker Compose
 > Groups A–P — headed Playwright, 1 worker, 212 screenshots → `Documents/docs/screenshots/`
-> Defect track: v1.7.48 | Unit Tests: **2736/2736** ✅ | UI Tests: **85/85** ✅
+> Group W — Docker multi-browser, 39 workflow PNG → `Documents/docs/screenshots/group-W/` (sync: `npm run docs:sync-screenshots`)
+> Defect track: v1.7.51 | Unit Tests: **2982/2982** ✅ | Local E2E core: **35/35, 0 skipped** ✅ | Cloud UI: **85/85** ✅ | Docker W: **18/18** ✅
 
 ---
 
@@ -19,6 +21,7 @@
 4. [Phase 2 — Doctor Appointment Management](#phase-2--doctor-appointment-management)
 5. [Phase 3 — Admin Oversight & Doctor Assignment](#phase-3--admin-oversight--doctor-assignment)
 6. [Phase 4 — Cross-Portal Sync Verification](#phase-4--cross-portal-sync-verification)
+6b. [Phase 4b — Calendar Sync After Doctor Confirm (D4cal)](#phase-4b--calendar-sync-after-doctor-confirm-d4cal)
 7. [Phase 5 — Video Meeting & Clinical Consultation](#phase-5--video-meeting--clinical-consultation)
 8. [Phase 6 — Guest Invite via URL](#phase-6--guest-invite-via-url)
 9. [Phase 7 — Doctor Creates EMR (Electronic Medical Record)](#phase-7--doctor-creates-emr)
@@ -28,6 +31,7 @@
 13. [Phase 11 — PHR & Health Records](#phase-11--phr--health-records)
 14. [API Reference](#api-reference)
 15. [Cloud E2E Test Results](#cloud-e2e-test-results)
+16. [Docker Multi-Browser Verification (Group W)](#docker-multi-browser-verification-group-w)
 
 ---
 
@@ -147,7 +151,7 @@ Patient Books ──► Admin Assigns Doctor ──► Doctor Confirms
 
 Patient clicks **"Appointments" (นัดหมาย)** from the sidebar. The appointments list shows all current and past appointments with status badges.
 
-![Appointments List](../test-results/workflow-snapshots/group-D/D01-appointments-list.png)
+![Appointments List](../../screenshots/group-W/W02-appointments-list.png)
 
 
 #### D02 — View Appointment Filters
@@ -251,7 +255,7 @@ The new appointment appears in the list with status **"pending"**.
 
 Doctor navigates to **"Health Meeting" (การประชุมสุขภาพ)** to view meeting queue and controls.
 
-![Health Meeting](../test-results/workflow-snapshots/group-D/D09-health-meeting.png)
+![Health Meeting](../../screenshots/group-W/W03-health-meeting.png)
 
 
 #### D10 — Meeting Tabs
@@ -265,7 +269,7 @@ Meeting page has tabs for different views (active meetings, scheduled, completed
 
 Doctor views the **Appointment Pool** — unassigned appointments waiting for doctor assignment.
 
-![Appointment Pool](../test-results/workflow-snapshots/group-D/D11-appointment-pool.png)
+![Appointment Pool](../../screenshots/group-W/W03-appointment-pool.png)
 
 
 #### D12–D13 — Schedule Management
@@ -415,10 +419,79 @@ Response: {
 ---
 
 
+## Phase 4b — Calendar Sync After Doctor Confirm (D4cal)
+
+**Portals:** Patient + Doctor | **Test:** D4cal (extends D4 after doctor confirm) | **Added:** v1.7.51
+
+When the assigned doctor confirms a telehealth appointment, Izara syncs the visit to **both portals' calendars** (Microsoft Teams / Zoom / Google Calendar parity) without requiring the patient to manually re-enter the appointment.
+
+### What happens on confirm
+
+| Step | System action | User-visible result |
+|------|---------------|---------------------|
+| 1 | `POST /api/appointments/:id/confirm` | Status → `confirmed`; Jitsi URLs saved |
+| 2 | `buildTelehealthCalendarUrl` | `calendarEventUrl` in confirm response |
+| 3 | Patient notifications | `appointment_confirmed` + `meeting_link_ready` with `data.calendarEventUrl` |
+| 4 | Doctor notification | `schedule_entry_ready` — reminder to check `/schedule` |
+| 5 | Doctor `/schedule` | Row with `data-testid="schedule-appointment-{id}"` + join link |
+| 6 | Patient sidebar | MiniCalendar emerald dot (`mini-calendar-appointment-day`) |
+| 7 | Patient detail | **Add to Google Calendar** (`appointment-calendar-link`) |
+
+### API — confirm response (excerpt)
+
+```json
+{
+  "success": true,
+  "appointment": {
+    "id": "APT-...",
+    "appointmentDate": "2026-06-10",
+    "meetingLink": "https://meet.jit.si/izara-..."
+  },
+  "meetingLink": "https://meet.jit.si/izara-...",
+  "calendarEventUrl": "https://calendar.google.com/calendar/render?action=TEMPLATE&..."
+}
+```
+
+### Patient notification payload
+
+```
+GET /api/notifications?userId={patientId}
+→ type: appointment_confirmed
+→ data.calendarEventUrl: https://calendar.google.com/...
+→ data.meetingLink: https://meet.jit.si/...
+```
+
+### Doctor schedule verification
+
+```
+Navigate: /schedule
+Assert: data-testid="doctor-schedule-page"
+Assert: data-testid="schedule-appointment-{workflowAppointmentId}"
+Assert: data-testid="schedule-meeting-link" (href contains meet.jit.si)
+```
+
+### Playwright D4cal result (local Docker, June 8 2026)
+
+```
+✅ D4cal: Patient notification contains calendarEventUrl
+✅ D4cal: Doctor schedule shows confirmed appointment + meeting link
+✅ D4cal: Patient MiniCalendar may show appointment day highlight
+```
+
+**Source files:** `Isara-doctor-portal/server/calendarEventLinks.cjs`, `appointmentMapper.cjs`, `schedule/CompleteSchedule.tsx`, `Isara-patient-portal/src/components/MainLayout.tsx`, `buildCalendarEventUrl.ts`
+
+**Process docs:** [Processes/Appointment_Workflows.md](../../../Processes/Appointment_Workflows.md) §6, [04_Schedule_Page.md](../../../Processes/Pages/Doctor-Portal/04_Schedule_Page.md), [05_Appointments_Page.md](../../../Processes/Pages/Patient-Portal/05_Appointments_Page.md)
+
+---
+
+
 ## Phase 5 — Video Meeting & Clinical Consultation
 
-**Portals:** Doctor + Patient + Meeting Server | **Test:** E1–E4
+**Portals:** Doctor + Patient + Meeting Server | **Test:** E1–E4 · **Docker Group W:** W04
 
+![Doctor Virtual Meeting](../../screenshots/group-W/W04-doctor-virtual-meeting.png)
+
+![Patient Meeting Room](../../screenshots/group-W/W04-patient-meeting-room.png)
 
 ### E1 — Service Health Verification
 
@@ -637,11 +710,11 @@ Response: {
 
 | Step | Screenshot |
 | ---|--- |
-| Empty form | ![Guest Form](../screenshots/meeting/guest-form-empty.png) |
-| Name filled | ![Guest Filled](../screenshots/meeting/guest-form-filled.png) |
-| Lobby waiting | ![Lobby Waiting](../screenshots/meeting/guest-lobby-waiting.png) |
-| Doctor admits | ![Doctor Lobby](../screenshots/meeting-lobby/MG06-doctor-meeting-lobby.png) |
-| Guest admitted | ![Guest Admitted](../screenshots/meeting-lobby/MG07-guest-admitted.png) |
+| Empty form | ![Guest Form](../../screenshots/meeting/guest-form-empty.png) |
+| Name filled | ![Guest Filled](../../screenshots/meeting/guest-form-filled.png) |
+| Lobby waiting | ![Lobby Waiting](../../screenshots/meeting/guest-lobby-waiting.png) |
+| Doctor admits | ![Doctor Lobby](../../screenshots/meeting-lobby/MG06-doctor-meeting-lobby.png) |
+| Guest admitted | ![Guest Admitted](../../screenshots/meeting-lobby/MG07-guest-admitted.png) |
 
 ---
 
@@ -749,8 +822,8 @@ This creates:
 2. **Real-time Socket.IO event** (`NOTIFICATION_CREATED`)
 3. **Email notification** (HTML formatted with EMR details)
 
-![EMR Page](../screenshots/emr-prescriptions/EMR01-emr-page.png)
-![EMR Create Form](../screenshots/emr-prescriptions/EMR02-emr-create-form.png)
+![EMR Patient Detail](../../screenshots/group-W/W05-patient-detail.png)
+![EMR Editor with Autosave](../../screenshots/group-W/W05-emr-editor.png)
 
 ---
 
@@ -847,9 +920,9 @@ Body: {
 }
 ```
 
-![Lab Orders Page](../screenshots/lab-orders/LAB01-lab-orders-page.png)
-![Lab Order Create](../screenshots/lab-orders/LAB02-lab-order-create.png)
-![Lab Results](../screenshots/lab-orders/LAB03-lab-results.png)
+![Lab Orders Page](../../screenshots/lab-orders/LAB01-lab-orders-page.png)
+![Lab Order Create](../../screenshots/lab-orders/LAB02-lab-order-create.png)
+![Lab Results](../../screenshots/lab-orders/LAB03-lab-results.png)
 
 ---
 
@@ -897,8 +970,8 @@ Response: {
 }
 ```
 
-![Prescriptions Page](../screenshots/emr-prescriptions/RX01-prescriptions-page.png)
-![Prescription Create](../screenshots/emr-prescriptions/RX02-prescription-create.png)
+![Prescriptions Page](../../screenshots/emr-prescriptions/RX01-prescriptions-page.png)
+![Prescription Create](../../screenshots/emr-prescriptions/RX02-prescription-create.png)
 
 ---
 
@@ -1187,6 +1260,36 @@ Screenshots:  212 PNG in Documents/docs/screenshots/ (16 folders)
 | Defect-regression | PDF defect pack (separate run) | **36/36** (2026-05-30) |
 
 Evidence: `Documents/docs/markdown/testing/UNIT_TEST_UI_COVERAGE.md`, `reports/defect-fix/v1.7.48-final.txt`
+
+---
+
+## Docker Multi-Browser Verification (Group W)
+
+Verified locally in Docker on **2026-06-05** — fresh DB seed before each browser run.
+
+```
+Command:      npm run test:e2e:docker:core-multibrowser
+Environment:  Docker Compose (patient :3005, doctor :3010, meeting :3020)
+Browsers:     Chromium, Firefox, WebKit (PW_CORE_BROWSER per project)
+Workers:      1 (serial W01→W06 per engine)
+Result:       18/18 PASSED ✅  (+ A-auth 13/13)
+Screenshots:  39 PNG → tests/output/screenshots/ → sync to Documents/docs/screenshots/group-W/
+```
+
+Full setup guide: [DOCKER_MULTIBROWSER_E2E.md](../testing/DOCKER_MULTIBROWSER_E2E.md)
+
+| Workflow | Feature module | Screenshot |
+|----------|----------------|------------|
+| W01 | Patient / doctor / admin dashboards | ![W01 patient](../../screenshots/group-W/W01-patient-dashboard.png) |
+| W02 | Appointments list + confirmed booking | ![W02 list](../../screenshots/group-W/W02-appointments-list.png) |
+| W03 | Health Meeting + Appointment Pool | ![W03 pool](../../screenshots/group-W/W03-appointment-pool.png) |
+| W04 | Virtual meeting (both portals) | ![W04 doctor](../../screenshots/group-W/W04-doctor-virtual-meeting.png) |
+| W05 | Patient detail + EMR editor | ![W05 EMR](../../screenshots/group-W/W05-emr-editor.png) |
+| W06 | Gemini AI Studio + API Connected | ![W06 Gemini](../../screenshots/group-W/W06-gemini-api-connected.png) |
+
+Per-browser captures: `Documents/docs/screenshots/group-W/browsers/{chromium,firefox,webkit}/`
+
+Refresh after green runs: `npm run docs:sync-screenshots`
 
 ---
 

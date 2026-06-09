@@ -86,9 +86,18 @@ Playwright saves via `snap()` helper → `Documents/docs/screenshots/group-{D|E|
 - Patient sees “waiting for moderator”: redeploy **meeting server + both portals** (v1.7.12+).
 - Guest no video: doctor must be **host-present** first; guest flow waits `host-ready` then mounts Jitsi.
 
-## Jitsi / identity summary (v1.7.12)
+## Jitsi / identity summary (v1.7.52)
 
-- **Registered users:** name/email from JWT + `users` table via `join-config` / `identity` APIs.
+- **Session auth:** API uses PostgreSQL opaque session tokens — **no JWT** on portal or meeting API.
+- **Jitsi roles:** Izara lobby + `configOverwrite.moderator` — no Jitsi JWT in `JitsiMeetExternalAPI` mount options.
+- **Registered users:** display name from session identity via `join-config` / `identity` APIs.
+- **Guests / admin observer:** `/guest-join/{appointmentId}` — opaque invite token; doctor admits; then host-ready.
+- **Doctor:** HOST — joins first, `host-present`, Izara lobby admit-all.
+- **E2E browsers:** headed always (`PW_HEADED=1`); **no Google Chrome channel** (`PW_NO_CHROME=1`) — Firefox, Edge, WebKit only.
+
+## Jitsi / identity summary (v1.7.12 — superseded details)
+
+- **Registered users:** name/email from session + `users` table via `join-config` / `identity` APIs.
 - **Guests / admin observer:** `/guest-join/{appointmentId}` — no Izara login; doctor admits; then host-ready; Jitsi with camera/mic toolbar.
 - **Doctor:** HOST — joins first, `host-present`, Izara lobby admit-all.
 - **No Jitsi login** — `prejoinPageEnabled=false`, `requireDisplayName=false`, Jitsi lobby disabled.

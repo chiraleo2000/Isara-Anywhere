@@ -28,7 +28,7 @@
     </div>
     <div class="container">
         <h1>17-testing-quality-gate</h1>
-        <p class="meta">v1.7.43 | 2718 Vitest unit tests | 41 UI showup + 41 responsive + defect-pack + Defect-gemini (all green)</p>
+        <p class="meta">v1.7.50 | 2938 Vitest unit tests + 78 meeting-server contracts | Docker grouped runner | process registry PCOV</p>
         <div class="mermaid">
 %%{init: {
   'theme': 'base',
@@ -45,7 +45,9 @@
 }}%%
 flowchart LR
     subgraph LOCAL["Local quality gate"]
-        U["Vitest unit<br/>2718 tests"]
+        U["Vitest unit<br/>2938 tests"]
+        MC["Meeting contracts<br/>78 tests"]
+        GR["test:unit:docker:grouped<br/>4 shards"]
         C["Coverage lcov<br/>SonarLint"]
         S["sonar:lint<br/>eslint sonarjs"]
         Q["test:quality:gate"]
@@ -65,6 +67,8 @@ flowchart LR
         W["workflows WF*"]
     end
     U --> C --> S --> Q
+    MC --> Q
+    GR -.optional.- U
     Q --> SM --> G0 --> UI --> RC --> DF --> DG
     U --> LW
     UI --> A

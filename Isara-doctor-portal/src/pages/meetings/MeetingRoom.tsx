@@ -21,12 +21,17 @@ import { useAuth } from '../../components/common/AuthProvider';
 import { getToken } from '../../services/authServices';
 import { getIzaraDisplayName } from '../../utils/jitsiDisplayName';
 import {
+  buildDoctorJitsiMountOptions,
   fetchMeetingJoinConfig,
-  getJitsiExternalApiOptions,
+  loadJitsiExternalApiScript,
   notifyHostPresent,
   pickJitsiJwt,
+  prepareLayoutThenMount,
   resolveJitsiDomain,
+  stableRoomNameForAppointment,
+  type MeetingJoinConfig,
 } from '../../utils/jitsiMeetingConfig';
+import { resolveMeetingServerUrl } from '../../utils/resolveMeetingServerUrl';
 import { JitsiMeetingShell } from '../../features/meeting/components/JitsiMeetingShell';
 
 // Helper: get auth headers for meeting server API calls
@@ -38,7 +43,13 @@ function getAuthHeaders(): Record<string, string> {
 }
 
 function errorMessageFromUnknown(err: unknown): string {
-  return err instanceof Error ? err.message : String(err);
+  if (err instanceof Error) return err.message;
+  if (typeof err === 'string') return err;
+  try {
+    return JSON.stringify(err);
+  } catch {
+    return 'Unknown error';
+  }
 }
 
 function lobbyRoleLabel(role: string): string {
@@ -146,8 +157,9 @@ async function resolveRoomFromAppointment(appointmentId: string | undefined, fal
 
 /** Create meeting record on meeting server so patient can resolve the same room */
 async function createMeetingRecord(appointmentId: string | undefined, user: any, roomName: string): Promise<Record<string, unknown> | null> {
+  const meetingServerUrl = resolveMeetingServerUrl();
   try {
-    const res = await fetchWithTimeout(`${MEETING_SERVER_URL}/api/meetings/create`, {
+    const res = await fetchWithTimeout(`${meetingServerUrl}/api/meetings/create`, {
       method: 'POST', headers: getAuthHeaders(),
       body: JSON.stringify({ appointmentId, doctorId: user?.id, doctorName: getIzaraDisplayName(user, 'Doctor'), roomName }),
     });
@@ -209,21 +221,13 @@ interface LobbyParticipant {
 // ============================================================================
 
 const JITSI_DOMAIN = resolveJitsiDomain();
-const MEETING_SERVER_URL = (() => {
-  if (globalThis.window !== undefined) {
-    const env = (globalThis as any).ENV;
-    if (env?.MEETING_SERVER_URL && !String(env.MEETING_SERVER_URL).includes('localhost')) {
-      return env.MEETING_SERVER_URL;
-    }
-    const { origin, hostname } = globalThis.location;
-    if (hostname.includes('run.app')) {
-      return origin
-        .replace('izara-doctor-portal', 'izara-meeting-server')
-        .replace('izara-patient-portal', 'izara-meeting-server');
-    }
-  }
-  return import.meta.env?.VITE_MEETING_SERVER_URL || 'http://localhost:3020';
-})();
+
+function meetingServerUrl(): string {
+  return resolveMeetingServerUrl();
+}
+
+// Legacy alias — prefer meetingServerUrl() for Docker/cloud runtime resolution
+const MEETING_SERVER_URL = meetingServerUrl();
 
 // ============================================================================
 // PURE UTILITY FUNCTIONS (module-level to reduce component complexity)
@@ -358,6 +362,7 @@ const MeetingRoom: React.FC = () => { // NOSONAR
   const roomNameRef = useRef<string>('');
   const jitsiJwtRef = useRef<string | undefined>(undefined);
   const jitsiDomainRef = useRef(JITSI_DOMAIN);
+  const joinCfgRef = useRef<MeetingJoinConfig | null>(null);
 
   // State
   const [meetingState, setMeetingState] = useState<MeetingState>({
@@ -516,25 +521,6 @@ const MeetingRoom: React.FC = () => { // NOSONAR
   }, []);
 
   // ============================================================================
-  // JITSI EXTERNAL API LOADER
-  // ============================================================================
-
-  const loadJitsiScript = useCallback((): Promise<void> => {
-    return new Promise((resolve, reject) => {
-      if ((globalThis as any).JitsiMeetExternalAPI) {
-        resolve();
-        return;
-      }
-      const script = document.createElement('script');
-      script.src = `https://${JITSI_DOMAIN}/external_api.js`;
-      script.async = true;
-      script.onload = () => resolve();
-      script.onerror = () => reject(new Error('Failed to load Jitsi External API'));
-      document.head.appendChild(script);
-    });
-  }, []);
-
-  // ============================================================================
   // INITIALIZE MEETING
   // ============================================================================
 
@@ -552,17 +538,30 @@ const MeetingRoom: React.FC = () => { // NOSONAR
     setMeetingState(prev => ({ ...prev, status: 'in_progress' }));
     startDurationTimer();
     // HOST: auto-admit everyone waiting in Izara lobby (Teams/Zoom-style)
-    fetch(`${MEETING_SERVER_URL}/api/meetings/${appointmentId}/lobby/admit-all`, {
+    fetch(`${meetingServerUrl()}/api/meetings/${appointmentId}/lobby/admit-all`, {
       method: 'POST',
       headers: getAuthHeaders(),
       body: JSON.stringify({ admittedBy: user?.id }),
     }).catch(() => { /* UI admit-all remains available */ });
-    void notifyHostPresent(MEETING_SERVER_URL, appointmentId || '', getToken());
+    void notifyHostPresent(meetingServerUrl(), appointmentId || '', getToken());
   }, [appointmentId, user, startDurationTimer]);
 
   const handleParticipantJoined = useCallback((data: any) => {
     console.log('[Jitsi] Participant joined:', data.displayName);
     participantsRef.current = [...participantsRef.current, data.displayName || 'Unknown'];
+  }, []);
+
+  const handleReadyToClose = useCallback(() => {
+    setMeetingState(prev => ({ ...prev, status: 'ended' }));
+    if (durationTimerRef.current) clearInterval(durationTimerRef.current);
+  }, []);
+
+  const handleParticipantLeft = useCallback((data: any) => {
+    console.log('[Jitsi] Participant left:', data);
+  }, []);
+
+  const handleChatUpdated = useCallback((data: any) => {
+    if (data.isOpen) setShowPanel('chat');
   }, []);
 
   // Lobby update handler (extracted to reduce nesting depth — S2004)
@@ -586,7 +585,7 @@ const MeetingRoom: React.FC = () => { // NOSONAR
   const connectSocket = useCallback(async () => {
     try {
       const { io } = await import('socket.io-client');
-      const socket = io(MEETING_SERVER_URL, {
+      const socket = io(meetingServerUrl(), {
         transports: ['websocket', 'polling'],
         autoConnect: true,
       });
@@ -598,7 +597,6 @@ const MeetingRoom: React.FC = () => { // NOSONAR
           userName: user?.displayName || user?.name || 'Doctor',
           role: 'doctor',
         });
-        void notifyHostPresent(MEETING_SERVER_URL, appointmentId || '', getToken());
       });
 
       socket.on('transcript-update', handleTranscriptUpdate);
@@ -616,16 +614,17 @@ const MeetingRoom: React.FC = () => { // NOSONAR
 
   // Meeting initializer (extracted to reduce cognitive complexity — S3776)
   const initMeeting = useCallback(async () => {
-    let roomName = `izara-${appointmentId?.substring(0, 12) || 'quick'}-${Date.now().toString(36)}`;
+    let roomName = stableRoomNameForAppointment(appointmentId || '');
     let meetingFound = false;
     const fetchTimeoutMs = 20_000;
+    const msUrl = meetingServerUrl();
 
     try {
       // 1. Try meeting server for existing meeting record (bounded wait)
       try {
         const ctrl = new AbortController();
         const timer = setTimeout(() => ctrl.abort(), fetchTimeoutMs);
-        const res = await fetch(`${MEETING_SERVER_URL}/api/meetings/${appointmentId}`, {
+        const res = await fetch(`${msUrl}/api/meetings/${appointmentId}`, {
           headers: getAuthHeaders(),
           signal: ctrl.signal,
         });
@@ -652,12 +651,13 @@ const MeetingRoom: React.FC = () => { // NOSONAR
       }
 
       const joinCfg = await fetchMeetingJoinConfig(
-        MEETING_SERVER_URL,
+        msUrl,
         appointmentId || '',
         'doctor',
-        undefined,
+        doctorDisplayName,
         getToken(),
       );
+      joinCfgRef.current = joinCfg;
       if (joinCfg?.roomName) roomName = joinCfg.roomName;
       if (joinCfg?.domain) jitsiDomainRef.current = joinCfg.domain;
       jitsiJwtRef.current = pickJitsiJwt(joinCfg);
@@ -670,7 +670,7 @@ const MeetingRoom: React.FC = () => { // NOSONAR
       connectSocket();
       void checkMediaDevices();
     }
-  }, [appointmentId, user, checkMediaDevices, connectSocket]);
+  }, [appointmentId, user, doctorDisplayName, checkMediaDevices, connectSocket]);
 
   useEffect(() => {
     if (appointmentId) {
@@ -701,77 +701,62 @@ const MeetingRoom: React.FC = () => { // NOSONAR
 
   const joinMeeting = useCallback(async () => {
     stopPreviewStream();
-    void notifyHostPresent(MEETING_SERVER_URL, appointmentId || '', getToken());
-    // Mount main meeting layout (contains jitsiContainerRef) before embedding Jitsi
-    setMeetingState(prev => ({ ...prev, status: 'ready' }));
-    await new Promise<void>(resolve => setTimeout(resolve, 150));
     try {
-      await loadJitsiScript();
-      if (jitsiContainerRef.current && (globalThis as any).JitsiMeetExternalAPI) {
-        const roomName = roomNameRef.current;
-        const jitsiOpts = getJitsiExternalApiOptions('doctor', doctorDisplayName);
-        const api = new (globalThis as any).JitsiMeetExternalAPI(jitsiDomainRef.current || JITSI_DOMAIN, {
-          roomName,
-          jwt: jitsiJwtRef.current,
-          parentNode: jitsiContainerRef.current,
-          width: '100%',
-          height: '100%',
-          configOverwrite: {
-            ...jitsiOpts.configOverwrite,
-            startWithAudioMuted: !micOn,
-            startWithVideoMuted: !cameraOn,
-            subject: `Izara Consultation - ${appointmentId?.substring(0, 8) || 'Meeting'}`,
-          },
-          interfaceConfigOverwrite: {
-            ...jitsiOpts.interfaceConfigOverwrite,
-            DEFAULT_REMOTE_DISPLAY_NAME: 'ผู้เข้าร่วม',
-            DISABLE_JOIN_LEAVE_NOTIFICATIONS: false,
-          },
-          userInfo: {
-            displayName: doctorDisplayName,
-            email: user?.email || '',
-          },
-        });
-
-        jitsiApiRef.current = api;
-
-        // Ensure Jitsi iframe has camera/microphone permissions
-        const iframe = jitsiContainerRef.current?.querySelector('iframe');
-        if (iframe) {
-          iframe.setAttribute('allow', 'camera *; microphone *; display-capture *; autoplay *; clipboard-write *; encrypted-media *');
-        }
-
-        const handleReadyToClose = () => {
-          // End meeting: stop transcription, navigate back
-          setMeetingState(prev => ({ ...prev, status: 'ended' }));
-          if (durationTimerRef.current) clearInterval(durationTimerRef.current);
-        };
-        const handleParticipantLeft = (data: any) => {
-          console.log('[Jitsi] Participant left:', data);
-        };
-        const handleChatUpdated = (data: any) => {
-          if (data.isOpen) setShowPanel('chat');
-        };
-
-        api.on('readyToClose', handleReadyToClose);
-        api.on('videoConferenceJoined', handleConferenceJoined);
-        api.on('participantJoined', handleParticipantJoined);
-        api.on('participantLeft', handleParticipantLeft);
-        api.on('chatUpdated', handleChatUpdated);
-        // Headless E2E: videoConferenceJoined may not fire with fake media — still show HOST controls
-        globalThis.setTimeout(() => {
-          setMeetingState((prev) => {
-            if (prev.status !== 'ready') return prev;
-            startDurationTimer();
-            return { ...prev, status: 'in_progress' };
+      const mount = buildDoctorJitsiMountOptions({
+        user,
+        joinCfg: joinCfgRef.current,
+        roomName: roomNameRef.current,
+        domain: jitsiDomainRef.current,
+        storedJwt: jitsiJwtRef.current,
+        micOn,
+        cameraOn,
+        displayName: doctorDisplayName,
+        appointmentLabel: `Izara Consultation - ${appointmentId?.substring(0, 8) || 'Meeting'}`,
+      });
+      await loadJitsiExternalApiScript(mount.domain);
+      const mountResult = await prepareLayoutThenMount(
+        (nextStatus) => setMeetingState(prev => ({ ...prev, status: nextStatus as MeetingState['status'] })),
+        () => jitsiContainerRef.current,
+        'ready',
+        'pre_join',
+        async () => {
+          const api = new (globalThis as any).JitsiMeetExternalAPI(mount.domain, {
+            roomName: mount.roomName,
+            ...(mount.jwt ? { jwt: mount.jwt } : {}),
+            parentNode: jitsiContainerRef.current,
+            width: '100%',
+            height: '100%',
+            ...mount.apiOptions,
+            interfaceConfigOverwrite: {
+              ...mount.apiOptions.interfaceConfigOverwrite,
+              DISABLE_JOIN_LEAVE_NOTIFICATIONS: false,
+            },
           });
-        }, 6_000);
+
+          jitsiApiRef.current = api;
+
+          const iframe = jitsiContainerRef.current?.querySelector('iframe');
+          if (iframe) {
+            iframe.setAttribute('allow', 'camera *; microphone *; display-capture *; autoplay *; clipboard-write *; encrypted-media *');
+          }
+          jitsiContainerRef.current?.setAttribute('data-jitsi-moderator', 'true');
+
+          api.on('readyToClose', handleReadyToClose);
+          api.on('videoConferenceJoined', handleConferenceJoined);
+          api.on('participantJoined', handleParticipantJoined);
+          api.on('participantLeft', handleParticipantLeft);
+          api.on('chatUpdated', handleChatUpdated);
+        },
+      );
+      if (!mountResult.ok) {
+        setError(mountResult.error || 'Failed to join meeting');
       }
     } catch (err: any) {
       console.error('[MeetingRoom] Join error:', err);
       setError(err.message || 'Failed to join meeting');
+      setMeetingState(prev => ({ ...prev, status: 'pre_join' }));
     }
-  }, [stopPreviewStream, loadJitsiScript, micOn, cameraOn, appointmentId, user, handleConferenceJoined, handleParticipantJoined]);
+  }, [stopPreviewStream, micOn, cameraOn, appointmentId, user, doctorDisplayName, handleConferenceJoined, handleParticipantJoined, handleReadyToClose, handleParticipantLeft, handleChatUpdated, startDurationTimer]);
 
   // Auto-scroll transcript
   useEffect(() => {
@@ -1003,10 +988,11 @@ const MeetingRoom: React.FC = () => { // NOSONAR
         setTimeout(() => setGuestLinkCopied(false), 3000);
       } else {
         const errBody: unknown = await res.json().catch(() => ({}));
-        const errMsg =
-          errBody && typeof errBody === 'object' && 'error' in errBody && typeof (errBody as { error: unknown }).error === 'string'
-            ? (errBody as { error: string }).error
-            : 'Failed to create guest invite';
+        let errMsg = 'Failed to create guest invite';
+        if (errBody && typeof errBody === 'object' && 'error' in errBody) {
+          const errField = (errBody as Record<string, unknown>).error;
+          if (typeof errField === 'string') errMsg = errField;
+        }
         setError(errMsg);
       }
     } catch (err: unknown) {
@@ -1134,21 +1120,34 @@ const MeetingRoom: React.FC = () => { // NOSONAR
     setMeetingState((prev) => ({ ...prev, status: 'ended' }));
 
     try {
-      const res = await fetch(`${MEETING_SERVER_URL}/api/meetings/${appointmentId}/end`, {
+      const res = await fetch(`${meetingServerUrl()}/api/meetings/${appointmentId}/end`, {
         method: 'POST',
         headers: getAuthHeaders(),
-        body: JSON.stringify({ endedBy: user?.id || 'doctor', generateSummary: false }),
+        body: JSON.stringify({ endedBy: user?.id || 'doctor', generateSummary: true }),
       });
       const data = await res.json().catch(() => ({}));
       if (data.summary) {
         setAiSummary(data.summary);
         setShowPanel('summary');
+      } else if (res.ok) {
+        fetch(`${meetingServerUrl()}/api/meetings/${appointmentId}/generate-summary`, {
+          method: 'POST',
+          headers: getAuthHeaders(),
+        })
+          .then((r) => r.json())
+          .then((d) => {
+            if (d.summary) {
+              setAiSummary(d.summary);
+              setShowPanel('summary');
+            }
+          })
+          .catch(() => { /* pipeline may still run async */ });
       }
     } catch (err) {
       console.warn('[MeetingEnd] End meeting failed:', (err as Error).message);
     }
 
-    fetch(`${MEETING_SERVER_URL}/api/meetings/${appointmentId}/process-embeddings`, {
+    fetch(`${meetingServerUrl()}/api/meetings/${appointmentId}/process-embeddings`, {
       method: 'POST',
       headers: getAuthHeaders(),
     }).catch((err) => console.warn('[MeetingEnd] Process embeddings failed:', err.message));

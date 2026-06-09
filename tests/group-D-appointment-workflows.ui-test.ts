@@ -16,7 +16,8 @@
  */
 import {
   test, expect, assertFullHealth, snap,
-  navPatient, navDoctor, waitForContent, waitForPoolAppointment, pageRequestGet, pageRequestPatch,
+  navPatient, navDoctor, waitForContent, waitForPoolAppointment, waitForAcceptedInPool, isAcceptedPoolRow,
+  pageRequestGet, pageRequestPatch,
   assertNotificationTypePoll,
   waitForPatientNotification,
   clickLocatorSafe,
@@ -594,7 +595,9 @@ test.describe('Group D — Appointment Workflows', () => {
       expect(/Patient Queue|คิวผู้ป่วย|Awaiting Confirmation|รอยืนยัน/i.test(doctorText)).toBeTruthy();
 
       const extractAwaiting = (text: string): number | null => {
-        const m = text.match(/Awaiting Confirmation[\s\S]{0,30}(\d+)/i) || text.match(/รอยืนยัน[\s\S]{0,30}(\d+)/i);
+        const enRe = /Awaiting Confirmation[\s\S]{0,30}(\d+)/i;
+        const thRe = /รอยืนยัน[\s\S]{0,30}(\d+)/i;
+        const m = enRe.exec(text) ?? thRe.exec(text);
         return m ? Number.parseInt(m[1], 10) : null;
       };
       const adminAwaiting = extractAwaiting(adminText) ?? 0;
@@ -656,6 +659,18 @@ test.describe('Group D — Appointment Workflows', () => {
       console.log(`  D4a: Doctor confirmed appointment ${appointmentId}`);
     });
 
+    await test.step('D4a-t — Accepted appointment remains in pool/queue (Defect Q1)', async () => {
+      const { appointmentId } = loadWorkflowState();
+      expect(appointmentId, 'D4a-t: workflow appointmentId required').toBeTruthy();
+      const hit = await waitForAcceptedInPool(doctor.page, DOCTOR_URL, appointmentId!);
+      expect(isAcceptedPoolRow(hit)).toBe(true);
+      await navDoctor(doctor.page, 'health-meeting', 'D4a-t');
+      await doctor.page.reload({ waitUntil: 'domcontentloaded', timeout: IS_CLOUD ? 60_000 : 30_000 });
+      await waitForContent(doctor.page, 'D4a-t');
+      await expect(doctor.page.locator('[data-testid="accepted-queue-list"]')).toBeVisible({ timeout: 15_000 });
+      console.log(`  ✅ D4a-t: Accepted traceability — ${appointmentId} still in pool/queue`);
+    });
+
     await test.step('D18 — Patient appointments API check', async () => {
       const token = await patient.page.evaluate(() => localStorage.getItem('auth_token') || '');
       const resp = await patient.page.request.get(`${PATIENT_URL}/api/appointments`, {
@@ -674,6 +689,59 @@ test.describe('Group D — Appointment Workflows', () => {
       await waitForPatientNotification(patient.page, 'appointment_confirmed', appointmentId || undefined);
       await waitForPatientNotification(patient.page, 'meeting_link_ready', appointmentId || undefined);
       console.log('  D18n: Patient has appointment_confirmed and meeting_link_ready');
+    });
+
+    await test.step('D4cal — Calendar sync: doctor schedule + patient calendar after confirm', async () => {
+      const { appointmentId } = loadWorkflowState();
+      expect(appointmentId, 'D4cal: appointmentId required').toBeTruthy();
+
+      const patientToken = await patient.page.evaluate(() => localStorage.getItem('auth_token') || '');
+      const notifResp = await patient.page.request.get(
+        `${PATIENT_URL}/api/appointments/notifications/${await patient.page.evaluate(() => {
+          try {
+            const raw = localStorage.getItem('izara_user') || localStorage.getItem('izara_current_user') || '';
+            return raw ? JSON.parse(raw)?.id || 'PATIENT-DEMO' : 'PATIENT-DEMO';
+          } catch {
+            return 'PATIENT-DEMO';
+          }
+        })}`,
+        { headers: { Authorization: `Bearer ${patientToken}` }, timeout: 15_000 },
+      );
+      expect(notifResp.status(), 'D4cal: patient notifications API').toBe(200);
+      const notifications = await notifResp.json().catch(() => []);
+      const list = Array.isArray(notifications) ? notifications : [];
+      const confirmedNotif = list.find((n: { type?: string; data?: unknown }) => {
+        if (n.type !== 'appointment_confirmed') return false;
+        const d = typeof n.data === 'string' ? JSON.parse(n.data) : n.data;
+        return (d as { appointmentId?: string })?.appointmentId === appointmentId;
+      });
+      expect(confirmedNotif, 'D4cal: appointment_confirmed notification').toBeTruthy();
+      const notifData = typeof confirmedNotif?.data === 'string'
+        ? JSON.parse(confirmedNotif.data)
+        : confirmedNotif?.data;
+      expect(
+        notifData?.calendarEventUrl || notifData?.calendar_event_url,
+        'D4cal: calendarEventUrl in notification data',
+      ).toBeTruthy();
+
+      await navDoctor(doctor.page, 'schedule', 'D4cal');
+      await waitForContent(doctor.page, 'D4cal');
+      await expect(doctor.page.getByTestId('doctor-schedule-page')).toBeVisible({ timeout: 15_000 });
+      const scheduleEntry = doctor.page.locator(`[data-testid="schedule-appointment-${appointmentId}"]`).first();
+      await expect(scheduleEntry, 'D4cal: confirmed appointment on doctor schedule').toBeVisible({
+        timeout: IS_CLOUD ? 30_000 : 15_000,
+      });
+      await expect(doctor.page.getByTestId('schedule-meeting-link').first()).toBeVisible({ timeout: 10_000 });
+      await snap(doctor.page, 'D4cal-doctor-schedule-confirmed', 'group-D');
+
+      await navPatient(patient.page, 'appointments', 'D4cal-patient');
+      await patient.page.reload({ waitUntil: 'domcontentloaded' });
+      await waitForContent(patient.page, 'D4cal-patient');
+      const calDay = patient.page.getByTestId('mini-calendar-appointment-day');
+      if (await calDay.first().isVisible({ timeout: 5_000 }).catch(() => false)) {
+        await expect(calDay.first()).toBeVisible();
+      }
+      console.log('  D4cal: Calendar sync verified (doctor schedule + patient notification URL)');
     });
 
     await test.step('D19 — Doctor sees assigned patient via API', async () => {

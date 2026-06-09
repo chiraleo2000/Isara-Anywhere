@@ -5,7 +5,7 @@
  * 
  * Routes:
  *   /guest-join/:meetingId     — Basic guest join (name form → lobby)
- *   /guest/join/:token         — JWT-based invite join (auto-validated)
+ *   /guest/join/:token         — Opaque invite token join (auto-validated)
  */
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
@@ -16,23 +16,36 @@ import {
   mountGuestJitsiMeeting,
   resolveJitsiDomain,
 } from '../utils/jitsiMeetingConfig';
-const MEETING_SERVER_URL = (() => {
-  if (globalThis.window !== undefined) {
-    const env = (globalThis as any).ENV;
-    if (env?.MEETING_SERVER_URL && !String(env.MEETING_SERVER_URL).includes('localhost')) {
-      return env.MEETING_SERVER_URL;
-    }
-    const { origin, hostname } = globalThis.location;
-    if (hostname.includes('run.app')) {
-      return origin
-        .replace('izara-doctor-portal', 'izara-meeting-server')
-        .replace('izara-patient-portal', 'izara-meeting-server');
-    }
-  }
-  return import.meta.env?.VITE_MEETING_SERVER_URL || 'http://localhost:3020';
-})();
+import { resolveMeetingServerUrl } from '../utils/resolveMeetingServerUrl';
+
+function getMeetingServerUrl(): string {
+  return resolveMeetingServerUrl();
+}
 
 type GuestStatus = 'form' | 'joining' | 'waiting' | 'admitted' | 'in_meeting' | 'rejected' | 'error' | 'validating';
+
+function resolveInitialGuestStatus(hasToken: boolean, blocked: boolean): GuestStatus {
+  if (hasToken) return 'validating';
+  if (blocked) return 'error';
+  return 'form';
+}
+
+function waitTwoAnimationFrames(): Promise<void> {
+  return new Promise(resolve => {
+    requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+  });
+}
+
+function guestHeaderStatusLine(
+  waitingHost: boolean,
+  connectingVideo: boolean,
+  currentStatus: GuestStatus,
+): string {
+  if (waitingHost) return 'Waiting for host…';
+  if (connectingVideo) return 'Connecting…';
+  if (currentStatus === 'in_meeting') return '✓ In meeting';
+  return 'Approved';
+}
 
 const GuestMeetingJoin: React.FC = () => {
   const { meetingId: paramMeetingId, token } = useParams<{ meetingId?: string; token?: string }>();
@@ -41,10 +54,15 @@ const GuestMeetingJoin: React.FC = () => {
   const nameFromUrl = searchParams.get('name') || '';
   const [meetingId, setMeetingId] = useState<string | undefined>(paramMeetingId);
   const [guestName, setGuestName] = useState(nameFromUrl);
-  const [status, setStatus] = useState<GuestStatus>(token ? 'validating' : 'form');
+  const openGuestJoinBlocked = Boolean(paramMeetingId && !token);
+  const [status, setStatus] = useState<GuestStatus>(
+    resolveInitialGuestStatus(Boolean(token), openGuestJoinBlocked),
+  );
   const [tokenData, setTokenData] = useState<{ guestName: string; guestType: string; roomName: string | null } | null>(null);
   const [participantId, setParticipantId] = useState<string | null>(null);
-  const [errorMsg, setErrorMsg] = useState('');
+  const [errorMsg, setErrorMsg] = useState(
+    openGuestJoinBlocked ? 'Anonymous guest access is disabled — use the invite link from your host' : '',
+  );
   const [roomName, setRoomName] = useState('');
   const [waitSeconds, setWaitSeconds] = useState(0);
   const [connectingVideo, setConnectingVideo] = useState(false);
@@ -63,7 +81,7 @@ const GuestMeetingJoin: React.FC = () => {
   useEffect(() => {
     if (!meetingId) return;
     const fallback = `izara-${meetingId.substring(0, 12)}-meeting`;
-    fetch(`${MEETING_SERVER_URL}/api/meetings/${meetingId}`)
+    fetch(`${getMeetingServerUrl()}/api/meetings/${meetingId}`)
       .then(r => r.json())
       .then(d => setRoomName(d.meeting?.room_name || fallback))
       .catch(() => setRoomName(fallback));
@@ -74,7 +92,7 @@ const GuestMeetingJoin: React.FC = () => {
     if (!token || status !== 'validating') return;
     const validate = async () => {
       try {
-        const res = await fetch(`${MEETING_SERVER_URL}/api/guest/meeting/${encodeURIComponent(token)}`);
+        const res = await fetch(`${getMeetingServerUrl()}/api/guest/meeting/${encodeURIComponent(token)}`);
         if (!res.ok) {
           const data = await res.json().catch(() => ({ error: 'Invalid invite link' }));
           setErrorMsg(data.error || 'Invalid or expired invite link');
@@ -82,10 +100,31 @@ const GuestMeetingJoin: React.FC = () => {
           return;
         }
         const data = await res.json();
+        const resolvedName = String(data.guestName || '').trim();
         setMeetingId(data.meetingId);
-        setGuestName(data.guestName || '');
+        setGuestName(resolvedName);
         setTokenData({ guestName: data.guestName, guestType: data.guestType, roomName: data.roomName });
         if (data.roomName) setRoomName(data.roomName);
+        if (resolvedName && token) {
+          setStatus('joining');
+          const joinRes = await fetch(
+            `${getMeetingServerUrl()}/api/guest/meeting/${encodeURIComponent(token)}/join`,
+            {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ displayName: resolvedName }),
+            },
+          );
+          const joinData = await joinRes.json().catch(() => ({}));
+          if (joinRes.ok && joinData.success) {
+            setParticipantId(joinData.participantId);
+            setStatus('waiting');
+            return;
+          }
+          setErrorMsg(joinData.error || 'Failed to join lobby');
+          setStatus('error');
+          return;
+        }
         setStatus('form');
       } catch {
         setErrorMsg('Cannot connect to meeting server');
@@ -101,7 +140,7 @@ const GuestMeetingJoin: React.FC = () => {
     let cancelled = false;
     const setup = async () => {
       const socket = await connectMeetingSocket(
-        MEETING_SERVER_URL,
+        getMeetingServerUrl(),
         meetingId,
         {
           onHostReady: () => { if (!cancelled) setHostReady(true); },
@@ -138,7 +177,7 @@ const GuestMeetingJoin: React.FC = () => {
     let cancelled = false;
     const check = async () => {
       if (cancelled) return;
-      if (await isHostReady(MEETING_SERVER_URL, meetingId)) setHostReady(true);
+      if (await isHostReady(getMeetingServerUrl(), meetingId)) setHostReady(true);
     };
     void check();
     const id = setInterval(() => void check(), 2000);
@@ -153,7 +192,7 @@ const GuestMeetingJoin: React.FC = () => {
     if (status !== 'waiting' || !meetingId || !participantId) return;
     pollRef.current = setInterval(async () => {
       try {
-        const r = await fetch(`${MEETING_SERVER_URL}/api/meetings/${meetingId}/lobby/status/${participantId}`);
+        const r = await fetch(`${getMeetingServerUrl()}/api/meetings/${meetingId}/lobby/status/${participantId}`);
         const d = await r.json();
         if (d.status === 'admitted') setStatus('admitted');
         if (d.status === 'rejected') setStatus('rejected');
@@ -178,7 +217,7 @@ const GuestMeetingJoin: React.FC = () => {
     setConnectingVideo(true);
     setVideoError('');
     try {
-      const ready = hostReady || (await isHostReady(MEETING_SERVER_URL, meetingId));
+      const ready = hostReady || (await isHostReady(getMeetingServerUrl(), meetingId));
       if (!ready) {
         setVideoError('รอแพทย์เริ่มการประชุมก่อน (Waiting for doctor host…)');
         return;
@@ -186,16 +225,16 @@ const GuestMeetingJoin: React.FC = () => {
       setHostReady(true);
       let resolvedRoom = roomName;
       if (!resolvedRoom) {
-        const meta = await fetch(`${MEETING_SERVER_URL}/api/meetings/${meetingId}`).then(r => r.json()).catch(() => null);
+        const meta = await fetch(`${getMeetingServerUrl()}/api/meetings/${meetingId}`).then(r => r.json()).catch(() => null);
         resolvedRoom = meta?.meeting?.room_name || `izara-${meetingId.substring(0, 12)}-meeting`;
         setRoomName(resolvedRoom);
       }
-      await new Promise<void>(r => requestAnimationFrame(() => requestAnimationFrame(() => r())));
+      await waitTwoAnimationFrames();
       if (!jitsiContainerRef.current) return;
       jitsiApiRef.current?.dispose?.();
       jitsiApiRef.current = null;
       const api = await mountGuestJitsiMeeting({
-        meetingServerUrl: MEETING_SERVER_URL,
+        meetingServerUrl: getMeetingServerUrl(),
         meetingId,
         roomName: resolvedRoom,
         displayName: guestName,
@@ -235,14 +274,14 @@ const GuestMeetingJoin: React.FC = () => {
       let res: Response;
       if (token) {
         // Token-based join — uses JWT validation
-        res = await fetch(`${MEETING_SERVER_URL}/api/guest/meeting/${encodeURIComponent(token)}/join`, {
+        res = await fetch(`${getMeetingServerUrl()}/api/guest/meeting/${encodeURIComponent(token)}/join`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ displayName: guestName.trim() }),
         });
       } else {
         // Basic join — direct lobby entry
-        res = await fetch(`${MEETING_SERVER_URL}/api/meetings/${meetingId}/lobby/join`, {
+        res = await fetch(`${getMeetingServerUrl()}/api/meetings/${meetingId}/lobby/join`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -265,13 +304,15 @@ const GuestMeetingJoin: React.FC = () => {
     }
   }, [guestName, meetingId, token]);
 
-  // Pre-filled ?name= — auto-submit lobby (E2E guest flow)
+  // Pre-filled name (?name= or invite token) — auto-submit lobby (E2E + invite UX)
   useEffect(() => {
-    if (autoJoinFromUrlRef.current || !nameFromUrl.trim() || !meetingId || token) return;
-    if (status !== 'form') return;
+    if (autoJoinFromUrlRef.current || !meetingId || status !== 'form') return;
+    const resolvedName = guestName.trim() || nameFromUrl.trim();
+    if (!resolvedName) return;
+    if (!token && !nameFromUrl.trim()) return;
     autoJoinFromUrlRef.current = true;
     void handleJoinLobby();
-  }, [meetingId, nameFromUrl, token, status, handleJoinLobby]);
+  }, [meetingId, nameFromUrl, token, status, guestName, handleJoinLobby]);
 
   const formatWait = (s: number) => {
     const m = Math.floor(s / 60);
@@ -290,7 +331,7 @@ const GuestMeetingJoin: React.FC = () => {
   // Token validation in progress
   if (status === 'validating') {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50" data-testid="guest-token-validating">
         <div className="text-center">
           <div className="animate-spin w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full mx-auto mb-4" />
           <p className="text-gray-600">กำลังตรวจสอบลิงก์เชิญ...</p>
@@ -313,7 +354,7 @@ const GuestMeetingJoin: React.FC = () => {
             Izara Meeting — {guestName} ({guestRoleLabel === 'admin' ? 'Admin Guest' : 'Guest'})
           </span>
           <span className="text-xs text-green-400">
-            {waitingHost ? 'Waiting for host…' : connectingVideo ? 'Connecting…' : status === 'in_meeting' ? '✓ In meeting' : 'Approved'}
+            {guestHeaderStatusLine(waitingHost, connectingVideo, status)}
           </span>
         </div>
         <div className="relative flex-1 min-h-[70vh] w-full">
@@ -462,7 +503,7 @@ const GuestMeetingJoin: React.FC = () => {
 
         {/* Error */}
         {status === 'error' && (
-          <div className="text-center py-6">
+          <div className="text-center py-6" data-testid="guest-access-denied">
             <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <span className="text-4xl">⚠️</span>
             </div>

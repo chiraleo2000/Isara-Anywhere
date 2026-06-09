@@ -740,3 +740,15 @@ npm run test:e2e:meeting-lifecycle   # meeting pages only; needs D→D-host firs
 
 **Matrix row:** `06_Health_Meeting_Page` in [tests/PROCESS_COVERAGE_MATRIX.md](../../tests/PROCESS_COVERAGE_MATRIX.md)
 
+**v1.7.49 regression:** Accepted appointments remain in **Recently Accepted** via `GET /api/appointment-pool?includeAccepted=true`. Vitest: `queueLifecycle.integration`, `defectIsaraPdfMeetingQueue` DPDF-Q*. Docker: `npm run test:unit:docker:deploy`.
+
+---
+
+## Detailed Workflow — Patient Queue + Recently Accepted (v1.7.51)
+
+1. Load queue: `GET /api/appointment-pool?includeAccepted=true`  
+2. **Pending** section: `data-testid="queue-list"` — statuses `in_pool`, `awaiting_doctor_response`, `pending`, `assigned`  
+3. Doctor confirms → row moves to **Recently Accepted**: `data-testid="accepted-queue-list"`  
+4. Pool API errors show `data-testid="queue-load-error"` (HTTP 500, not silent empty list)  
+5. Confirm via `POST /api/appointments/:id/confirm` sets `doctor_id`, `confirmed_by`, meet links  
+

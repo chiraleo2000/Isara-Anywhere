@@ -2,7 +2,7 @@
  * Doctor Portal - Main doctor application with nested routing
  */
 import React, { useState, useEffect } from 'react';
-import { Routes, Route, useParams, useNavigate, Navigate } from 'react-router-dom';
+import { Routes, Route, useParams, useNavigate, Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../components/common/AuthProvider';
 import { useSettings } from '../hooks/useSettings';
 import { PatientRecord } from '../types';
@@ -22,7 +22,6 @@ import { PatientRecordViewer } from '../components/PatientRecordViewer';
 import ClinicalResources from './content/ClinicalResources';
 import TestHarness from '../components/TestHarness';
 // New Pages
-import MedicalConsultants from './content/MedicalConsultants';
 import DoctorsManagement from './content/DoctorsManagement';
 import MedicalContent from './content/MedicalContent';
 import HealthMeeting from './meetings/HealthMeeting';
@@ -39,6 +38,7 @@ const DoctorPortal: React.FC = () => {
   const { user, logout, loading } = useAuth();
   useSettings(); // maintain hook call order
   const navigate = useNavigate();
+  const location = useLocation();
 
   const [patients, setPatients] = useState<PatientRecord[]>([]);
   const [selectedPatient, setSelectedPatient] = useState<PatientRecord | null>(null);
@@ -63,6 +63,17 @@ const DoctorPortal: React.FC = () => {
       loadPatients();
     }
   }, [user]);
+
+  // Close stacked modals when navigating — prevents overlays blocking FAB / other workflows
+  useEffect(() => {
+    setShowEMREditor(false);
+    setShowPrescribing(false);
+    setShowAIStudio(false);
+    setShowMeeting(false);
+    setShowLabOrders(false);
+    setShowPatientRecord(false);
+    setSelectedPatient(null);
+  }, [location.pathname]);
 
   const loadPatients = async () => {
     try {
@@ -244,17 +255,19 @@ const DoctorPortal: React.FC = () => {
       )}
 
       {showAIStudio && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-2xl w-full max-w-6xl max-h-[90vh] overflow-hidden">
-            <div className="flex items-center justify-between p-4 border-b">
-              <h2 className="text-xl font-bold text-purple-600">Gemini AI Studio</h2>
-              <button onClick={() => setShowAIStudio(false)} className="text-gray-400 hover:text-gray-600 p-2" title="ปิด AI Studio" aria-label="ปิด AI Studio">
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-            <div className="overflow-y-auto max-h-[calc(90vh-80px)]">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" data-testid="gemini-ai-studio-modal">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-6xl max-h-[90vh] overflow-hidden relative">
+            <button
+              onClick={() => setShowAIStudio(false)}
+              className="absolute top-4 right-4 z-10 text-gray-400 hover:text-gray-600 p-2 rounded-lg hover:bg-gray-100"
+              title="ปิด AI Studio"
+              aria-label="ปิด AI Studio"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+            <div className="overflow-y-auto max-h-[90vh]">
               <GeminiAIStudio />
             </div>
           </div>

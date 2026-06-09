@@ -511,3 +511,5 @@ npm run test:e2e:meeting-lifecycle   # meeting pages only; needs D→D-host firs
 
 **Matrix row:** `00_Doctor_Portal_Overview` in [tests/PROCESS_COVERAGE_MATRIX.md](../../tests/PROCESS_COVERAGE_MATRIX.md)
 
+**v1.7.49:** Full local Docker test gate `npm run test:unit:docker:deploy` — deploy stack + **2817** Vitest + meeting contracts. Covers Defect PDF queue/meeting items (see `reports/defect-fix/DEFECT_REGISTER.md` Q1, J1, M3).
+

@@ -17,6 +17,17 @@
 **Pass Rate:** 100%
 **Code Quality:** SonarQube — 0 issues (Cognitive Complexity refactored)
 
+### Production-readiness unit packs (2026-06)
+
+| Pack | Files | Focus |
+|------|-------|-------|
+| Queue lifecycle | `doctor-portal/queueLifecycle.integration.test.ts` | Post-accept visibility, cancel without delete |
+| Jitsi identity | `patient-portal/jitsiDisplayName.behavior.test.ts` | Auth → `userInfo.displayName`, prejoin off |
+| JWT roles | `meeting-server/jitsiRoleJwt.test.ts` | Doctor moderator / patient member payloads |
+| Env schema | `config/envSchema.test.ts` | Zod boot validation, `xxxxx` placeholder |
+
+Run locally: `npm run test:unit` then `npm run test:unit:meeting-acceptance`. CI gate: `npm run test:cloud:unit-gate`.
+
 ---
 
 

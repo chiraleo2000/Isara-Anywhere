@@ -27,6 +27,7 @@ function parseSymptoms(row) {
  * Derive legacy poolStatus for AppointmentPoolManagement UI.
  */
 function derivePoolStatus(status, doctorId) {
+  if (status === 'confirmed') return 'accepted';
   if (status === 'in_pool' || status === 'pending') return 'pending';
   if (status === 'awaiting_doctor_response' && doctorId) return 'doctor_claimed';
   if (status === 'awaiting_doctor_response') return 'ai_matched';
@@ -71,12 +72,23 @@ function mapAppointmentToQueueCard(row) {
     preferredTimeSlot: row.preferred_time_slot || null,
     requiredSpecialty: row.required_specialty || row.suggested_specialty || null,
     meetLink: row.meet_link || row.meeting_link || null,
+    meetingLink: row.meet_link || row.meeting_link || null,
+    doctorMeetingUrl: row.doctor_meeting_url || null,
+    patientMeetingUrl: row.patient_meeting_url || row.meet_link || null,
+    guestMeetingUrl: row.guest_meeting_url || null,
     jitsiRoomName: row.jitsi_room_name || null,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
     claimedByDoctorId: status === 'awaiting_doctor_response' ? doctorId : undefined,
     assignedDoctorId: doctorId,
     assignedDoctorName: row.doctor_name || null,
+    confirmedBy: row.confirmed_by || row.acceptedBy || (status === 'confirmed' ? doctorId : null),
+    confirmedByEmail: row.confirmed_by_email || row.acceptedByEmail || null,
+    confirmedAt: row.confirmed_at || row.acceptedAt || (status === 'confirmed' ? row.updated_at : null),
+    acceptedAt: row.confirmed_at || (status === 'confirmed' ? row.updated_at : null),
+    acceptedBy: row.confirmed_by || (status === 'confirmed' ? doctorId : null),
+    acceptedByEmail: row.confirmed_by_email || null,
+    queueVisibility: status === 'confirmed' ? 'accepted' : 'pending',
   };
 }
 

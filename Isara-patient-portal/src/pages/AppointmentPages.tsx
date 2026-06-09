@@ -2,11 +2,19 @@ import { useEffect, useState, useRef, useCallback } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useSettings } from '../contexts/SettingsContext';
-import { appointmentService, doctorService, googleService } from '../lib/services';
+import { appointmentService, doctorService, googleService, notificationService } from '../lib/services';
 import { Appointment, Doctor, AppointmentStatus } from '../types';
 import { Calendar, Clock, Video, MapPin, Plus, ChevronLeft, CalendarPlus, ExternalLink, FileText, AlertCircle, Activity, Pill, Stethoscope, CheckCircle2, Info, Mic, Image, Play } from 'lucide-react';
 import SymptomInputStep from '../components/SymptomInputStep';
 import { useRealtimeSync } from '../lib/useRealtimeSync';
+import { buildCalendarEventUrl } from '../utils/buildCalendarEventUrl';
+
+const ACTIVE_QUEUE_STATUSES = new Set<string>([
+  'pending',
+  'awaiting_doctor_response',
+  'in_pool',
+  'assigned',
+]);
 
 export function AppointmentListPage() {
   const { user } = useAuth();
@@ -14,7 +22,7 @@ export function AppointmentListPage() {
   const isDark = theme === 'dark';
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<'pending' | 'all' | 'confirmed' | 'completed'>('pending');
+  const [filter, setFilter] = useState<'queue' | 'pending' | 'all' | 'confirmed' | 'completed'>('queue');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
   // i18n labels
@@ -24,15 +32,20 @@ export function AppointmentListPage() {
     bookNew: { en: 'Book New Appointment', th: 'ขอนัดหมายใหม่' },
     howToBook: { en: 'How to Book', th: 'วิธีการนัดหมาย' },
     howToBookDesc: { en: 'When you submit an appointment request with symptoms, the doctor will review and confirm the appropriate time.', th: 'เมื่อคุณส่งคำขอนัดหมายพร้อมรายละเอียดอาการ แพทย์จะตรวจสอบและยืนยันเวลานัดที่เหมาะสมให้คุณ' },
+    queue: { en: 'Queue', th: 'คิวนัดหมาย' },
     pending: { en: 'Pending', th: 'รอการยืนยัน' },
     all: { en: 'All', th: 'ทั้งหมด' },
     confirmed: { en: 'Confirmed', th: 'ยืนยันแล้ว' },
     completed: { en: 'Completed', th: 'เสร็จสิ้น' },
     noAppointments: { en: 'No appointments found', th: 'ไม่มีการนัดหมาย' },
     bookAppointmentCta: { en: 'Start your first appointment request', th: 'เริ่มขอนัดหมายครั้งแรก' },
-    dateOldest: { en: 'Date (Oldest)', th: 'วันที่ (เก่าสุด)' },
     dateNewest: { en: 'Date (Newest)', th: 'วันที่ (ใหม่สุด)' },
-    viewDetails: { en: 'View Details', th: 'ดูรายละเอียด' },
+    dateOldest: { en: 'Date (Oldest)', th: 'วันที่ (เก่าสุด)' },
+    confirmedRecentlyHint: {
+      en: 'Doctor confirmed appointments appear under the Confirmed tab.',
+      th: 'นัดหมายที่แพทย์ยืนยันแล้วจะแสดงในแท็บ "ยืนยันแล้ว"',
+    },
+    switchToConfirmed: { en: 'View Confirmed', th: 'ดูนัดที่ยืนยันแล้ว' },
   };
 
   const loadAppointments = useCallback(async () => {
@@ -57,9 +70,20 @@ export function AppointmentListPage() {
     onAppointmentChange: loadAppointments,
   });
 
+  const isRecentConfirmed = (apt: Appointment) => {
+    if (apt.status !== 'confirmed') return false;
+    const ref = apt.updatedAt || apt.appointmentDate;
+    if (!ref) return true;
+    const cutoff = Date.now() - 7 * 24 * 60 * 60 * 1000;
+    return new Date(ref).getTime() >= cutoff;
+  };
+
   const filteredAppointments = appointments
     .filter((apt) => {
-      if (filter === 'pending') return ['pending', 'awaiting_doctor_response', 'in_pool'].includes(apt.status);
+      if (filter === 'queue') {
+        return ACTIVE_QUEUE_STATUSES.has(apt.status) || isRecentConfirmed(apt);
+      }
+      if (filter === 'pending') return ACTIVE_QUEUE_STATUSES.has(apt.status);
       if (filter === 'confirmed') return apt.status === 'confirmed';
       if (filter === 'completed') return ['completed', 'cancelled'].includes(apt.status);
       return true; // 'all' shows everything
@@ -91,7 +115,7 @@ export function AppointmentListPage() {
       completed: '✔️ เสร็จสิ้น',
       cancelled: '❌ ยกเลิก',
       in_pool: '🔄 กำลังจัดหาแพทย์',
-      awaiting_doctor_response: '📋 รอแพทย์ตอบรับ',
+      awaiting_doctor_response: '📋 แพทย์กำลังพิจารณา',
       in_progress: '🏥 กำลังพบแพทย์',
       no_show: '⚠️ ไม่มาตามนัด',
       rescheduled: '📅 เลื่อนนัด',
@@ -102,7 +126,7 @@ export function AppointmentListPage() {
       completed: '✔️ Completed',
       cancelled: '❌ Cancelled',
       in_pool: '🔄 Finding Doctor',
-      awaiting_doctor_response: '📋 Awaiting Response',
+      awaiting_doctor_response: '📋 Doctor Reviewing',
       in_progress: '🏥 In Progress',
       no_show: '⚠️ No Show',
       rescheduled: '📅 Rescheduled',
@@ -111,7 +135,10 @@ export function AppointmentListPage() {
     return <span className={`text-xs px-2 py-1 rounded-full font-medium ${styles[status] || styles.pending}`}>{statusLabels[status] || status}</span>;
   };
 
+  const confirmedCount = appointments.filter((a) => a.status === 'confirmed').length;
+
   const filterLabelMap: Record<string, string> = {
+    queue: `📋 ${labels.queue[language]}`,
     pending: `⏳ ${labels.pending[language]}`,
     all: `📋 ${labels.all[language]}`,
     confirmed: `✅ ${labels.confirmed[language]}`,
@@ -152,9 +179,30 @@ export function AppointmentListPage() {
         </div>
       </div>
 
+      {filter === 'pending' && confirmedCount > 0 && (
+        <div
+          data-testid="confirmed-tab-hint"
+          className={`border rounded-xl p-4 mb-6 flex items-start justify-between gap-3 ${isDark ? 'bg-green-900/20 border-green-700' : 'bg-green-50 border-green-200'}`}
+        >
+          <div className="flex items-start gap-3">
+            <CheckCircle2 className={`w-5 h-5 mt-0.5 flex-shrink-0 ${isDark ? 'text-green-400' : 'text-green-600'}`} />
+            <p className={`text-sm ${isDark ? 'text-green-300' : 'text-green-800'}`}>
+              {labels.confirmedRecentlyHint[language]} ({confirmedCount})
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setFilter('confirmed')}
+            className="text-sm font-medium text-emerald-600 hover:underline whitespace-nowrap"
+          >
+            {labels.switchToConfirmed[language]}
+          </button>
+        </div>
+      )}
+
       <div className="flex flex-wrap gap-2 mb-6 items-center">
         {/* Filter tabs - รอการยืนยัน first, then ทั้งหมด */}
-        {(['pending', 'all', 'confirmed', 'completed'] as const).map((f) => (
+        {(['queue', 'pending', 'all', 'confirmed', 'completed'] as const).map((f) => (
           <button
             key={f}
             onClick={() => setFilter(f)}
@@ -225,7 +273,7 @@ export function AppointmentListPage() {
 
               {/* CONFIRMED APPOINTMENT - Show Date/Time/Meeting Link prominently */}
               {apt.status === 'confirmed' && (
-                <div className="mb-3 p-4 bg-gradient-to-r from-green-50 to-blue-50 rounded-xl border border-green-200">
+                <div className="mb-3 p-4 bg-gradient-to-r from-green-50 to-blue-50 rounded-xl border border-green-200" data-testid="appointment-confirmed-badge">
                   <div className="grid grid-cols-2 gap-3 mb-3">
                     <div className="flex items-center gap-2">
                       <Calendar className="w-5 h-5 text-green-600" />
@@ -380,7 +428,7 @@ export function BookAppointmentPage() {
     symptomDescription: '',
     symptomDuration: '',
     symptomDurationUnit: 'days' as 'hours' | 'days' | 'weeks' | 'months',
-    symptomSeverity: 3 as number, // 1-5 scale
+    symptomSeverity: 3, // 1-5 scale
     bodyParts: [] as string[],
 
     // Additional symptoms
@@ -403,9 +451,9 @@ export function BookAppointmentPage() {
     skipDoctorSelection: false,
 
     // Audio recording
-    audioBlob: null as Blob | null,
-    audioUrl: '' as string,
-    audioTranscript: '' as string,
+    audioBlob: null,
+    audioUrl: '',
+    audioTranscript: '',
 
     // Image uploads  
     images: [] as { file: File; preview: string; description?: string }[],
@@ -1299,14 +1347,70 @@ export function BookAppointmentPage() {
   );
 }
 
+async function loadTelehealthMeetLink(appointmentId: string, data: Appointment): Promise<string | null> {
+  if (data.type !== 'telehealth') return null;
+  try {
+    const meetInfo = await googleService.getMeetInfo(appointmentId);
+    if (meetInfo.meetLink) return meetInfo.meetLink;
+  } catch (e) {
+    console.error('Failed to get Meet info:', e);
+  }
+  return data.meetingLink || null;
+}
+
+function findCalendarUrlInNotifications(
+  notifications: Awaited<ReturnType<typeof notificationService.getNotifications>>,
+  appointmentId: string,
+): string | null {
+  for (const n of notifications) {
+    const d = typeof n.data === 'string' ? JSON.parse(n.data) : n.data;
+    const aptId = d?.appointmentId || d?.appointment_id;
+    if (aptId === appointmentId && (d?.calendarEventUrl || n.calendarUrl)) {
+      return d?.calendarEventUrl || n.calendarUrl || null;
+    }
+  }
+  return null;
+}
+
+function buildFallbackCalendarUrl(data: Appointment, linkForCal?: string): string | null {
+  if (!data.appointmentDate || !data.appointmentTime) return null;
+  return buildCalendarEventUrl({
+    title: `Izara Telehealth — ${data.doctorName || 'Doctor'}`,
+    description: linkForCal ? `Join: ${linkForCal}` : undefined,
+    startDate: data.appointmentDate,
+    startTime: data.appointmentTime,
+    location: linkForCal || 'Izara Video Meeting',
+  });
+}
+
+async function resolveAppointmentCalendarUrl(
+  appointmentId: string,
+  data: Appointment,
+  patientId: string | undefined,
+): Promise<string | null> {
+  const linkForCal = data.meetingLink;
+  if (patientId && data.status === 'confirmed') {
+    try {
+      const notifications = await notificationService.getNotifications(patientId);
+      const fromNotification = findCalendarUrlInNotifications(notifications, appointmentId);
+      if (fromNotification) return fromNotification;
+    } catch {
+      /* fallback below */
+    }
+  }
+  return buildFallbackCalendarUrl(data, linkForCal);
+}
+
 export function AppointmentDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { theme, language } = useSettings();
   const isDark = theme === 'dark';
   const [appointment, setAppointment] = useState<Appointment | null>(null);
   const [loading, setLoading] = useState(true);
   const [meetLink, setMeetLink] = useState<string | null>(null);
+  const [calendarEventUrl, setCalendarEventUrl] = useState<string | null>(null);
 
   // i18n labels
   const detailLabels = {
@@ -1337,22 +1441,9 @@ export function AppointmentDetailPage() {
     try {
       const data = await appointmentService.getById(id);
       setAppointment(data);
-
-      // Load Meet link if telehealth appointment
-      if (data.type === 'telehealth') {
-        try {
-          const meetInfo = await googleService.getMeetInfo(id);
-          if (meetInfo.meetLink) {
-            setMeetLink(meetInfo.meetLink);
-          }
-        } catch (e) {
-          console.error('Failed to get Meet info:', e);
-          // Try to get from appointment data
-          if (data.meetingLink) {
-            setMeetLink(data.meetingLink);
-          }
-        }
-      }
+      setMeetLink(await loadTelehealthMeetLink(id, data));
+      const patientId = user?.patientId || user?.id;
+      setCalendarEventUrl(await resolveAppointmentCalendarUrl(id, data, patientId));
     } catch (e) {
       console.error(e);
     } finally {
@@ -1378,8 +1469,9 @@ export function AppointmentDetailPage() {
       const endDateTime = new Date(startDateTime.getTime() + 60 * 60 * 1000);
 
       const hospitalLabel = language === 'th' ? 'โรงพยาบาล' : 'Hospital';
+      const videoLink = meetLink || appointment.meetingLink;
       const eventLocation = appointment.type === 'telehealth'
-        ? 'Google Meet'
+        ? (videoLink || 'Izara Video Meeting')
         : (appointment.hospitalName || hospitalLabel);
 
       const appointmentLabel = language === 'th' ? 'นัดหมาย' : 'Appointment';
@@ -1395,8 +1487,9 @@ export function AppointmentDetailPage() {
         location: eventLocation,
       });
 
-      if (response.calendarUrl) {
-        window.open(response.calendarUrl, '_blank');
+      const url = response.addToCalendarUrl || response.calendarUrl || calendarEventUrl;
+      if (url) {
+        window.open(url, '_blank');
       }
     } catch (e) {
       console.error('Error adding to calendar:', e);
@@ -1427,7 +1520,7 @@ export function AppointmentDetailPage() {
     const key = status in statusColors ? status : 'pending';
     const color = statusColors[key];
     const label = (language === 'th' ? labelsTh : labelsEn)[key];
-    return { ...color, ...label } as StatusInfo;
+    return { ...color, ...label };
   };
 
   if (loading) return <div className={`flex items-center justify-center h-64 ${isDark ? 'bg-gray-900' : ''}`}><div className="animate-spin w-8 h-8 border-4 border-emerald-600 border-t-transparent rounded-full" /></div>;
@@ -1593,12 +1686,24 @@ export function AppointmentDetailPage() {
       <div className="bg-white rounded-xl p-6 border border-gray-100">
         {/* Add to Calendar button - only for confirmed appointments */}
         {appointment.status === 'confirmed' && (
-          <button
-            onClick={addToCalendar}
-            className="w-full flex items-center justify-center gap-2 bg-gray-100 text-gray-700 py-3 rounded-xl hover:bg-gray-200 mb-3"
-          >
-            <CalendarPlus className="w-5 h-5" /> เพิ่มลง Google Calendar
-          </button>
+          calendarEventUrl ? (
+            <a
+              href={calendarEventUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              data-testid="appointment-calendar-link"
+              className="w-full flex items-center justify-center gap-2 bg-emerald-50 text-emerald-700 py-3 rounded-xl hover:bg-emerald-100 mb-3 border border-emerald-200"
+            >
+              <CalendarPlus className="w-5 h-5" /> {detailLabels.addToCalendar[language]}
+            </a>
+          ) : (
+            <button
+              onClick={addToCalendar}
+              className="w-full flex items-center justify-center gap-2 bg-gray-100 text-gray-700 py-3 rounded-xl hover:bg-gray-200 mb-3"
+            >
+              <CalendarPlus className="w-5 h-5" /> {detailLabels.addToCalendar[language]}
+            </button>
+          )
         )}
 
         {/* Join Meeting button for telehealth */}

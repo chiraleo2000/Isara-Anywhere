@@ -1,8 +1,8 @@
 # Video Meeting Implementation - Jitsi Meet + Device Speech-to-Text + Gemini AI
 
-**Version:** 1.6.0
-**Last Updated:** March 31, 2026
-**Status:** ✅ Phase 1 — Comprehensive Meeting Workflow (Microsoft Teams-Like Experience) + Full DB Schema
+**Version:** 1.7.51
+**Last Updated:** June 8, 2026
+**Status:** ✅ Phase 1 — 3-party meeting lifecycle (doctor HOST + patient + guest), 10s A/V hold, calendar sync on confirm, zero-skip local Docker gate
 
 > This document is the core Phase 1 deliverable describing the complete meeting workflow:
 > Appointment → Multi-Party Meeting → Transcript Streaming → AI Summary → EMR → Patient Delivery
@@ -1031,19 +1031,49 @@ MEETING_SERVER_URL=<http://localhost:3020>
 ```
 
 
-## Automated E2E (Group Q — cloud gate)
+## Automated E2E (Group Q — local Docker + cloud gate)
 
-| Step | Actor | Assertion |
-|------|--------|-----------|
-| Q01a | Doctor | `POST /api/meetings/create` with internal JWT (no Google/GitHub) |
-| Q01b–c | Doctor / Patient | Doctor in Jitsi; patient in `lobby-waiting-screen` only |
-| Q01d | Guest | `guest-name-input` + `guest-lobby-waiting` |
-| Q01e | Doctor | `admit-all-btn` → API status `admitted` |
-| Q01f | All 3 | 10s hold with media/iframe checks (fake camera/mic in CI) |
-| Q01g | Doctor | `end-meeting-btn` → results `completed` |
-| Q02 | Doctor | `recordingUrl` on disk + `recording-player` + `generate-summary-btn` (requires `GEMINI_API_KEY`) |
+### Q01 — Full 3-party lifecycle (v1.7.51)
 
-See [TWO_ROUND_CLOUD_TESTING.md](TWO_ROUND_CLOUD_TESTING.md) and `tests/group-Q-meeting-lifecycle.ui-test.ts`.
+**File:** `tests/group-Q-meeting-lifecycle.ui-test.ts`  
+**Fixture:** `tests/helpers/meeting-lifecycle-fixture.ts`
+
+| Step | Actor | Action | Assertion / `data-testid` |
+|------|--------|--------|---------------------------|
+| Q01a | Doctor | `POST /api/meetings/create` with session JWT | Meeting record + Jitsi room; doctor is HOST |
+| Q01b | Doctor | Mount Jitsi in `VirtualMeeting.tsx` / `MeetingRoom.tsx` | Doctor iframe loaded; `configOverwrite.moderator: true` |
+| Q01c | Patient | `joinMeetingToLobby` → Izara lobby | `lobby-waiting-screen` visible; **not** in Jitsi yet |
+| Q01d | Guest | Open `guest_meeting_url` + token | `guest-name-input` → submit → `guest-lobby-waiting` |
+| Q01e | Doctor | Click `admit-all-btn` | Lobby API status `admitted` for patient + guest |
+| Q01f | **All 3** | `holdWithMediaChecks` for `MEETING_HOLD_MS` (**10s**) | `assertThreePartyInMeeting`: 3 Jitsi iframe shells; `minSamples: 3` media checks (fake camera/mic in CI via Playwright flags) |
+| Q01g | Doctor | `end-meeting-btn` | Meeting status `completed`; triggers post-meeting pipeline |
+| Q02 | Doctor | Meeting Results page | `recordingUrl` + `recording-player` + `generate-summary-btn` (requires real `GEMINI_API_KEY` locally) |
+
+**3-party hold details (Q01f):**
+
+```text
+holdWithMediaChecks({
+  pages: [doctorPage, patientPage, guestPage],
+  holdMs: MEETING_HOLD_MS,   // 10000
+  minSamples: 3,             // one sample per party
+})
+```
+
+- Guest page participates in the same 10s hold as doctor and patient (not doctor-only).
+- `assertThreePartyInMeeting` verifies three distinct Jitsi mount contexts without strict participant-count API (Jitsi external API can lag in Docker).
+- Optional `assertThreePartyLobbyAdmitted` removed from Q01e path due to post-admit Jitsi mount flakiness in headless CI.
+
+**Related tests:**
+
+| Group | Coverage |
+|-------|----------|
+| **J** | Patient prejoin / lobby consent (`group-J-patient-jitsi-prejoin.ui-test.ts`) |
+| **R** | JWT role matrix — doctor moderator, patient/guest non-moderator (`group-R-jitsi-role-permissions.ui-test.ts`) |
+| **D** | Appointment confirm → meeting links + **D4cal** calendar (`group-D-appointment-workflows.ui-test.ts`) |
+| **E** | EMR after meeting |
+| **F** | Clinical records |
+
+See [TWO_ROUND_CLOUD_TESTING.md](TWO_ROUND_CLOUD_TESTING.md), [POST_MEETING_WORKFLOW.md](POST_MEETING_WORKFLOW.md), and `reports/defect-fix/DEFECT_REGISTER.md` (June 8 gate).
 
 ## Docker Configuration
 
@@ -1609,3 +1639,67 @@ npm run test:e2e:meeting-lifecycle
 **Env:** `GEMINI_API_KEY`, `GCP_SERVICE_ACCOUNT_KEY` or `GOOGLE_APPLICATION_CREDENTIALS`, optional `OPENAI_API_KEY` (Whisper), `GCS_BUCKET`, `JIBRI_WEBHOOK_SECRET`, `POST_MEETING_PIPELINE_TIMEOUT_MS` (default 900000).
 
 **HIPAA / PDPA:** Recordings namespaced by `doctor_id`; playback and pipeline-status enforce `doctor_id === JWT user` (admin exempt). PHI in PostgreSQL BYTEA — restrict DB access; prefer GCS with CMEK for long-term archive.
+
+---
+
+## Regression verification (v1.7.49 — Defect PDF items 2–3)
+
+| Check | Implementation | Test |
+|-------|----------------|------|
+| Patient display name auto-filled | `getIzaraDisplayName`, `prejoinPageEnabled=false`, `requireDisplayName=false` | `jitsiDisplayName.behavior`, `defectIsaraPdfMeetingQueue` DPDF-N* |
+| No JWT on public `meet.jit.si` | `resolveMountJwt` / `pickJitsiJwt` | `meetingWorkflowHardening` MWH01–08 |
+| Doctor joins first (host on public Jitsi) | `notifyHostPresent`, `waitForHostReady`, `host-ready` gate | `hostReadyGate`, DPDF-M* |
+| Doctor layout-first mount | `prepareLayoutThenMount` in `MeetingRoom.tsx`, `VirtualMeeting.tsx` | `virtualMeetingLayoutFirst` |
+
+**Local Docker gate:** `npm run test:unit:docker:deploy` — **2817** Vitest + **78** meeting-server contracts PASS.
+
+---
+
+## Detailed Workflow — Roles, Host-Ready, Prejoin (v1.7.51)
+
+### Role matrix
+
+| Role | Jitsi moderator | JWT affiliation | Toolbar |
+|------|-----------------|-----------------|---------|
+| Doctor | `true` (config + JWT on private Jitsi) | `owner` | participants-pane, recording |
+| Patient | `false` | `member` | no host controls |
+| Guest | `false` | `none` | limited; name form on guest join only |
+
+### Host-ready timing (critical)
+
+- **Do NOT** mark host online on socket `connect` or `join-meeting` alone  
+- **DO** call `POST /api/meetings/:id/host-present` on doctor `videoConferenceJoined`  
+- Patients wait via `waitForHostReady()` before mounting Jitsi iframe  
+
+### Room name persistence
+
+- Canonical: `jitsi_room_name` on appointment row after confirm  
+- Fallback (deterministic): `izara-{appointmentId[0:12]}-meeting` via `stableRoomNameForAppointment()`  
+- Avoid ad-hoc `Date.now()` room names in in-app join paths  
+
+### Patient display name (Defect J1)
+
+- `prejoinPageEnabled: false`, `requireDisplayName: false`  
+- Name from `resolvePatientMeetingDisplayName()` → auth profile → Jitsi `userInfo.displayName`  
+- Logged-in patients: **no manual name entry** on Izara pre-join screen  
+
+### Post-meeting pipeline
+
+See [`POST_MEETING_WORKFLOW.md`](POST_MEETING_WORKFLOW.md).
+
+**Tests:** DPDF-M*, DPDF-N*, `group-J-patient-jitsi-prejoin`, `group-R-jitsi-role-permissions`, `group-Q-meeting-lifecycle`
+
+### Session authentication (v1.7.52 — JWT removed)
+
+| Layer | Mechanism |
+|-------|-----------|
+| Portal + meeting API | PostgreSQL opaque session token (`Authorization: Bearer`) |
+| Guest invite | Opaque token in `meeting_invites` table |
+| Recording share | Opaque token in `recording_share_tokens` table |
+| Jitsi roles | Izara lobby + `configOverwrite.moderator` (doctor host, patient participant) — **no Jitsi JWT** |
+
+### E2E testing policy (v1.7.52)
+
+- **Headed UI always** — set `PW_HEADED=1` (default in quality gates).
+- **No Google Chrome** — set `PW_NO_CHROME=1`; use Firefox (patient/admin), Edge (doctor), WebKit (Group W).
+

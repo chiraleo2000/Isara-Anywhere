@@ -44,15 +44,15 @@ import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
 import { Server as SocketServer } from 'socket.io';
+import { createRequire } from 'node:module';
 import dotenv from 'dotenv';
 import pg from 'pg';
 import { v4 as uuidv4 } from 'uuid';
-import jwt from 'jsonwebtoken';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { createLobbyKeyResolver } from './lobbyKey.js';
 import { applyLobbyJoin, applyLobbyLeave } from './lobbySession.js';
 import { decryptRecordingBuffer } from './recordingCrypto.js';
-import { resolveActorUserId } from './meetingAuth.js';
+import { resolveActorUserId, resolveDevTestingPatientLobbyUser } from './meetingAuth.js';
 import {
   assertCanAccessMeetingRecording,
   filterRecordingsForUser,
@@ -60,11 +60,12 @@ import {
   isAdminUser,
 } from './recordingAccess.js';
 import {
-  createAuthenticateToken,
-  verifyAccessToken,
-  verifyScopedToken,
-  signScopedToken,
-} from './jwtPolicy.js';
+  createAuthenticateSession,
+  createOptionalSessionAuth,
+  generateOpaqueToken,
+  validateGuestJoinAccess,
+  createJitsiRoleJwt,
+} from './sessionAuth.js';
 import { buildGuestPortalUrls, buildMeetingUrls, externalApiConfig } from './jitsiConfig.js';
 import { createPostMeetingPipeline } from './postMeetingPipeline.js';
 import { sweepEmptyRecordingDirs } from './recordingCleanup.js';
@@ -84,15 +85,27 @@ import {
 import { registerHealthRoutes } from './routes/healthRoutes.js';
 import { registerSocketHandlers } from './socketHandlers.js';
 
+function stringifyUnknown(value) {
+  if (value instanceof Error) return value.message;
+  if (typeof value === 'string') return value;
+  try {
+    return JSON.stringify(value);
+  } catch {
+    return 'Unknown error';
+  }
+}
+
 process.on('unhandledRejection', (reason) => {
-  const msg = reason instanceof Error ? reason.message : String(reason);
-  console.error('[Process] unhandledRejection:', msg);
+  console.error('[Process] unhandledRejection:', stringifyUnknown(reason));
 });
 process.on('uncaughtException', (err) => {
   console.error('[Process] uncaughtException:', err.message);
 });
 
 dotenv.config();
+
+const requireEnv = createRequire(import.meta.url);
+const { resolveGeminiApiKey, isGeminiConfigured, resolveGeminiModel } = requireEnv('./lib/geminiKey.cjs');
 
 const { Pool } = pg;
 
@@ -115,15 +128,10 @@ const JITSI_IS_PUBLIC_SAAS =
   JITSI_DOMAIN.endsWith('.jit.si') ||
   JITSI_GUEST_DOMAIN === 'meet.jit.si';
 
-// SECURITY: No hardcoded fallback secrets. Fail fast in every environment.
-const JWT_SECRET = (() => {
-  const secret = process.env.JWT_SECRET;
-  if (!secret) {
-    console.error('[SECURITY] FATAL: JWT_SECRET not set. Generate one with `openssl rand -hex 32` and set it in .env. Exiting.');
-    process.exit(1);
-  }
-  return secret;
-})();
+// Session auth replaces JWT for API access. Recording crypto uses RECORDING_ENCRYPTION_KEY.
+if (!process.env.RECORDING_ENCRYPTION_KEY && process.env.NODE_ENV === 'production') {
+  console.warn('[SECURITY] RECORDING_ENCRYPTION_KEY not set — set in production for recording encryption.');
+}
 
 const IS_DEV_TESTING =
   process.env.IZARA_DEV_TESTING === '1' || process.env.NODE_ENV !== 'production';
@@ -134,48 +142,29 @@ if (!IS_DEV_TESTING && !process.env.JIBRI_WEBHOOK_SECRET) {
   process.exit(1);
 }
 
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-3.1-flash-lite';
+const GEMINI_API_KEY = resolveGeminiApiKey();
+const GEMINI_MODEL = resolveGeminiModel();
 const JITSI_APP_ID = process.env.JITSI_APP_ID || process.env.JITSI_ISS || '';
 const JITSI_AUTH_SECRET = process.env.JITSI_JWT_SECRET || process.env.JITSI_APP_SECRET || '';
-const JITSI_SIGNING_SECRET = JITSI_AUTH_SECRET || JWT_SECRET;
+const JITSI_SIGNING_SECRET = JITSI_AUTH_SECRET || '';
 const JITSI_TOKEN_ISSUER = JITSI_APP_ID || process.env.JWT_ISSUER || 'izara-telemedicine';
-const JITSI_TOKEN_AUTH_ENABLED =
-  Boolean(JITSI_SIGNING_SECRET) &&
-  !JITSI_IS_PUBLIC_SAAS &&
-  process.env.JITSI_FORCE_JWT_ON_PUBLIC !== '1';
+const JITSI_TOKEN_AUTH_ENABLED = false;
 
-function createJitsiRoleJwt(roomName, user = {}, role = 'guest') {
-  if (!JITSI_TOKEN_AUTH_ENABLED) return null;
-  const normalizedRole = String(role || '').toLowerCase();
-  const isModerator = normalizedRole === 'doctor' || normalizedRole === 'host' || normalizedRole === 'moderator';
-  const now = Math.floor(Date.now() / 1000);
-  return jwt.sign(
-    {
-      aud: 'jitsi',
-      iss: JITSI_TOKEN_ISSUER,
-      sub: JITSI_DOMAIN,
-      room: roomName,
-      nbf: now - 10,
-      exp: now + (4 * 60 * 60),
-      context: {
-        user: {
-          id: user.id || '',
-          name: user.name || 'Guest',
-          email: user.email || '',
-          affiliation: isModerator ? 'owner' : 'member',
-          moderator: isModerator,
-        },
-      },
-    },
-    JITSI_SIGNING_SECRET,
-    { algorithm: 'HS256' }
-  );
+function buildJitsiRoleJwt(roomName, user = {}, role = 'guest') {
+  return createJitsiRoleJwt({
+    roomName,
+    user,
+    role,
+    domain: JITSI_DOMAIN,
+    signingSecret: JITSI_SIGNING_SECRET,
+    issuer: JITSI_TOKEN_ISSUER,
+    enabled: JITSI_TOKEN_AUTH_ENABLED,
+  });
 }
 
 // Recording storage — primary: filesystem (Docker volume), metadata in PostgreSQL
 const RECORDINGS_DIR = process.env.RECORDINGS_DIR || (
-  process.env.NODE_ENV === 'production' ? '/tmp/recordings' : path.resolve('recordings')
+  process.env.NODE_ENV === 'production' ? '/tmp/recordings' : path.resolve('recordings') // NOSONAR S5443 — override via RECORDINGS_DIR; Docker mounts a dedicated volume in production
 );
 try { fs.mkdirSync(RECORDINGS_DIR, { recursive: true }); } catch { /* ignore */ }
 
@@ -390,7 +379,7 @@ function formatSpeakerLabel(role, name) {
 
 // Initialize Gemini AI
 let genAI = null;
-if (GEMINI_API_KEY) {
+if (isGeminiConfigured()) {
   genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
   console.log('✅ Gemini AI initialized with model:', GEMINI_MODEL);
 } else {
@@ -408,6 +397,18 @@ function parseGeminiJSON(text) {
     if (jsonMatch) return JSON.parse(jsonMatch[0]);
   } catch { /* fallback */ }
   return null;
+}
+
+/** Parse JSONB / string JSON fields from meeting_records without throwing. */
+function parseMeetingJsonField(value) {
+  if (value == null) return null;
+  if (typeof value === 'object') return value;
+  if (typeof value !== 'string' || !value.trim()) return null;
+  try {
+    return JSON.parse(value);
+  } catch {
+    return null;
+  }
 }
 
 /** Generate structured JSON SOAP summary from transcript + context */
@@ -618,7 +619,7 @@ if (isProduction) {
 const ALLOWED_ORIGIN_LITERALS = new Set(RAW_ALLOWED_ORIGINS.filter(o => !o.includes('*')));
 const ALLOWED_ORIGIN_PATTERNS = RAW_ALLOWED_ORIGINS
   .filter(o => o.includes('*'))
-  .map(glob => new RegExp('^' + glob.replace(/[.+?^${}()|[\]\\]/g, '\\$&').replaceAll('*', '.*') + '$'));
+  .map(glob => new RegExp('^' + glob.replace(/[.+?^${}()|[\]\\]/g, String.raw`\$&`).replaceAll('*', '.*') + '$'));
 // Back-compat export (kept as array for any module that imports it)
 const ALLOWED_ORIGINS = [...ALLOWED_ORIGIN_LITERALS];
 
@@ -664,22 +665,76 @@ app.use((req, res, next) => {
 });
 
 // ============================================================================
-// AUTHENTICATION MIDDLEWARE
+// AUTHENTICATION MIDDLEWARE (PostgreSQL sessions)
 // ============================================================================
 
-const authenticateToken = createAuthenticateToken(JWT_SECRET);
+let authenticateToken = (_req, res) => res.status(503).json({ error: 'Auth not ready' });
+let optionalAuth = (_req, _res, next) => next();
 
-// Optional auth — tries to authenticate but doesn't block
-const optionalAuth = (req, res, next) => {
-  const authHeader = req.headers['authorization'];
-  const token = authHeader?.split(' ')[1];
-  if (token) {
-    try {
-      req.user = verifyAccessToken(token, JWT_SECRET);
-    } catch { /* ignore */ }
+function lookupGuestInviteTokenInMemory(token) {
+  if (!token) return null;
+  for (const invites of meetingInvites.values()) {
+    const hit = invites.find((i) => i.token === token && i.status !== 'revoked');
+    if (!hit) continue;
+    const expiresAt = hit.expiresAt ? new Date(hit.expiresAt) : null;
+    if (expiresAt && expiresAt <= new Date()) continue;
+    return {
+      meetingId: hit.meetingId,
+      guestName: hit.name || hit.guestName,
+      guestType: hit.guestType || 'guest',
+      type: 'guest-invite',
+    };
   }
-  next();
-};
+  return null;
+}
+
+async function lookupGuestInviteToken(token) {
+  if (!token) return null;
+  const fromMemory = lookupGuestInviteTokenInMemory(token);
+  if (fromMemory) return fromMemory;
+  if (!dbAvailable) return null;
+  try {
+    const result = await pool.query(
+      `SELECT meeting_id, guest_name, guest_type, expires_at, status
+       FROM meeting_invites
+       WHERE token = $1 AND expires_at > NOW() AND status != 'revoked'
+       LIMIT 1`,
+      [token],
+    );
+    if (result.rows.length === 0) return null;
+    const row = result.rows[0];
+    return {
+      meetingId: row.meeting_id,
+      guestName: row.guest_name,
+      guestType: row.guest_type,
+      type: 'guest-invite',
+    };
+  } catch {
+    return lookupGuestInviteTokenInMemory(token);
+  }
+}
+
+async function lookupRecordingShareToken(token) {
+  if (!token || !dbAvailable) return null;
+  try {
+    const result = await pool.query(
+      `SELECT meeting_id, filename, expires_at
+       FROM recording_share_tokens
+       WHERE token = $1 AND expires_at > NOW()
+       LIMIT 1`,
+      [token],
+    );
+    return result.rows[0] || null;
+  } catch {
+    return null;
+  }
+}
+
+function bindSessionAuthMiddleware() {
+  authenticateToken = createAuthenticateSession(pool);
+  optionalAuth = createOptionalSessionAuth(pool);
+}
+bindSessionAuthMiddleware();
 
 // ============================================================================
 // RATE LIMITING (in-memory, per-IP)
@@ -806,7 +861,7 @@ function resetMeetingSessionState(meetingId, appointmentId = null) {
 }
 
 /** Resolve display name / id from Izara JWT + meeting record (no manual Jitsi login). */
-async function resolveMeetingParticipant(req, meetingId, role) {
+async function resolveMeetingParticipant(req, meetingId, role) { // NOSONAR S3776 — multi-source identity resolution (JWT, DB, role aliases)
   const roleNorm = String(role || 'guest').toLowerCase();
   let displayName = String(req.query.name || '').trim();
   let email = req.user?.email || '';
@@ -932,7 +987,7 @@ app.get('/api/meetings/active', async (req, res) => {
 });
 
 // Create new meeting room (primary endpoint — requires auth)
-app.post('/api/meetings/create', authenticateToken, async (req, res) => {
+app.post('/api/meetings/create', authenticateToken, async (req, res) => { // NOSONAR S3776 — meeting creation with DB persistence, alias registration, guest invites
   const requestId = newRequestId();
   try {
     const { appointmentId, patientId, doctorId, patientName, doctorName, scheduledTime, guestInvites, roomName: providedRoomName } = req.body;
@@ -996,15 +1051,8 @@ app.post('/api/meetings/create', authenticateToken, async (req, res) => {
     const meetingId = uuidv4();
     const roomName = providedRoomName || `izara-${appointmentId?.substring(0, 12) || meetingId.substring(0, 8)}-${Date.now().toString(36)}`;
 
-    const doctorJwt = createJitsiRoleJwt(roomName, { id: doctorId, name: doctorName || 'Doctor' }, 'doctor');
-    const patientJwt = createJitsiRoleJwt(roomName, { id: patientId, name: patientName || 'Patient' }, 'patient');
-    const guestJwt = createJitsiRoleJwt(roomName, { name: 'Guest' }, 'guest');
     const urls = buildMeetingUrls(JITSI_DOMAIN, roomName, {
       language: 'th',
-      doctorJwt,
-      patientJwt,
-      guestJwt,
-      jwt: doctorJwt,
       doctor: { name: doctorName || 'Doctor', email: req.body?.doctorEmail },
       patient: { name: patientName || 'Patient' },
       guest: { name: 'Guest' },
@@ -1101,7 +1149,7 @@ app.post('/api/meetings/create', authenticateToken, async (req, res) => {
       meetingId, appointmentId, roomName, status: 'scheduled',
       doctorId, patientId, createdAt: new Date().toISOString(),
       urls: { base: meetingUrl, doctor: doctorUrl, patient: patientUrl, guest: guestUrl },
-      tokens: { doctor: doctorJwt, patient: patientJwt, guest: guestJwt }
+      tokens: null,
     });
     registerMeetingLobbyAliases(meetingId, appointmentId);
 
@@ -1116,7 +1164,7 @@ app.post('/api/meetings/create', authenticateToken, async (req, res) => {
       appointmentId: appointmentId || null,
       roomName,
       urls: { base: meetingUrl, doctor: doctorUrl, patient: patientUrl, guest: guestUrl },
-      tokens: { doctor: doctorJwt, patient: patientJwt, guest: guestJwt },
+      tokens: null,
       requestId,
     });
 
@@ -1128,7 +1176,7 @@ app.post('/api/meetings/create', authenticateToken, async (req, res) => {
 });
 
 // Alias: /api/meeting/create (alternative endpoint — requires auth)
-app.post('/api/meeting/create', authenticateToken, async (req, res) => {
+app.post('/api/meeting/create', authenticateToken, async (req, res) => { // NOSONAR S3776 — alias endpoint mirroring /api/meetings/create
   const requestId = newRequestId();
   try {
     const { appointmentId, patientId, doctorId, title, guestInvites } = req.body;
@@ -1203,11 +1251,11 @@ app.post('/api/meeting/create', authenticateToken, async (req, res) => {
           } catch (retryErr) {
             console.error(`[Meeting:${requestId}] alias retry also failed:`, retryErr.message);
           }
-        } else if (insertErr.code !== '23505') {
-          console.error(`[Meeting:${requestId}] alias insert failed (${insertErr.code}):`, insertErr.message);
-        } else {
+        } else if (insertErr.code === '23505') {
           const mapped = mapMeetingDbError(insertErr, requestId);
           return res.status(mapped.status).json(mapped.body);
+        } else {
+          console.error(`[Meeting:${requestId}] alias insert failed (${insertErr.code}):`, insertErr.message);
         }
       }
     }
@@ -1508,7 +1556,7 @@ app.get('/api/meetings/:id/consents', optionalAuth, (req, res) => {
 // ============================================================================
 
 // Participant requests to join (enters lobby)
-app.post('/api/meetings/:id/lobby/join', optionalAuth, async (req, res) => {
+app.post('/api/meetings/:id/lobby/join', optionalAuth, async (req, res) => { // NOSONAR S3776 — lobby join with role validation, duplicate detection, socket notify
   const { id } = req.params;
   const lobbyKey = await resolveLobbyKey(id);
   const { email } = req.body;
@@ -1522,8 +1570,53 @@ app.post('/api/meetings/:id/lobby/join', optionalAuth, async (req, res) => {
   }
   const participantName = rawName.replaceAll(/<[^>]*>/g, '').trim().substring(0, 100);
 
-  // Determine role from authenticated token only — never trust client-supplied role
   const authenticatedRole = req.user?.role;
+  const requestedRole = String(req.body.role || 'guest').toLowerCase();
+
+  if (!req.user && requestedRole === 'patient') {
+    const devPatient = await resolveDevTestingPatientLobbyUser(
+      {
+        isDevTesting: IS_DEV_TESTING,
+        activeMeetings,
+        resolveLobbyKey,
+        pool,
+        dbAvailable,
+      },
+      id,
+      participantId,
+    );
+    if (devPatient) req.user = devPatient;
+  }
+
+  // Secured telehealth: patient/doctor roles require auth; anonymous guests need invite token
+  if (!req.user) {
+    if (
+      requestedRole === 'doctor'
+      || requestedRole === 'patient'
+      || requestedRole === 'admin'
+      || requestedRole === 'host'
+    ) {
+      return res.status(401).json({
+        success: false,
+        error: 'Authentication required for secured meeting rooms',
+        code: 'MEETING_AUTH_REQUIRED',
+      });
+    }
+    const inviteToken = req.body.invite || req.query?.invite || req.headers['x-guest-invite'];
+    const guestInvite = inviteToken ? await lookupGuestInviteToken(String(inviteToken)) : null;
+    const guestAccess = validateGuestJoinAccess({
+      authenticated: false,
+      requestedRole: 'guest',
+      inviteValid: Boolean(guestInvite),
+    });
+    if (!guestAccess.allowed) {
+      return res.status(401).json({
+        success: false,
+        error: guestAccess.error,
+        code: guestAccess.code,
+      });
+    }
+  }
 
   // Only authenticated doctors/admins bypass lobby
   if (req.user && (authenticatedRole === 'doctor' || authenticatedRole === 'admin')) {
@@ -1532,10 +1625,17 @@ app.post('/api/meetings/:id/lobby/join', optionalAuth, async (req, res) => {
 
   const { lobby } = getLobbyMap(lobbyKey);
 
+  let lobbyRole = 'guest';
+  if (req.user) {
+    if (authenticatedRole === 'patient') lobbyRole = 'patient';
+    else if (authenticatedRole === 'doctor' || authenticatedRole === 'admin') lobbyRole = authenticatedRole;
+    else lobbyRole = authenticatedRole || 'guest';
+  }
+
   const entry = {
     participantId,
     participantName,
-    role: authenticatedRole || req.body.role || 'guest',
+    role: lobbyRole,
     email: email || null,
     status: 'waiting',
     joinedAt: new Date().toISOString(),
@@ -1751,8 +1851,40 @@ app.get('/api/meetings/:id/join-config', optionalAuth, async (req, res) => {
     const idCheck = sanitizeRouteId(req.params.id);
     if (!idCheck.ok) return sendValidationError(res, idCheck);
     const { id } = { id: idCheck.id };
-    const identity = await resolveMeetingParticipant(req, id, req.query.role || 'guest');
-    const { displayName, email, participantId, role } = identity;
+    const requestedRole = String(req.query.role || 'guest').toLowerCase();
+
+    if (
+      JITSI_TOKEN_AUTH_ENABLED
+      && !req.user
+      && (requestedRole === 'doctor' || requestedRole === 'patient' || requestedRole === 'admin' || requestedRole === 'host')
+    ) {
+      return res.status(401).json({
+        success: false,
+        error: 'Authentication required for secured meeting rooms',
+        code: 'MEETING_AUTH_REQUIRED',
+      });
+    }
+
+    const guestInviteRaw = req.query.invite ? String(req.query.invite) : null;
+    const guestInvite = guestInviteRaw ? await lookupGuestInviteToken(guestInviteRaw) : null;
+    const guestAccess = validateGuestJoinAccess({
+      authenticated: Boolean(req.user),
+      requestedRole,
+      inviteValid: Boolean(guestInvite),
+    });
+    if (!guestAccess.allowed) {
+      return res.status(401).json({
+        success: false,
+        error: guestAccess.error,
+        code: guestAccess.code,
+      });
+    }
+
+    const identity = await resolveMeetingParticipant(req, id, requestedRole);
+    let { displayName, email, participantId, role } = identity;
+    if (guestInvite?.guestName && requestedRole === 'guest') {
+      displayName = String(guestInvite.guestName).trim().substring(0, 100) || displayName;
+    }
     const isHost = role === 'doctor' || role === 'admin' || role === 'host';
 
     let roomName = `izara-${String(id).substring(0, 12)}-meeting`;
@@ -1766,9 +1898,6 @@ app.get('/api/meetings/:id/join-config', optionalAuth, async (req, res) => {
       if (existing.rows[0]?.room_name) roomName = existing.rows[0].room_name;
     } catch { /* use fallback */ }
 
-    const doctorJwt = isHost
-      ? createJitsiRoleJwt(roomName, { id: participantId || req.user?.id, name: displayName, email }, 'doctor')
-      : null;
     const apiCfg = externalApiConfig(isHost ? 'doctor' : role, displayName);
     const jitsiDomain = isHost ? JITSI_DOMAIN : JITSI_GUEST_DOMAIN;
 
@@ -1783,9 +1912,9 @@ app.get('/api/meetings/:id/join-config', optionalAuth, async (req, res) => {
       email,
       participantId,
       registered: identity.registered,
-      jwt: doctorJwt,
+      jwt: null,
       useIzaraLobbyOnly: true,
-      tokenAuthEnabled: JITSI_TOKEN_AUTH_ENABLED,
+      tokenAuthEnabled: false,
       hostReady: isHostReadyForMeeting(id),
       meetingServerUrl: process.env.MEETING_SERVER_PUBLIC_URL || '',
       noJitsiLoginRequired: true,
@@ -1885,11 +2014,7 @@ app.post('/api/meetings/:id/guest-invite', authenticateToken, async (req, res) =
   const sanitizedName = guestName.trim().substring(0, 100);
   const sanitizedEmail = (guestEmail || '').trim().substring(0, 255);
 
-  const token = signScopedToken(
-    { meetingId: id, guestName: sanitizedName, guestEmail: sanitizedEmail, guestType, type: 'guest-invite' },
-    JWT_SECRET,
-    { expiresIn: '24h' },
-  );
+  const token = generateOpaqueToken();
 
   // Store invite in memory + DB
   const invite = {
@@ -1942,13 +2067,12 @@ app.get('/api/guest/meeting/:token', async (req, res) => {
   const { token } = req.params;
 
   try {
-    const decoded = jwt.verify(token, JWT_SECRET);
-    if (decoded.type !== 'guest-invite') {
-      return res.status(400).json({ error: 'Invalid token type' });
+    const invite = await lookupGuestInviteToken(token);
+    if (!invite) {
+      return res.status(400).json({ error: 'Invalid or expired invite token' });
     }
 
-    // Check meeting exists and is active (in-memory or DB)
-    let meeting = activeMeetings.get(decoded.meetingId);
+    let meeting = activeMeetings.get(invite.meetingId);
     if (meeting?.status === 'completed' || meeting?.status === 'ended') {
       return res.status(410).json({ error: 'Meeting has ended' });
     }
@@ -1956,7 +2080,7 @@ app.get('/api/guest/meeting/:token', async (req, res) => {
       try {
         const row = await pool.query(
           'SELECT id, room_name, status FROM meeting_records WHERE id::text = $1 LIMIT 1',
-          [decoded.meetingId],
+          [invite.meetingId],
         );
         if (row.rows.length > 0) {
           const rec = row.rows[0];
@@ -1972,28 +2096,25 @@ app.get('/api/guest/meeting/:token', async (req, res) => {
 
     res.json({
       success: true,
-      meetingId: decoded.meetingId,
-      guestName: decoded.guestName,
-      guestType: decoded.guestType,
+      meetingId: invite.meetingId,
+      guestName: invite.guestName,
+      guestType: invite.guestType,
       roomName: meeting?.room_name || null,
     });
-  } catch (err) {
-    if (err.name === 'TokenExpiredError') {
-      return res.status(410).json({ error: 'Invite link has expired' });
-    }
+  } catch {
     return res.status(400).json({ error: 'Invalid invite token' });
   }
 });
 
-// Token-based lobby join (guest joins via JWT token)
+// Token-based lobby join (guest joins via opaque invite token)
 app.post('/api/guest/meeting/:token/join', async (req, res) => {
   const { token } = req.params;
   const { displayName } = req.body;
 
   try {
-    const decoded = jwt.verify(token, JWT_SECRET);
-    if (decoded.type !== 'guest-invite') {
-      return res.status(400).json({ error: 'Invalid token type' });
+    const decoded = await lookupGuestInviteToken(token);
+    if (!decoded) {
+      return res.status(400).json({ error: 'Invalid or expired invite token' });
     }
 
     const meetingId = decoded.meetingId;
@@ -2007,7 +2128,7 @@ app.post('/api/guest/meeting/:token/join', async (req, res) => {
       participantId,
       participantName: guestName.substring(0, 100),
       role: decoded.guestType || 'guest',
-      email: decoded.guestEmail || '',
+      email: '',
       status: 'waiting',
       joinedAt: new Date().toISOString(),
     };
@@ -2030,10 +2151,7 @@ app.post('/api/guest/meeting/:token/join', async (req, res) => {
       meetingId,
       status: 'waiting',
     });
-  } catch (err) {
-    if (err.name === 'TokenExpiredError') {
-      return res.status(410).json({ error: 'Invite link has expired' });
-    }
+  } catch {
     return res.status(400).json({ error: 'Invalid invite token' });
   }
 });
@@ -3077,7 +3195,7 @@ app.get('/api/meetings/:id/invites', optionalAuth, async (req, res) => {
 // ============================================================================
 
 // Generate AI summary from transcript (SOAP format)
-app.post('/api/meetings/:id/generate-summary', authenticateToken, async (req, res) => {
+app.post('/api/meetings/:id/generate-summary', authenticateToken, async (req, res) => { // NOSONAR S3776 — Gemini SOAP summary with transcript normalization and fallbacks
   try {
     const idCheck = sanitizeRouteId(req.params.id);
     if (!idCheck.ok) return sendValidationError(res, idCheck);
@@ -3795,7 +3913,7 @@ app.post('/api/meetings/:id/validate', authenticateToken, async (req, res) => { 
           // Auto-generate patient instructions on approval
           if (genAI) {
             try {
-              const structuredData = meeting.ai_summary_structured ? JSON.parse(meeting.ai_summary_structured) : null;
+              const structuredData = parseMeetingJsonField(meeting.ai_summary_structured);
               const instrModel = genAI.getGenerativeModel({ model: GEMINI_MODEL });
               const instrPrompt = `สร้างเอกสารคำแนะนำสำหรับผู้ป่วย (ภาษาไทย ง่ายต่อการเข้าใจ):
 สรุปการรักษา: ${summaryContent.slice(0, 1500)}
@@ -4289,7 +4407,7 @@ ${diarizedTranscript}
 
 // GET /api/meetings/:id/results — Combined transcript + summary + chat + metadata
 // Used by doctor portal to show complete meeting results (like MS Teams recording)
-app.get('/api/meetings/:id/results', authenticateToken, async (req, res) => {
+app.get('/api/meetings/:id/results', authenticateToken, async (req, res) => { // NOSONAR S3776 — aggregated meeting results (transcript, summary, chat, recordings)
   try {
     const { id } = req.params;
 
@@ -4313,7 +4431,7 @@ app.get('/api/meetings/:id/results', authenticateToken, async (req, res) => {
         `SELECT mr.*,
                 u_pat.name_thai as patient_name_thai, u_pat.email as patient_email,
                 u_doc.name_thai as doctor_name_thai, u_doc.email as doctor_email,
-                a.symptoms, a.notes as appointment_notes, a.type as appointment_type
+                a.symptoms, a.notes as appointment_notes, a.appointment_type
          FROM meeting_records mr
          LEFT JOIN users u_pat ON mr.patient_id = u_pat.id
          LEFT JOIN users u_doc ON mr.doctor_id = u_doc.id
@@ -4416,12 +4534,12 @@ app.get('/api/meetings/:id/results', authenticateToken, async (req, res) => {
       },
       summary: {
         text: meeting.ai_summary || null,
-        structured: meeting.ai_summary_structured ? JSON.parse(meeting.ai_summary_structured) : null,
-        recommendations: meeting.ai_recommendations ? JSON.parse(meeting.ai_recommendations) : null,
-        sectionSummaries: meeting.section_summaries ? JSON.parse(meeting.section_summaries) : null,
-        cds: meeting.cds_recommendations ? JSON.parse(meeting.cds_recommendations) : null,
+        structured: parseMeetingJsonField(meeting.ai_summary_structured),
+        recommendations: parseMeetingJsonField(meeting.ai_recommendations),
+        sectionSummaries: parseMeetingJsonField(meeting.section_summaries),
+        cds: parseMeetingJsonField(meeting.cds_recommendations),
         emrDraftId: meeting.emr_draft_id || null,
-        preConsultation: meeting.pre_consultation_summary ? JSON.parse(meeting.pre_consultation_summary) : null,
+        preConsultation: parseMeetingJsonField(meeting.pre_consultation_summary),
         requiresValidation: true,
         validationStatus: meeting.doctor_validation_status || 'pending_review',
         validatedAt: meeting.validated_at || null,
@@ -4895,7 +5013,7 @@ app.get('/api/recordings/:meetingId', authenticateToken, async (req, res) => { /
 });
 
 // GET /api/recordings/:meetingId/:filename — Serve from filesystem or PostgreSQL BYTEA fallback
-app.get('/api/recordings/:meetingId/:filename', authenticateToken, async (req, res) => {
+app.get('/api/recordings/:meetingId/:filename', authenticateToken, async (req, res) => { // NOSONAR S3776 — filesystem/PostgreSQL recording serve with access control
   const { meetingId, filename } = req.params;
   const safeFilename = path.basename(filename);
 
@@ -5006,11 +5124,18 @@ app.post('/api/recordings/:meetingId/share', authenticateToken, async (req, res)
       return res.status(access.status || 403).json({ error: access.error || 'Access denied' });
     }
 
-    const shareToken = signScopedToken(
-      { meetingId, filename: targetFile, type: 'recording-share' },
-      JWT_SECRET,
-      { expiresIn: `${Math.min(expiresInHours, 168)}h` },
-    );
+    const shareToken = generateOpaqueToken();
+    const expiresAt = new Date(Date.now() + Math.min(expiresInHours, 168) * 60 * 60 * 1000);
+    try {
+      await safeQuery(
+        `INSERT INTO recording_share_tokens (id, meeting_id, filename, token, expires_at, created_by)
+         VALUES ($1, $2, $3, $4, $5, $6)
+         ON CONFLICT (token) DO NOTHING`,
+        [uuidv4(), meetingId, targetFile, shareToken, expiresAt, req.user?.id || req.user?.userId || null],
+      );
+    } catch (dbErr) {
+      console.warn('[Recordings] share token persist failed:', dbErr.message);
+    }
 
     const shareUrl = `/api/recordings/shared/${shareToken}`;
 
@@ -5032,13 +5157,14 @@ app.post('/api/recordings/:meetingId/share', authenticateToken, async (req, res)
 app.get('/api/recordings/shared/:token', async (req, res) => {
   try {
     const { token } = req.params;
-    const decoded = verifyScopedToken(token, JWT_SECRET);
+    const decoded = await lookupRecordingShareToken(token);
 
-    if (decoded.type !== 'recording-share') {
-      return res.status(403).json({ error: 'Invalid share token' });
+    if (!decoded) {
+      return res.status(403).json({ error: 'Invalid or expired share token' });
     }
 
-    const { meetingId, filename: tokenFilename } = decoded;
+    const meetingId = decoded.meeting_id;
+    const tokenFilename = decoded.filename;
     const safeFilename = path.basename(tokenFilename);
 
     const meeting = await postMeeting.resolveMeetingContext(meetingId);
@@ -5155,6 +5281,17 @@ const startServer = async () => {
         await pool.query(`ALTER TABLE meeting_invites ADD COLUMN IF NOT EXISTS guest_type VARCHAR(50) DEFAULT 'family'`).catch(() => {});
         await pool.query(`ALTER TABLE meeting_invites ADD COLUMN IF NOT EXISTS invited_by VARCHAR(100)`).catch(() => {});
         await pool.query(`ALTER TABLE meeting_invites ADD COLUMN IF NOT EXISTS expires_at TIMESTAMP WITH TIME ZONE`).catch(() => {});
+        await pool.query(`
+          CREATE TABLE IF NOT EXISTS recording_share_tokens (
+            id UUID PRIMARY KEY,
+            meeting_id VARCHAR(100) NOT NULL,
+            filename TEXT NOT NULL,
+            token TEXT UNIQUE NOT NULL,
+            expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
+            created_by VARCHAR(100),
+            created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+          )
+        `).catch(() => {});
         await pool.query(`
           CREATE TABLE IF NOT EXISTS ai_validations (
             id VARCHAR(50) PRIMARY KEY,
@@ -5281,7 +5418,7 @@ const startServer = async () => {
 
     // Memory cleanup: purge stale in-memory data every 30 minutes.
     // Prevents unbounded growth of activeMeetings / aux maps over long uptimes.
-    setInterval(() => {
+    setInterval(() => { // NOSONAR S3776 — periodic in-memory meeting state cleanup
       const staleThreshold = Date.now() - 2 * 60 * 60 * 1000; // 2 hours
       const prunedMeetingIds = [];
 

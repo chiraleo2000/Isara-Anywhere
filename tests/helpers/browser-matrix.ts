@@ -4,18 +4,33 @@
  */
 
 export type PortalRole = 'patient' | 'doctor' | 'admin';
-export type BrowserEngine = 'chromium' | 'firefox';
+export type BrowserEngine = 'chromium' | 'firefox' | 'webkit';
 
 export interface RoleBrowserSpec {
   role: PortalRole;
   engine: BrowserEngine;
   /** Chromium channel when engine is chromium */
   channel?: 'chrome' | 'msedge';
-  browserName: 'chrome' | 'edge' | 'firefox';
+  browserName: 'chrome' | 'edge' | 'firefox' | 'webkit';
   /** Navigation timeout multiplier vs baseline */
   navTimeoutMultiplier: number;
   /** Fixture launch retry count */
   launchRetries: number;
+}
+
+/** When true, never launch installed Google Chrome (channel: 'chrome') — use Firefox/Edge/WebKit. */
+export function isChromeChannelBanned(): boolean {
+  if (process.env.PW_ALLOW_CHROME === '1' || process.env.PW_ALLOW_CHROME === 'true') {
+    return false;
+  }
+  return (
+    process.env.PW_NO_CHROME === '1' ||
+    process.env.PW_NO_CHROME === 'true' ||
+    process.env.PW_BROWSER === 'firefox' ||
+    process.env.PW_BROWSER === 'webkit' ||
+    process.env.PW_BROWSER === 'edge' ||
+    process.env.PW_NO_CHROME === undefined
+  );
 }
 
 export const ROLE_BROWSER_MATRIX: Record<PortalRole, RoleBrowserSpec> = {
@@ -44,7 +59,43 @@ export const ROLE_BROWSER_MATRIX: Record<PortalRole, RoleBrowserSpec> = {
   },
 };
 
+const CORE_BROWSER_ENGINES = new Set<BrowserEngine>(['chromium', 'firefox', 'webkit']);
+
+export function resolveCoreBrowserEngine(): BrowserEngine | null {
+  const raw = process.env.PW_CORE_BROWSER?.trim().toLowerCase();
+  if (raw && CORE_BROWSER_ENGINES.has(raw as BrowserEngine)) {
+    return raw as BrowserEngine;
+  }
+  return null;
+}
+
+function browserNameForEngine(engine: BrowserEngine): RoleBrowserSpec['browserName'] {
+  if (engine === 'firefox') return 'firefox';
+  if (engine === 'webkit') return 'webkit';
+  return 'edge';
+}
+
+function navTimeoutMultiplierForEngine(engine: BrowserEngine): number {
+  if (engine === 'firefox') return 1.5;
+  if (engine === 'webkit') return 1.25;
+  return 1;
+}
+
+function buildCoreBrowserSpec(role: PortalRole, engine: BrowserEngine): RoleBrowserSpec {
+  const channel = engine === 'chromium' && !isChromeChannelBanned() ? 'msedge' : undefined;
+  return {
+    role,
+    engine,
+    channel,
+    browserName: browserNameForEngine(engine),
+    navTimeoutMultiplier: navTimeoutMultiplierForEngine(engine),
+    launchRetries: engine === 'firefox' ? 3 : 2,
+  };
+}
+
 export function getRoleBrowserSpec(role: PortalRole): RoleBrowserSpec {
+  const core = resolveCoreBrowserEngine();
+  if (core) return buildCoreBrowserSpec(role, core);
   return ROLE_BROWSER_MATRIX[role];
 }
 
@@ -83,6 +134,9 @@ export function chromiumLaunchArgs(headless = false): string[] {
     '--use-fake-ui-for-media-stream',
   ];
 }
+
+/** WebKit rejects Chromium-style fake-media CLI flags — use context.grantPermissions instead */
+export const WEBKIT_LAUNCH_OPTIONS = {} as const;
 
 export const FIREFOX_LAUNCH_OPTIONS = {
   /** Firefox does not support context.grantPermissions('camera') — use prefs + fake devices */

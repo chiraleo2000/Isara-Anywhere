@@ -2,6 +2,11 @@
  * Jitsi External API options — Izara lobby only (no Jitsi moderator gate on meet.jit.si).
  */
 
+import {
+  getIzaraDisplayName,
+  type IzaraUserLike,
+} from './jitsiDisplayName';
+
 export type JitsiMeetingRole = 'doctor' | 'patient' | 'guest' | 'admin' | 'host';
 
 export interface MeetingJoinConfig {
@@ -23,12 +28,22 @@ export interface MeetingJoinConfig {
 
 /** Jitsi host from build-time env (falls back to meet.jit.si). */
 export function resolveJitsiDomain(fallback = 'meet.jit.si'): string {
-  const raw =
-    (typeof import.meta !== 'undefined' && import.meta.env?.VITE_JITSI_DOMAIN) ||
-    (globalThis as { ENV?: { JITSI_DOMAIN?: string } }).ENV?.JITSI_DOMAIN ||
-    '';
-  const trimmed = String(raw || '').trim().replace(/^https?:\/\//, '').replace(/\/$/, '');
+  const fromMeta = import.meta.env?.VITE_JITSI_DOMAIN;
+  const fromEnv = (globalThis as { ENV?: { JITSI_DOMAIN?: string } }).ENV?.JITSI_DOMAIN;
+  const raw = fromMeta ?? fromEnv ?? '';
+  const trimmed = String(raw).trim().replace(/^https?:\/\//, '').replace(/\/$/, '');
   return trimmed || fallback;
+}
+
+function mergeRecord<T extends Record<string, unknown>>(base: T, extra?: Record<string, unknown>): T {
+  if (!extra) return base;
+  return { ...base, ...extra };
+}
+
+/** Deterministic room name when appointment has no persisted jitsi_room_name yet. */
+export function stableRoomNameForAppointment(appointmentId: string): string {
+  const id = String(appointmentId || 'room');
+  return `izara-${id.substring(0, 12)}-meeting`;
 }
 
 /** Never pass custom JWT to public meet.jit.si — it causes a blank iframe. */
@@ -43,6 +58,12 @@ export function pickJitsiJwt(
   return token && String(token).length > 10 ? String(token) : undefined;
 }
 
+/** JWT safe for JitsiMeetExternalAPI on public meet.jit.si (never pass custom JWT). */
+/** JWT removed — Izara lobby + configOverwrite enforce roles. */
+export function resolveMountJwt(): string | undefined {
+  return undefined;
+}
+
 export const JITSI_QUIET_CONFIG = {
   analytics: { disabled: true },
   disableAnalytics: true,
@@ -53,6 +74,86 @@ export const JITSI_QUIET_CONFIG = {
   'localRecording.enabled': false,
   liveStreamingEnabled: false,
 };
+
+/** Resolve patient display name: server identity > URL param > auth profile > fallback. */
+export function resolvePatientMeetingDisplayName(opts: {
+  user: IzaraUserLike;
+  resolvedName?: string;
+  urlName?: string | null;
+  fallback?: string;
+}): string {
+  const fromServer = opts.resolvedName?.trim();
+  if (fromServer) return fromServer;
+  const fromUrl = opts.urlName?.trim();
+  if (fromUrl) return fromUrl;
+  return getIzaraDisplayName(opts.user, opts.fallback ?? 'Patient');
+}
+
+export interface PatientJitsiMountInput {
+  user: IzaraUserLike;
+  joinCfg?: MeetingJoinConfig | null;
+  roomName: string;
+  domain?: string;
+  micOn?: boolean;
+  cameraOn?: boolean;
+  resolvedName?: string;
+  urlName?: string | null;
+}
+
+/** Build JitsiMeetExternalAPI options for authenticated patient join (no pre-join name prompt). */
+export function buildPatientJitsiMountOptions(input: PatientJitsiMountInput) {
+  const displayName = resolvePatientMeetingDisplayName({
+    user: input.user,
+    resolvedName: input.resolvedName,
+    urlName: input.urlName,
+  });
+  const joinCfg = input.joinCfg;
+  const domain = joinCfg?.domain || input.domain || resolveJitsiDomain();
+  const roomName = joinCfg?.roomName || input.roomName;
+  const jitsiOpts = getJitsiExternalApiOptions('patient', displayName);
+  const jwt = resolveMountJwt();
+
+  const configOverwrite = {
+    ...mergeRecord(
+      {
+        ...jitsiOpts.configOverwrite,
+        prejoinPageEnabled: false,
+        requireDisplayName: false,
+        startWithAudioMuted: input.micOn === false,
+        startWithVideoMuted: input.cameraOn === false,
+        subject: 'Izara Consultation',
+      },
+      joinCfg?.configOverwrite,
+    ),
+    prejoinPageEnabled: false,
+    requireDisplayName: false,
+  };
+
+  const interfaceConfigOverwrite = mergeRecord(
+    {
+      ...jitsiOpts.interfaceConfigOverwrite,
+      DEFAULT_LOCAL_DISPLAY_NAME: displayName,
+      DEFAULT_REMOTE_DISPLAY_NAME: 'แพทย์',
+    },
+    joinCfg?.interfaceConfigOverwrite,
+  );
+
+  const userInfo: { displayName: string; email?: string } = { displayName };
+  const email = input.user?.email?.trim();
+  if (email) userInfo.email = email;
+
+  return {
+    domain,
+    roomName,
+    jwt,
+    displayName,
+    apiOptions: {
+      configOverwrite,
+      interfaceConfigOverwrite,
+      userInfo,
+    },
+  };
+}
 
 export function getJitsiExternalApiOptions(role: JitsiMeetingRole, displayName: string) {
   const isHost = role === 'doctor' || role === 'admin' || role === 'host';
@@ -222,16 +323,18 @@ export async function mountGuestJitsiMeeting(opts: {
     width: '100%',
     height: '100%',
     jwt: pickJitsiJwt(cfg, opts.jwt),
-    configOverwrite: {
-      ...jitsiOpts.configOverwrite,
-      ...(cfg?.configOverwrite || {}),
-      startWithAudioMuted: opts.startWithAudio !== true,
-      startWithVideoMuted: opts.startWithVideo !== true,
-    },
-    interfaceConfigOverwrite: {
-      ...jitsiOpts.interfaceConfigOverwrite,
-      ...(cfg?.interfaceConfigOverwrite || {}),
-    },
+    configOverwrite: mergeRecord(
+      {
+        ...jitsiOpts.configOverwrite,
+        startWithAudioMuted: opts.startWithAudio !== true,
+        startWithVideoMuted: opts.startWithVideo !== true,
+      },
+      cfg?.configOverwrite,
+    ),
+    interfaceConfigOverwrite: mergeRecord(
+      { ...jitsiOpts.interfaceConfigOverwrite },
+      cfg?.interfaceConfigOverwrite,
+    ),
     userInfo: { displayName: cfg?.displayName || opts.displayName },
   });
   const iframe = opts.container.querySelector('iframe');

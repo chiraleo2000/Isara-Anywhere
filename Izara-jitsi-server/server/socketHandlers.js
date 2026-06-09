@@ -4,7 +4,6 @@
 export function registerSocketHandlers(io, deps) {
   const {
     meetingSocketRoomIds,
-    markHostOnline,
     isHostReadyForMeeting,
     resolveLobbyKeySync,
     getLobbyMap,
@@ -30,9 +29,6 @@ export function registerSocketHandlers(io, deps) {
         for (const room of rooms) socket.join(room);
         socket.meetingId = meetingId;
         socket.meetingRooms = rooms;
-        if (userRole === 'doctor' || userRole === 'admin' || userRole === 'host') {
-          markHostOnline(meetingId);
-        }
         if (isHostReadyForMeeting(meetingId)) {
           socket.emit('host-ready', { meetingId, ready: true, at: new Date().toISOString() });
         }

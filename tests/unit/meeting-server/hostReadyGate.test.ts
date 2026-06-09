@@ -39,4 +39,9 @@ describe('hostReadyGate — patient/guest join gating', () => {
     joinConfig.hostReady = isHostReadyForMeeting('APT-3');
     expect(joinConfig.hostReady).toBe(true);
   });
+
+  it('HR05 — socket join-meeting alone must not mark host (REST host-present only)', () => {
+    // Simulates socketHandlers policy: join-meeting does not call markHostOnline
+    expect(isHostReadyForMeeting('APT-SOCKET-ONLY')).toBe(false);
+  });
 });

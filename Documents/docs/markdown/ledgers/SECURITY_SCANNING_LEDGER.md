@@ -8,6 +8,7 @@
 | SEC-004 | 2026-05-28 | sonar:lint | all | — | — | `npm run sonar:lint` + IDE SonarLint; 15 CORS warns | Accepted dev-testing |
 | SEC-005 | 2026-05-28 | phr timeline | patient | Med | A10 | PATIENT-DEMO timeline 500 | Fixed v1.7.37; verified cloud rev `00112-mrm` (traffic shift 2026-05-28) |
 | SEC-006 | 2026-05-29 | baseline v1.7.37 | all | — | — | Re-scan: 2646 unit pass, app-scan 15 CORS warn, audit:prod 7 moderate (jitsi uuid) | Accepted — see SEC-001/002 |
+| SEC-008 | 2026-06-05 | v1.7.50 gates | all | — | — | Docker: 2938 Vitest + 78 meeting contracts PASS; `test:unit:docker:grouped` | Verified |
 | SEC-007 | 2026-05-31 | v1.7.48 gates | all | — | — | `test:quality:gate` 2736 unit PASS; sonar:lint 0 errors; cloud full 85/85 headed | Verified |
 
 ## Commands (local)

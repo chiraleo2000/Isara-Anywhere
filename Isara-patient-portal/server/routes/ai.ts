@@ -1,9 +1,8 @@
 import { Router, Request, Response } from 'express';
 import { GoogleGenerativeAI, GenerativeModel, HarmCategory, HarmBlockThreshold } from '@google/generative-ai';
 import { authMiddleware, AuthenticatedRequest } from '../middleware/auth';
-import path from 'node:path';
-import fs from 'node:fs';
 import dotenv from 'dotenv';
+import { createRequire } from 'node:module';
 import postgresDataService from '../services/postgresDataService';
 import { errMsg } from '../utils';
 
@@ -223,44 +222,16 @@ const ChatMemoryService = {
 // First, try to load dotenv for local development
 dotenv.config();
 
-// Get API key and model from environment variables (works in both local and production)
-// Priority: process.env (Cloud Run) > .env file parsing (local fallback)
-let GEMINI_API_KEY: string | null = process.env.VITE_GEMINI_API_KEY || process.env.GEMINI_API_KEY || null;
-let GEMINI_MODEL: string = process.env.VITE_GEMINI_MODEL || process.env.GEMINI_MODEL || 'gemini-3.1-flash-lite';
+// Get API key and model from shared env resolver
+const requireGemini = createRequire(import.meta.url);
+const {
+  resolveGeminiApiKey,
+  isGeminiConfigured,
+  resolveGeminiModel,
+} = requireGemini('../lib/geminiKey.cjs');
 
-// If not found in process.env, try to parse .env file (local development fallback)
-if (!GEMINI_API_KEY?.startsWith('AIza')) {
-  const envPath = path.resolve(process.cwd(), '.env');
-  
-  if (fs.existsSync(envPath)) {
-    console.log('[AI Config] Parsing .env file from:', envPath);
-    const envContent = fs.readFileSync(envPath, 'utf-8');
-    const lines = envContent.split(/\r?\n/);
-    
-    for (const line of lines) {
-      const trimmedLine = line.trim();
-      if (!trimmedLine || trimmedLine.startsWith('#')) continue;
-      
-      const eqIndex = trimmedLine.indexOf('=');
-      if (eqIndex === -1) continue;
-      
-      const key = trimmedLine.substring(0, eqIndex).trim();
-      const value = trimmedLine.substring(eqIndex + 1).trim();
-      
-      // Handle GEMINI_API_KEY - only accept if value starts with 'AIza' (valid Google API key format)
-      if (key.includes('GEMINI_API_KEY') && value.startsWith('AIza')) {
-        GEMINI_API_KEY = value;
-        console.log('[AI Config] ✅ Found valid Gemini API key from .env:', value.substring(0, 15) + '...');
-      }
-      
-      // Handle GEMINI_MODEL - only accept if it's a valid model name
-      if (key.includes('GEMINI_MODEL') && value.startsWith('gemini-')) {
-        GEMINI_MODEL = value;
-        console.log('[AI Config] Found model name in .env:', value);
-      }
-    }
-  }
-}
+let GEMINI_API_KEY: string | null = isGeminiConfigured() ? resolveGeminiApiKey() : null;
+let GEMINI_MODEL: string = resolveGeminiModel();
 
 // Log final configuration
 console.log('[AI Config] ===== Final Configuration =====');

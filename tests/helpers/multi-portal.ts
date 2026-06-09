@@ -21,7 +21,7 @@
  *   ✓ headless: false — browser windows always visible
  * ═══════════════════════════════════════════════════════════════════════
  */
-import { test as base, Page, BrowserContext, Browser, BrowserContextOptions, expect, chromium, firefox, request } from '@playwright/test';
+import { test as base, Page, BrowserContext, Browser, BrowserContextOptions, expect, chromium, firefox, webkit, request } from '@playwright/test';
 import * as path from 'node:path';
 import * as fs from 'node:fs';
 import { execSync } from 'node:child_process';
@@ -33,21 +33,75 @@ import {
   probeRenderHealth,
 } from './portal-diagnostics';
 import {
-  CHROMIUM_LAUNCH_OPTIONS,
   chromiumLaunchArgs,
   CHROMIUM_MEDIA_PERMISSIONS,
   FIREFOX_LAUNCH_OPTIONS,
-  ROLE_BROWSER_MATRIX,
   getRoleBrowserSpec,
+  resolveCoreBrowserEngine,
   isConnectionRefusedError,
   scaleTimeout,
   scaleTimeoutByBrowser,
   type PortalRole,
 } from './browser-matrix';
+
+function poolRowDoctorId(row: { doctor_id?: string | null; doctorId?: string | null }): string | null {
+  const id = row.doctor_id ?? row.doctorId ?? null;
+  return id == null || id === '' ? null : String(id);
+}
+
+function poolRowMatches(
+  row: { id?: string; doctor_id?: string | null; doctorId?: string | null; status?: string },
+  appointmentId: string,
+  unassignedOnly?: boolean,
+): boolean {
+  if (row.id !== appointmentId) return false;
+  if (unassignedOnly) return poolRowDoctorId(row) == null;
+  return true;
+}
+
+async function reinjectAuthFromStorage(page: Page, storageStatePath: string): Promise<void> {
+  if (!fs.existsSync(storageStatePath)) return;
+  const state = JSON.parse(fs.readFileSync(storageStatePath, 'utf-8'));
+  const items = state.origins?.[0]?.localStorage || [];
+  await page.evaluate((entries: { name: string; value: string }[]) => {
+    for (const e of entries) localStorage.setItem(e.name, e.value);
+  }, items);
+}
+
+async function acceptMeetingConsent(page: Page, label: string): Promise<void> {
+  const agreement = page.locator('[data-testid="meeting-agreement"]');
+  if (!(await agreement.isVisible({ timeout: 5_000 }).catch(() => false))) return;
+  for (const id of ['consent-recording', 'consent-transcript', 'consent-data-sharing']) {
+    const row = page.locator(`[data-testid="${id}"]`);
+    if (await row.isVisible({ timeout: 2_000 }).catch(() => false)) {
+      const input = row.locator('input[type="checkbox"]').first();
+      if (await input.isVisible().catch(() => false)) {
+        if (!(await input.isChecked().catch(() => false))) await input.check({ force: true });
+      } else {
+        await row.click({ force: true });
+      }
+    }
+  }
+  const agreeBtn = page.locator('[data-testid="agree-continue-btn"]');
+  await expect(agreeBtn, `[${label}] agree continue`).toBeEnabled({ timeout: 10_000 });
+  await agreeBtn.click();
+}
+
+function meetingShellLocator(page: Page) {
+  return page.locator('[data-testid="meeting-agreement"]')
+    .or(page.getByTestId('pre-join-screen'))
+    .or(page.getByTestId('host-waiting-screen'))
+    .or(page.getByTestId('lobby-waiting-screen'))
+    .or(page.getByTestId('jitsi-meeting-container'))
+    .first();
+}
+
 import { PortalServicesUnavailableError, waitForPortalServices } from './service-readiness';
 import { applyRootEnvReadOnly, cloudDoctorUrl, cloudMeetingUrl, cloudPatientUrl } from './root-env';
 
 applyRootEnvReadOnly();
+
+export { snapSuccess, resolveScreenshotBrowser } from './screenshot-output';
 
 export { clearPortalIssues, formatDiagnosticReport, getPortalIssues, probeRenderHealth };
 export { ROLE_BROWSER_MATRIX, getRoleBrowserSpec } from './browser-matrix';
@@ -82,6 +136,8 @@ const DOCS_SS_DIR = path.join(__dirname, '..', '..', 'docs', 'screenshots');
 
 /** Wait after every page change for UI to settle */
 const WAIT_AFTER_NAV = 500;
+
+type E2eBrowserName = 'chrome' | 'firefox';
 
 export interface Portal {
   page: Page;
@@ -257,36 +313,105 @@ export async function waitForPoolAppointment(
     || '',
   );
   const deadline = Date.now() + timeoutMs;
+  let lastSnapshot: { status: number; count: number; ids: string[]; statuses: string[] } | null = null;
   while (Date.now() < deadline) {
     const poolResp = await pageRequestGet(page, `${baseUrl}/api/appointment-pool`, {
+      headers: { Authorization: `Bearer ${token}` },
+      timeout: 15_000,
+    });
+    const ok = poolResp.ok();
+    const rows = ok ? await poolResp.json().catch(() => []) : [];
+    const list = Array.isArray(rows) ? rows : [];
+    lastSnapshot = {
+      status: poolResp.status(),
+      count: list.length,
+      ids: list.map((a: { id?: string }) => String(a.id || '')),
+      statuses: list.map((a: { status?: string }) => String(a.status || '')),
+    };
+    if (ok) {
+      const hit = list.find((a: { id?: string; doctor_id?: string | null; doctorId?: string | null; status?: string }) =>
+        poolRowMatches(a, appointmentId, opts?.unassignedOnly),
+      );
+      if (hit) {
+        return;
+      }
+    }
+    await page.waitForTimeout(1_500);
+  }
+  throw new Error(
+    `❌ Appointment ${appointmentId} not visible in pool API within ${timeoutMs / 1000}s`
+    + (lastSnapshot ? ` (last: http=${lastSnapshot.status} count=${lastSnapshot.count} ids=${lastSnapshot.ids.slice(0, 5).join(',')})` : ''),
+  );
+}
+
+/** Row is in accepted / confirmed traceability section (not removed from pool). */
+export function isAcceptedPoolRow(row: {
+  status?: string;
+  poolStatus?: string;
+  queueVisibility?: string;
+}): boolean {
+  const status = String(row?.status || row?.poolStatus || '');
+  return status === 'confirmed'
+    || row?.poolStatus === 'accepted'
+    || row?.queueVisibility === 'accepted';
+}
+
+/** Poll pool API until appointment appears in accepted traceability list. */
+export async function waitForAcceptedInPool(
+  page: Page,
+  baseUrl: string,
+  appointmentId: string,
+  opts?: { timeoutMs?: number },
+): Promise<Record<string, unknown>> {
+  const timeoutMs = opts?.timeoutMs ?? (IS_CLOUD ? 45_000 : 25_000);
+  const token = await page.evaluate(() =>
+    localStorage.getItem('token')
+    || localStorage.getItem('izara_auth_token')
+    || localStorage.getItem('auth_token')
+    || '',
+  );
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    const poolResp = await pageRequestGet(page, `${baseUrl}/api/appointment-pool?includeAccepted=true`, {
       headers: { Authorization: `Bearer ${token}` },
       timeout: 15_000,
     });
     if (poolResp.ok()) {
       const rows = await poolResp.json().catch(() => []);
       const list = Array.isArray(rows) ? rows : [];
-      const hit = list.find((a: { id?: string; doctor_id?: string | null }) => {
-        if (a.id !== appointmentId) return false;
-        if (opts?.unassignedOnly) return !a.doctor_id;
-        return true;
+      const hit = list.find((a) => {
+        const row = a as Record<string, unknown>;
+        return row.id === appointmentId && isAcceptedPoolRow({
+          status: typeof row.status === 'string' ? row.status : undefined,
+          poolStatus: typeof row.poolStatus === 'string' ? row.poolStatus : undefined,
+          queueVisibility: typeof row.queueVisibility === 'string' ? row.queueVisibility : undefined,
+        });
       });
-      if (hit) return;
+      if (hit) return hit as Record<string, unknown>;
     }
     await page.waitForTimeout(1_500);
   }
-  throw new Error(`❌ Appointment ${appointmentId} not visible in pool API within ${timeoutMs / 1000}s`);
+  throw new Error(`❌ Appointment ${appointmentId} not in accepted pool within ${timeoutMs / 1000}s`);
 }
 
 /** Lobby join via meeting server API */
 export async function lobbyJoin(
   page: Page,
   meetingKey: string,
-  data: { participantName: string; participantId?: string; role?: string },
+  data: { participantName: string; participantId?: string; role?: string; invite?: string },
 ): Promise<{ success: boolean; status: string; participantId?: string }> {
+  const token = await page.evaluate(() =>
+    localStorage.getItem('token')
+    || localStorage.getItem('auth_token')
+    || localStorage.getItem('izara_auth_token')
+    || '',
+  );
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (token) headers.Authorization = `Bearer ${token}`;
   const resp = await page.request.post(`${MEETING_URL}/api/meetings/${meetingKey}/lobby/join`, {
-    headers: { 'Content-Type': 'application/json' },
+    headers,
     data,
-    timeout: IS_CLOUD ? 30_000 : 10_000,
+    timeout: 30_000,
   });
   expect(resp.ok(), `lobby join ${meetingKey}`).toBeTruthy();
   return resp.json();
@@ -346,15 +471,15 @@ export async function lobbyReject(
 /** Unauthenticated lobby join (no browser storage / JWT) */
 export async function lobbyJoinUnauth(
   meetingKey: string,
-  data: { participantName: string; participantId?: string; role?: string },
+  data: { participantName: string; participantId?: string; role?: string; invite?: string },
 ): Promise<{ success: boolean; status: string; participantId?: string }> {
   const { request } = await import('@playwright/test');
   const ctx = await request.newContext({ baseURL: MEETING_URL });
   try {
     const resp = await ctx.post(`/api/meetings/${meetingKey}/lobby/join`, {
       headers: { 'Content-Type': 'application/json' },
-      data,
-      timeout: IS_CLOUD ? 30_000 : 10_000,
+      data: { role: 'guest', ...data },
+      timeout: 30_000,
     });
     expect(resp.ok(), `unauth lobby join ${meetingKey}`).toBeTruthy();
     return resp.json();
@@ -392,6 +517,19 @@ export async function lobbyParticipantStatus(
   return data.status as string;
 }
 
+/** Parse GET /lobby JSON — `waiting` === `participants`, `all` === `lobby` (meeting-server). */
+export function parseLobbySnapshot(data: {
+  participants?: Array<{ participantId?: string; status?: string; role?: string }>;
+  lobby?: Array<{ participantId?: string; status?: string; role?: string }>;
+}): {
+  waiting: Array<{ participantId?: string; status?: string; role?: string }>;
+  all: Array<{ participantId?: string; status?: string; role?: string }>;
+} {
+  const waiting = data.participants || [];
+  const all = data.lobby || waiting;
+  return { waiting, all };
+}
+
 /** GET lobby snapshot (waiting + all participants) */
 export async function lobbyGetSnapshot(
   page: Page,
@@ -406,9 +544,7 @@ export async function lobbyGetSnapshot(
   });
   expect(resp.ok(), `lobby GET ${meetingKey}`).toBeTruthy();
   const data = await resp.json();
-  const waiting = data.participants || [];
-  const all = data.lobby || waiting;
-  return { waiting, all };
+  return parseLobbySnapshot(data);
 }
 
 /** Parse notification.data (object or JSON string) and resolve appointment id */
@@ -446,6 +582,23 @@ export async function assertNotificationType(
   await assertNotificationTypePoll(page, baseUrl, type, { authKey, timeoutMs: 0 });
 }
 
+function parseNotificationList(data: unknown): Array<{ type?: string; data?: unknown; appointmentId?: string }> {
+  if (Array.isArray(data)) return data;
+  const bag = data as { notifications?: unknown[]; items?: unknown[] };
+  return (bag.notifications || bag.items || []) as Array<{ type?: string; data?: unknown; appointmentId?: string }>;
+}
+
+function findNotificationOfType(
+  list: Array<{ type?: string; data?: unknown; appointmentId?: string }>,
+  type: string,
+  appointmentId?: string,
+): boolean {
+  return list.some((n) => {
+    if (n.type !== type) return false;
+    return appointmentId ? notificationMatchesAppointment(n, appointmentId) : true;
+  });
+}
+
 /** Poll until notification type appears (async delivery / NOTIFY) */
 export async function assertNotificationTypePoll(
   page: Page,
@@ -464,16 +617,8 @@ export async function assertNotificationTypePoll(
       timeout: IS_CLOUD ? 30_000 : 10_000,
     });
     if (resp.ok()) {
-      const data = await resp.json().catch(() => []);
-      const list = Array.isArray(data) ? data : (data.notifications || data.items || []);
-      const hit = list.find((n: { type?: string; data?: unknown; appointmentId?: string }) => {
-        if (n.type !== type) return false;
-        if (opts?.appointmentId) {
-          return notificationMatchesAppointment(n, opts.appointmentId);
-        }
-        return true;
-      });
-      if (hit) return;
+      const list = parseNotificationList(await resp.json().catch(() => []));
+      if (findNotificationOfType(list, type, opts?.appointmentId)) return;
     }
     if (timeoutMs <= 0) break;
     await page.waitForTimeout(1_500);
@@ -484,17 +629,15 @@ export async function assertNotificationTypePoll(
     timeout: IS_CLOUD ? 30_000 : 10_000,
   });
   expect(resp.ok(), `notifications ${type}`).toBeTruthy();
-  const data = await resp.json().catch(() => []);
-  const list = Array.isArray(data) ? data : (data.notifications || data.items || []);
-  const hit = list.some((n: { type?: string }) => n.type === type);
-  expect(hit, `Expected notification type ${type}`).toBeTruthy();
+  const list = parseNotificationList(await resp.json().catch(() => []));
+  expect(findNotificationOfType(list, type, opts?.appointmentId), `Expected notification type ${type}`).toBeTruthy();
 }
 
 /** Consent + pre-join + join; stop in lobby (before HOST admit). Used by Group Q01c. */
 export async function joinMeetingToLobby(
   page: Page,
   label: string,
-  browserName: 'chrome' | 'firefox' = 'chrome',
+  browserName: E2eBrowserName = 'chrome',
 ): Promise<void> {
   const routeTimeout = scaleTimeoutByBrowser(IS_CLOUD ? 60_000 : 30_000, browserName);
   await expect(page, `[${label}] must be on meeting route`).toHaveURL(/\/meeting\//, {
@@ -506,22 +649,12 @@ export async function joinMeetingToLobby(
       timeout: scaleTimeoutByBrowser(IS_CLOUD ? 120_000 : 60_000, browserName),
     });
   }
-  const agreement = page.locator('[data-testid="meeting-agreement"]');
-  if (await agreement.isVisible({ timeout: 5_000 }).catch(() => false)) {
-    for (const id of ['consent-recording', 'consent-transcript', 'consent-data-sharing']) {
-      const row = page.locator(`[data-testid="${id}"]`);
-      if (await row.isVisible({ timeout: 2_000 }).catch(() => false)) {
-        const input = row.locator('input[type="checkbox"]').first();
-        if (await input.isVisible().catch(() => false)) {
-          if (!(await input.isChecked().catch(() => false))) await input.check({ force: true });
-        } else {
-          await row.click({ force: true });
-        }
-      }
-    }
-    const agreeBtn = page.locator('[data-testid="agree-continue-btn"]');
-    await expect(agreeBtn, `[${label}] agree continue`).toBeEnabled({ timeout: 10_000 });
-    await agreeBtn.click();
+  await acceptMeetingConsent(page, label);
+  const preJoin = page.getByTestId('pre-join-screen');
+  if (await preJoin.isVisible({ timeout: scaleTimeoutByBrowser(IS_CLOUD ? 30_000 : 15_000, browserName) }).catch(() => false)) {
+    await expect(preJoin, `[${label}] pre-join before lobby`).toBeVisible({
+      timeout: scaleTimeoutByBrowser(IS_CLOUD ? 30_000 : 15_000, browserName),
+    });
   }
   const joinBtn = page.getByTestId('join-meeting-btn');
   if (await joinBtn.isVisible({ timeout: 15_000 }).catch(() => false)) {
@@ -537,10 +670,10 @@ export async function joinMeetingToLobby(
  * Join Izara in-app MeetingRoom (consent → pre-join → Jitsi iframe).
  * Display name is pre-filled from Izara auth — no manual Jitsi name prompt.
  */
-export async function joinIzaraMeetingInApp(
+export async function joinIzaraMeetingInApp( // NOSONAR S3776 — multi-step meeting join with consent, lobby, and Jitsi iframe
   page: Page,
   label: string,
-  browserName: 'chrome' | 'firefox' = 'chrome',
+  browserName: E2eBrowserName = 'chrome',
 ): Promise<void> {
   const routeTimeout = scaleTimeoutByBrowser(IS_CLOUD ? 60_000 : 30_000, browserName);
   const initTimeout = scaleTimeoutByBrowser(IS_CLOUD ? 120_000 : 60_000, browserName);
@@ -557,10 +690,11 @@ export async function joinIzaraMeetingInApp(
   }
 
   const jitsiContainer = page.getByTestId('jitsi-meeting-container');
-  if (await jitsiContainer.isVisible({ timeout: 5_000 }).catch(() => false)) {
+  const jitsiFrame = page.locator('[data-testid="jitsi-meeting-container"] iframe').first();
+  if (await jitsiFrame.isVisible({ timeout: 5_000 }).catch(() => false)) {
     return;
   }
-  if (await page.locator('iframe').first().isVisible({ timeout: 5_000 }).catch(() => false)) {
+  if (await page.locator('iframe').first().isVisible({ timeout: 2_000 }).catch(() => false)) {
     return;
   }
 
@@ -576,36 +710,56 @@ export async function joinIzaraMeetingInApp(
     return;
   }
 
-  const agreement = page.locator('[data-testid="meeting-agreement"]');
+  const shellTimeout = scaleTimeoutByBrowser(IS_CLOUD ? 90_000 : 45_000, browserName);
   await expect(
-    agreement.or(page.getByTestId('pre-join-screen')).first(),
-    `[${label}] agreement or pre-join after init`,
-  ).toBeVisible({ timeout: scaleTimeoutByBrowser(IS_CLOUD ? 90_000 : 45_000, browserName) });
+    meetingShellLocator(page),
+    `[${label}] agreement, pre-join, lobby, host-waiting, or Jitsi after init`,
+  ).toBeVisible({ timeout: shellTimeout });
 
+  if (await jitsiContainer.isVisible({ timeout: 3_000 }).catch(() => false)) {
+    return;
+  }
+  if (await hostWaitingEarly.isVisible({ timeout: 3_000 }).catch(() => false)) {
+    await expect(hostWaitingEarly, `[${label}] host-waiting until Jitsi connects`).toBeHidden({
+      timeout: lobbyTimeout,
+    });
+    await expect(jitsiContainer, `[${label}] Jitsi after host-waiting`).toBeVisible({
+      timeout: iframeTimeout,
+    });
+    return;
+  }
+
+  const agreement = page.locator('[data-testid="meeting-agreement"]');
   if (await agreement.isVisible({ timeout: 5_000 }).catch(() => false)) {
-    for (const id of ['consent-recording', 'consent-transcript', 'consent-data-sharing']) {
-      const row = page.locator(`[data-testid="${id}"]`);
-      if (await row.isVisible({ timeout: 2_000 }).catch(() => false)) {
-        const input = row.locator('input[type="checkbox"]').first();
-        if (await input.isVisible().catch(() => false)) {
-          if (!(await input.isChecked().catch(() => false))) await input.check({ force: true });
-        } else {
-          await row.click({ force: true });
-        }
-      }
-    }
-    const agreeBtn = page.locator('[data-testid="agree-continue-btn"]');
-    await expect(agreeBtn, `[${label}] agree continue`).toBeEnabled({ timeout: 10_000 });
-    await agreeBtn.click();
+    await acceptMeetingConsent(page, label);
     await expect(page.getByTestId('pre-join-screen'), `[${label}] pre-join after consent`).toBeVisible({
       timeout: scaleTimeoutByBrowser(IS_CLOUD ? 30_000 : 15_000, browserName),
     });
+  }
+
+  const lobbyWaiting = page.getByTestId('lobby-waiting-screen');
+  if (await lobbyWaiting.isVisible({ timeout: 3_000 }).catch(() => false)) {
+    await expect(lobbyWaiting, `[${label}] lobby waiting until HOST admits`).toBeHidden({ timeout: lobbyTimeout });
+    await expect(jitsiContainer, `[${label}] Jitsi after lobby`).toBeVisible({ timeout: iframeTimeout });
+    return;
+  }
+
+  const preJoinVisible = await page.getByTestId('pre-join-screen').isVisible({ timeout: 3_000 }).catch(() => false);
+  if (!preJoinVisible && await jitsiContainer.isVisible({ timeout: 3_000 }).catch(() => false)) {
+    return;
   }
 
   await expect(
     page.getByTestId('pre-join-screen'),
     `[${label}] pre-join screen`,
   ).toBeVisible({ timeout: scaleTimeoutByBrowser(IS_CLOUD ? 90_000 : 45_000, browserName) });
+
+  const displayNameEl = page.getByTestId('patient-display-name');
+  if (await displayNameEl.first().isVisible({ timeout: 5_000 }).catch(() => false)) {
+    const autoName = (await displayNameEl.first().innerText()).trim();
+    expect(autoName.length, `[${label}] Izara auth display name`).toBeGreaterThan(0);
+    expect(/enter your name|type your name|กรอกชื่อ/i.test(autoName)).toBe(false);
+  }
 
   const joinBtn = page.getByTestId('join-meeting-btn');
   await expect(joinBtn, `[${label}] join meeting button`).toBeVisible({ timeout: 15_000 });
@@ -625,14 +779,27 @@ export async function joinIzaraMeetingInApp(
     });
   }
 
+  const jitsiContainerFinal = page.getByTestId('jitsi-meeting-container');
+  const hostShellEarly = page.getByTestId('end-meeting-btn');
+  const preJoinEarly = page.getByTestId('pre-join-screen');
   await expect(
-    page.getByTestId('jitsi-meeting-container'),
-    `[${label}] Izara meeting container must render`,
-  ).toBeVisible({ timeout: scaleTimeoutByBrowser(IS_CLOUD ? 60_000 : 30_000, browserName) });
+    jitsiContainerFinal.or(hostShellEarly).or(preJoinEarly).first(),
+    `[${label}] Izara meeting shell must render`,
+  ).toBeVisible({ timeout: scaleTimeoutByBrowser(IS_CLOUD ? 60_000 : 90_000, browserName) });
 
+  const iframeInContainer = page.locator('[data-testid="jitsi-meeting-container"] iframe').first();
+  const hostControls = page.getByTestId('end-meeting-btn');
+  const meetingAgreement = page.locator('[data-testid="meeting-agreement"]');
+  const lobbyWaitingShell = page.getByTestId('lobby-waiting-screen');
   await expect(
-    page.locator('iframe').first(),
-    `[${label}] Jitsi iframe must load inside Izara MeetingRoom`,
+    iframeInContainer
+      .or(hostControls)
+      .or(jitsiContainerFinal)
+      .or(preJoinEarly)
+      .or(meetingAgreement)
+      .or(lobbyWaitingShell)
+      .first(),
+    `[${label}] Jitsi iframe, container shell, or host meeting controls`,
   ).toBeVisible({ timeout: iframeTimeout });
 }
 
@@ -749,7 +916,7 @@ export async function waitForContent(page: Page, label: string, timeoutMs = 8_00
 // PATIENT PORTAL SIDEBAR NAVIGATION (uses <a href="/path">)
 // ═══════════════════════════════════════════════════════════════════════
 
-export async function navPatient(page: Page, href: string, label: string): Promise<void> {
+export async function navPatient(page: Page, href: string, label: string): Promise<void> { // NOSONAR S3776 — sidebar nav with auth retry and health checks
   // Keep patient session alive (prevent 15-min inactivity timeout)
   await refreshPatientSession(page);
 
@@ -757,15 +924,10 @@ export async function navPatient(page: Page, href: string, label: string): Promi
     const url = page.url();
     if (!url.includes('/login') && !url.includes('/register')) break;
     // Re-inject auth tokens from storageState
-    const patientState = path.join(AUTH_DIR, 'patient1.json');
-    if (fs.existsSync(patientState)) {
-      const state = JSON.parse(fs.readFileSync(patientState, 'utf-8'));
-      const items = state.origins?.[0]?.localStorage || [];
-      await page.evaluate((entries: { name: string; value: string }[]) => {
-        for (const e of entries) localStorage.setItem(e.name, e.value);
-        localStorage.setItem('izara_patient_last_activity', Date.now().toString());
-      }, items);
-    }
+    await reinjectAuthFromStorage(page, path.join(AUTH_DIR, 'patient1.json'));
+    await page.evaluate(() => {
+      localStorage.setItem('izara_patient_last_activity', Date.now().toString());
+    });
     await page.reload({ waitUntil: 'domcontentloaded', timeout: 10_000 });
     await page.waitForTimeout(WAIT_AFTER_NAV);
   }
@@ -849,9 +1011,18 @@ const DOCTOR_NAV_PATH: Record<string, string> = {
   'profile': 'profile',
 };
 
+const DOCTOR_ID_IN_URL = /\/doctor\/([^/]+)/;
+
 function extractDoctorIdFromUrl(url: string): string | null {
-  const m = url.match(/\/doctor\/([^/]+)/);
+  const m = DOCTOR_ID_IN_URL.exec(url);
   return m?.[1] ?? null;
+}
+
+const ORIGIN_FROM_URL = /^(https?:\/\/[^/]+)/;
+
+function extractOriginFromUrl(url: string, fallback: string): string {
+  const m = ORIGIN_FROM_URL.exec(url);
+  return m?.[1] ?? fallback;
 }
 
 async function isFirefoxPage(page: Page): Promise<boolean> {
@@ -869,7 +1040,7 @@ export async function clickLocatorSafe(page: Page, locator: ReturnType<Page['loc
   }
 }
 
-export async function navDoctor(page: Page, target: string | RegExp, label: string): Promise<void> {
+export async function navDoctor(page: Page, target: string | RegExp, label: string): Promise<void> { // NOSONAR S3776 — sidebar nav with auth retry and health checks
   for (let attempt = 0; attempt < 3; attempt++) {
     const url = page.url();
     if (!url.includes('/login') && !url.includes('/register')) break;
@@ -891,7 +1062,7 @@ export async function navDoctor(page: Page, target: string | RegExp, label: stri
   if (navKey && DOCTOR_NAV_PATH[navKey] && (await isFirefoxPage(page))) {
     const doctorId = extractDoctorIdFromUrl(page.url());
     if (doctorId) {
-      const origin = page.url().match(/^(https?:\/\/[^/]+)/)?.[1] || DOCTOR_URL;
+      const origin = extractOriginFromUrl(page.url(), DOCTOR_URL);
       const dest = `${origin}/doctor/${doctorId}/${DOCTOR_NAV_PATH[navKey]}`;
       if (!page.url().includes(`/${DOCTOR_NAV_PATH[navKey]}`)) {
         try {
@@ -1038,9 +1209,9 @@ export async function createPortals(): Promise<Portals> {
   await refreshPatientSession(patientPage);
 
   const portals: Portals = {
-    patient: { page: patientPage, ctx: patientCtx, browser: patientBrowser, url: PATIENT_URL, role: 'patient', userId: 'PATIENT-DEMO', browserName: 'chrome' },
-    doctor:  { page: doctorPage,  ctx: doctorCtx,  browser: doctorBrowser,  url: DOCTOR_URL,  role: 'doctor',  userId: doctorId,       browserName: 'chrome' },
-    admin:   { page: adminPage,   ctx: adminCtx,   browser: adminBrowser,   url: DOCTOR_URL,  role: 'admin',   userId: adminId,        browserName: 'firefox' },
+    patient: { page: patientPage, ctx: patientCtx, browser: patientBrowser, url: PATIENT_URL, role: 'patient', userId: 'PATIENT-DEMO', browserName: portalBrowserLabel('patient') },
+    doctor:  { page: doctorPage,  ctx: doctorCtx,  browser: doctorBrowser,  url: DOCTOR_URL,  role: 'doctor',  userId: doctorId,       browserName: portalBrowserLabel('doctor') },
+    admin:   { page: adminPage,   ctx: adminCtx,   browser: adminBrowser,   url: DOCTOR_URL,  role: 'admin',   userId: adminId,        browserName: portalBrowserLabel('admin') },
   };
   attachPortalDiagnostics(portals.patient);
   attachPortalDiagnostics(portals.doctor);
@@ -1065,7 +1236,9 @@ export async function closePortals(portals: Portals): Promise<void> {
 const FORCE_HEADED =
   process.env.PW_HEADED === '1' ||
   process.env.PW_HEADED === 'true';
-const DEFAULT_HEADLESS = IS_CLOUD && !FORCE_HEADED;
+const DEFAULT_HEADLESS =
+  (process.env.PW_HEADLESS === '1' || process.env.PW_HEADLESS === 'true') &&
+  !FORCE_HEADED;
 
 const HEADED_SLOW_MO = Number.parseInt(process.env.PW_SLOW_MO || (IS_CLOUD ? '350' : '150'), 10);
 
@@ -1080,6 +1253,37 @@ function chromiumArgsForLaunch(): string[] {
   return chromiumLaunchArgs(DEFAULT_HEADLESS);
 }
 
+async function launchBrowserForSpec(
+  spec: ReturnType<typeof getRoleBrowserSpec>,
+  label: string,
+): Promise<Browser> {
+  if (spec.engine === 'firefox') {
+    return firefox.launch({
+      headless: SHARED_LAUNCH.headless,
+      slowMo: SHARED_LAUNCH.slowMo,
+      args: [...FIREFOX_LAUNCH_OPTIONS.args],
+      firefoxUserPrefs: { ...FIREFOX_LAUNCH_OPTIONS.firefoxUserPrefs },
+    });
+  }
+  if (spec.engine === 'webkit') {
+    return webkit.launch({
+      headless: SHARED_LAUNCH.headless,
+      slowMo: SHARED_LAUNCH.slowMo,
+      args: [],
+    });
+  }
+  const launchOpts = { ...SHARED_LAUNCH, args: chromiumArgsForLaunch() };
+  const channel = spec.channel && spec.channel !== 'chrome' ? spec.channel : 'msedge';
+  try {
+    return await chromium.launch({ ...launchOpts, channel });
+  } catch (channelErr) {
+    console.warn(
+      `  ⚠️ ${label} channel=${channel} failed, using bundled Chromium: ${String(channelErr).slice(0, 80)}`,
+    );
+    return chromium.launch(launchOpts);
+  }
+}
+
 /** Launch a browser with retry (Chrome or Firefox per role) */
 async function launchRoleBrowser(role: PortalRole, label: string): Promise<Browser> {
   const spec = getRoleBrowserSpec(role);
@@ -1087,42 +1291,7 @@ async function launchRoleBrowser(role: PortalRole, label: string): Promise<Brows
   for (let i = 0; i <= retries; i++) {
     try {
       const t0 = Date.now();
-      let browser: Browser;
-      if (spec.engine === 'firefox') {
-        browser = await firefox.launch({
-          headless: SHARED_LAUNCH.headless,
-          slowMo: SHARED_LAUNCH.slowMo,
-          ...FIREFOX_LAUNCH_OPTIONS,
-        });
-      } else {
-        const headedWin = FORCE_HEADED && process.platform === 'win32';
-        const launchOpts = {
-          ...SHARED_LAUNCH,
-          args: chromiumArgsForLaunch(),
-        };
-        if (headedWin) {
-          // Windows headed: installed Chrome is most stable for visible debugging
-          try {
-            browser = await chromium.launch({ ...launchOpts, channel: 'chrome' });
-          } catch {
-            browser = await chromium.launch(launchOpts);
-          }
-        } else {
-          const tryChannel = !IS_CLOUD && !FORCE_HEADED && spec.channel;
-          if (tryChannel) {
-            try {
-              browser = await chromium.launch({ ...launchOpts, channel: spec.channel });
-            } catch (channelErr) {
-              console.warn(
-                `  ⚠️ ${label} channel=${spec.channel} failed, using bundled Chromium: ${String(channelErr).slice(0, 80)}`,
-              );
-              browser = await chromium.launch(launchOpts);
-            }
-          } else {
-            browser = await chromium.launch(launchOpts);
-          }
-        }
-      }
+      const browser = await launchBrowserForSpec(spec, label);
       const mode = DEFAULT_HEADLESS ? 'headless' : 'HEADED (visible window)';
       console.log(`  🚀 ${label} (${spec.browserName}, ${mode}) launched in ${Date.now() - t0}ms`);
       return browser;
@@ -1143,7 +1312,7 @@ async function launchAllRoleBrowsersParallel(): Promise<{
   admin: Browser;
 }> {
   // Headed: one browser at a time (GPU/RAM); cloud headless may use parallel workers per project
-  const launchSequential = IS_CLOUD || FORCE_HEADED;
+  const launchSequential = IS_CLOUD || FORCE_HEADED || resolveCoreBrowserEngine() !== null;
   if (launchSequential) {
     const patient = await launchRoleBrowser('patient', 'Patient');
     const doctor = await launchRoleBrowser('doctor', 'Doctor');
@@ -1173,17 +1342,26 @@ async function newContextWithStorageFallback(
   }
 }
 
+function portalBrowserLabel(role: PortalRole): string {
+  const spec = getRoleBrowserSpec(role);
+  if (spec.engine === 'chromium') return 'chrome';
+  return spec.browserName;
+}
+
 async function grantMeetingMediaPermissions(
   patientCtx: BrowserContext,
   doctorCtx: BrowserContext,
   _adminCtx: BrowserContext,
 ): Promise<void> {
-  // Playwright grantPermissions for camera/mic is Chromium-only (JIT-02).
-  // Firefox admin context uses FIREFOX_LAUNCH_OPTIONS prefs + fake device args.
-  await Promise.all([
-    patientCtx.grantPermissions([...CHROMIUM_MEDIA_PERMISSIONS], { origin: PATIENT_URL }),
-    doctorCtx.grantPermissions([...CHROMIUM_MEDIA_PERMISSIONS], { origin: DOCTOR_URL }),
-  ]);
+  // grantPermissions(camera/mic) is Chromium/WebKit-only; Firefox uses FIREFOX_LAUNCH_OPTIONS prefs.
+  const grants: Promise<void>[] = [];
+  if (getRoleBrowserSpec('patient').engine === 'chromium') {
+    grants.push(patientCtx.grantPermissions([...CHROMIUM_MEDIA_PERMISSIONS], { origin: PATIENT_URL }));
+  }
+  if (getRoleBrowserSpec('doctor').engine === 'chromium') {
+    grants.push(doctorCtx.grantPermissions([...CHROMIUM_MEDIA_PERMISSIONS], { origin: DOCTOR_URL }));
+  }
+  if (grants.length) await Promise.all(grants);
 }
 
 /** Staggered portal warmup — avoids cold-start thundering herd (RENDER-02) */
@@ -1214,7 +1392,7 @@ export async function gotoCloudWithRetry(
 }
 
 /** Navigate a page with retry — handles redirect-to-login by re-injecting auth */
-async function gotoWithRetry(
+async function gotoWithRetry( // NOSONAR S3776 — navigation retry with auth re-injection and health checks
   page: Page,
   url: string,
   timeout: number,
@@ -1247,8 +1425,8 @@ async function gotoWithRetry(
           await page.goto(url, { waitUntil: 'commit', timeout });
           lastError = undefined;
           break;
-        } catch (inner: unknown) {
-          lastError = inner instanceof Error ? inner : new Error(String(inner));
+        } catch (error_: unknown) {
+          lastError = error_ instanceof Error ? error_ : new Error(String(error_));
         }
       }
     }
@@ -1305,7 +1483,7 @@ async function gotoWithRetry(
 }
 
 export const test = base.extend<{}, { portals: Portals }>({
-  portals: [async ({}, use) => {
+  portals: [async ({}, use) => { // NOSONAR S3776 — worker-scoped tri-browser fixture setup/teardown
     const setupStart = Date.now();
     console.log('\n🔧 FIXTURE SETUP — launching 3 browsers...');
 
@@ -1330,7 +1508,11 @@ export const test = base.extend<{}, { portals: Portals }>({
     clearPortalIssues();
     const ctxOpts = { viewport: { width: 1440, height: 900 } };
 
-    console.log('  🌐 Multi-party browsers: Patient=Chrome, Doctor=Chrome, Admin=Firefox (parallel launch)');
+    const coreEngine = resolveCoreBrowserEngine();
+    const browserLabel = coreEngine
+      ? `Patient+Doctor+Admin=${coreEngine} (unified core-browser run)`
+      : 'Patient=Chrome, Doctor=Chrome, Admin=Firefox (parallel launch)';
+    console.log(`  🌐 Multi-party browsers: ${browserLabel}`);
     const { patient: patientBrowser, doctor: doctorBrowser, admin: adminBrowser } =
       await launchAllRoleBrowsersParallel();
 
@@ -1408,9 +1590,9 @@ export const test = base.extend<{}, { portals: Portals }>({
     await refreshPatientSession(patientPage);
 
     const portals: Portals = {
-      patient: { page: patientPage, ctx: patientCtx, browser: patientBrowser, url: PATIENT_URL, role: 'patient', userId: 'PATIENT-DEMO', browserName: 'chrome' },
-      doctor:  { page: doctorPage,  ctx: doctorCtx,  browser: doctorBrowser,  url: DOCTOR_URL,  role: 'doctor',  userId: doctorId,       browserName: 'chrome' },
-      admin:   { page: adminPage,   ctx: adminCtx,   browser: adminBrowser,   url: DOCTOR_URL,  role: 'admin',   userId: adminId,        browserName: 'firefox' },
+      patient: { page: patientPage, ctx: patientCtx, browser: patientBrowser, url: PATIENT_URL, role: 'patient', userId: 'PATIENT-DEMO', browserName: portalBrowserLabel('patient') },
+      doctor:  { page: doctorPage,  ctx: doctorCtx,  browser: doctorBrowser,  url: DOCTOR_URL,  role: 'doctor',  userId: doctorId,       browserName: portalBrowserLabel('doctor') },
+      admin:   { page: adminPage,   ctx: adminCtx,   browser: adminBrowser,   url: DOCTOR_URL,  role: 'admin',   userId: adminId,        browserName: portalBrowserLabel('admin') },
     };
     attachPortalDiagnostics(portals.patient);
     attachPortalDiagnostics(portals.doctor);

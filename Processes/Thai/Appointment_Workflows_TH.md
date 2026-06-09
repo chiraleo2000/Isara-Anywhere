@@ -512,3 +512,37 @@
 ---
 
 เอกสารนี้สะท้อนการใช้งานปัจจุบันของ Izara Telemedicine (Phase 1 เสร็จสมบูรณ์)
+
+---
+
+## รายละเอียดเพิ่มเติม — การติดตามคิวนัดหมาย (v1.7.51)
+
+### กฎการมองเห็นหลังแพทย์ยืนยัน
+
+| พอร์ทัล | ก่อนยืนยัน | หลังยืนยัน |
+|---------|-----------|-----------|
+| แพทย์ Health Meeting | คิวรอ (`queue-list`) | **Recently Accepted** (`accepted-queue-list`) |
+| ผู้ป่วย | แท็บ **รอการยืนยัน** | แท็บ **ยืนยันแล้ว** (`confirmed-tab-hint`) |
+
+### ฟิลด์ที่ต้องบันทึกเมื่อ confirm
+
+`doctor_id`, `confirmed_by`, `confirmed_by_email`, `confirmed_at`, `jitsi_room_name`
+
+### หน้าต่าง 7 วัน
+
+รายการ `confirmed` ใน pool แพทย์แสดงได้ **7 วัน** หลังยืนยัน
+
+---
+
+## แท็บคิวรวมผู้ป่วย (v1.7.52)
+
+- แท็บ **คิว** (Queue) เป็นค่าเริ่มต้น — แสดงสถานะรอ **และ** `confirmed` ภายใน 7 วัน
+- แท็บ **ยืนยันแล้ว** แสดงนัดที่ยืนยันทั้งหมด
+- ใช้ session token เท่านั้น — ไม่มี JWT บน API
+
+### Health Meeting — splitQueueSections
+
+แพทย์ใช้ `splitQueueSections()` แยก **คิวรอ** กับ **Recently Accepted** (`accepted-queue-list`)
+
+**ทดสอบ:** `unifiedQueueFilter.test.ts`, `defectIsaraPdfMeetingQueue.test.ts`
+

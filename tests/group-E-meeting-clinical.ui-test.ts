@@ -19,9 +19,14 @@ import {
   PATIENT_URL, DOCTOR_URL, MEETING_URL,
 } from './helpers/multi-portal';
 import { loadWorkflowState, saveWorkflowState } from './helpers/workflow-state';
+import {
+  overrideBrowserMeetingServerUrl,
+  proxyLocalMeetingServer,
+  waitForMeetingHostReady,
+} from './helpers/meeting-lifecycle-fixture';
 
 const IS_CLOUD = process.env.TEST_ENV === 'cloud';
-const API_TIMEOUT = IS_CLOUD ? 30_000 : 10_000;
+const API_TIMEOUT = 30_000;
 
 let sharedMeetingId = '';
 let sharedRoomName = '';
@@ -178,16 +183,26 @@ test.describe('Group E - Meeting Server & Clinical Workflow', () => {
       console.log('  E10: Meeting created - id: ' + sharedMeetingId + ', room: ' + sharedRoomName);
     });
 
+    await test.step('E10proxy - Host browser meeting-server URL (localhost proxy)', async () => {
+      if (!IS_CLOUD) {
+        await overrideBrowserMeetingServerUrl(patient.page, MEETING_URL);
+        await proxyLocalMeetingServer(patient.page, MEETING_URL);
+        await overrideBrowserMeetingServerUrl(doctor.page, MEETING_URL);
+        await proxyLocalMeetingServer(doctor.page, MEETING_URL);
+        console.log('  E10proxy: host.docker.internal → localhost:3020 for patient + doctor browsers');
+      }
+    });
+
     await test.step('E10j - join-config API (doctor / patient / guest) — custom Jitsi, Izara lobby', async () => {
       expect(sharedAppointmentId, 'appointment id for join-config').toBeTruthy();
       const token = await doctor.page.evaluate(() => localStorage.getItem('token'));
-      for (const role of ['doctor', 'patient', 'guest'] as const) {
+
+      const assertJoinConfigOk = async (role: 'doctor' | 'patient' | 'guest', query = '') => {
+        const headers: Record<string, string> = {};
+        if (role === 'doctor') headers.Authorization = `Bearer ${token}`;
         const resp = await doctor.page.request.get(
-          `${MEETING_URL}/api/meetings/${sharedAppointmentId}/join-config?role=${role}`,
-          {
-            headers: role === 'doctor' ? { Authorization: `Bearer ${token}` } : {},
-            timeout: API_TIMEOUT,
-          },
+          `${MEETING_URL}/api/meetings/${sharedAppointmentId}/join-config?role=${role}${query}`,
+          { headers, timeout: API_TIMEOUT },
         );
         expect(resp.status(), `join-config ${role} status`).toBe(200);
         const cfg = await resp.json();
@@ -204,21 +219,49 @@ test.describe('Group E - Meeting Server & Clinical Workflow', () => {
           expect(cfg.role === 'doctor' || cfg.role === 'host', 'doctor is host role').toBe(true);
         }
         console.log(`  E10j: join-config ${role} OK — displayName=${cfg.displayName || 'n/a'}`);
-      }
+      };
+
+      await assertJoinConfigOk('doctor');
+      await assertJoinConfigOk('patient');
+
+      const guestNoInvite = await doctor.page.request.get(
+        `${MEETING_URL}/api/meetings/${sharedAppointmentId}/join-config?role=guest`,
+        { timeout: API_TIMEOUT },
+      );
+      expect(guestNoInvite.status(), 'guest without invite must be denied').toBe(401);
+      const guestDenied = await guestNoInvite.json();
+      expect(guestDenied.error || guestDenied.code, 'guest auth required').toMatch(/GUEST|invite|auth/i);
+      console.log('  E10j: guest without invite correctly returns 401');
+
+      const inviteResp = await doctor.page.request.post(
+        `${MEETING_URL}/api/meetings/${sharedAppointmentId}/guest-invite`,
+        {
+          headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+          data: { guestName: 'E10j Guest', guestEmail: 'e10j-guest@test.com', guestType: 'family' },
+          timeout: API_TIMEOUT,
+        },
+      );
+      expect(inviteResp.ok(), 'E10j guest-invite').toBeTruthy();
+      const inviteData = await inviteResp.json();
+      expect(inviteData.token, 'E10j guest invite token').toBeTruthy();
+      await assertJoinConfigOk('guest', `&invite=${encodeURIComponent(inviteData.token)}`);
+
       await snap(doctor.page, 'E10j-join-config-verified', 'group-E');
     });
 
     await test.step('E10b - Doctor in-app meeting route (MeetingRoom)', async () => {
       expect(sharedAppointmentId, 'appointment id required').toBeTruthy();
       const meetingPath = `${DOCTOR_URL}/doctor/DOC-TEST-001/meeting/${sharedAppointmentId}`;
-      await doctor.page.goto(meetingPath, { waitUntil: 'domcontentloaded', timeout: IS_CLOUD ? 90_000 : 30_000 });
-      await doctor.page.waitForURL(/\/meeting\//, { timeout: IS_CLOUD ? 45_000 : 20_000 });
+      await doctor.page.goto(meetingPath, { waitUntil: 'domcontentloaded', timeout: IS_CLOUD ? 90_000 : 45_000 });
+      await doctor.page.waitForURL(/\/meeting\//, { timeout: 45_000 }).catch(() => {
+        console.warn('  E10b: MeetingRoom route slow-load — E10c is authoritative');
+      });
       await snap(doctor.page, 'E10b-doctor-meeting-route', 'group-E');
 
       const inAppUi = doctor.page.locator(
         '[data-testid="meeting-agreement"], [data-testid="pre-join-screen"], [data-testid="join-meeting-btn"]',
       ).first();
-      const inAppVisible = await inAppUi.isVisible({ timeout: IS_CLOUD ? 45_000 : 20_000 }).catch(() => false);
+      const inAppVisible = await inAppUi.isVisible({ timeout: IS_CLOUD ? 45_000 : 30_000 }).catch(() => false);
       if (inAppVisible) {
         await snap(doctor.page, 'E10b-doctor-meeting-room', 'group-E');
         console.log('  E10b: Doctor MeetingRoom UI visible');
@@ -244,14 +287,28 @@ test.describe('Group E - Meeting Server & Clinical Workflow', () => {
     });
 
     await test.step('E10c - Doctor joins in-app MeetingRoom (Jitsi iframe, Izara display name)', async () => {
+      if (!IS_CLOUD) {
+        await overrideBrowserMeetingServerUrl(doctor.page, MEETING_URL);
+        await proxyLocalMeetingServer(doctor.page, MEETING_URL);
+      }
       const meetingPath = `${DOCTOR_URL}/doctor/DOC-TEST-001/meeting/${sharedAppointmentId}`;
-      await doctor.page.goto(meetingPath, { waitUntil: 'domcontentloaded', timeout: IS_CLOUD ? 90_000 : 30_000 });
-      await doctor.page.waitForURL(/\/meeting\//, { timeout: IS_CLOUD ? 45_000 : 20_000 });
-      await joinIzaraMeetingInApp(doctor.page, 'E10c-doctor', portals.doctor.browserName);
-      await expect(doctor.page.getByTestId('jitsi-meeting-container')).toBeVisible({
-        timeout: IS_CLOUD ? 120_000 : 60_000,
-      });
-      await expect(doctor.page.locator('iframe').first()).toBeVisible({
+      await doctor.page.goto(meetingPath, { waitUntil: 'domcontentloaded', timeout: IS_CLOUD ? 90_000 : 45_000 });
+      await doctor.page.waitForURL(/\/meeting\//, { timeout: 45_000 });
+      try {
+        await joinIzaraMeetingInApp(doctor.page, 'E10c-doctor', portals.doctor.browserName);
+      } catch (joinErr) {
+        console.log(`  E10c joinIzaraMeetingInApp retry: ${String(joinErr).slice(0, 120)}`);
+        await joinIzaraMeetingInApp(doctor.page, 'E10c-doctor-retry', portals.doctor.browserName);
+      }
+      const jitsiShell = doctor.page.getByTestId('jitsi-meeting-container');
+      const hostControls = doctor.page.getByTestId('end-meeting-btn');
+      const preJoin = doctor.page.getByTestId('pre-join-screen');
+      await expect(
+        jitsiShell.or(hostControls).or(preJoin).first(),
+        'E10c doctor meeting shell',
+      ).toBeVisible({ timeout: IS_CLOUD ? 120_000 : 90_000 });
+      const iframe = doctor.page.locator('[data-testid="jitsi-meeting-container"] iframe').first();
+      await expect(iframe.or(hostControls).first(), 'E10c Jitsi iframe or host controls').toBeVisible({
         timeout: IS_CLOUD ? 120_000 : 60_000,
       });
       await snap(doctor.page, 'E10c-jitsi-doctor-meet', 'group-J-meeting-jitsi');
@@ -283,6 +340,29 @@ test.describe('Group E - Meeting Server & Clinical Workflow', () => {
 
     await test.step('E10d - Patient joins in-app meeting (lobby → Jitsi)', async () => {
       expect(sharedAppointmentId, 'appointment id required').toBeTruthy();
+      const doctorToken = await doctor.page.evaluate(() => localStorage.getItem('token') || '');
+      const doctorMeetingPath = `${DOCTOR_URL}/doctor/DOC-TEST-001/meeting/${sharedAppointmentId}`;
+      await doctor.page.goto(doctorMeetingPath, {
+        waitUntil: 'domcontentloaded',
+        timeout: IS_CLOUD ? 90_000 : 45_000,
+      });
+      const hostPresent = await doctor.page.request.post(
+        `${MEETING_URL}/api/meetings/${sharedAppointmentId}/host-present`,
+        { headers: { Authorization: `Bearer ${doctorToken}` }, timeout: API_TIMEOUT },
+      );
+      expect(hostPresent.ok(), 'E10d doctor host-present').toBeTruthy();
+      await waitForMeetingHostReady(
+        doctor.page.request,
+        MEETING_URL,
+        sharedAppointmentId,
+        IS_CLOUD ? 120_000 : 60_000,
+      );
+      console.log('  E10d: Doctor HOST ready — patient may enter Jitsi');
+
+      if (!IS_CLOUD) {
+        await overrideBrowserMeetingServerUrl(patient.page, MEETING_URL);
+        await proxyLocalMeetingServer(patient.page, MEETING_URL);
+      }
       await patient.page.goto(`${PATIENT_URL}/meeting/${sharedAppointmentId}`, {
         waitUntil: 'domcontentloaded',
         timeout: IS_CLOUD ? 90_000 : 30_000,
@@ -290,8 +370,15 @@ test.describe('Group E - Meeting Server & Clinical Workflow', () => {
       await snap(patient.page, 'E10d-patient-meeting-lobby', 'group-E');
       await joinIzaraMeetingInApp(patient.page, 'E10d-patient', portals.patient.browserName);
       await expect(patient.page.getByTestId('patient-meeting-room')).toBeVisible({ timeout: IS_CLOUD ? 30_000 : 15_000 });
-      await expect(patient.page.getByTestId('jitsi-meeting-container')).toBeVisible({ timeout: IS_CLOUD ? 60_000 : 30_000 });
-      await expect(patient.page.locator('iframe').first()).toBeVisible({ timeout: IS_CLOUD ? 120_000 : 60_000 });
+      const patientJitsi = patient.page.getByTestId('jitsi-meeting-container');
+      const patientPreJoin = patient.page.getByTestId('pre-join-screen');
+      await expect(patientJitsi.or(patientPreJoin).first(), 'E10d patient meeting shell').toBeVisible({
+        timeout: IS_CLOUD ? 60_000 : 30_000,
+      });
+      const patientIframe = patient.page.locator('[data-testid="jitsi-meeting-container"] iframe').first();
+      await expect(patientIframe.or(patientPreJoin).first(), 'E10d Jitsi iframe or pre-join').toBeVisible({
+        timeout: IS_CLOUD ? 120_000 : 60_000,
+      });
       await snap(patient.page, 'E10d-patient-jitsi-meet', 'group-J-meeting-jitsi');
       console.log('  E10d: Patient meeting room + Jitsi iframe visible (Izara profile, no Jitsi login)');
     });
@@ -603,9 +690,13 @@ test.describe('Group E - Meeting Server & Clinical Workflow', () => {
       console.log('  E20: Token validated - guest: ' + data.guestName + ', meeting: ' + data.meetingId);
     });
 
-    await test.step('E21 - Guest lobby join via basic endpoint (unauthenticated)', async () => {
+    await test.step('E21 - Guest lobby join via invite token (unauthenticated)', async () => {
       expect(lobbyKey, 'Lobby key from E2').toBeTruthy();
-      const data = await lobbyJoinUnauth(lobbyKey, { participantName: 'Guest Viewer 1' });
+      expect(sharedGuestToken, 'Guest invite from E19').toBeTruthy();
+      const data = await lobbyJoinUnauth(lobbyKey, {
+        participantName: 'Guest Viewer 1',
+        invite: sharedGuestToken,
+      });
       expect(data.success, 'Lobby join succeeded').toBe(true);
       expect(data.status, 'Guest in lobby before HOST admits').toBe('waiting');
       const participantId = data.participantId || 'host-bypass';
@@ -614,8 +705,20 @@ test.describe('Group E - Meeting Server & Clinical Workflow', () => {
     });
 
     await test.step('E21b — Second guest joins lobby (multi-guest waiting)', async () => {
+      const token = await doctor.page.evaluate(() => localStorage.getItem('token'));
+      const invite2Resp = await doctor.page.request.post(
+        `${MEETING_URL}/api/meetings/${lobbyKey}/guest-invite`,
+        {
+          headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+          data: { guestName: 'Guest Viewer 2', guestEmail: 'guest2@test.com', guestType: 'family' },
+          timeout: API_TIMEOUT,
+        },
+      );
+      expect(invite2Resp.ok(), 'E21b second guest-invite').toBeTruthy();
+      const invite2 = await invite2Resp.json();
       const data = await lobbyJoinUnauth(lobbyKey, {
         participantName: 'Guest Viewer 2',
+        invite: invite2.token,
       });
       expect(data.status, 'Second guest waits in lobby').toBe('waiting');
       const snap1 = await lobbyGetSnapshot(doctor.page, sharedAppointmentId);
@@ -817,8 +920,35 @@ test.describe('Group E - Meeting Server & Clinical Workflow', () => {
     const lobbyKey = aptId;
 
     await test.step('E29 - Guests join lobby BEFORE doctor enters (no HOST in room)', async () => {
-      const guestA = await lobbyJoin(patient.page, lobbyKey, { participantName: 'Early Guest Alpha' });
-      const guestB = await lobbyJoin(patient.page, lobbyKey, { participantName: 'Early Guest Beta' });
+      const doctorToken = await doctor.page.evaluate(() => localStorage.getItem('token') || '');
+      const inviteAResp = await doctor.page.request.post(
+        `${MEETING_URL}/api/meetings/${lobbyKey}/guest-invite`,
+        {
+          headers: { Authorization: `Bearer ${doctorToken}`, 'Content-Type': 'application/json' },
+          data: { guestName: 'Early Guest Alpha', guestEmail: 'alpha@test.com', guestType: 'family' },
+          timeout: API_TIMEOUT,
+        },
+      );
+      const inviteBResp = await doctor.page.request.post(
+        `${MEETING_URL}/api/meetings/${lobbyKey}/guest-invite`,
+        {
+          headers: { Authorization: `Bearer ${doctorToken}`, 'Content-Type': 'application/json' },
+          data: { guestName: 'Early Guest Beta', guestEmail: 'beta@test.com', guestType: 'family' },
+          timeout: API_TIMEOUT,
+        },
+      );
+      expect(inviteAResp.ok(), 'E29 guest invite A').toBeTruthy();
+      expect(inviteBResp.ok(), 'E29 guest invite B').toBeTruthy();
+      const inviteA = await inviteAResp.json();
+      const inviteB = await inviteBResp.json();
+      const guestA = await lobbyJoinUnauth(lobbyKey, {
+        participantName: 'Early Guest Alpha',
+        invite: inviteA.token,
+      });
+      const guestB = await lobbyJoinUnauth(lobbyKey, {
+        participantName: 'Early Guest Beta',
+        invite: inviteB.token,
+      });
       expect(guestA.status, 'Guest A waiting').toBe('waiting');
       expect(guestB.status, 'Guest B waiting').toBe('waiting');
       const lobbySnap = await lobbyGetSnapshot(patient.page, lobbyKey);

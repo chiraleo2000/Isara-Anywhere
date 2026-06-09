@@ -2,6 +2,8 @@
  * Jitsi External API options — Izara lobby only (no Jitsi moderator gate on meet.jit.si).
  */
 
+import { getIzaraDisplayName, type IzaraUserLike } from './jitsiDisplayName';
+
 export type JitsiMeetingRole = 'doctor' | 'patient' | 'guest' | 'admin' | 'host';
 
 export interface MeetingJoinConfig {
@@ -22,12 +24,30 @@ export interface MeetingJoinConfig {
 }
 
 export function resolveJitsiDomain(fallback = 'meet.jit.si'): string {
-  const raw =
-    (typeof import.meta !== 'undefined' && import.meta.env?.VITE_JITSI_DOMAIN) ||
-    (globalThis as { ENV?: { JITSI_DOMAIN?: string } }).ENV?.JITSI_DOMAIN ||
-    '';
-  const trimmed = String(raw || '').trim().replace(/^https?:\/\//, '').replace(/\/$/, '');
+  const fromMeta = import.meta.env?.VITE_JITSI_DOMAIN;
+  const fromEnv = (globalThis as { ENV?: { JITSI_DOMAIN?: string } }).ENV?.JITSI_DOMAIN;
+  const raw = fromMeta ?? fromEnv ?? '';
+  const trimmed = String(raw).trim().replace(/^https?:\/\//, '').replace(/\/$/, '');
   return trimmed || fallback;
+}
+
+function mergeRecord<T extends Record<string, unknown>>(base: T, extra?: Record<string, unknown>): T {
+  if (!extra) return base;
+  return { ...base, ...extra };
+}
+
+/** Deterministic room name when appointment has no persisted jitsi_room_name yet. */
+export function stableRoomNameForAppointment(appointmentId: string): string {
+  const id = String(appointmentId || 'room');
+  return `izara-${id.substring(0, 12)}-meeting`;
+}
+
+/** Canonical room name — must match server jitsiMeetingLinks.cjs and meeting-server create. */
+export function generateIzaraRoomName(appointmentId: string): string {
+  const id = String(appointmentId || 'room');
+  const timestamp = Date.now().toString(36);
+  const randomPart = Math.random().toString(36).substring(2, 8);
+  return `izara-${id.substring(0, 12)}-${timestamp}-${randomPart}`;
 }
 
 export function pickJitsiJwt(
@@ -39,6 +59,108 @@ export function pickJitsiJwt(
   if (domain === 'meet.jit.si' || domain.endsWith('.jit.si')) return undefined;
   const token = cfg?.jwt || explicit;
   return token && String(token).length > 10 ? String(token) : undefined;
+}
+
+/** JWT removed — Izara lobby + configOverwrite enforce roles. */
+export function resolveMountJwt(): string | undefined {
+  return undefined;
+}
+
+/**
+ * Layout-first join: render meeting shell (with iframe container) before embedding Jitsi.
+ * Prevents silent failure when join is triggered from pre_join screen.
+ */
+async function waitForLayoutPaint(): Promise<void> {
+  if (typeof globalThis.requestAnimationFrame === 'function') {
+    await new Promise<void>((resolve) => {
+      globalThis.requestAnimationFrame(() => globalThis.requestAnimationFrame(() => resolve()));
+    });
+    return;
+  }
+  await new Promise<void>((resolve) => setTimeout(resolve, 0));
+}
+
+export async function prepareLayoutThenMount(
+  setStatus: (status: string) => void,
+  getContainer: () => HTMLElement | null,
+  readyStatus: string,
+  preJoinStatus: string,
+  mountFn: () => Promise<void>,
+  layoutDelayMs = 150,
+): Promise<{ ok: boolean; error?: string }> {
+  setStatus(readyStatus);
+  await waitForLayoutPaint();
+  if (layoutDelayMs > 0) {
+    await new Promise<void>((resolve) => setTimeout(resolve, layoutDelayMs));
+  }
+  if (!getContainer()) {
+    setStatus(preJoinStatus);
+    return { ok: false, error: 'Meeting container not ready — please try again' };
+  }
+  if (!(globalThis as any).JitsiMeetExternalAPI) {
+    setStatus(preJoinStatus);
+    return { ok: false, error: 'Failed to load Jitsi — check your connection' };
+  }
+  await mountFn();
+  return { ok: true };
+}
+
+/** Build JitsiMeetExternalAPI options for doctor host join (moderator on public Jitsi). */
+export function buildDoctorJitsiMountOptions(input: {
+  user: IzaraUserLike;
+  joinCfg?: MeetingJoinConfig | null;
+  roomName: string;
+  domain?: string;
+  storedJwt?: string | null;
+  micOn?: boolean;
+  cameraOn?: boolean;
+  displayName?: string;
+  appointmentLabel?: string;
+}) {
+  const displayName = input.displayName || getIzaraDisplayName(input.user, 'Doctor');
+  const joinCfg = input.joinCfg;
+  const domain = joinCfg?.domain || input.domain || resolveJitsiDomain();
+  const roomName = joinCfg?.roomName || input.roomName;
+  const jwt = resolveMountJwt();
+  const jitsiOpts = getJitsiExternalApiOptions('doctor', displayName);
+
+  const configOverwrite = mergeRecord(
+    {
+      ...jitsiOpts.configOverwrite,
+      prejoinPageEnabled: false,
+      requireDisplayName: false,
+      moderator: true,
+      startWithAudioMuted: input.micOn === false,
+      startWithVideoMuted: input.cameraOn === false,
+      subject: input.appointmentLabel || 'Izara Consultation',
+    },
+    joinCfg?.configOverwrite,
+  );
+
+  const interfaceConfigOverwrite = mergeRecord(
+    {
+      ...jitsiOpts.interfaceConfigOverwrite,
+      DEFAULT_LOCAL_DISPLAY_NAME: displayName,
+      DEFAULT_REMOTE_DISPLAY_NAME: 'ผู้เข้าร่วม',
+    },
+    joinCfg?.interfaceConfigOverwrite,
+  );
+
+  const userInfo: { displayName: string; email?: string } = { displayName };
+  const email = input.user?.email?.trim();
+  if (email) userInfo.email = email;
+
+  return {
+    domain,
+    roomName,
+    jwt,
+    displayName,
+    apiOptions: {
+      configOverwrite,
+      interfaceConfigOverwrite,
+      userInfo,
+    },
+  };
 }
 
 /** Reduce Jitsi console noise (analytics, debug, local recording). */
@@ -60,6 +182,7 @@ export function getJitsiExternalApiOptions(role: JitsiMeetingRole, displayName: 
       ...JITSI_QUIET_CONFIG,
       prejoinPageEnabled: false,
       requireDisplayName: false,
+      ...(isHost ? { moderator: true } : {}),
       startWithAudioMuted: !isHost,
       startWithVideoMuted: false,
       enableClosePage: false,
@@ -146,18 +269,34 @@ export async function waitForHostReady(
 }
 
 export function loadJitsiExternalApiScript(domain = resolveJitsiDomain()): Promise<void> {
+  const expectedSrc = `https://${domain}/external_api.js`;
+  if (typeof document === 'undefined') {
+    return Promise.reject(new Error('Jitsi loader requires a browser document'));
+  }
   return new Promise((resolve, reject) => {
     if ((globalThis as any).JitsiMeetExternalAPI) {
-      resolve();
-      return;
+      const loaded = document.querySelector(`script[src="${expectedSrc}"]`);
+      if (loaded) {
+        resolve();
+        return;
+      }
     }
-    const existing = document.querySelector('script[src*="external_api"]');
+    const stale = document.querySelectorAll('script[src*="external_api"]');
+    stale.forEach((node) => {
+      if (node.getAttribute('src') !== expectedSrc) node.remove();
+    });
+    const existing = document.querySelector(`script[src="${expectedSrc}"]`);
     if (existing) {
+      if ((globalThis as any).JitsiMeetExternalAPI) {
+        resolve();
+        return;
+      }
       existing.addEventListener('load', () => resolve());
+      existing.addEventListener('error', () => reject(new Error('Failed to load Jitsi')));
       return;
     }
     const script = document.createElement('script');
-    script.src = `https://${domain}/external_api.js`;
+    script.src = expectedSrc;
     script.async = true;
     script.onload = () => resolve();
     script.onerror = () => reject(new Error('Failed to load Jitsi'));
@@ -204,16 +343,18 @@ export async function mountGuestJitsiMeeting(opts: {
     width: '100%',
     height: '100%',
     jwt: pickJitsiJwt(cfg, opts.jwt),
-    configOverwrite: {
-      ...jitsiOpts.configOverwrite,
-      ...(cfg?.configOverwrite || {}),
-      startWithAudioMuted: opts.startWithAudio !== true,
-      startWithVideoMuted: opts.startWithVideo !== true,
-    },
-    interfaceConfigOverwrite: {
-      ...jitsiOpts.interfaceConfigOverwrite,
-      ...(cfg?.interfaceConfigOverwrite || {}),
-    },
+    configOverwrite: mergeRecord(
+      {
+        ...jitsiOpts.configOverwrite,
+        startWithAudioMuted: opts.startWithAudio !== true,
+        startWithVideoMuted: opts.startWithVideo !== true,
+      },
+      cfg?.configOverwrite,
+    ),
+    interfaceConfigOverwrite: mergeRecord(
+      { ...jitsiOpts.interfaceConfigOverwrite },
+      cfg?.interfaceConfigOverwrite,
+    ),
     userInfo: { displayName: cfg?.displayName || opts.displayName },
   });
   const iframe = opts.container.querySelector('iframe');

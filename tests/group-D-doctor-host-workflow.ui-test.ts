@@ -2,31 +2,23 @@
  * GROUP D (HOST) — G8/G9: Doctor confirms and is Jitsi HOST (not patient/admin).
  * Requires workflow state from Group D serial run (appointmentId).
  */
-import { test, expect } from '@playwright/test';
+import { test, expect, DOCTOR_URL, MEETING_URL } from './helpers/multi-portal';
 import { loadWorkflowState } from './helpers/workflow-state';
-import { DOCTOR_URL, MEETING_URL } from './helpers/multi-portal';
 
 const IS_CLOUD = process.env.TEST_ENV === 'cloud';
 
 test.describe('Group D — Doctor HOST workflow (G8–G9)', () => {
   test.describe.configure({ mode: 'serial' });
 
-  test('G8–G9 — Doctor confirm creates meeting with moderator for doctor', async ({ browser }) => {
+  test('G8–G9 — Doctor confirm creates meeting with moderator for doctor', async ({ portals }) => {
     const { appointmentId } = loadWorkflowState();
     test.skip(!appointmentId, 'Run Group D first to create appointmentId in workflow state');
 
-    const ctx = await browser.newContext();
-    const page = await ctx.newPage();
-    await page.goto(`${DOCTOR_URL}/login`, { waitUntil: 'domcontentloaded', timeout: IS_CLOUD ? 90_000 : 30_000 });
-    await page.fill('input[type="email"], input[name="email"]', process.env.DOCTOR_EMAIL || 'doctor.test@izara.com');
-    await page.fill('input[type="password"]', process.env.DOCTOR_PASSWORD || 'IzaraDoctor@2024');
-    await page.click('button[type="submit"]');
-    await page.waitForTimeout(2000);
-
+    const page = portals.doctor.page;
     const token = await page.evaluate(() =>
       localStorage.getItem('token') || localStorage.getItem('izara_auth_token') || '',
     );
-    expect(token).toBeTruthy();
+    expect(token, 'doctor fixture must provide JWT (use TEST_DOCTOR_PASSWORD in Docker)').toBeTruthy();
 
     const doctorId = await page.evaluate(() => {
       const u = localStorage.getItem('izara_current_user');
@@ -112,6 +104,5 @@ test.describe('Group D — Doctor HOST workflow (G8–G9)', () => {
       }
     }
 
-    await ctx.close();
   });
 });

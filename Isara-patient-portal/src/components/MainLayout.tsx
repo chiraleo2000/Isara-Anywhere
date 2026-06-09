@@ -21,14 +21,38 @@ import {
   Users,
 } from 'lucide-react';
 import MiniMapWidget from './MiniMapWidget';
-import { useState, useLayoutEffect } from 'react';
+import { appointmentService } from '../lib/services';
+import { useState, useLayoutEffect, useEffect } from 'react';
 
-// Mini Calendar Component - With dark mode and i18n support
-function MiniCalendar() {
+const CONFIRMED_STATUSES = new Set(['confirmed', 'scheduled']);
+
+// Mini Calendar Component - shows confirmed appointment days (Teams-style dots)
+function MiniCalendar({ patientId }: Readonly<{ patientId?: string }>) {
   const [currentDate, setCurrentDate] = useState(new Date());
+  const [appointmentDays, setAppointmentDays] = useState<Set<string>>(new Set());
   const { theme, language } = useSettings();
   const today = new Date();
   const isDark = theme === 'dark';
+
+  useEffect(() => {
+    if (!patientId) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const list = await appointmentService.getByPatient(patientId);
+        const days = new Set<string>();
+        for (const apt of list || []) {
+          if (!CONFIRMED_STATUSES.has(apt.status)) continue;
+          const raw = apt.appointmentDate || apt.confirmedDate || apt.requestedDate;
+          if (raw) days.add(String(raw).split('T')[0]);
+        }
+        if (!cancelled) setAppointmentDays(days);
+      } catch {
+        /* sidebar widget — non-fatal */
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [patientId]);
 
   const daysInMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).getDate();
   const firstDayOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1).getDay();
@@ -71,8 +95,11 @@ function MiniCalendar() {
           <div key={`empty-day-${currentDate.getMonth()}-${i}`} />
         ))}
         {Array.from({ length: daysInMonth }).map((_, i) => {
+          const day = i + 1;
+          const dateStr = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+          const hasAppt = appointmentDays.has(dateStr);
           let dayClass: string;
-          if (isToday(i + 1)) {
+          if (isToday(day)) {
             dayClass = 'bg-emerald-500 text-white font-bold';
           } else if (isDark) {
             dayClass = 'text-gray-300 hover:bg-white/10';
@@ -80,12 +107,18 @@ function MiniCalendar() {
             dayClass = 'text-gray-600 hover:bg-white/50';
           }
           return (
-          <div
-            key={i + 1}
-            className={`text-[10px] py-1 rounded ${dayClass}`}
+          <Link
+            key={day}
+            to={hasAppt ? '/appointments' : '#'}
+            onClick={(e) => { if (!hasAppt) e.preventDefault(); }}
+            data-testid={hasAppt ? 'mini-calendar-appointment-day' : undefined}
+            className={`text-[10px] py-1 rounded relative block ${dayClass}`}
           >
-            {i + 1}
-          </div>
+            {day}
+            {hasAppt && (
+              <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-emerald-400" />
+            )}
+          </Link>
           );
         })}
       </div>
@@ -213,7 +246,7 @@ export default function MainLayout() {
           {/* Mini Map & Calendar Widgets — desktop sidebar only */}
           <div className="hidden lg:block px-4 pb-2 space-y-3">
             <MiniMapWidget />
-            <MiniCalendar />
+            <MiniCalendar patientId={user?.patientId || user?.id} />
           </div>
 
           <div className={`p-4 border-t ${isDarkMode ? 'border-gray-700' : 'border-gray-100'}`}>

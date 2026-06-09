@@ -309,3 +309,15 @@ npm run test:e2e:meeting-lifecycle   # meeting pages only; needs D→D-host firs
 
 **Matrix row:** `20_Appointment_Pool_Management` in [tests/PROCESS_COVERAGE_MATRIX.md](../../tests/PROCESS_COVERAGE_MATRIX.md)
 
+**v1.7.49 regression:** Decline returns to `in_pool` (not deleted). Accepted rows queryable 7 days via `includeAccepted=true`. Vitest: `queueLifecycle.integration`, `defectIsaraPdfMeetingQueue` DPDF-Q*.
+
+---
+
+## Detailed Workflow — Claim → Accept → Traceability (v1.7.51)
+
+1. **Claim:** `POST /api/appointment-pool/:id/claim` → `awaiting_doctor_response` + `doctor_id`  
+2. **Admin assign:** `POST /api/appointment-pool/:id/admin-assign` → same (doctor confirms)  
+3. **Accept:** `PUT /api/appointments/:id/status` `{ status: 'confirmed' }`  
+4. Pool loads without requiring doctor specialty (v1.7.51)  
+5. Accepted items stay visible with `includeAccepted=true` for 7 days  
+

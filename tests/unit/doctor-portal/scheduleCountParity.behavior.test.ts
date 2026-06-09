@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
 
-const ACTIVE_STATUSES = [
+const DASHBOARD_ACTIVE_STATUSES = [
   'confirmed',
   'scheduled',
   'in_pool',
@@ -11,15 +11,18 @@ const ACTIVE_STATUSES = [
   'assigned',
 ];
 
+const SCHEDULE_CALENDAR_STATUSES = ['confirmed', 'scheduled'];
+
 function countDoctorActiveAppointments(
   appointments: Array<{ status: string; doctorId?: string; assignedDoctorId?: string }>,
   doctorId: string,
+  statuses: string[],
 ): number {
   return appointments.filter((apt) => {
     const matchesDoctor =
       apt.doctorId === doctorId ||
       apt.assignedDoctorId === doctorId;
-    return matchesDoctor && ACTIVE_STATUSES.includes(apt.status);
+    return matchesDoctor && statuses.includes(apt.status);
   }).length;
 }
 
@@ -32,31 +35,38 @@ const schedulePath = path.resolve(
   '../../../Isara-doctor-portal/src/pages/schedule/CompleteSchedule.tsx',
 );
 
-const ACTIVE_STATUS_BLOCK_RE =
-  /const isActive(?:Status)? = \[([\s\S]*?)\]\.includes\(apt\.status\)/;
+const DASHBOARD_STATUS_RE =
+  /const isActiveStatus = \[([\s\S]*?)\]\.includes\(apt\.status\)/;
+const SCHEDULE_STATUS_RE =
+  /return \[([\s\S]*?)\]\.includes\(aptStatus\(apt\)\)/;
 
-function sourceContainsActiveStatusBlock(source: string): boolean {
-  const blockMatch = ACTIVE_STATUS_BLOCK_RE.exec(source);
+function blockHasStatuses(block: string, statuses: string[]): boolean {
+  return statuses.every((s) => block.includes(`'${s}'`));
+}
+
+function sourceContainsStatuses(source: string, statuses: string[], kind: 'dashboard' | 'schedule'): boolean {
+  const re = kind === 'dashboard' ? DASHBOARD_STATUS_RE : SCHEDULE_STATUS_RE;
+  const blockMatch = re.exec(source);
   if (!blockMatch) return false;
-  const block = blockMatch[1];
-  return ACTIVE_STATUSES.every((s) => block.includes(`'${s}'`));
+  return blockHasStatuses(blockMatch[1], statuses);
 }
 
 describe('doctor schedule count parity behavior (D2)', () => {
-  it('dashboard and schedule use identical active status filters', () => {
+  it('dashboard uses broad active filters; schedule uses confirmed calendar filters', () => {
     const dashboardSource = fs.readFileSync(dashboardPath, 'utf8');
     const scheduleSource = fs.readFileSync(schedulePath, 'utf8');
-    expect(sourceContainsActiveStatusBlock(dashboardSource)).toBe(true);
-    expect(sourceContainsActiveStatusBlock(scheduleSource)).toBe(true);
+    expect(sourceContainsStatuses(dashboardSource, DASHBOARD_ACTIVE_STATUSES, 'dashboard')).toBe(true);
+    expect(sourceContainsStatuses(scheduleSource, SCHEDULE_CALENDAR_STATUSES, 'schedule')).toBe(true);
   });
 
-  it('shared counter excludes cancelled appointments', () => {
+  it('schedule counter subset: confirmed visits only on calendar', () => {
     const doctorId = 'DOC-1';
     const appointments = [
       { status: 'confirmed', doctorId },
       { status: 'cancelled', doctorId },
       { status: 'awaiting_doctor_response', assignedDoctorId: doctorId },
     ];
-    expect(countDoctorActiveAppointments(appointments, doctorId)).toBe(2);
+    expect(countDoctorActiveAppointments(appointments, doctorId, DASHBOARD_ACTIVE_STATUSES)).toBe(2);
+    expect(countDoctorActiveAppointments(appointments, doctorId, SCHEDULE_CALENDAR_STATUSES)).toBe(1);
   });
 });

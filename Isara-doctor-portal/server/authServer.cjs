@@ -26,8 +26,11 @@ process.stdout.write('[AUTH-SERVER] Loading cors...\n');
 const cors = require('cors');
 process.stdout.write('[AUTH-SERVER] Loading bcryptjs...\n');
 const bcrypt = require('bcryptjs');
-process.stdout.write('[AUTH-SERVER] Loading jsonwebtoken...\n');
-const jwt = require('jsonwebtoken');
+const {
+  sessionRowToReqUser,
+  validateSessionToken,
+  createAuthenticateSession,
+} = require('./sessionAuth.cjs');
 process.stdout.write('[AUTH-SERVER] Loading crypto...\n');
 const crypto = require('node:crypto');
 process.stdout.write('[AUTH-SERVER] Loading http...\n');
@@ -75,47 +78,29 @@ const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'admin.test@izara.com';
 const isProduction = process.env.NODE_ENV === 'production';
 
 // ============================================================================
-// JWT CONFIGURATION - MUST match mainApiServer.cjs
+// SESSION CONFIGURATION (JWT removed — PostgreSQL sessions only)
 // ============================================================================
-// SECURITY: No hardcoded fallback secrets. Fail fast in every environment.
-const JWT_SECRET = process.env.JWT_SECRET || process.env.VITE_JWT_SECRET;
-if (!JWT_SECRET) {
-  console.error('[SECURITY] FATAL: JWT_SECRET not set. Generate one with `openssl rand -hex 32` and set it in .env. Exiting.');
-  process.exit(1);
-}
-const JWT_SECRET_FINAL = JWT_SECRET;
-const JWT_ISSUER = process.env.JWT_ISSUER || 'izara-telemedicine';
-const JWT_EXPIRES_IN = '3h';
 const REFRESH_TOKEN_EXPIRES_DAYS = 30;
 
-/**
- * Authentication middleware - verify JWT token and attach user to request
- */
-function authenticateToken(req, res, next) {
+async function authenticateToken(req, res, next) {
   const authHeader = req.headers['authorization'];
   const token = authHeader?.split(' ')[1];
   if (!token) {
     return res.status(401).json({ error: 'Authentication required' });
   }
+  if (!pgPool) {
+    return res.status(503).json({ error: 'Database unavailable' });
+  }
   try {
-    let decoded;
-    try {
-      decoded = jwt.verify(token, JWT_SECRET_FINAL, {
-        issuer: JWT_ISSUER,
-        algorithms: ['HS256'],
-      });
-    } catch (issuerErr) {
-      if (process.env.IZARA_DEV_TESTING === '1') {
-        decoded = jwt.verify(token, JWT_SECRET_FINAL, { algorithms: ['HS256'] });
-      } else {
-        throw issuerErr;
-      }
+    const row = await validateSessionToken(pgPool, token);
+    if (!row) {
+      return res.status(403).json({ error: 'Session expired or invalid', code: 'SESSION_INVALID' });
     }
-    req.user = decoded;
+    req.user = sessionRowToReqUser(row);
     next();
   } catch (error) {
-    console.warn('[AUTH] Token verification failed:', error.message);
-    return res.status(403).json({ error: 'Invalid or expired token' });
+    console.warn('[AUTH] Session verification failed:', error.message);
+    return res.status(403).json({ error: 'Invalid or expired session' });
   }
 }
 
@@ -127,26 +112,6 @@ function requireAdmin(req, res, next) {
     return res.status(403).json({ error: 'Admin access required' });
   }
   next();
-}
-
-/**
- * Generate JWT token for authenticated user
- */
-function generateJWT(user) {
-  const payload = {
-    userId: user.id,
-    email: user.email,
-    role: user.role,
-    name: user.name,
-    doctorId: user.doctor_id || user.doctorId || null,
-    isAdmin: user.is_admin || user.isAdmin || false
-  };
-  
-  return jwt.sign(payload, JWT_SECRET_FINAL, {
-    issuer: JWT_ISSUER,
-    expiresIn: JWT_EXPIRES_IN,
-    algorithm: 'HS256'
-  });
 }
 
 // ============================================================================
@@ -511,6 +476,11 @@ async function pgValidateSession(token) {
     console.error('PostgreSQL session validation error:', err.message);
     return null;
   }
+}
+
+async function resolveUserIdFromSessionToken(token) {
+  const row = await pgValidateSession(token);
+  return row?.user_id || null;
 }
 
 async function pgInvalidateSession(token) {
@@ -967,9 +937,12 @@ app.post('/auth/login',
         console.warn('[AUTH] Session create skipped:', sessionErr.message);
       }
       
-      // Generate JWT token for API authentication (session row is optional for API auth)
-      const jwtToken = generateJWT(user);
-      const expiresAt = new Date(Date.now() + 3 * 60 * 60 * 1000).toISOString(); // 3 hours
+      // Session token is the primary API credential (JWT removed)
+      const sessionToken = sessionResult?.token;
+      if (!sessionToken) {
+        return res.status(503).json({ error: 'Session creation failed', code: 'SESSION_CREATE_FAILED' });
+      }
+      const expiresAt = sessionResult.expiresAt || new Date(Date.now() + 3 * 60 * 60 * 1000).toISOString();
 
       // Generate refresh token (30-day expiry, stored as SHA-256 hash)
       const refreshTokenRaw = crypto.randomBytes(64).toString('hex');
@@ -1004,9 +977,9 @@ app.post('/auth/login',
       
       return res.json({
         success: true,
-        token: jwtToken, // JWT token for API authentication
-        refreshToken: refreshTokenRaw, // Refresh token for silent renewal
-        sessionToken: sessionResult?.token ?? null, // Session token for session management
+        token: sessionToken,
+        sessionToken,
+        refreshToken: refreshTokenRaw,
         user: sanitizeUser({
           id: user.id,
           email: user.email,
@@ -1181,15 +1154,14 @@ app.post('/auth/google-auth', async (req, res) => {
       return res.status(403).json({ error: 'Account is deactivated', code: 'ACCOUNT_DEACTIVATED' });
     }
 
-    // Issue JWT + session + refresh token (mirrors /auth/login)
+    // Issue session + refresh token (mirrors /auth/login)
     const sessionResult = await pgCreateSession(
       user.id, user.email, user.role, clientIP, clientUserAgent, null
     );
     if (!sessionResult) {
       return res.status(500).json({ error: 'Failed to create session', code: 'SESSION_ERROR' });
     }
-    const jwtToken = generateJWT(user);
-    const expiresAt = new Date(Date.now() + 3 * 60 * 60 * 1000).toISOString();
+    const expiresAt = sessionResult.expiresAt || new Date(Date.now() + 3 * 60 * 60 * 1000).toISOString();
 
     const refreshTokenRaw = crypto.randomBytes(64).toString('hex');
     const refreshTokenHash = crypto.createHash('sha256').update(refreshTokenRaw).digest('hex');
@@ -1214,9 +1186,9 @@ app.post('/auth/google-auth', async (req, res) => {
 
     return res.json({
       success: true,
-      token: jwtToken,
-      refreshToken: refreshTokenRaw,
+      token: sessionResult.token,
       sessionToken: sessionResult.token,
+      refreshToken: refreshTokenRaw,
       user: sanitizeUser({
         id: user.id,
         email: user.email,
@@ -1257,21 +1229,10 @@ app.post('/auth/logout', async (req, res) => {
     }
 
     if (token) {
-      // Decode JWT to get userId for revoking refresh tokens
       let userId = null;
-      try {
-        const decoded = jwt.verify(token, JWT_SECRET_FINAL);
-        userId = decoded.userId;
-      } catch (verifyErr) {
-        // Token may be expired — try decode without verification
-        console.debug('[AUTH] logout token verify failed, falling back to decode:', verifyErr.message);
-        try {
-          const decoded = jwt.decode(token);
-          userId = decoded?.userId;
-        } catch (decodeErr) {
-          console.debug('[AUTH] logout token decode failed:', decodeErr.message);
-          userId = null;
-        }
+      const sessionRow = await pgValidateSession(token);
+      if (sessionRow) {
+        userId = sessionRow.user_id;
       }
 
       await pgInvalidateSession(token);
@@ -1372,23 +1333,16 @@ app.post('/auth/refresh',
        newExpiresAt, getClientIP(req), (req.headers['user-agent'] || '').substring(0, 500)]
     );
 
-    // Generate new JWT
-    const newJwt = generateJWT({
-      id: tokenRow.user_id,
-      email: tokenRow.email,
-      role: tokenRow.role,
-      name: tokenRow.name,
-      doctor_id: tokenRow.doctor_id,
-      is_admin: tokenRow.is_admin
-    });
-
-    // Create new session
+    // Create new session (primary API credential)
     const sessionResult = await pgCreateSession(
       tokenRow.user_id, tokenRow.email, tokenRow.role,
       getClientIP(req), req.headers['user-agent'], deviceId
     );
+    if (!sessionResult?.token) {
+      return res.status(503).json({ error: 'Session creation failed', code: 'SESSION_CREATE_FAILED' });
+    }
 
-    const expiresAt = new Date(Date.now() + 3 * 60 * 60 * 1000).toISOString();
+    const expiresAt = sessionResult.expiresAt || new Date(Date.now() + 3 * 60 * 60 * 1000).toISOString();
 
     console.log(`[AUTH] Token refreshed for user: ${tokenRow.email}`);
 
@@ -1402,9 +1356,9 @@ app.post('/auth/refresh',
 
     res.json({
       success: true,
-      token: newJwt,
+      token: sessionResult.token,
       refreshToken: newRefreshTokenRaw,
-      sessionToken: sessionResult?.token || null,
+      sessionToken: sessionResult.token,
       expiresAt,
       expiresIn: 10800, // 3 hours in seconds
       user: sanitizeUser({
@@ -2446,53 +2400,7 @@ app.get('/auth/verify', async (req, res) => {
       });
     }
     
-    // Fallback: Try JWT verification (login returns JWT as primary token)
-    try {
-      const decoded = jwt.verify(token, JWT_SECRET_FINAL, {
-        issuer: JWT_ISSUER,
-        algorithms: ['HS256']
-      });
-      
-      // JWT is valid — fetch user from DB for latest data
-      const userId = decoded.userId || decoded.id;
-      const userResult = await pgPool.query(
-        `SELECT u.id, u.email, u.name, u.name_thai, u.role, u.doctor_id, u.is_admin,
-                u.admin_privileges, u.specialty, dp.hospital_name
-         FROM users u
-         LEFT JOIN doctor_profiles dp ON dp.doctor_id = u.id
-         WHERE u.id = $1`,
-        [userId]
-      );
-      
-      if (userResult.rows.length === 0) {
-        return res.status(401).json({ error: 'User not found' });
-      }
-      
-      const user = userResult.rows[0];
-      return res.json({
-        valid: true,
-        user: sanitizeUser({
-          id: user.id,
-          email: user.email,
-          name: user.name,
-          nameThai: user.name_thai,
-          role: user.role,
-          doctorId: user.doctor_id,
-          isAdmin: user.is_admin,
-          adminPrivileges: user.admin_privileges,
-          specialty: user.specialty,
-          hospitalName: user.hospital_name
-        }),
-        session: {
-          id: 'jwt-session',
-          expiresAt: new Date(decoded.exp * 1000).toISOString()
-        }
-      });
-    } catch (jwtError) {
-      // Both session and JWT verification failed
-      console.warn('[AUTH] Session + JWT verification failed:', jwtError.message);
-      return res.status(401).json({ error: 'Invalid or expired session' });
-    }
+    return res.status(401).json({ error: 'Invalid or expired session' });
   } catch (error) {
     console.error('Verify error:', error);
     res.status(500).json({ error: 'Session verification failed. Please try again.' });
@@ -2542,15 +2450,11 @@ app.get('/api/profile', async (req, res) => {
       return res.status(401).json({ error: 'Authentication required' });
     }
 
-    let decoded;
-    try {
-      decoded = jwt.verify(token, JWT_SECRET_FINAL);
-    } catch (e) {
-      console.warn('[AUTH] Token verification failed:', e.message);
-      return res.status(401).json({ error: 'Invalid or expired token' });
+    const sessionRow = await pgValidateSession(token);
+    if (!sessionRow) {
+      return res.status(401).json({ error: 'Invalid or expired session' });
     }
-
-    const userId = decoded.userId || decoded.id;
+    const userId = sessionRow.user_id;
     console.log(`[AUTH] Getting profile for user: ${userId}`);
 
     if (!pgPool) {
@@ -2590,15 +2494,11 @@ const profileUpdateHandler = async (req, res) => {
     }
 
     // Verify JWT token
-    let decoded;
-    try {
-      decoded = jwt.verify(token, JWT_SECRET_FINAL);
-    } catch (e) {
-      console.warn('[AUTH] Token verification failed:', e.message);
-      return res.status(401).json({ error: 'Invalid or expired token' });
+    const sessionRow = await pgValidateSession(token);
+    if (!sessionRow) {
+      return res.status(401).json({ error: 'Invalid or expired session' });
     }
-
-    const userId = decoded.userId || decoded.id;
+    const userId = sessionRow.user_id;
     const { avatarUrl, displayName, phone, specialization } = req.body;
 
     console.log(`[AUTH] Updating profile for user: ${userId}`);
@@ -2671,14 +2571,11 @@ const getProfileHandler = async (req, res) => {
     if (!token) {
       return res.status(401).json({ error: 'Authentication required' });
     }
-    let decoded;
-    try {
-      decoded = jwt.verify(token, JWT_SECRET_FINAL);
-    } catch (e) {
-      console.warn('[AUTH] Token verification failed:', e.message);
-      return res.status(401).json({ error: 'Invalid or expired token' });
+    const sessionRow = await pgValidateSession(token);
+    if (!sessionRow) {
+      return res.status(401).json({ error: 'Invalid or expired session' });
     }
-    const userId = decoded.userId || decoded.id;
+    const userId = sessionRow.user_id;
     if (pgPool) {
       try {
         const result = await pgPool.query(
@@ -2719,14 +2616,11 @@ app.get('/auth/me', async (req, res) => {
     if (!token) {
       return res.status(401).json({ error: 'Authentication required' });
     }
-    let decoded;
-    try {
-      decoded = jwt.verify(token, JWT_SECRET_FINAL);
-    } catch (e) {
-      console.warn('[AUTH] Token verification failed:', e.message);
-      return res.status(401).json({ error: 'Invalid or expired token' });
+    const sessionRow = await pgValidateSession(token);
+    if (!sessionRow) {
+      return res.status(401).json({ error: 'Invalid or expired session' });
     }
-    const userId = decoded.userId || decoded.id;
+    const userId = sessionRow.user_id;
     if (pgPool) {
       try {
         const result = await pgPool.query(
@@ -2768,15 +2662,11 @@ app.post('/api/profile/avatar', async (req, res) => {
     }
 
     // Verify JWT token
-    let decoded;
-    try {
-      decoded = jwt.verify(token, JWT_SECRET_FINAL);
-    } catch (e) {
-      console.warn('[AUTH] Token verification failed:', e.message);
-      return res.status(401).json({ error: 'Invalid or expired token' });
+    const sessionRow = await pgValidateSession(token);
+    if (!sessionRow) {
+      return res.status(401).json({ error: 'Invalid or expired session' });
     }
-
-    const userId = decoded.userId || decoded.id;
+    const userId = sessionRow.user_id;
     const { avatarUrl } = req.body;
 
     if (!avatarUrl) {
@@ -2814,15 +2704,11 @@ app.post('/api/users/avatar', async (req, res) => {
     }
 
     // Verify JWT token
-    let decoded;
-    try {
-      decoded = jwt.verify(token, JWT_SECRET_FINAL);
-    } catch (e) {
-      console.warn('[AUTH] Token verification failed:', e.message);
-      return res.status(401).json({ error: 'Invalid or expired token' });
+    const sessionRow = await pgValidateSession(token);
+    if (!sessionRow) {
+      return res.status(401).json({ error: 'Invalid or expired session' });
     }
-
-    const userId = decoded.userId || decoded.id;
+    const userId = sessionRow.user_id;
     const { avatarUrl } = req.body;
 
     if (!avatarUrl) {

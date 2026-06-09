@@ -65,6 +65,7 @@ if ($cliHeadless -and -not $cliHeaded) {
     Write-Host 'HEADLESS MODE (no visible browsers)' -ForegroundColor Yellow
 } else {
     $env:PW_HEADED = '1'
+    $env:PW_NO_CHROME = '1'
     Remove-Item Env:PW_HEADLESS -ErrorAction SilentlyContinue
     if ($PlaywrightArgs -notcontains '--headed') {
         $PlaywrightArgs = @('--headed') + $PlaywrightArgs
@@ -72,7 +73,7 @@ if ($cliHeadless -and -not $cliHeaded) {
     if ($PlaywrightArgs -notcontains '--workers') {
         $PlaywrightArgs = @('--workers', '1') + $PlaywrightArgs
     }
-    Write-Host 'HEADED MODE: Patient + Doctor (Chromium) + Admin (Firefox) windows will open — slowMo on' -ForegroundColor Green
+    Write-Host 'HEADED MODE: Patient (Firefox) + Doctor (Edge) + Admin (Firefox) — no Google Chrome' -ForegroundColor Green
 }
 
 if (-not $env:GEMINI_API_KEY -and -not $env:CLOUD_GEMINI_API_KEY) {

@@ -1,11 +1,11 @@
 # Izara Telemedicine Platform - Technical Documentation
 
-> **Version:** 1.7.48 (Updated 30 May 2026)
-> **Status:** Defect PDF re-audit — all 23 defects verified; **0 failed, 0 skipped** on cloud Defect-regression
+> **Version:** 1.7.50 (Updated 5 June 2026)
+> **Status:** Defect PDF re-audit — all 23 defects verified; queue/JWT hardening complete
 > **Database:** PostgreSQL 18 + pgvector (42 tables, port 5432 native)
 > **Stack:** PostgreSQL / Express / React / Jitsi / Gemini AI / Google Cloud
-> **Tests:** **2,736** Unit (Vitest, 151 files) + Defect-regression Playwright (**36 passed, 0 skipped**) + Full cloud (**85 passed, 0 skipped**)
-> **Code Quality:** SonarLint + `npm run sonar:lint`; clinical TSX subcomponents (S6747 structural fix)
+> **Tests:** **2,938** Vitest (167 files) + **78** meeting-server contracts + Defect-regression Playwright (**36 passed**) + Full cloud (**85 passed**)
+> **Code Quality:** SonarLint + `npm run sonar:lint`; process registry gate (49 PCOV)
 
 ---
 
@@ -36,7 +36,20 @@
 
 Regenerate appendix: `python scripts/build-appendix-process-steps.py`
 
-### Latest release — v1.7.48 (30 May 2026)
+### Latest release — v1.7.51 (8 June 2026)
+
+Calendar sync on doctor confirm (`calendarEventUrl`, doctor `/schedule`, patient MiniCalendar), 3-party meeting E2E (Q01f 10s A/V hold), L1 unskip. Gates: **2982** Vitest + **78** meeting-server contracts; local E2E **35 passed, 0 skipped** + J/R **16/16**.
+
+- Technical (TH): [../Technical_Documents/01_System_Architecture_and_Workflow.md](../Technical_Documents/01_System_Architecture_and_Workflow.md) §9.3.1, §9.4
+- Unit coverage: [../docs/markdown/testing/UNIT_TEST_UI_COVERAGE.md](../docs/markdown/testing/UNIT_TEST_UI_COVERAGE.md)
+- Process pages: [../../Processes/Pages/Doctor-Portal/04_Schedule_Page.md](../../Processes/Pages/Doctor-Portal/04_Schedule_Page.md), [../../Processes/Pages/Patient-Portal/05_Appointments_Page.md](../../Processes/Pages/Patient-Portal/05_Appointments_Page.md)
+- Older releases: [RELEASE_NOTES.md](RELEASE_NOTES.md)
+
+### v1.7.50 (5 June 2026)
+
+Queue accept traceability, Jitsi JWT role matrix, patient display name auto-fill, full process test registry. Gates: **2938** Vitest + **78** meeting-server contracts (Docker PASS).
+
+### v1.7.48 (30 May 2026)
 
 Re-audit of `Defect หมออิสระ.pdf`: all **23** defects **Verified**. Gates: **2736** unit; Defect-regression **36/36** cloud.
 
@@ -540,31 +553,45 @@ services:
 
 ## 7. Testing
 
+### 7.1 Test Summary (June 2026 — v1.7.50)
 
-
-### 7.1 Test Summary (May 28, 2026 — v1.7.37)
-
-| Layer | Framework | Files / Specs | Tests | Duration |
+| Layer | Framework | Files / Specs | Tests | Notes |
 | --- | --- | --- | --- | --- |
-| **Unit Tests** | Vitest 2.1 | 114 files | **2,646** | ~6s |
+| **Unit Tests** | Vitest 2.1 | **167** files | **2,938** | Docker `npm run test:unit:docker` |
+| **Meeting contracts** | Vitest | meeting-server pack | **78** | JWT roles + join-config HTTP |
+| **Process registry** | Vitest | `processWorkflowRegistry.ts` | 49 PCOV | Maps 44 Process docs |
 | **Quality gate** | sonar:lint + coverage | — | — | ~1 min |
-| **Cloud unit gate** | Vitest + smoke + GATE0 | — | API G1–G5 | ~1 min |
 | **Cloud UI showup** | Playwright 1.58 (headed) | A + 7×S | **41** | ~3–11 min |
-| **E2E (extended)** | Playwright | 32+ specs | 1,100+ | optional full suite |
 
-**Cross-reference:** [UNIT_TEST_UI_COVERAGE.md](../Documents/docs/markdown/testing/UNIT_TEST_UI_COVERAGE.md) (unit → UI screenshots). **Diagram:** [html-diagrams/17-testing-quality-gate.html](html-diagrams/17-testing-quality-gate.html). **Thai docs:** [../Technical_Documents/](../Technical_Documents/).
+**Docker commands (local):**
 
-**Cloud fix (May 28, 2026):** Patient portal traffic shifted to revision `00112-mrm` (v1.7.37 image). `GET /api/phr/PATIENT-DEMO/timeline` returns **200** `[]` — no S03 console 500 during gate showup.
-
-```powershell
-npm run test:unit:report    # full unit run + markdown report
-npm run test:gate:ui-showup # cloud screenshots -> Documents/docs/screenshots/group-A, group-S
+```bash
+npm run test:unit:docker          # full Vitest in container
+npm run test:unit:docker:grouped  # memory-safe shards
+npm run test:unit:docker:deploy   # rebuild stack + unit + contracts
+npm run test:e2e:docker:core-multibrowser  # Group W — Chromium + Firefox + WebKit
+npm run docs:sync-screenshots     # copy green PNGs → Documents/docs/screenshots/group-W/
 ```
 
+**Cross-reference:** [DOCKER_MULTIBROWSER_E2E.md](../docs/markdown/testing/DOCKER_MULTIBROWSER_E2E.md) · [UNIT_TEST_UI_COVERAGE.md](../docs/markdown/testing/UNIT_TEST_UI_COVERAGE.md) · **Diagram:** [html-diagrams/17-testing-quality-gate.html](html-diagrams/17-testing-quality-gate.html) · **Thai docs:** [../Technical_Documents/](../Technical_Documents/)
 
+### 7.1.0 Docker Group W — Core Multi-Browser (2026-06-05)
 
+| Test project | Browser | Tests | Screenshot folder |
+| --- | --- | --- | --- |
+| W-core-chromium | Chromium | 6 (W01–W06) | `Documents/docs/screenshots/group-W/browsers/chromium/` |
+| W-core-firefox | Firefox | 6 | `Documents/docs/screenshots/group-W/browsers/firefox/` |
+| W-core-webkit | WebKit | 6 | `Documents/docs/screenshots/group-W/browsers/webkit/` |
 
-### 7.1.0 Cloud Test Suites (tests/*.ui-test.ts) — 215 Tests
+Canonical Chromium captures (used in user guides):
+
+![W02 appointments](../docs/screenshots/group-W/W02-appointments-list.png)
+
+![W04 virtual meeting](../docs/screenshots/group-W/W04-doctor-virtual-meeting.png)
+
+![W06 Gemini AI Studio](../docs/screenshots/group-W/W06-gemini-api-connected.png)
+
+### 7.1.1 Cloud Test Suites (tests/*.ui-test.ts) — 215 Tests
 
 | Test File | Tests | Coverage |
 | --- | --- | --- |
@@ -583,7 +610,7 @@ npm run test:gate:ui-showup # cloud screenshots -> Documents/docs/screenshots/gr
 
 
 
-### 7.1.1 Unit Test Suites (tests/unit/) — 58 Files
+### 7.1.2 Unit Test Suites (tests/unit/) — 58 Files
 
 
 

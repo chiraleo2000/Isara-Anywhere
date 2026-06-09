@@ -107,7 +107,7 @@ export const GeminiAIStudio: React.FC = () => {
       <div className="bg-white rounded-xl shadow-lg p-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 flex items-center">
+            <h1 className="text-2xl font-bold text-gray-900 flex items-center" data-testid="gemini-ai-studio">
               <span className="text-3xl mr-3">🤖</span>{' '}
               Gemini AI Studio
             </h1>

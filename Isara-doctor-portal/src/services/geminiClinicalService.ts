@@ -3,6 +3,12 @@ import { ClinicalAIResponse, DiagnosisCode, DrugInteraction, TranscriptSegment }
 
 const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
 const GEMINI_MODEL = import.meta.env.VITE_GEMINI_MODEL || 'gemini-3.1-flash-lite';
+const GEMINI_PLACEHOLDER = 'xxxxx';
+
+function isClientGeminiConfigured(key: string | undefined): boolean {
+  if (!key || key === 'xxx' || key === GEMINI_PLACEHOLDER) return false;
+  return key.startsWith('AIza');
+}
 
 /** Prefer same-origin relative /api paths so Vite/nginx proxy always works. */
 function resolveApiBase(): string {
@@ -95,7 +101,7 @@ class GeminiClinicalService {
   private serverConfigured: boolean | null = null;
 
   constructor() {
-    if (!GEMINI_API_KEY || GEMINI_API_KEY === 'xxx') {
+    if (!isClientGeminiConfigured(GEMINI_API_KEY)) {
       if (!geminiConfigWarningLogged && import.meta.env?.DEV) {
         geminiConfigWarningLogged = true;
         console.debug('[Gemini] API key not set in browser — server-side AI handles meeting summaries');

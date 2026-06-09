@@ -30,11 +30,15 @@
  *         └── D (sequential) → E → F
  *
  * Workers: PW_WORKERS (default 1 local, 4 cloud) for parallel groups; D→E→F stay serial.
- * Jitsi multi-party fixture (parallel launch): Patient=Chrome, Doctor=Chrome, Admin=Firefox.
+ * Jitsi multi-party fixture: Patient=Firefox, Doctor=Edge, Admin=Firefox (PW_NO_CHROME=1).
  * ═══════════════════════════════════════════════════════════════════════
  */
 import { defineConfig } from '@playwright/test';
-import { chromiumLaunchArgs } from './tests/helpers/browser-matrix';
+import {
+  chromiumLaunchArgs,
+  FIREFOX_LAUNCH_OPTIONS,
+  isChromeChannelBanned,
+} from './tests/helpers/browser-matrix';
 
 const CLOUD_DEFAULTS = {
   patient: 'https://izara-patient-portal-dev-testing-724889190329.asia-southeast1.run.app',
@@ -50,9 +54,10 @@ const FORCE_HEADED =
   process.env.PW_HEADED === '1' ||
   process.env.PW_HEADED === 'true' ||
   BASELINE_VISUAL;
+/** Headed by default (local + cloud). Set PW_HEADLESS=1 only for debug/CI-only runs. */
 const USE_HEADLESS =
   process.env.PW_HEADLESS === '1' ||
-  (IS_CLOUD && !FORCE_HEADED && !BASELINE_VISUAL);
+  process.env.PW_HEADLESS === 'true';
 const BASELINE_SCREENSHOT =
   BASELINE_VISUAL ? ('on' as const) : ('only-on-failure' as const);
 const PRE_DEBUG_OUTPUT = BASELINE_VISUAL
@@ -71,10 +76,16 @@ function resolveSlowMo(headless: boolean, isCloud: boolean): number {
   return isCloud ? 300 : 150;
 }
 
+const coreSlowMo = resolveSlowMo(USE_HEADLESS, IS_CLOUD);
+
 function resolvePlaywrightChannel(headless: boolean): string | undefined {
-  if (headless) return undefined;
-  return process.platform === 'win32' ? 'chrome' : undefined;
+  if (headless || isChromeChannelBanned()) return undefined;
+  return process.platform === 'win32' ? 'msedge' : undefined;
 }
+
+const defaultBrowserName = isChromeChannelBanned()
+  ? ('firefox' as const)
+  : ('chromium' as const);
 
 const sharedUse = {
   headless: USE_HEADLESS,
@@ -85,9 +96,11 @@ const sharedUse = {
   navigationTimeout: IS_CLOUD ? 90_000 : 15_000,
   launchOptions: {
     slowMo: resolveSlowMo(USE_HEADLESS, IS_CLOUD),
-    args: chromiumLaunchArgs(USE_HEADLESS),
+    ...(defaultBrowserName === 'firefox'
+      ? FIREFOX_LAUNCH_OPTIONS
+      : { args: chromiumLaunchArgs(USE_HEADLESS) }),
   },
-  browserName: 'chromium' as const,
+  browserName: defaultBrowserName,
   baseURL: IS_CLOUD
     ? (process.env.CLOUD_PATIENT_URL || 'https://izara-patient-portal-dev-testing-724889190329.asia-southeast1.run.app')
     : 'http://localhost:3005',
@@ -172,6 +185,17 @@ export default defineConfig({
       dependencies: ['A-auth'],
     },
     {
+      name: 'J-patient-jitsi-prejoin',
+      testMatch: 'group-J-patient-jitsi-prejoin.ui-test.ts',
+      dependencies: ['A-auth'],
+    },
+    {
+      name: 'R-jitsi-role-permissions',
+      testMatch: 'group-R-jitsi-role-permissions.ui-test.ts',
+      dependencies: ['A-auth'],
+      timeout: IS_CLOUD ? 600_000 : 420_000,
+    },
+    {
       name: 'Defect-regression',
       testMatch: /group-Defect-.*\.ui-test\.ts/,
       dependencies: ['A-auth'],
@@ -181,6 +205,11 @@ export default defineConfig({
     {
       name: 'D-appointments',
       testMatch: 'group-D-appointment-workflows.ui-test.ts',
+      dependencies: ['A-auth'],
+    },
+    {
+      name: 'D-queue-traceability',
+      testMatch: 'group-D-queue-accept-traceability.ui-test.ts',
       dependencies: ['A-auth'],
     },
     {
@@ -207,7 +236,7 @@ export default defineConfig({
       name: 'E-meeting-clinical',
       testMatch: /group-E-(meeting-clinical|cross-browser-matrix)\.ui-test\.ts/,
       dependencies: ['D-appointments', 'Q-meeting-lifecycle'],  // Q validates 3-party lifecycle before E clinical extras
-      // Jitsi multi-party: Chrome (patient) + Chrome (doctor) + Firefox (admin) — parallel launch in multi-portal.ts
+      // Jitsi multi-party: Firefox (patient) + Edge (doctor) + Firefox (admin) — multi-portal.ts
     },
     {
       name: 'F-phr-health-records',
@@ -245,6 +274,42 @@ export default defineConfig({
       name: 'P-workflow-screenshots',
       testMatch: 'group-P-workflow-screenshots.ui-test.ts',
       dependencies: ['A-auth', 'D-appointments'],
+    },
+
+    /* ── CORE MULTI-BROWSER (Firefox / WebKit; Chromium skipped when PW_NO_CHROME=1) ─ */
+    ...(isChromeChannelBanned()
+      ? []
+      : [
+          {
+            name: 'W-core-chromium',
+            testMatch: 'group-W-core-multibrowser.ui-test.ts',
+            timeout: IS_CLOUD ? 600_000 : 480_000,
+            use: {
+              ...sharedUse,
+              browserName: 'chromium' as const,
+              launchOptions: { slowMo: coreSlowMo, args: chromiumLaunchArgs(USE_HEADLESS) },
+            },
+          },
+        ]),
+    {
+      name: 'W-core-firefox',
+      testMatch: 'group-W-core-multibrowser.ui-test.ts',
+      timeout: IS_CLOUD ? 600_000 : 480_000,
+      use: {
+        ...sharedUse,
+        browserName: 'firefox',
+        launchOptions: { slowMo: coreSlowMo, ...FIREFOX_LAUNCH_OPTIONS },
+      },
+    },
+    {
+      name: 'W-core-webkit',
+      testMatch: 'group-W-core-multibrowser.ui-test.ts',
+      timeout: IS_CLOUD ? 600_000 : 480_000,
+      use: {
+        ...sharedUse,
+        browserName: 'webkit',
+        launchOptions: { slowMo: coreSlowMo },
+      },
     },
 
     /* ── RESPONSIVE LAYOUT (7 viewports: 5" phone – 13" tablet) ─── */

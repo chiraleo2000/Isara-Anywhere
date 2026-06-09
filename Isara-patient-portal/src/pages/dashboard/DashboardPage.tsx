@@ -195,7 +195,9 @@ export default function DashboardPage() {
     );
   };
 
-  const pendingAppointments = appointments.filter((appointment) => appointment.status === 'pending');
+  const pendingAppointments = appointments.filter((appointment) =>
+    ['pending', 'awaiting_doctor_response', 'in_pool'].includes(appointment.status),
+  );
   const pendingAppointmentsCount = pendingAppointments.length;
 
   let appointmentContent = null;

@@ -1,6 +1,6 @@
 # การเชื่อมโยง Jitsi และโค้ดตัวอย่าง (Jitsi Integration & Code Examples)
 
-> **อัปเดต:** 2 มิถุนายน 2569 | **ชุด:** `Documents/Technical_Documents` · [ดัชนี](../README.md)  
+> **อัปเดต:** 5 มิถุนายน 2569 (v1.7.50) | **ชุด:** `Documents/Technical_Documents` · [ดัชนี](../README.md)  
 > **ก่อนหน้า:** [01](01_System_Architecture_and_Workflow.md) · [02](02_Authentication_and_Authorization.md) · [03](03_Data_Storage_Architecture.md) · [05 ขั้นตอน](05_Appendix_Full_Process_Steps.md)  
 > **HTML diagrams:** [Presentations/html-diagrams/10-video-meeting-flow.html](../Presentations/html-diagrams/10-video-meeting-flow.html)
 
@@ -120,7 +120,15 @@ izara-{appointmentId 12 ตัวแรก}-{timestamp base36}
 - โดเมน **ไม่ใช่** `meet.jit.si`
 - ไม่ตั้ง `JITSI_FORCE_JWT_ON_PUBLIC=1`
 
----
+**Role matrix (`createJitsiRoleJwt` in `jwtPolicy.js`):**
+
+| Role | `moderator` | `affiliation` | Notes |
+|------|-------------|---------------|-------|
+| doctor / host | `true` | `owner` | Returned from `GET /join-config` when authenticated |
+| patient | `false` | `member` | Not guest; JWT returned when token auth enabled |
+| guest (invite) | `false` | `none` | ต้องมี **guest-invite scoped token** บน join-config; anonymous `?name=` ถูกปฏิเสธ (`GUEST_AUTH_REQUIRED`) |
+
+**Display name:** `getIzaraDisplayName(user)` จาก Izara auth → `userInfo.displayName`; `prejoinPageEnabled: false` บนทุก portal wrapper (`buildDoctorJitsiMountOptions`, `buildPatientJitsiMountOptions`).
 
 ## 5. Socket.IO Events
 
@@ -273,7 +281,18 @@ export function loadJitsiExternalApiScript(domain = resolveJitsiDomain()): Promi
 }
 ```
 
-### 7.6 ตั้งค่า External API — ภาษาไทย, ปิด Jitsi lobby
+### 7.6 Mount helpers — doctor host vs patient participant
+
+```typescript
+// Isara-doctor-portal/src/utils/jitsiMeetingConfig.ts
+// buildDoctorJitsiMountOptions — moderator: true, layout-first mount (prepareLayoutThenMount)
+// Isara-patient-portal/src/utils/jitsiMeetingConfig.ts
+// buildPatientJitsiMountOptions — resolvePatientMeetingDisplayName, prejoinPageEnabled: false
+```
+
+บน **meet.jit.si** ไม่มี room JWT — แพทย์พึ่ง `configOverwrite.moderator: true`; ผู้ป่วยเป็น participant ธรรมดา. บน self-hosted ใช้ `pickJitsiJwt` + JWT จาก join-config.
+
+### 7.7 ตั้งค่า External API — ภาษาไทย, ปิด Jitsi lobby
 
 ```typescript
 export function getJitsiExternalApiOptions(role: JitsiMeetingRole, displayName: string) {
@@ -298,7 +317,7 @@ export function getJitsiExternalApiOptions(role: JitsiMeetingRole, displayName: 
 }
 ```
 
-### 7.7 MeetingRoom — Header สำหรับ API ประชุม
+### 7.8 MeetingRoom — Header สำหรับ API ประชุม
 
 ```typescript
 // MeetingRoom.tsx — ใช้ JWT แพทย์จาก authServices
@@ -725,11 +744,25 @@ flowchart TB
 - Lobby admission บังคับสำหรับ non-host
 - Room URL คงที่ต่อ `appointment_id` (deterministic routes)
 
-### 13.6 ทดสอบอัตโนมัติ (อ้างอิงจาก Processes)
+### 13.6 หลักฐาน UI จาก Docker Group W (Virtual Meeting)
 
-- Playwright Groups D, video-meeting workflow screenshots ใน `screenshots/workflow/`
-- คำสั่งตัวอย่างใน `VIDEO_MEETING_JITSI_GEMINI.md` § testing
-- Registry: `tests/PROCESS_COVERAGE_MATRIX.md`, `tests/SELECTORS.md`
+ทดสอบ W04 ใน Docker Compose — ห้องประชุมแพทย์และผู้ป่วย (Chromium canonical):
+
+![Doctor virtual meeting](../docs/screenshots/group-W/W04-doctor-virtual-meeting.png)
+
+![Patient meeting room](../docs/screenshots/group-W/W04-patient-meeting-room.png)
+
+คู่มือเต็ม: [DOCKER_MULTIBROWSER_E2E.md](../docs/markdown/testing/DOCKER_MULTIBROWSER_E2E.md)
+
+### 13.7 ทดสอบอัตโนมัติ (อ้างอิงจาก Processes)
+
+- Playwright Groups D, Q, video-meeting workflow screenshots ใน `Documents/docs/screenshots/`
+- **Docker Group W (2026-06-05):** `npm run test:e2e:docker:core-multibrowser` — 18/18 Chromium + Firefox + WebKit; PNG → `Documents/docs/screenshots/group-W/` (`npm run docs:sync-screenshots`)
+- **Local Docker (v1.7.50):** `npm run test:unit:docker:deploy` — rebuild stack + **2938** Vitest (167 files) + **78** meeting-server contracts
+- **Grouped (memory-safe):** `npm run test:unit:docker:grouped` — doctor / patient / cross-portal / meeting-server
+- Defect PDF regression: `queueAcceptTraceability.test.ts`, `defectIsaraPdfMeetingQueue.test.ts`, `jitsiRoleJwt.test.ts`
+- Process registry: `processWorkflowRegistry.ts` · gate: `processPageCoverage.test.ts` (49 PCOV)
+- Registry: `tests/PROCESS_COVERAGE_MATRIX.md`, `tests/SELECTORS.md`, `reports/defect-fix/DEFECT_REGISTER.md` (Q1, J1, M3)
 
 ---
 

@@ -78,6 +78,36 @@ npm run test:cloud:hardening:round2
 
 **Next:** `npm run cloud:deploy` (wait for build `v1.7.22-hardening`) → `npm run test:cloud:hardening:round2` → `npm run cleanup:cloud-test-only`
 
+---
+
+## Local Docker zero-skip gate (2026-06-08 — v1.7.51)
+
+| Area | Change |
+|------|--------|
+| Calendar on confirm | `calendarEventLinks.cjs` + `appointmentMapper.cjs`; patient `calendarEventUrl` in notifications; doctor `/schedule` + patient MiniCalendar |
+| 3-party meeting | Q01f holds doctor + patient + guest for **10s** (`MEETING_HOLD_MS`); `assertThreePartyInMeeting` |
+| L1 unskip | `group-L-lab-ordering.ui-test.ts` obtains doctor JWT via login API (no `DOCTOR_API_TOKEN` skip) |
+| D4cal | Calendar + schedule assertions after D4 confirm |
+
+### Gate results (June 8, 2026)
+
+| Suite | Result |
+|-------|--------|
+| Vitest (`npm run test:unit:docker`) | **2982/2982 PASS** |
+| E2E A-auth → D → D-doctor-host → Q → E → F → L | **35 passed, 0 skipped** |
+| J + R (by file path) | **16/16 PASS** |
+| `npm run test:quality:gate` | **PASS** |
+
+**Rebuild required after server/UI changes:**
+
+```bash
+docker compose --env-file .env.docker build doctor-portal patient-portal
+```
+
+**Evidence:** `reports/defect-fix/DEFECT_REGISTER.md` — June 8 local gate section.
+
+**Documentation updated:** `Appointment_Workflows.md`, `Notification_Workflows.md`, `VIDEO_MEETING_JITSI_GEMINI.md`, `POST_MEETING_WORKFLOW.md`, `Pages/Doctor-Portal/04_Schedule_Page.md`, `Pages/Patient-Portal/05_Appointments_Page.md`, `Documents/` technical + testing ledgers.
+
 ## Documentation
 
 - `Processes/TWO_ROUND_CLOUD_TESTING.md` — orchestrator + ledger + Group Q assertions + cleanup
@@ -90,3 +120,16 @@ npm run test:cloud:hardening:round2
 1. **Deploy** — Meeting BYTEA + portal recording-order fixes require `npm run cloud:deploy` before cloud Q02 passes against live code.
 2. **Headed browsers** — Default `Workers=1` in hardening script avoids parallel headed launch failures on Windows.
 3. **gate0** — API chain may fail while UI pipeline passes; both are logged in the ledger.
+
+## Local Docker regression (v1.7.49 — Defect PDF items 1–3)
+
+| Gate | Result |
+|------|--------|
+| Command | `npm run test:unit:docker:deploy` |
+| Stack | `docker compose up -d --build` (postgres, patient, doctor, meeting-server) |
+| Unit tests | **2817** PASS in `node:20-alpine` |
+| Meeting contracts | **78** PASS (`Izara-jitsi-server/tests/*.test.mjs`) |
+| Defect PDF regression | `cross-portal/defectIsaraPdfMeetingQueue.test.ts` (DPDF-Q/N/M*) |
+| Process coverage map | `cross-portal/processPageCoverage.test.ts` |
+
+**Fixes verified:** queue traceability after accept/decline (`includeAccepted`, patient Confirmed tab); patient Jitsi auto display name (`prejoinPageEnabled=false`, `requireDisplayName=false`); doctor host join (`resolveMountJwt`, layout-first mount, doctor joins before patient on public `meet.jit.si`).

@@ -1,10 +1,11 @@
 # รายงานโครงสร้างทางเทคนิค — Izara Anywhere (บันทึกวิทยากร)
 
-**เวอร์ชัน:** v1.7.48 · **วันที่:** 31 พฤษภาคม 2569 · Cloud full **85/85** headed · Unit **2736** PASS  
+**เวอร์ชัน:** v1.7.50 · **วันที่:** 5 มิถุนายน 2569 · Cloud full **85/85** headed · Unit **2938** PASS (Docker) · Group W **18/18** (Chromium/Firefox/WebKit)  
 **มาตรฐานเอกสาร:** Word **TH Sarabun New** เนื้อหา **16 pt** ระยะบรรทัด **1.15** · PowerPoint **FC Iconic** หัวข้อ **32 pt** เนื้อหา **18 pt** บันทึกวิทยากร **16 pt**  
-**ไฟล์:** [diagrams.drawio](diagrams.drawio) · [สไลด์ HTML](TECHNICAL_ARCHITECTURE_SLIDES.html) · [Word](TECHNICAL_ARCHITECTURE_WORD_TH.docx) · [PowerPoint](TECHNICAL_ARCHITECTURE_PPT_TH.pptx)
+**ไฟล์:** [diagrams.drawio](../../diagrams/diagrams.drawio) · [สไลด์ HTML](TECHNICAL_ARCHITECTURE_SLIDES.html) · [Word](../word/TECHNICAL_ARCHITECTURE_WORD_TH.docx) · [PowerPoint](../ppt/TECHNICAL_ARCHITECTURE_PPT_TH.pptx)
 
 สร้าง/อัปเดต: `python scripts/build-technical-architecture-docs.py`  
+Docker multi-browser E2E + รีเฟรช screenshot: `npm run test:e2e:docker:core-multibrowser` แล้ว `npm run docs:sync-screenshots` — คู่มือ [DOCKER_MULTIBROWSER_E2E.md](../../markdown/testing/DOCKER_MULTIBROWSER_E2E.md)  
 ล้างข้อมูลทดสอบ (ไม่ re-seed demo): `npm run cleanup:cloud-test-only` (ต้องมี `DB_PASSWORD` ถูกต้องใน `.env`)
 
 ---

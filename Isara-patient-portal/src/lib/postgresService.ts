@@ -9,7 +9,11 @@
  * - Health data sync
  */
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || '';
+import { resolveApiBaseUrl } from '../utils/resolveApiBaseUrl';
+
+function apiBaseUrl(): string {
+  return resolveApiBaseUrl();
+}
 
 // Types
 export interface User {
@@ -167,7 +171,7 @@ async function apiCall<T>(
       ...options.headers,
     };
 
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+    const response = await fetch(`${apiBaseUrl()}${endpoint}`, {
       ...options,
       headers,
     });
@@ -485,7 +489,7 @@ export async function uploadDocument(
   const token = localStorage.getItem('authToken');
   
   try {
-    const response = await fetch(`${API_BASE_URL}/api/patients/documents`, {
+    const response = await fetch(`${apiBaseUrl()}/api/patients/documents`, {
       method: 'POST',
       headers: token ? { Authorization: `Bearer ${token}` } : {},
       body: formData,

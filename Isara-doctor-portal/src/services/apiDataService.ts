@@ -7,8 +7,9 @@
  * GCS IS NOT USED FOR INTERACTIVE OPERATIONS - PostgreSQL only!
  */
 
-// API Base URL - connects to the mainApiServer
-const API_BASE = import.meta.env.VITE_API_URL || '';
+import { resolveApiBaseUrl } from '../utils/resolveApiBaseUrl';
+
+const apiBase = () => resolveApiBaseUrl();
 
 // ============================================================================
 // AUTH HELPER
@@ -23,7 +24,7 @@ function getAuthHeaders(): HeadersInit {
 }
 
 async function fetchAPI<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-  const response = await fetch(`${API_BASE}${endpoint}`, {
+  const response = await fetch(`${apiBase()}${endpoint}`, {
     ...options,
     headers: {
       ...getAuthHeaders(),

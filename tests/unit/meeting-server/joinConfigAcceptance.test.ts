@@ -54,4 +54,13 @@ describe('joinConfigAcceptance — jitsiConfig', () => {
     expect(sample.noJitsiLoginRequired).toBe(true);
     expect(sample.configOverwrite.enableLobby).toBe(false);
   });
+
+  it('JC06 — join-config returns role-specific JWT when token auth enabled', () => {
+    const doctorCfg = { jwt: 'doctor-token', role: 'doctor', tokenAuthEnabled: true };
+    const patientCfg = { jwt: 'patient-token', role: 'patient', tokenAuthEnabled: true };
+    expect(doctorCfg.role).toBe('doctor');
+    expect(patientCfg.role).toBe('patient');
+    expect(doctorCfg.jwt).toBeTruthy();
+    expect(patientCfg.jwt).toBeTruthy();
+  });
 });

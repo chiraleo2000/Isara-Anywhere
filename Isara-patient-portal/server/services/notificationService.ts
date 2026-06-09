@@ -555,8 +555,16 @@ class NotificationService {
       const roomName = `Izara-${appointmentId.substring(0, 8)}-${timestamp}-${randomPart}`;
       
       // Build Jitsi URL with configuration for medical consultations
+      const patientLabel =
+        appointmentData.patientName
+        || appointmentData.patient_name
+        || appointmentData.patientNameThai
+        || 'Patient';
+
       const config = new URLSearchParams({
-        'config.prejoinPageEnabled': 'true',
+        'config.prejoinPageEnabled': 'false',
+        'config.requireDisplayName': 'false',
+        'userInfo.displayName': patientLabel,
         'config.startWithAudioMuted': 'false',
         'config.startWithVideoMuted': 'false',
         'config.enableClosePage': 'true',

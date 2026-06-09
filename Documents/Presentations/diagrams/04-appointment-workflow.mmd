@@ -38,11 +38,12 @@ sequenceDiagram
     end
 
     rect rgb(255, 243, 224)
-        Note over DB,D: ✅ DOCTOR CONFIRMATION
+        Note over DB,D: ✅ DOCTOR CONFIRMATION & POOL
         DB->>DP: New appointment notification
-        DP->>D: Show pending request
-        D->>DP: Confirm/Reject
-        DP->>DB: Update status (confirmed/rejected)
+        DP->>D: Show pending / pool (includeAccepted)
+        D->>DP: Confirm from pool
+        DP->>DB: UPDATE status confirmed (row kept, acceptedBy)
+        Note over DB,DP: Accepted visible 7 days · decline → in_pool
         DB->>PP: Status update
         PP->>P: Email notification
     end

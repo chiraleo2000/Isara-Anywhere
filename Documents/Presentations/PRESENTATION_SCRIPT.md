@@ -3,13 +3,14 @@
 
 ## Presentation Script & Guide
 
-> **Version:** 1.7.48 | **Date:** June 2026
-> **Status:** 2736 unit tests; Defect-regression 36/36 cloud
+> **Version:** 1.7.50 | **Date:** June 2026
+> **Status:** 2938 unit tests; Cloud 85/85; Docker Group W 18/18 (Chromium/Firefox/WebKit)
 > **Duration:** 30–45 minutes
 > **Audience:** Stakeholders, Technical Team, Medical Staff
 > **Visuals:** [html-diagrams/17-testing-quality-gate.html](html-diagrams/17-testing-quality-gate.html) · [23-defect-remediation-v1748.html](html-diagrams/23-defect-remediation-v1748.html)
 > **Thai technical (As-is):** [../Technical_Documents/01_System_Architecture_and_Workflow.md](../Technical_Documents/01_System_Architecture_and_Workflow.md) · [05 process steps](../Technical_Documents/05_Appendix_Full_Process_Steps.md)
-> **Coverage:** [UNIT_TEST_UI_COVERAGE.md](../Documents/docs/markdown/testing/UNIT_TEST_UI_COVERAGE.md)
+> **Coverage:** [UNIT_TEST_UI_COVERAGE.md](../docs/markdown/testing/UNIT_TEST_UI_COVERAGE.md) · [DOCKER_MULTIBROWSER_E2E.md](../docs/markdown/testing/DOCKER_MULTIBROWSER_E2E.md)
+> **UI evidence:** [../docs/screenshots/group-W/](../docs/screenshots/group-W/)
 
 ---
 

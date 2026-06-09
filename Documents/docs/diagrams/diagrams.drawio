@@ -2346,13 +2346,13 @@
         <mxCell id="tg_title" parent="1" style="text;html=1;fillColor=#1a1a2e;fontColor=#fff;fontSize=18;fontStyle=1;rounded=1;align=center;" value="ISARA ANYWHERE — Testing &amp; Quality Gates v1.7.48" vertex="1">
           <mxGeometry height="46" width="1200" x="30" y="20" as="geometry" />
         </mxCell>
-        <mxCell id="tg_sub" parent="1" style="text;html=1;fillColor=none;strokeColor=none;fontSize=11;align=center;fontColor=#444;" value="2736 unit tests · 85 cloud headed Playwright · 36 defect-regression · sonar:lint 0 errors · 212 UI screenshots" vertex="1">
+        <mxCell id="tg_sub" parent="1" style="text;html=1;fillColor=none;strokeColor=none;fontSize=11;align=center;fontColor=#444;" value="2938 unit tests · 78 meeting contracts · 85 cloud headed Playwright · 36 defect-regression · sonar:lint 0 errors · 212 UI screenshots" vertex="1">
           <mxGeometry height="22" width="1200" x="30" y="68" as="geometry" />
         </mxCell>
         <mxCell id="tg_lane1" parent="1" style="swimlane;startSize=28;fillColor=#e3f2fd;strokeColor=#1565c0;fontSize=12;fontStyle=1;" value="UNIT (Vitest)" vertex="1">
           <mxGeometry height="320" width="380" x="30" y="110" as="geometry" />
         </mxCell>
-        <mxCell id="tg_u1" parent="1" style="rounded=1;fillColor=#bbdefb;strokeColor=#1565c0;fontSize=10;align=left;spacingLeft=6;" value="151 test files PASS&#xa;2736 tests PASS&#xa;clinicalComponentStructure.regression&#xa;defectRegisterCoverage.regression" vertex="1">
+        <mxCell id="tg_u1" parent="1" style="rounded=1;fillColor=#bbdefb;strokeColor=#1565c0;fontSize=10;align=left;spacingLeft=6;" value="167 test files PASS&#xa;2938 tests PASS&#xa;processPageCoverage (PCOV)&#xa;queueAcceptTraceability" vertex="1">
           <mxGeometry height="70" width="340" x="50" y="150" as="geometry" />
         </mxCell>
         <mxCell id="tg_u2" parent="1" style="rounded=1;fillColor=#bbdefb;strokeColor=#1565c0;fontSize=10;" value="npm run test:quality:gate&#xa;npm run test:unit:report" vertex="1">

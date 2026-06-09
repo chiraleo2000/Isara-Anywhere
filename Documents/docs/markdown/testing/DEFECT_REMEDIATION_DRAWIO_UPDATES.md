@@ -252,3 +252,29 @@ Mark each file when sections 1–6 above are applied. Do not edit XML in git fro
 **Screenshot evidence:** all `Documents/docs/screenshots/group-*` folders refreshed 2026-05-31; defect pack in `group-defect/`.
 
 **v1.7.48 code verification:** gates in `reports/defect-fix/v1.7.48-final.txt`.
+
+**v1.7.49 — Defect PDF meeting/queue items (local Docker)**
+
+| ID | Issue | Vitest |
+|----|-------|--------|
+| Q1 | Accepted appointment vanishes from lists | `defectIsaraPdfMeetingQueue` DPDF-Q* |
+| J1 | Patient forced to enter Jitsi name | `defectIsaraPdfMeetingQueue` DPDF-N*, `jitsiDisplayName.behavior` |
+| M3 | Doctor meeting blank / not host | `meetingWorkflowHardening`, `virtualMeetingLayoutFirst`, DPDF-M* |
+
+| Gate | Result |
+|------|--------|
+| `npm run test:unit:docker:deploy` | **2817** unit + **78** meeting-server contracts PASS |
+| Process map | `processPageCoverage.test.ts` (16 Process pages → Vitest files) |
+
+**Diagram labels (v1.7.49):** add `resolveMountJwt`, `includeAccepted=true`, `test:unit:docker:deploy`, Vitest **2817**.
+
+**v1.7.50 — full process registry + Docker grouped runner**
+
+| Gate | Result |
+|------|--------|
+| `npm run test:unit:docker` | **2938** Vitest PASS (167 files) |
+| `npm run test:unit:docker:grouped` | Same suite, 4 memory-safe shards |
+| `npm run test:unit:docker:deploy` | Stack rebuild + **2938** + **78** meeting-server contracts |
+| PCOV gate | `processPageCoverage.test.ts` — 49 tests |
+
+**Diagram labels (v1.7.50):** `processWorkflowRegistry`, `queueAcceptTraceability`, `jitsiRoleJwt`, `buildDoctorJitsiMountOptions`, Vitest **2938**, contracts **78**.

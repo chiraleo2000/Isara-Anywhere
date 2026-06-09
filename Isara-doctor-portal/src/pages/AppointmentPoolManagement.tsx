@@ -28,7 +28,12 @@ interface PoolItem {
   preferredTimeSlot: 'morning' | 'afternoon' | 'evening';
   appointmentType: 'telehealth' | 'in_person';
   poolReason: 'no_doctor_selected' | 'doctor_unavailable' | 'doctor_rejected' | 'meeting_missed' | 'rescheduled';
-  poolStatus: 'pending' | 'ai_matched' | 'doctor_claimed' | 'admin_assigned' | 'admin_pending_approval' | 'confirmed' | 'expired';
+  poolStatus: 'pending' | 'ai_matched' | 'doctor_claimed' | 'admin_assigned' | 'admin_pending_approval' | 'confirmed' | 'accepted' | 'expired';
+  status?: string;
+  queueVisibility?: 'pending' | 'accepted';
+  acceptedBy?: string;
+  acceptedByEmail?: string;
+  acceptedAt?: string;
   aiMatchedDoctorId?: string;
   aiMatchedDoctorName?: string;
   aiMatchReason?: string;
@@ -84,16 +89,26 @@ const AppointmentPoolManagement: React.FC = () => {
     }
   }, [authLoading, isAuthenticated, user, navigate]);
 
+  const isAcceptedItem = (item: PoolItem & { status?: string; queueVisibility?: string }) =>
+    item.status === 'confirmed'
+    || item.poolStatus === 'accepted'
+    || item.queueVisibility === 'accepted';
+
+  const isPendingPoolItem = (item: PoolItem) =>
+    item.poolStatus === 'pending' || item.poolStatus === 'ai_matched';
+
   // Fetch pool items
   const fetchPoolItems = useCallback(async () => {
-    if (!user?.specialty) return;
-    
+    if (!user?.id) return;
+
     try {
       setLoading(true);
       setError(null);
 
-      // Fetch pool items matching doctor's specialty from doctor portal API
-      const response = await fetch(`${API_URL}/api/appointment-pool?specialty=${encodeURIComponent(user.specialty)}`, {
+      const specialtyQuery = user.specialty
+        ? `&specialty=${encodeURIComponent(user.specialty)}`
+        : '';
+      const response = await fetch(`${API_URL}/api/appointment-pool?includeAccepted=true${specialtyQuery}`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
         }
@@ -101,15 +116,21 @@ const AppointmentPoolManagement: React.FC = () => {
 
       if (response.ok) {
         const data = await response.json();
-        // Ensure data is an array
-        const items = Array.isArray(data) ? data : [];
-        setPoolItems(items.filter((item: PoolItem) => 
-          item.poolStatus === 'pending' || 
-          item.poolStatus === 'ai_matched' ||
-          (item.poolStatus === 'doctor_claimed' && item.claimedByDoctorId === user.id)
-        ));
+        const items = Array.isArray(data) ? data : (data?.items || []);
+        setPoolItems(items.filter((item: PoolItem & { status?: string; queueVisibility?: string }) => {
+          const status = item.status || item.poolStatus;
+          if (status === 'confirmed' || item.poolStatus === 'accepted' || item.queueVisibility === 'accepted') {
+            return true;
+          }
+          return item.poolStatus === 'pending' ||
+            item.poolStatus === 'ai_matched' ||
+            (item.poolStatus === 'doctor_claimed' && item.claimedByDoctorId === user.id);
+        }));
       } else {
-        console.error('Failed to fetch pool items:', response.status);
+        const errBody = await response.json().catch(() => ({}));
+        const msg = errBody?.message || errBody?.error || `Failed to fetch pool (${response.status})`;
+        console.error('Failed to fetch pool items:', msg);
+        setError(msg);
         setPoolItems([]);
       }
     } catch (err) {
@@ -135,8 +156,8 @@ const AppointmentPoolManagement: React.FC = () => {
       if (response.ok) {
         const data = await response.json();
         const appointments = (data.appointments || data || [])
-          .filter((apt: any) => 
-            apt.doctorId === user.id && 
+          .filter((apt: any) =>
+            (apt.doctorId === user.id || apt.doctor_id === user.id) &&
             apt.status === 'awaiting_doctor_response'
           );
         setPendingAppointments(appointments);
@@ -176,6 +197,7 @@ const AppointmentPoolManagement: React.FC = () => {
         setSelectedItem(null);
         setClaimData({ date: '', time: '', notes: '' });
         fetchPoolItems();
+        fetchAwaitingResponse();
         setTimeout(() => setSuccessMessage(null), 3000);
       } else {
         const error = await response.json();
@@ -193,24 +215,23 @@ const AppointmentPoolManagement: React.FC = () => {
 
     try {
       if (action === 'accept' && proposedDate && proposedTime) {
-        // Accept and confirm with proposed time
-        const response = await fetch(`${API_URL}/api/appointments/${appointmentId}/status`, {
-          method: 'PUT',
+        const response = await fetch(`${API_URL}/api/appointments/${appointmentId}/confirm`, {
+          method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
           },
           body: JSON.stringify({
-            status: 'confirmed',
-            appointmentDate: proposedDate,
-            appointmentTime: proposedTime,
-            confirmedBy: user.name,
-            confirmedAt: new Date().toISOString()
+            doctorId: user.id,
+            doctorEmail: user.email,
+            confirmedDate: proposedDate,
+            confirmedTime: proposedTime,
           })
         });
 
         if (response.ok) {
           setSuccessMessage('ยืนยันนัดหมายสำเร็จ!');
+          fetchPoolItems();
           fetchAwaitingResponse();
         }
       } else if (action === 'reject') {
@@ -293,6 +314,7 @@ const AppointmentPoolManagement: React.FC = () => {
       doctor_claimed: 'bg-green-100 text-green-700',
       admin_assigned: 'bg-orange-100 text-orange-700',
       confirmed: 'bg-emerald-100 text-emerald-700',
+      accepted: 'bg-emerald-100 text-emerald-800',
       expired: 'bg-gray-100 text-gray-700'
     };
     const labels: Record<string, string> = {
@@ -301,6 +323,7 @@ const AppointmentPoolManagement: React.FC = () => {
       doctor_claimed: 'แพทย์รับแล้ว',
       admin_assigned: 'Admin มอบหมาย',
       confirmed: 'ยืนยันแล้ว',
+      accepted: 'ยอมรับแล้ว',
       expired: 'หมดอายุ'
     };
     return (
@@ -378,7 +401,7 @@ const AppointmentPoolManagement: React.FC = () => {
                 : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'
             }`}
           >
-            🔄 รอจัดสรร ({poolItems.filter(i => i.poolStatus === 'pending' || i.poolStatus === 'ai_matched').length})
+            🔄 รอจัดสรร ({poolItems.filter(isPendingPoolItem).length})
           </button>
           <button
             onClick={() => setActiveTab('awaiting_response')}
@@ -391,6 +414,7 @@ const AppointmentPoolManagement: React.FC = () => {
             📋 รอคุณตอบรับ ({pendingAppointments.length})
           </button>
           <button
+            data-testid="accepted-pool-tab"
             onClick={() => setActiveTab('claimed')}
             className={`px-4 py-2 rounded-lg font-medium transition-colors ${
               activeTab === 'claimed'
@@ -398,20 +422,20 @@ const AppointmentPoolManagement: React.FC = () => {
                 : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'
             }`}
           >
-            ✅ ที่รับแล้ว ({poolItems.filter(i => i.poolStatus === 'doctor_claimed' && i.claimedByDoctorId === user?.id).length})
+            ✅ ที่รับแล้ว ({poolItems.filter(isAcceptedItem).length})
           </button>
         </div>
 
         {/* Pool Tab */}
         {activeTab === 'pool' && (
           <div className="space-y-4">
-            {poolItems.filter(i => i.poolStatus === 'pending' || i.poolStatus === 'ai_matched').length === 0 ? (
+            {poolItems.filter(isPendingPoolItem).length === 0 ? (
               <div className="bg-white rounded-xl p-12 text-center border border-gray-100">
                 <div className="text-6xl mb-4">📭</div>
                 <p className="text-gray-500">ไม่มีนัดหมายในกลุ่มที่ตรงกับความเชี่ยวชาญของคุณ</p>
               </div>
             ) : (
-              poolItems.filter(i => i.poolStatus === 'pending' || i.poolStatus === 'ai_matched').map((item) => (
+              poolItems.filter(isPendingPoolItem).map((item) => (
                 <div key={item.id} className="bg-white rounded-xl p-6 border border-gray-100 hover:shadow-md transition-shadow">
                   <div className="flex justify-between items-start mb-4">
                     <div>
@@ -575,35 +599,41 @@ const AppointmentPoolManagement: React.FC = () => {
 
         {/* Claimed Tab */}
         {activeTab === 'claimed' && (
-          <div className="space-y-4">
-            {poolItems.filter(i => i.poolStatus === 'doctor_claimed' && i.claimedByDoctorId === user?.id).length === 0 ? (
+          <div className="space-y-4" data-testid="accepted-pool-list">
+            {poolItems.filter(isAcceptedItem).length === 0 ? (
               <div className="bg-white rounded-xl p-12 text-center border border-gray-100">
                 <div className="text-6xl mb-4">📋</div>
-                <p className="text-gray-500">คุณยังไม่ได้รับนัดหมายจากกลุ่มนัดหมาย</p>
+                <p className="text-gray-500">ยังไม่มีนัดหมายที่ยอมรับ/ยืนยันในกลุ่มนัดหมาย</p>
               </div>
             ) : (
-              poolItems.filter(i => i.poolStatus === 'doctor_claimed' && i.claimedByDoctorId === user?.id).map((item) => (
+              poolItems.filter(isAcceptedItem).map((item) => (
                 <div key={item.id} className="bg-white rounded-xl p-6 border border-green-200 bg-green-50/30">
                   <div className="flex justify-between items-start mb-4">
                     <div>
                       <div className="flex items-center gap-2 mb-1">
                         <h3 className="font-semibold text-lg text-gray-800">{item.patientName}</h3>
-                        {getPoolStatusBadge(item.poolStatus)}
+                        {getPoolStatusBadge(item.poolStatus === 'accepted' ? 'accepted' : 'confirmed')}
                       </div>
                       <p className="text-sm text-gray-500">{item.patientEmail}</p>
+                      {(item.acceptedBy || item.acceptedByEmail) && (
+                        <p className="text-sm text-green-700 mt-1">
+                          ยอมรับโดย: {item.acceptedBy || item.acceptedByEmail}
+                          {item.acceptedAt ? ` · ${formatDate(item.acceptedAt)}` : ''}
+                        </p>
+                      )}
                     </div>
                   </div>
 
-                  {/* Assigned Time */}
                   <div className="mb-4 p-3 bg-white rounded-lg border border-green-200">
                     <p className="text-sm text-green-700">
-                      <span className="font-medium">นัดหมาย:</span> {item.assignedDate && formatDate(item.assignedDate)} เวลา {item.assignedTime}
+                      <span className="font-medium">นัดหมาย:</span>{' '}
+                      {item.assignedDate && formatDate(item.assignedDate)} {item.assignedTime ? `เวลา ${item.assignedTime}` : ''}
                     </p>
                   </div>
 
                   <div className="flex gap-2 pt-4 border-t border-gray-200">
                     <button
-                      onClick={() => navigate(`/appointment/${item.appointmentId}`)}
+                      onClick={() => navigate(`/appointment/${item.appointmentId || item.id}`)}
                       className="flex-1 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 font-medium"
                     >
                       ดูรายละเอียด

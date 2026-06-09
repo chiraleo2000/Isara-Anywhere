@@ -89,12 +89,12 @@ services:
       context: ./Isara-patient-portal
       dockerfile: Dockerfile.unified
       args:
-        VITE_API_URL: http://localhost:3005
+        VITE_API_URL: ""
         VITE_APP_NAME: Izara Patient Portal
         VITE_APP_VERSION: 1.7.3
         VITE_APP_ENV: production
         VITE_USE_POSTGRESQL: "true"
-        VITE_MEETING_SERVER_URL: http://localhost:3020
+        VITE_MEETING_SERVER_URL: http://host.docker.internal:3020
         # Google Maps API - loaded from .env.docker
         VITE_GOOGLE_MAPS_API_KEY: ${VITE_GOOGLE_MAPS_API_KEY}
         VITE_GOOGLE_MAPS_MAP_ID: ${VITE_GOOGLE_MAPS_MAP_ID}
@@ -130,7 +130,7 @@ services:
 
       # Meeting Server URL
       MEETING_SERVER_URL: http://meeting-server:3020
-      VITE_MEETING_SERVER_URL: http://localhost:3020
+      VITE_MEETING_SERVER_URL: http://host.docker.internal:3020
 
       # Google Maps server-side API key
       GOOGLE_MAPS_API_KEY: ${VITE_GOOGLE_MAPS_API_KEY}
@@ -143,6 +143,7 @@ services:
       GOOGLE_TOKEN_VERIFIER_FIXTURE: "1"
     volumes:
       - izara_uploads:/app/uploads
+      - ./scripts/env:/scripts/env:ro
     ports:
       - "3005:3005"
     depends_on:
@@ -165,13 +166,13 @@ services:
       context: ./Isara-doctor-portal
       dockerfile: Dockerfile.unified
       args:
-        VITE_API_URL: http://localhost:3010
+        VITE_API_URL: ""
         VITE_AUTH_URL: http://localhost:3010/auth
         VITE_APP_NAME: Izara Doctor Portal
         VITE_APP_VERSION: 1.7.3
         VITE_APP_ENV: production
         VITE_USE_POSTGRESQL: "true"
-        VITE_MEETING_SERVER_URL: http://localhost:3020
+        VITE_MEETING_SERVER_URL: http://host.docker.internal:3020
     container_name: izara-doctor-portal
     restart: unless-stopped
     env_file:
@@ -202,7 +203,7 @@ services:
 
       # Meeting Server URL
       MEETING_SERVER_URL: http://meeting-server:3020
-      VITE_MEETING_SERVER_URL: http://localhost:3020
+      VITE_MEETING_SERVER_URL: http://host.docker.internal:3020
 
       # Local file storage (no GCS)
       UPLOAD_DIR: /app/uploads
@@ -212,6 +213,7 @@ services:
       GOOGLE_TOKEN_VERIFIER_FIXTURE: "1"
     volumes:
       - izara_uploads:/app/uploads
+      - ./scripts/env:/scripts/env:ro
     ports:
       - "3010:8080"
     depends_on:
@@ -267,12 +269,15 @@ services:
       # Transcription: Web Speech API (browser-native, FREE - no API key needed)
 
       # CORS — allow both portals + mobile dev server
-      CORS_ORIGINS: http://localhost:3005,http://localhost:3010,http://127.0.0.1:3005,http://127.0.0.1:3010
+      CORS_ORIGINS: http://localhost:3005,http://localhost:3010,http://127.0.0.1:3005,http://127.0.0.1:3010,http://host.docker.internal:3005,http://host.docker.internal:3010
       RECORDINGS_DIR: /app/recordings
       UPLOAD_DIR: /app/uploads
+      IZARA_DEV_TESTING: "1"
+      JIBRI_WEBHOOK_SECRET: ${JIBRI_WEBHOOK_SECRET:-izara-jibri-dev-secret}
     volumes:
       - izara_recordings:/app/recordings
       - izara_uploads:/app/uploads
+      - ./scripts/env:/scripts/env:ro
     ports:
       - "3020:3020"
     depends_on:

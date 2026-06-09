@@ -6,6 +6,16 @@
   "scripts": {
     "test": "cd tests/unit && npm test",
     "test:unit": "cd tests/unit && npm test",
+    "test:unit:docker": "node scripts/docker/run-unit-tests.mjs",
+    "test:unit:docker:grouped": "node scripts/docker/run-unit-tests-grouped.mjs",
+    "test:unit:docker:deploy": "node scripts/docker/deploy-and-test.mjs",
+    "test:e2e:docker:queue-traceability": "node scripts/docker/run-e2e-queue-traceability.mjs",
+    "test:e2e:docker:patient-jitsi-prejoin": "node scripts/docker/run-e2e-patient-jitsi-prejoin.mjs",
+    "test:e2e:docker:jitsi-roles": "node scripts/docker/run-e2e-jitsi-roles.mjs",
+    "test:e2e:docker:core-multibrowser": "node scripts/docker/run-e2e-core-multibrowser.mjs",
+    "test:e2e:docker:meeting-lifecycle": "node scripts/docker/run-e2e-meeting-lifecycle.mjs",
+    "docker:probe-health": "node scripts/docker/probe-health.mjs",
+    "docs:sync-screenshots": "node scripts/docs/sync-e2e-screenshots.mjs",
     "test:unit:watch": "cd tests/unit && npm run test:watch",
     "test:unit:coverage": "cd tests/unit && npm run test:coverage",
     "test:unit:report": "node scripts/aggregate-unit-test-report.mjs",
@@ -17,10 +27,10 @@
     "test:unit:security": "cd tests/unit && npm run test:security",
     "test:unit:api": "cd tests/unit && npm run test:api",
     "test:unit:notifications": "cd tests/unit && npm run test:notifications",
-    "test:e2e": "npx playwright test",
-    "test:e2e:full": "npx playwright test",
+    "test:e2e": "cross-env PW_HEADED=1 PW_NO_CHROME=1 npx playwright test --headed",
+    "test:e2e:full": "cross-env PW_HEADED=1 PW_NO_CHROME=1 npx playwright test --headed",
     "test:e2e:parallel": "npx playwright test --project=B-patient-portal --project=C-doctor-portal --project=G-livingwill-pdpa --project=H-content-resources --project=I-admin-notifications --project=J-ai-timeline-map",
-    "test:e2e:pipeline": "npx playwright test --project=D-appointments --project=D-doctor-host --project=Q-meeting-lifecycle --project=E-meeting-clinical --project=F-phr-health-records --project=L-lab-ordering --workers=1",
+    "test:e2e:pipeline": "cross-env PW_HEADED=1 PW_NO_CHROME=1 npx playwright test --project=D-appointments --project=D-doctor-host --project=Q-meeting-lifecycle --project=E-meeting-clinical --project=F-phr-health-records --project=L-lab-ordering --workers=1 --headed",
     "test:e2e:meeting-lifecycle": "cross-env TEST_ENV=cloud npx playwright test --project=Q-meeting-lifecycle --workers=1",
     "test:unit:wave2": "cd tests/unit && npx vitest run doctor-portal/authServer.http.test.ts doctor-portal/emrAutosave.test.ts doctor-portal/prescribingAllergy.test.ts doctor-portal/queueSocket.test.ts",
     "test:unit:wave3": "cd tests/unit && npx vitest run patient-portal/appointmentSlotLock.test.ts patient-portal/pdpaAudit.integration.test.ts patient-portal/aiTriage.test.ts",
@@ -28,11 +38,10 @@
     "test:audit:process": "python scripts/audit-process-coverage.py",
     "test:meeting-server:contract": "node --test Izara-jitsi-server/tests/*.test.mjs",
     "test:post-meeting-pipeline": "node --test Izara-jitsi-server/tests/postMeetingPipeline.test.mjs Izara-jitsi-server/tests/recordingCrypto.test.mjs Izara-jitsi-server/tests/postMeetingPipeline.integration.test.mjs Izara-jitsi-server/tests/postMeetingPipeline.stress.test.mjs",
-
     "test:post-meeting-pipeline:rounds": "node scripts/archive/deprecated/run-post-meeting-pipeline-rounds.mjs --round=all",
     "test:unit:meeting-acceptance": "cd tests/unit && npx vitest run meeting-server/joinConfigAcceptance.test.ts meeting-server/meetingCreateAcceptance.test.ts meeting-server/hostReadyGate.test.ts meeting-server/lobbyKeyResolve.test.ts meeting-server/meetingRuntimeApi.test.ts meeting-server/jibriWebhook.test.ts cross-portal/jitsiMeetingConfig.test.ts",
     "test:zero-exception": "node scripts/run-zero-exception-suite.mjs",
-    "test:security-hardening": "node --test Izara-jitsi-server/tests/recordingAccess.test.mjs Izara-jitsi-server/tests/jwtPolicy.test.mjs Izara-jitsi-server/tests/webhookProdSecret.test.mjs && cd tests/unit && npx vitest run doctor-portal/jwtPolicyAlignment.test.ts patient-portal/malformedBody.test.ts",
+    "test:security-hardening": "node --test Izara-jitsi-server/tests/recordingAccess.test.mjs Izara-jitsi-server/tests/sessionAuth.test.mjs Izara-jitsi-server/tests/webhookProdSecret.test.mjs && cd tests/unit && npx vitest run doctor-portal/jwtPolicyAlignment.test.ts patient-portal/malformedBody.test.ts",
     "audit:prod": "npm audit --omit=dev --audit-level=high --prefix Isara-patient-portal && npm audit --omit=dev --audit-level=high --prefix Isara-doctor-portal && npm audit --omit=dev --audit-level=high --prefix Izara-jitsi-server",
     "test:e2e:multi-browser": "npx playwright test --workers=1",
     "test:e2e:meeting-multibrowser": "npx playwright test --project=A-auth --project=D-appointments --project=E-meeting-clinical --workers=1",
@@ -56,7 +65,7 @@
     "ledger:pre-debug": "node scripts/aggregate-pre-debug-baseline.mjs",
     "security:app-scan": "node scripts/security/app-security-scan.mjs",
     "sonar:lint": "node scripts/sonar/run-quality-gate.mjs",
-    "test:quality:gate": "npm run test:unit:coverage && npm run test:security-hardening && npm run test:meeting-server:contract && npm run sonar:lint",
+    "test:quality:gate": "npm run verify:deps && npm run test:unit:coverage && npm run test:security-hardening && npm run test:meeting-server:contract && npm run sonar:lint",
     "test:cloud:hardening:round1": "pwsh scripts/run-two-round-cloud-hardening.ps1 -Round 1",
     "test:cloud:hardening:round2": "pwsh scripts/run-two-round-cloud-hardening.ps1 -Round 2",
     "ledger:cloud": "node scripts/aggregate-cloud-error-ledger.mjs",
@@ -95,6 +104,7 @@
   "devDependencies": {
     "@axe-core/playwright": "^4.11.1",
     "@playwright/test": "^1.58.2",
-    "@types/node": "^25.5.0"
+    "@types/node": "^25.5.0",
+    "zod": "^3.25.76"
   }
 }

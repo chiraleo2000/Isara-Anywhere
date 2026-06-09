@@ -28,14 +28,24 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import crypto from 'node:crypto';
 import dotenv from 'dotenv';
+import { createRequire } from 'node:module';
 import postgresDataService, { MeetingService } from '../services/postgresDataService';
 import { authMiddleware, AuthenticatedRequest } from '../middleware/auth';
 import { errMsg } from '../utils';
 
 const { pool } = postgresDataService;
 
-// Load environment variables
 dotenv.config();
+
+const requireGemini = createRequire(import.meta.url);
+const {
+  resolveGeminiApiKey,
+  isGeminiConfigured,
+  resolveGeminiModel,
+} = requireGemini('../lib/geminiKey.cjs');
+
+const GEMINI_API_KEY: string | null = isGeminiConfigured() ? resolveGeminiApiKey() : null;
+const GEMINI_MODEL: string = resolveGeminiModel();
 
 const router = Router();
 
@@ -100,16 +110,10 @@ const JITSI_APP_ID = process.env.JITSI_APP_ID || process.env.VITE_JITSI_APP_ID |
 // Transcription: Web Speech API (browser-native, FREE - no API key needed)
 // The browser handles speech recognition directly - zero cost!
 
-// Gemini AI Configuration (for summary & recommendations)
-// Note: API key should be set via environment variable in production
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY || '';
-const GEMINI_MODEL = process.env.GEMINI_MODEL || process.env.VITE_GEMINI_MODEL || 'gemini-3.1-flash-lite';
-
-// Log configuration at startup (without leaking API key)
 console.log('[Video Meeting] ===== Configuration v1.7.3 =====');
 console.log('[Video Meeting] Jitsi Domain:', JITSI_DOMAIN);
 console.log('[Video Meeting] Transcription: Web Speech API (browser-native, FREE)');
-console.log('[Video Meeting] Gemini API Key:', GEMINI_API_KEY ? '✅ Configured' : '❌ NOT FOUND');
+console.log('[Video Meeting] Gemini API Key:', GEMINI_API_KEY ? '✅ Configured' : '❌ NOT FOUND (use xxxxx placeholder for dev)');
 console.log('[Video Meeting] Gemini Model:', GEMINI_MODEL);
 console.log('[Video Meeting] ===============================');
 
@@ -214,8 +218,8 @@ function generateRoomName(appointmentId: string): string {
 function createJitsiUrl(roomName: string, config: JitsiConfig, userInfo?: { name: string; email?: string; role: string }): string {
   const params = new URLSearchParams();
   
-  // Basic configuration
-  params.set('config.prejoinPageEnabled', 'true');
+  // Basic configuration — prejoin disabled when display name is supplied (Izara auth)
+  params.set('config.prejoinPageEnabled', 'false');
   params.set('config.startWithAudioMuted', 'false');
   params.set('config.startWithVideoMuted', 'false');
   params.set('config.enableClosePage', 'true');

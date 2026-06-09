@@ -5,7 +5,12 @@ describe('cloud E2E navigation policy', () => {
     const isCloud = process.env.TEST_ENV === 'cloud';
     const cloudNavTimeout = isCloud ? 90_000 : 30_000;
     const cloudAttempts = isCloud ? 4 : 3;
-    expect(cloudNavTimeout).toBeGreaterThanOrEqual(90_000);
-    expect(cloudAttempts).toBeGreaterThanOrEqual(3);
+    if (isCloud) {
+      expect(cloudNavTimeout).toBeGreaterThanOrEqual(90_000);
+      expect(cloudAttempts).toBe(4);
+    } else {
+      expect(cloudNavTimeout).toBe(30_000);
+      expect(cloudAttempts).toBe(3);
+    }
   });
 });

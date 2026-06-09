@@ -12,14 +12,19 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../components/common/AuthProvider';
 import { getIzaraDisplayName } from '../../utils/jitsiDisplayName';
 import {
+  buildDoctorJitsiMountOptions,
   fetchMeetingJoinConfig,
-  getJitsiExternalApiOptions,
+  loadJitsiExternalApiScript,
   notifyHostPresent,
   pickJitsiJwt,
+  prepareLayoutThenMount,
   resolveJitsiDomain,
+  type MeetingJoinConfig,
 } from '../../utils/jitsiMeetingConfig';
 import { getToken } from '../../services/authServices';
 import meetingTimeService, { MeetingTimeCheck } from '../../services/meetingTimeService';
+import { resolveAppointmentSchedule } from '../../utils/appointmentSchedule';
+import { resolveMeetingServerUrl } from '../../utils/resolveMeetingServerUrl';
 
 function getAuthHeaders(): Record<string, string> {
   const token = getToken();
@@ -60,21 +65,6 @@ interface LobbyParticipant {
 type MeetingStatus = 'time_check' | 'consent' | 'pre_join' | 'ready' | 'in_progress' | 'ended';
 
 const JITSI_DOMAIN = resolveJitsiDomain();
-const MEETING_SERVER_URL = (() => {
-  if (globalThis.window !== undefined) {
-    const env = (globalThis as any).ENV;
-    if (env?.MEETING_SERVER_URL && !String(env.MEETING_SERVER_URL).includes('localhost')) {
-      return env.MEETING_SERVER_URL;
-    }
-    const { origin, hostname } = globalThis.location;
-    if (hostname.includes('run.app')) {
-      return origin
-        .replace('izara-doctor-portal', 'izara-meeting-server')
-        .replace('izara-patient-portal', 'izara-meeting-server');
-    }
-  }
-  return import.meta.env?.VITE_MEETING_SERVER_URL || 'http://localhost:3020';
-})();
 
 function formatDuration(seconds: number): string {
   const h = Math.floor(seconds / 3600);
@@ -124,6 +114,7 @@ const VirtualMeeting: React.FC = () => { // NOSONAR
   const meetingInfoRef = useRef<any>(null);
   const jitsiJwtRef = useRef<string | undefined>(undefined);
   const jitsiDomainRef = useRef(JITSI_DOMAIN);
+  const joinCfgRef = useRef<MeetingJoinConfig | null>(null);
   const durationTimerRef = useRef<NodeJS.Timeout | null>(null);
   const previewVideoRef = useRef<HTMLVideoElement>(null);
   const previewStreamRef = useRef<MediaStream | null>(null);
@@ -183,7 +174,7 @@ const VirtualMeeting: React.FC = () => { // NOSONAR
 
       // Try meeting server
       try {
-        const res = await fetch(`${MEETING_SERVER_URL}/api/meetings/${appointmentId}`, { headers: getAuthHeaders() });
+        const res = await fetch(`${resolveMeetingServerUrl()}/api/meetings/${appointmentId}`, { headers: getAuthHeaders() });
         if (res.ok) {
           const data = await res.json();
           if (data.meeting) {
@@ -199,7 +190,7 @@ const VirtualMeeting: React.FC = () => { // NOSONAR
       // Create meeting record if none exists
       if (!meetingFound) {
         try {
-          const createRes = await fetch(`${MEETING_SERVER_URL}/api/meetings/create`, {
+          const createRes = await fetch(`${resolveMeetingServerUrl()}/api/meetings/create`, {
             method: 'POST', headers: getAuthHeaders(),
             body: JSON.stringify({ appointmentId, doctorId: user?.id, doctorName: user?.displayName || user?.name || 'Doctor', roomName }),
           });
@@ -219,12 +210,13 @@ const VirtualMeeting: React.FC = () => { // NOSONAR
       }
 
       const joinCfg = await fetchMeetingJoinConfig(
-        MEETING_SERVER_URL,
+        resolveMeetingServerUrl(),
         appointmentId || '',
         'doctor',
-        undefined,
+        doctorDisplayName,
         getToken(),
       );
+      joinCfgRef.current = joinCfg;
       if (joinCfg?.roomName) roomName = joinCfg.roomName;
       if (joinCfg?.domain) jitsiDomainRef.current = joinCfg.domain;
       jitsiJwtRef.current = pickJitsiJwt(joinCfg);
@@ -232,7 +224,7 @@ const VirtualMeeting: React.FC = () => { // NOSONAR
     } catch (err: any) {
       setError(err.message || 'Failed to initialize meeting');
     }
-  }, [appointmentId, user]);
+  }, [appointmentId, user, doctorDisplayName]);
 
   const handleLobbyUpdate = useCallback((data: any) => {
     if (data.action === 'join') {
@@ -277,7 +269,7 @@ const VirtualMeeting: React.FC = () => { // NOSONAR
   const connectSocket = useCallback(async () => {
     try {
       const { io } = await import('socket.io-client');
-      const socket = io(MEETING_SERVER_URL, {
+      const socket = io(resolveMeetingServerUrl(), {
         query: { meetingId: appointmentId, userId: user?.id, role: 'doctor', userName: user?.displayName || user?.name || 'Doctor' },
         transports: ['websocket', 'polling'],
       });
@@ -289,7 +281,6 @@ const VirtualMeeting: React.FC = () => { // NOSONAR
           userName: user?.displayName || user?.name || 'Doctor',
           role: 'doctor',
         });
-        void notifyHostPresent(MEETING_SERVER_URL, appointmentId || '', getToken());
       });
       socket.on('lobby-update', handleLobbyUpdate);
       socket.on('transcript-update', handleTranscriptUpdate);
@@ -329,8 +320,8 @@ const VirtualMeeting: React.FC = () => { // NOSONAR
       }
 
       await meetingTimeService.loadRules();
-      const scheduledDate = apt?.scheduledDate || apt?.date || new Date().toISOString();
-      const scheduledTime = apt?.scheduledTime || apt?.time || '09:00';
+      const row = (apt?.appointment || apt) as Record<string, unknown> | undefined;
+      const { date: scheduledDate, time: scheduledTime } = resolveAppointmentSchedule(row);
       const check = meetingTimeService.checkMeetingWindow(scheduledDate, scheduledTime);
       setMeetingTimeCheck(check);
 
@@ -370,77 +361,80 @@ const VirtualMeeting: React.FC = () => { // NOSONAR
     return () => { if (status !== 'pre_join') stopPreviewStream(); };
   }, [status, startPreviewStream, stopPreviewStream]);
 
+  const startMeetingDurationTimer = useCallback(() => {
+    const start = Date.now();
+    durationTimerRef.current = setInterval(() => {
+      setMeetingDuration(Math.floor((Date.now() - start) / 1000));
+    }, 1000);
+  }, []);
+
+  const handleVirtualConferenceJoined = useCallback(() => {
+    setStatus('in_progress');
+    startMeetingDurationTimer();
+    if (socketRef.current?.connected) {
+      socketRef.current.emit('join-meeting', {
+        meetingId: appointmentId,
+        userId: user?.id,
+        role: 'doctor',
+        userName: doctorDisplayName,
+      });
+    }
+    void notifyHostPresent(resolveMeetingServerUrl(), appointmentId || '', getToken());
+  }, [appointmentId, user, doctorDisplayName, startMeetingDurationTimer]);
+
   // ============================================================================
   // JITSI LAUNCH
   // ============================================================================
 
-  const loadJitsiScript = useCallback((): Promise<void> => {
-    return new Promise((resolve, reject) => {
-      if ((globalThis as any).JitsiMeetExternalAPI) { resolve(); return; }
-      const existing = document.querySelector('script[src*="external_api"]');
-      if (existing) { existing.addEventListener('load', () => resolve()); return; }
-      const script = document.createElement('script');
-      script.src = `https://${JITSI_DOMAIN}/external_api.js`;
-      script.async = true;
-      script.onload = () => resolve();
-      script.onerror = () => reject(new Error('Failed to load Jitsi'));
-      document.head.appendChild(script);
-    });
-  }, []);
-
   const joinMeeting = useCallback(async () => {
     stopPreviewStream();
-    void notifyHostPresent(MEETING_SERVER_URL, appointmentId || '', getToken());
     try {
-      await loadJitsiScript();
-      if (!jitsiContainerRef.current || !(globalThis as any).JitsiMeetExternalAPI) return;
-
-      const jitsiOpts = getJitsiExternalApiOptions('doctor', doctorDisplayName);
-      const api = new (globalThis as any).JitsiMeetExternalAPI(jitsiDomainRef.current || JITSI_DOMAIN, {
+      const mount = buildDoctorJitsiMountOptions({
+        user,
+        joinCfg: joinCfgRef.current,
         roomName: roomNameRef.current,
-        jwt: jitsiJwtRef.current,
-        parentNode: jitsiContainerRef.current,
-        width: '100%', height: '100%',
-        configOverwrite: {
-          ...jitsiOpts.configOverwrite,
-          startWithAudioMuted: !micOn,
-          startWithVideoMuted: !cameraOn,
-          subject: `Izara Consultation — ${appointmentId?.substring(0, 8) || 'Meeting'}`,
-        },
-        interfaceConfigOverwrite: {
-          ...jitsiOpts.interfaceConfigOverwrite,
-          DEFAULT_REMOTE_DISPLAY_NAME: 'ผู้เข้าร่วม',
-        },
-        userInfo: {
-          displayName: doctorDisplayName,
-          email: user?.email || '',
-        },
+        domain: jitsiDomainRef.current,
+        storedJwt: jitsiJwtRef.current,
+        micOn,
+        cameraOn,
+        displayName: doctorDisplayName,
+        appointmentLabel: `Izara Consultation — ${appointmentId?.substring(0, 8) || 'Meeting'}`,
       });
+      await loadJitsiExternalApiScript(mount.domain);
+      const mountResult = await prepareLayoutThenMount(
+        setStatus,
+        () => jitsiContainerRef.current,
+        'ready',
+        'pre_join',
+        async () => {
+          const api = new (globalThis as any).JitsiMeetExternalAPI(mount.domain, {
+            roomName: mount.roomName,
+            ...(mount.jwt ? { jwt: mount.jwt } : {}),
+            parentNode: jitsiContainerRef.current,
+            width: '100%', height: '100%',
+            ...mount.apiOptions,
+          });
 
-      jitsiApiRef.current = api;
+          jitsiApiRef.current = api;
 
-      // Ensure iframe permissions
-      const iframe = jitsiContainerRef.current.querySelector('iframe');
-      if (iframe) {
-        iframe.setAttribute('allow', 'camera *; microphone *; display-capture *; autoplay *; clipboard-write *; encrypted-media *');
+          const iframe = jitsiContainerRef.current?.querySelector('iframe');
+          if (iframe) {
+            iframe.setAttribute('allow', 'camera *; microphone *; display-capture *; autoplay *; clipboard-write *; encrypted-media *');
+          }
+          jitsiContainerRef.current?.setAttribute('data-jitsi-moderator', 'true');
+
+          api.on('readyToClose', () => setStatus('ended'));
+          api.on('videoConferenceJoined', handleVirtualConferenceJoined);
+        },
+      );
+      if (!mountResult.ok) {
+        setError(mountResult.error || 'Failed to join meeting');
       }
-
-      api.on('readyToClose', () => setStatus('ended'));
-      api.on('videoConferenceJoined', () => {
-        setStatus('in_progress');
-        const start = Date.now();
-        durationTimerRef.current = setInterval(() => setMeetingDuration(Math.floor((Date.now() - start) / 1000)), 1000);
-        if (socketRef.current?.connected) {
-          socketRef.current.emit('join-meeting', { meetingId: appointmentId, userId: user?.id, role: 'doctor', userName: user?.displayName || user?.name || 'Doctor' });
-        }
-        void notifyHostPresent(MEETING_SERVER_URL, appointmentId || '', getToken());
-      });
-
-      setStatus('ready');
     } catch (err: any) {
       setError(err.message || 'Failed to join meeting');
+      setStatus('pre_join');
     }
-  }, [stopPreviewStream, loadJitsiScript, micOn, cameraOn, appointmentId, user]);
+  }, [stopPreviewStream, micOn, cameraOn, appointmentId, user, doctorDisplayName, handleVirtualConferenceJoined]);
 
   // ============================================================================
   // TRANSCRIPTION (Web Speech API)
@@ -482,7 +476,7 @@ const VirtualMeeting: React.FC = () => { // NOSONAR
             });
           }
           // Persist final segment to server
-          fetch(`${MEETING_SERVER_URL}/api/meetings/${appointmentId}/transcript-segment`, {
+          fetch(`${resolveMeetingServerUrl()}/api/meetings/${appointmentId}/transcript-segment`, {
             method: 'POST', headers: getAuthHeaders(),
             body: JSON.stringify({ speakerId: user?.id, speakerRole: 'doctor', speakerName, content, language: lang, confidence: result[0].confidence, is_final: true, start_time_seconds: startSecs }),
           }).catch(() => {});
@@ -522,7 +516,7 @@ const VirtualMeeting: React.FC = () => { // NOSONAR
     setIsTranscribing(true);
     setIsPaused(false);
 
-    fetch(`${MEETING_SERVER_URL}/api/meetings/${appointmentId}/start-transcription`, {
+    fetch(`${resolveMeetingServerUrl()}/api/meetings/${appointmentId}/start-transcription`, {
       method: 'POST', headers: getAuthHeaders(),
       body: JSON.stringify({ language: transcriptLanguage, startedBy: user?.id }),
     }).catch(() => {});
@@ -531,7 +525,7 @@ const VirtualMeeting: React.FC = () => { // NOSONAR
   const pauseTranscription = useCallback(() => {
     if (recognitionRef.current) try { recognitionRef.current.stop(); } catch { /* ignore */ }
     setIsPaused(true);
-    fetch(`${MEETING_SERVER_URL}/api/meetings/${appointmentId}/pause-transcription`, {
+    fetch(`${resolveMeetingServerUrl()}/api/meetings/${appointmentId}/pause-transcription`, {
       method: 'POST', headers: getAuthHeaders(),
     }).catch(() => {});
   }, [appointmentId]);
@@ -539,7 +533,7 @@ const VirtualMeeting: React.FC = () => { // NOSONAR
   const resumeTranscription = useCallback(() => {
     if (recognitionRef.current) try { recognitionRef.current.start(); } catch { /* ignore */ }
     setIsPaused(false);
-    fetch(`${MEETING_SERVER_URL}/api/meetings/${appointmentId}/resume-transcription`, {
+    fetch(`${resolveMeetingServerUrl()}/api/meetings/${appointmentId}/resume-transcription`, {
       method: 'POST', headers: getAuthHeaders(),
     }).catch(() => {});
   }, [appointmentId]);
@@ -552,7 +546,7 @@ const VirtualMeeting: React.FC = () => { // NOSONAR
     // Remove interim segments locally
     setTranscripts(prev => prev.filter(s => s.isFinal));
     try {
-      await fetch(`${MEETING_SERVER_URL}/api/meetings/${appointmentId}/stop-transcription`, {
+      await fetch(`${resolveMeetingServerUrl()}/api/meetings/${appointmentId}/stop-transcription`, {
         method: 'POST', headers: getAuthHeaders(),
         body: JSON.stringify({ stoppedBy: user?.id }),
       });
@@ -578,7 +572,7 @@ const VirtualMeeting: React.FC = () => { // NOSONAR
     if (!message) return;
     const payload = { meetingId: appointmentId, senderId: user?.id, senderName: user?.displayName || user?.name || 'Doctor', senderRole: 'doctor', message };
     if (socketRef.current?.connected) socketRef.current.emit('chat-message', payload);
-    fetch(`${MEETING_SERVER_URL}/api/meetings/${appointmentId}/chat`, {
+    fetch(`${resolveMeetingServerUrl()}/api/meetings/${appointmentId}/chat`, {
       method: 'POST', headers: getAuthHeaders(), body: JSON.stringify(payload),
     }).catch(() => {});
     setChatInput('');
@@ -589,20 +583,20 @@ const VirtualMeeting: React.FC = () => { // NOSONAR
   // ============================================================================
 
   const admitFromLobby = useCallback(async (participantId: string) => {
-    try { await fetch(`${MEETING_SERVER_URL}/api/meetings/${appointmentId}/lobby/admit`, { method: 'POST', headers: getAuthHeaders(), body: JSON.stringify({ participantId, admittedBy: user?.id }) }); } catch { /* silent */ }
+    try { await fetch(`${resolveMeetingServerUrl()}/api/meetings/${appointmentId}/lobby/admit`, { method: 'POST', headers: getAuthHeaders(), body: JSON.stringify({ participantId, admittedBy: user?.id }) }); } catch { /* silent */ }
     if (socketRef.current?.connected) socketRef.current.emit('lobby-admit', { meetingId: appointmentId, participantId, admittedBy: user?.id });
     setLobbyParticipants(prev => prev.filter(p => p.participantId !== participantId));
   }, [appointmentId, user]);
 
   const rejectFromLobby = useCallback(async (participantId: string) => {
-    try { await fetch(`${MEETING_SERVER_URL}/api/meetings/${appointmentId}/lobby/reject`, { method: 'POST', headers: getAuthHeaders(), body: JSON.stringify({ participantId, rejectedBy: user?.id }) }); } catch { /* silent */ }
+    try { await fetch(`${resolveMeetingServerUrl()}/api/meetings/${appointmentId}/lobby/reject`, { method: 'POST', headers: getAuthHeaders(), body: JSON.stringify({ participantId, rejectedBy: user?.id }) }); } catch { /* silent */ }
     if (socketRef.current?.connected) socketRef.current.emit('lobby-reject', { meetingId: appointmentId, participantId, rejectedBy: user?.id });
     setLobbyParticipants(prev => prev.filter(p => p.participantId !== participantId));
   }, [appointmentId, user]);
 
   const admitAllFromLobby = useCallback(async () => {
     try {
-      await fetch(`${MEETING_SERVER_URL}/api/meetings/${appointmentId}/lobby/admit-all`, { method: 'POST', headers: getAuthHeaders(), body: JSON.stringify({ admittedBy: user?.id }) });
+      await fetch(`${resolveMeetingServerUrl()}/api/meetings/${appointmentId}/lobby/admit-all`, { method: 'POST', headers: getAuthHeaders(), body: JSON.stringify({ admittedBy: user?.id }) });
     } catch {
       for (const p of lobbyParticipants) await admitFromLobby(p.participantId);
       return;
@@ -623,7 +617,7 @@ const VirtualMeeting: React.FC = () => { // NOSONAR
     };
     const poll = async () => {
       try {
-        const res = await fetch(`${MEETING_SERVER_URL}/api/meetings/${appointmentId}/lobby`, { headers: getAuthHeaders() });
+        const res = await fetch(`${resolveMeetingServerUrl()}/api/meetings/${appointmentId}/lobby`, { headers: getAuthHeaders() });
         if (!res.ok) return;
         const data = await res.json();
         const waiting = (data.lobby || []).filter((p: any) => p.status === 'waiting');
@@ -644,7 +638,7 @@ const VirtualMeeting: React.FC = () => { // NOSONAR
     if (jitsiApiRef.current) try { jitsiApiRef.current.executeCommand('hangup'); } catch { /* ignore */ }
     setStatus('ended');
 
-    fetch(`${MEETING_SERVER_URL}/api/meetings/${appointmentId}/end`, {
+    fetch(`${resolveMeetingServerUrl()}/api/meetings/${appointmentId}/end`, {
       method: 'POST', headers: getAuthHeaders(),
       body: JSON.stringify({ endedBy: user?.id || 'doctor', generateSummary: true }),
     }).then(res => res.json()).then(data => {
@@ -683,7 +677,7 @@ const VirtualMeeting: React.FC = () => { // NOSONAR
   if (status === 'time_check') {
     const rules = meetingTimeService.getRules();
     return (
-      <div className="min-h-screen bg-gray-900 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-gray-900 flex items-center justify-center p-4" data-testid="doctor-meeting-room">
         <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full p-8">
           <div className="text-center mb-6">
             <div className={`w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4 ${meetingTimeCheck?.isEarly ? 'bg-yellow-100' : 'bg-red-100'}`}>
@@ -719,8 +713,8 @@ const VirtualMeeting: React.FC = () => { // NOSONAR
                 onClick={async () => {
                   await meetingTimeService.loadRules();
                   const apt = appointmentData;
-                  const scheduledDate = apt?.scheduledDate || apt?.date || new Date().toISOString();
-                  const scheduledTime = apt?.scheduledTime || apt?.time || '09:00';
+                  const row = (apt?.appointment || apt) as Record<string, unknown> | undefined;
+                  const { date: scheduledDate, time: scheduledTime } = resolveAppointmentSchedule(row);
                   const check = meetingTimeService.checkMeetingWindow(scheduledDate, scheduledTime);
                   setMeetingTimeCheck(check);
                   if (check.canJoin) {
@@ -747,7 +741,7 @@ const VirtualMeeting: React.FC = () => { // NOSONAR
   if (status === 'consent') {
     const allConsented = consentRecording && consentTranscript;
     return (
-      <div className="min-h-screen bg-gray-900 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-gray-900 flex items-center justify-center p-4" data-testid="doctor-meeting-room">
         <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full p-8">
           <div className="text-center mb-6">
             <h2 className="text-2xl font-bold text-gray-900 mb-2">ข้อตกลงก่อนเข้าห้องประชุม</h2>
@@ -771,7 +765,7 @@ const VirtualMeeting: React.FC = () => { // NOSONAR
             </button>
             <button
               onClick={() => {
-                fetch(`${MEETING_SERVER_URL}/api/meetings/${appointmentId}/consent`, {
+                fetch(`${resolveMeetingServerUrl()}/api/meetings/${appointmentId}/consent`, {
                   method: 'POST', headers: getAuthHeaders(),
                   body: JSON.stringify({ participantId: user?.id, participantName: user?.displayName || user?.name || 'Doctor', role: 'doctor', consentRecording, consentTranscript }),
                 }).catch(() => {});
@@ -794,7 +788,7 @@ const VirtualMeeting: React.FC = () => { // NOSONAR
 
   if (status === 'pre_join') {
     return (
-      <div className="min-h-screen bg-gray-900 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-gray-900 flex items-center justify-center p-4" data-testid="doctor-meeting-room">
         <div className="bg-gray-800 rounded-xl shadow-2xl max-w-3xl w-full p-8">
           <h2 className="text-xl font-bold text-white text-center mb-6">ตรวจสอบอุปกรณ์ก่อนเข้าร่วม</h2>
 
@@ -840,7 +834,7 @@ const VirtualMeeting: React.FC = () => { // NOSONAR
 
   if (status === 'ended') {
     return (
-      <div className="min-h-screen bg-gray-900 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-gray-900 flex items-center justify-center p-4" data-testid="doctor-meeting-room">
         <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full p-8 text-center">
           <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
             <span className="text-4xl">✅</span>

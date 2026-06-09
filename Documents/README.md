@@ -1,7 +1,7 @@
 # Documents — Izara Anywhere documentation hub
 
 > **Layout version:** June 2026 · **Git tag (docs bundle):** `v1.0-docs`  
-> **App release (reference):** v1.7.48
+> **App release (reference):** v1.7.51 (calendar sync on confirm + 3-party meeting E2E + zero-skip local gate)
 
 รวมเอกสารทั้งหมดของโปรเจกต์ภายใต้โฟลเดอร์เดียว `Documents/`
 
@@ -63,3 +63,22 @@ python scripts/build-appendix-process-steps.py
 ```
 
 สเปกหน้าจอต้นฉบับ (ENRICH): [Processes/Pages/README.md](../Processes/Pages/README.md)
+
+---
+
+## การทดสอบ (v1.7.51)
+
+| คำสั่ง | ความหมาย |
+|--------|----------|
+| `npm run test:unit:docker` | **2982** Vitest tests ใน `node:20-alpine` (167+ files) |
+| `npm run test:unit:docker:grouped` | ชุดเดียวกัน แบ่ง 4 กลุ่ม (doctor / patient / cross-portal / meeting-server) — ใช้เมื่อ RAM จำกัด |
+| `npm run test:unit:docker:deploy` | Rebuild `docker-compose` stack + Vitest ครบ + **78** meeting-server HTTP contracts |
+| `npm run test:meeting-server:contract` | Meeting-server contracts บน host (ไม่ rebuild stack) |
+| `npm run test:e2e:docker:core-multibrowser` | Group W E2E — Chromium + Firefox + WebKit (18/18) |
+| `npm run docs:sync-screenshots` | คัดลอก screenshot จาก E2E ไป `Documents/docs/screenshots/group-W/` |
+
+คู่มือ Docker multi-browser: [docs/markdown/testing/DOCKER_MULTIBROWSER_E2E.md](docs/markdown/testing/DOCKER_MULTIBROWSER_E2E.md)
+
+**Registry:** `tests/unit/cross-portal/processWorkflowRegistry.ts` · gate: `processPageCoverage.test.ts` (49 PCOV) · matrix: [tests/PROCESS_COVERAGE_MATRIX.md](../tests/PROCESS_COVERAGE_MATRIX.md)
+
+Defect PDF (queue/meeting/calendar): `reports/defect-fix/DEFECT_REGISTER.md` — Q1, J1, M3, DPDF-CAL1/CAL2 · Vitest: `queueAcceptTraceability.test.ts`, `defectIsaraPdfMeetingQueue.test.ts`, `calendarEventLinks.test.ts`, `appointmentMapper.test.ts` · Local E2E: **35 passed, 0 skipped** (A→D→Q→E→F→L) + J/R **16/16** (2026-06-08)

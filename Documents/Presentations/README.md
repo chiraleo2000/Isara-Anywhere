@@ -1,7 +1,7 @@
 # IZARA Telemedicine — Presentation Materials
 
 > **Version:** 1.7.48 · **Updated:** 2 June 2026  
-> **Status:** Defect PDF — 23/23 verified · **2736** unit tests  
+> **Status:** Defect PDF — 23/23 verified · **2938** unit tests · Docker gate green  
 > **Documents hub:** [../README.md](../README.md) · **Thai As-is:** [../Technical_Documents/](../Technical_Documents/)
 
 ---
@@ -12,7 +12,7 @@
 |----------|----------|----------|
 | [TECHNICAL_DOCUMENTATION.md](TECHNICAL_DOCUMENTATION.md) | English | Architecture, testing, deployment overview |
 | [../Technical_Documents/](../Technical_Documents/) | Thai | As-is GCP architecture (01–05) |
-| [../docs/README.md](../Documents/docs/README.md) | TH/EN | Word/PPT guides, draw.io, screenshots |
+| [../docs/README.md](../docs/README.md) | TH/EN | Word/PPT guides, draw.io, screenshots |
 | [PRESENTATION_SCRIPT.md](PRESENTATION_SCRIPT.md) | Thai | 30–45 min stakeholder script |
 | [RELEASE_NOTES.md](RELEASE_NOTES.md) | English | Archived v1.7.38–v1.7.47 notes |
 
@@ -75,11 +75,15 @@ Presentations/
 
 ## Testing cross-reference
 
-- Coverage: [../Documents/docs/markdown/testing/UNIT_TEST_UI_COVERAGE.md](../Documents/docs/markdown/testing/UNIT_TEST_UI_COVERAGE.md)
+- Docker multi-browser E2E: [../docs/markdown/testing/DOCKER_MULTIBROWSER_E2E.md](../docs/markdown/testing/DOCKER_MULTIBROWSER_E2E.md)
+- UI screenshots (Group W): [../docs/screenshots/group-W/](../docs/screenshots/group-W/)
+- Coverage: [../docs/markdown/testing/UNIT_TEST_UI_COVERAGE.md](../docs/markdown/testing/UNIT_TEST_UI_COVERAGE.md)
 - Diagram: [html-diagrams/17-testing-quality-gate.html](html-diagrams/17-testing-quality-gate.html)
 - Latest defect diagram: [html-diagrams/23-defect-remediation-v1748.html](html-diagrams/23-defect-remediation-v1748.html)
 
 ```bash
+npm run test:e2e:docker:core-multibrowser
+npm run docs:sync-screenshots
 npm run test:quality:gate
 npm run cleanup:project    # prune doc junk + caches
 ```

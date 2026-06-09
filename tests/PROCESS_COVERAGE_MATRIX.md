@@ -1,6 +1,28 @@
 # Process Documentation → Test Coverage Matrix
 
-**Last updated:** 2026-05-27 (Cloud unit gate + Group S responsive + auth/register contracts)
+**Last updated:** 2026-06-09 (test hardening gate v1.7.52)
+
+## Test hardening packs (v1.7.52)
+
+| Pack | File | IDs |
+|------|------|-----|
+| Post-meeting summary | `meeting-server/generateSummary.integration.test.ts` | GSUM-01–07 |
+| Meeting validation | `doctor-portal/meetingResultsValidation.test.ts` | MRV-01–05 |
+| EMR→PHR delivery | `cross-portal/emrToPhrDelivery.integration.test.ts` | EPH-01–06 |
+| 3-party lobby | `meeting-server/threePartyLobby.integration.test.ts` | TPL-01–05 |
+| Auth login | `authLoginResponse`, `doctorLogin`, `adminLogin`, `patientLogin` | AUTH-* |
+| Calendar confirm | `cross-portal/calendarConfirmNotification.test.ts` | CAL-03–05 |
+
+## Session auth + unified queue (v1.7.52)
+
+| Area | Unit tests | UI |
+|------|------------|-----|
+| Session auth (no JWT) | `meeting-server/jitsiRoleJwt.test.ts`, `doctor-portal/jwtPolicyAlignment.test.ts`, `Izara-jitsi-server/tests/sessionAuth.test.mjs` | group-Q, group-J |
+| Unified patient Queue tab | `patient-portal/unifiedQueueFilter.test.ts` | group-D |
+| Confirm sets confirmed_date | `doctor-portal/confirmSetsConfirmedDate.test.ts` | group-D-queue-accept |
+| splitQueueSections | `doctor-portal/queueAcceptTraceability.test.ts`, `cross-portal/defectIsaraPdfMeetingQueue.test.ts` | group-D |
+
+**E2E policy:** headed UI always (`PW_HEADED=1`); no Google Chrome channel (`PW_NO_CHROME=1`).
 
 ## UX plan checklist (2026-05-27)
 
@@ -47,8 +69,8 @@
 | Doctor-Portal/16_Doctor_Profile | Auth | meetingJoinContract | C | covered | P2 | group-C/C17-doctor-profile |
 | Doctor-Portal/17_Admin_Appointment_Management | Admin | adminAppointmentManagement | D, I | covered | P1 | group-D/D14-admin-meeting |
 | Doctor-Portal/18_Admin_Doctor_Management | Admin | adminDoctorManagement | I | covered | P1 | group-A/C03 |
-| Doctor-Portal/19_Doctors_Management | Admin | adminDoctorManagement | I | partial | P2 | — |
-| Doctor-Portal/20_Appointment_Pool_Management | Appointments | appointmentPoolManagement | D | partial | P0 | group-D/D11-appointment-pool |
+| Doctor-Portal/19_Doctors_Management | Admin | adminDoctorManagement, processPagesContract | I | covered | P2 | — |
+| Doctor-Portal/20_Appointment_Pool_Management | Appointments | appointmentPoolManagement, queueLifecycle, queueAcceptTraceability | D | covered | P0 | group-D/D11-appointment-pool |
 | Doctor-Portal/21_Queue_Management | Appointments | queueManagementWorkflow, queueSocket.test.ts | D, E, Q | covered | P0 | group-D/D16b-doctor-queue-assigned |
 
 ---
@@ -64,7 +86,7 @@
 | Patient-Portal/03_Reset_Password | Auth | authPayloadContract | A | covered | P1 | group-A/A2b-auth-registration |
 | Patient-Portal/04_Dashboard | Workflows | dashboardWorkflow | B | covered | P1 | group-A/A01-patient-dashboard |
 | Patient-Portal/05_Appointments | Appointments | appointmentWorkflow, appointmentSlotLock.test.ts | D, E, Q | covered | P0 | group-D/D01-appointments-list |
-| Patient-Portal/06_PHR | Clinical | phrRoute | F | partial | P0 | group-F/F01-phr-page |
+| Patient-Portal/06_PHR | Clinical | phrRoute, healthRecordsWorkflowContract | F | covered | P0 | group-F/F01-phr-page |
 | Patient-Portal/07_AI_Doctor | AI | aiRoute, aiTriage.test.ts | J | covered | P2 | group-J |
 | Patient-Portal/08_Medical_Content_Library | Content | contentRoute | B, H | covered | P2 | group-H/H10-health-library |
 | Patient-Portal/09_Map | Workflows | mapPage | J | covered | P2 | group-J |
@@ -95,7 +117,7 @@
 | FULL_WORKFLOW_CONTRACT.md | cross-portal/* | A–Q | covered | P0 |
 | Data_Sync_Documentation.md | syncQueue.integration.test.ts | — | covered | P1 |
 | Notification_Workflows.md | notificationWorkflow | I | covered | P2 |
-| Health_Records_Processes.md | phrRoute, emr*, healthRecordsEmrWorkflow | F | partial | P1 |
+| Health_Records_Processes.md | phrRoute, emr*, healthRecordsWorkflowContract | F | covered | P1 |
 | GATE0_IMPLEMENTATION_STATUS.md | verify:gate0 script | D, E | partial | P0 |
 | TWO_ROUND_CLOUD_TESTING.md | — | A→D→D-host→Q→E→F | covered | P0 |
 | ENV_AND_STACK_CHECK.md | serviceReadiness, globalSetupLogic | M | partial | P2 |
@@ -127,5 +149,19 @@
 | 4 | `appointmentsRollback.test.ts`, `syncQueue.integration.test.ts` |
 
 **Audit:** `python scripts/audit-process-coverage.py` → `tests/PROCESS_COVERAGE_GAPS.md`
+
+**Registry gate:** `tests/unit/cross-portal/processWorkflowRegistry.ts` + `processPageCoverage.test.ts` (44 process docs → Vitest files)
+
+**Contract suites (2026-06-05):**
+
+| Suite | Process docs | Tests |
+|-------|----------------|-------|
+| `doctor-portal/processPagesContract.test.ts` | Doctor 00–21 | Route/role matrix |
+| `patient-portal/processPagesContract.test.ts` | Patient 00–15 | Auth/route matrix |
+| `cross-portal/fullWorkflowInvariants.test.ts` | FULL_WORKFLOW_CONTRACT | Global invariants |
+| `cross-portal/appointmentWorkflowContract.test.ts` | Appointment_Workflows | Lifecycle FSM |
+| `cross-portal/healthRecordsWorkflowContract.test.ts` | Health_Records_Processes | PHR/EMR boundaries |
+
+**Docker grouped run (memory-safe):** `npm run test:unit:docker:grouped` or `npm run test:unit:docker:grouped -- doctor patient cross`
 
 **Selectors:** [tests/SELECTORS.md](SELECTORS.md)

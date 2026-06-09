@@ -1,6 +1,6 @@
 # โครงสร้างระบบและขั้นตอนการทำงาน (System Architecture & Workflow)
 
-> **อัปเดต:** 2 มิถุนายน 2569 | **ชุดเอกสาร:** `Documents/Technical_Documents` (แท็ก `v1.0-docs`)  
+> **อัปเดต:** 8 มิถุนายน 2569 (v1.7.51) | **ชุดเอกสาร:** `Documents/Technical_Documents` (แท็ก `v1.0-docs`)  
 > **ขอบเขต:** As-is ตาม codebase — ไม่มีข้อเสนอแนะ · **GCP:** `izara-telemedicine` / `asia-southeast1`  
 > **ดัชนี:** [Documents/README.md](../README.md) · [docs/README.md](../Documents/docs/README.md) · [Presentations](../Presentations/README.md)  
 > **ถัดไป:** [02](02_Authentication_and_Authorization.md) · [03](03_Data_Storage_Architecture.md) · [04](04_Jitsi_Integration_and_Code_Examples.md) · [05 ขั้นตอนเต็ม](05_Appendix_Full_Process_Steps.md)
@@ -428,15 +428,57 @@ Isara-Anywhere/
                                    ประชุม → EMR → completed
 ```
 
-### 9.3 ฟิลด์ที่เกี่ยวกับการประชุม (หลัง confirm)
+### 9.3 ฟิลด์ที่เกี่ยวกับการประชุมและปฏิทิน (หลัง confirm)
 
 ในตาราง `appointments` มีคอลัมน์ที่ระบบใช้จริง เช่น:
 
 - `jitsi_room_name`
 - `doctor_meeting_url`, `patient_meeting_url`, `guest_meeting_url`
 - `meeting_link`, `meet_link`
+- `confirmed_date`, `confirmed_time`, `scheduled_date`, `scheduled_time`
 
 และแถวใน `meeting_records` ที่ Meeting Server สร้างหรือคืนซ้ำ (idempotent ตาม `appointment_id`)
+
+#### 9.3.1 Calendar sync (v1.7.51 — Teams/Zoom/Google Meet parity)
+
+เมื่อแพทย์ที่ได้รับมอบหมายยืนยันนัด (`POST /api/appointments/:id/confirm`):
+
+| ขั้นตอน | ไฟล์ / API | ผลลัพธ์ |
+|---------|------------|---------|
+| 1 | `calendarEventLinks.cjs` → `buildTelehealthCalendarUrl` | สร้าง `calendarEventUrl` (Google Calendar `action=TEMPLATE`, timezone Asia/Bangkok, 30 นาที) |
+| 2 | `appointmentMapper.cjs` → `mapAppointmentForClient` | `GET /api/appointments` คืน camelCase (`appointmentDate`, `doctorId`, `meetingLink`) |
+| 3 | `mainApiServer.cjs` | แจ้งเตือนผู้ป่วย `appointment_confirmed` + `meeting_link_ready` พร้อม `data.calendarEventUrl` |
+| 4 | `mainApiServer.cjs` | แจ้งเตือนแพทย์ `schedule_entry_ready` |
+| 5 | Doctor UI `/schedule` | `schedule/CompleteSchedule.tsx` — กรอง `confirmed`/`scheduled`, `data-testid=schedule-appointment-{id}` |
+| 6 | Patient UI | `MainLayout` MiniCalendar — จุดสี emerald บนวันที่มีนัด; รายละเอียดนัด — `appointment-calendar-link` |
+| 7 | Patient fallback | `buildCalendarEventUrl.ts` สร้าง URL ซ้ำหาก notification เก่าไม่มีฟิลด์ |
+
+```mermaid
+flowchart LR
+  Confirm[POST confirm] --> Cal[calendarEventUrl]
+  Confirm --> Meet[Jitsi URLs]
+  Cal --> N1[Patient notification]
+  Cal --> N2[Doctor schedule_entry_ready]
+  N1 --> PUI[Patient calendar link]
+  N2 --> DUI[Doctor /schedule]
+```
+
+**การทดสอบ:** Playwright **D4cal** (`group-D`); Vitest `calendarEventLinks.test.ts`, `appointmentMapper.test.ts`, `buildCalendarEventUrl.test.ts`, DPDF-CAL1/CAL2
+
+### 9.4 คิว Pool — ยืนยันแล้วไม่หาย (Accept traceability)
+
+เมื่อแพทย์กด **ยืนยัน** จาก pool ระบบ **อัปเดตแถว** ในตาราง `appointments` (ไม่ลบ) — สถานะ DB เป็น `confirmed` แต่ UI/API pool แสดงเป็น **`accepted`**
+
+| หัวข้อ | พฤติกรรม As-is |
+|--------|----------------|
+| Accept | `PUT /api/appointment-pool/:id/confirm` หรือ `POST .../confirm` → ตั้ง `status=confirmed`, `doctor_id` (UUID), `confirmed_by`, `confirmed_at` |
+| Decline | กลับเป็น `in_pool` (ไม่ลบแถว) |
+| Pool GET | `GET /api/appointment-pool?includeAccepted=true` — **default `true`**; pending (`in_pool`, `pending`, `awaiting_doctor_response`) ยังแสดงควบคู่ accepted |
+| หน้าต่าง accepted | แถว `confirmed` ที่ `confirmed_at` ไม่เกิน **7 วัน** (`ACCEPTED_VISIBILITY_DAYS` ใน `appointmentPoolQuery.cjs`) |
+| Mapper | `derivePoolStatus('confirmed')` → `'accepted'`; ฟิลด์ `acceptedBy`, `queueVisibility: 'accepted'` |
+| Realtime | Socket event `pool-updated` หลัง accept/decline — Health Meeting + Appointment Pool Management sync |
+
+ไฟล์อ้างอิง: `Isara-doctor-portal/server/appointmentPoolQuery.cjs`, `appointmentQueueMapper.cjs`, `mainApiServer.cjs` · Vitest: `queueAcceptTraceability.test.ts`, `queueLifecycle.integration.test.ts`
 
 ---
 
@@ -452,9 +494,9 @@ Isara-Anywhere/
 | 4 | เมนู Appointments → เริ่มจอง | wizard: อาการ, วันที่, เลือกแพทย์หรือ pool |
 | 5 | ส่งคำขอนัด | `INSERT appointments` สถานะ `pending` หรือ `in_pool` |
 | 6 | รอแจ้งเตือน | NOTIFY → Socket.IO → กระดิ่ง/รายการนัดอัปเดต |
-| 7 | เมื่อสถานะ `confirmed` | เห็นลิงก์/ปุ่มเข้าประชุม |
-| 8 | ก่อนเข้าห้อง | หน้า agreement → pre-join → **Izara Lobby** รอแพทย์ admit |
-| 9 | หลัง admit | iframe Jitsi (`meet.jit.si`) เป็นผู้เข้าร่วม (ไม่ใช่ moderator) |
+| 7 | เมื่อสถานะ `confirmed` | เห็นลิงก์/ปุ่มเข้าประชุม + จุดปฏิทิน sidebar + **Add to Calendar** (`calendarEventUrl`) |
+| 8 | ก่อนเข้าห้อง | หน้า agreement → **Izara Lobby** รอแพทย์ admit (`prejoinPageEnabled: false`) |
+| 9 | หลัง admit | iframe Jitsi — display name จาก auth (`getIzaraDisplayName`); ไม่ใช่ moderator |
 | 10 | หลังประชุม | รอแพทย์ปิด EMR — ผู้ป่วยยังไม่เห็นสรุป AI จนกว่าแพทย์ validate |
 | 11 | ดูผล | PHR, Timeline, Notifications แสดงข้อมูลที่ `ready_for_patient` |
 
@@ -464,12 +506,12 @@ Isara-Anywhere/
 |-------|---------|----------------------|
 | 1 | `/login` Doctor Portal | `POST /auth/login` → JWT + refresh |
 | 2 | ถ้า `approval_status = pending` | แสดงหน้ารออนุมัติ (แพทย์ใหม่) — ต้องรอ Admin |
-| 3 | Dashboard / Schedule | เห็นนัดที่รอ confirm หรือ confirmed |
+| 3 | Dashboard / Schedule | เห็นนัดที่รอ confirm หรือ confirmed — `/schedule` แสดงเฉพาะ `confirmed`/`scheduled` พร้อมลิงก์ประชุม |
 | 4 | นัดจาก pool | รับจาก `/appointment-pool` หรือ Admin assign มาแล้ว |
-| 5 | Confirm นัด | อัปเดต `confirmed`, สร้าง/ผูก meeting metadata |
-| 6 | Health Meeting / Queue | เห็นคิวผู้ป่วยแบบ realtime |
+| 5 | Confirm นัด | อัปเดต `confirmed` (UI: accepted) — แถวยังอยู่ใน pool 7 วัน |
+| 6 | Health Meeting / Queue | เห็นคิว pending + accepted แบบ realtime (`includeAccepted=true`) |
 | 7 | เริ่มประชุม | `POST /api/meetings/create` (ถ้ายังไม่มี record) |
-| 8 | เข้า Jitsi ก่อนผู้ป่วย | เป็น **HOST** — ควบคุม lobby admit, transcript |
+| 8 | เข้า Jitsi ก่อนผู้ป่วย | **HOST/moderator** — `buildDoctorJitsiMountOptions`; บน meet.jit.si ใช้ `configOverwrite.moderator: true` |
 | 9 | ระหว่างประชุม | transcript segments → `meeting_transcripts` |
 | 10 | จบประชุม | pipeline: บันทึก → STT → Gemini ร่าง SOAP |
 | 11 | EMR Editor | แพทย์แก้/ลงนาม — man-in-the-loop |
@@ -483,7 +525,11 @@ Isara-Anywhere/
 | 1 | ล็อกอินด้วยบัญชี `admin` | JWT + `isAdmin` / `requireAdmin` routes |
 | 2 | `/admin/doctors` | อนุมัติ/ปฏิเสธแพทย์ `approval_status` |
 | 3 | `/admin/appointments` หรือ Appointment Pool | มอบหมาย `doctor_id` → `awaiting_doctor_response` |
-| 4 | ติดตามคิว | dashboard แอดมิน sync จำนวนคิวกับแพทย์ (ทดสอบใน group-D screenshots) |
+| 4 | ติดตามคิว | dashboard แอดมิน sync จำนวนคิวกับแพทย์ — หลักฐาน UI: Group W W03 (Health Meeting + Appointment Pool) |
+
+![Health Meeting queue](../docs/screenshots/group-W/W03-health-meeting.png)
+
+![Appointment Pool](../docs/screenshots/group-W/W03-appointment-pool.png)
 | 5 | เนื้อหา | อนุมัติ `medical_content` (ถ้ามี workflow รออนุมัติ) |
 
 **ข้อจำกัด As-is:** Admin **ไม่ใช่** Jitsi HOST — เฉพาะแพทย์ที่ได้รับมอบหมายเท่านั้น
@@ -492,10 +538,10 @@ Isara-Anywhere/
 
 | ลำดับ | ขั้นตอน |
 |-------|---------|
-| 1 | ได้รับ `guest_meeting_url` / invite token |
-| 2 | เปิดลิงก์ (ไม่ต้องมีบัญชีผู้ป่วยเต็มรูปแบบ) |
+| 1 | ได้รับ `guest_meeting_url` พร้อม **scoped invite token** (`type: guest-invite`) |
+| 2 | เปิดลิงก์ (ไม่ต้องมีบัญชีผู้ป่วยเต็มรูปแบบ) — anonymous join-config **ถูกปฏิเสธ** หากไม่มี token |
 | 3 | กรอกชื่อแสดง → Izara Lobby |
-| 4 | รอแพทย์ admit → เข้า Jitsi เป็นผู้เข้าร่วม |
+| 4 | รอแพทย์ admit → เข้า Jitsi เป็น guest (`affiliation: none`, ไม่ใช่ moderator) |
 
 ---
 

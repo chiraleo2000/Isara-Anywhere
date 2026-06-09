@@ -69,6 +69,9 @@
 | D8 | Verified | Doctor | Clinical resource create failure / สร้างเนื้อหาคลินิกล้มเหลว | `ClinicalResources.tsx` | `clinicalResourcesMount.behavior.test.ts`, `group-Defect-clinical` (DC2) |
 
 | M2 | Verified | Meeting | Doctor join bypasses lobby admit UX | `DoctorDashboard.tsx`, `MeetingRoom.tsx` | `meetingLobbyRoute.*`, `group-Defect-meeting` (DM1, DM2) |
+| M3 | Verified | Meeting | Doctor meeting blank / not host on public Jitsi | `MeetingRoom.tsx`, `VirtualMeeting.tsx`, `jitsiMeetingConfig.ts`, `resolveMeetingServerUrl.ts` | `defectIsaraPdfMeetingQueue` (DPDF-M*), `group-R-jitsi-role-permissions` (JROLE01/02), `group-E` E10c/E10j, `group-Q` Q01b |
+| Q1 | Verified | Queue | Accepted appointment vanishes from traceable lists | `appointmentPoolQuery.cjs` (`assigned` in pool SQL), `mainApiServer.cjs`, `appointment-pool.ts`, `HealthMeeting.tsx` | `defectIsaraPdfMeetingQueue` (DPDF-Q*, DPDF-Q1b), `group-D` D4a-t, `group-D-queue-accept-traceability` |
+| J1 | Verified | Meeting | Patient forced to enter Jitsi display name | `PatientMeetingRoom.tsx`, `jitsiMeetingConfig.ts`, `resolveMeetingServerUrl.ts` | `defectIsaraPdfMeetingQueue` (DPDF-N*), `group-J-patient-jitsi-prejoin` (JPRE01), `group-E` E10d |
 
 
 
@@ -76,6 +79,10 @@
 
 
 
+- **Local gate 2026-06-08 (calendar + 3-party + zero-skip):** Unit **2982/2982** PASS; Playwright D→D-doctor-host→Q→E→F→L **35 passed, 0 skipped** (exit 0); `group-J` + `group-R` **16/16** PASS; `test:quality:gate` PASS (`sonar:lint` 0 errors). Key fixes: L1 obtains doctor JWT via login API (no `DOCTOR_API_TOKEN` skip); confirm API emits `calendarEventUrl` + doctor `schedule_entry_ready` notification; doctor `CompleteSchedule` maps `confirmed_date`/`doctor_id` + month dots; patient `MiniCalendar` appointment days + detail calendar link; Q01f 3-party hold (doctor+patient+guest, 10s media); D4cal schedule + notification calendar asserts.
+- **Local gate 2026-06-08 (E2 + Defect PDF Q1/J1/M3):** Unit **2974/2974** PASS; Playwright pipeline D→Q→E→F→L **34 passed, 1 skipped** (exit 0); `group-J-patient-jitsi-prejoin` **14/14**; `group-R-jitsi-role-permissions` **2/2**; `test:security-hardening` + `test:meeting-server:contract` PASS; `sonar:lint` PASS (0 errors). Key fixes: E10j guest 401 without invite / 200 with invite; `assigned` pool status; `host.docker.internal`→`localhost:3020` browser proxy; guest lobby join requires invite token.
+- v1.7.49: Defect PDF items 1–3 (queue traceability, patient auto Jitsi name, doctor host join) — `defectIsaraPdfMeetingQueue.test.ts`, `processPageCoverage.test.ts`, Docker `test:unit:docker:deploy` pipeline; see `npm run test:unit:docker:deploy`.
+- v1.7.52 (2026-06-09): Test hardening gate — Vitest **3037/3037** host; `test:quality:gate` PASS (0 Sonar errors); new packs GSUM/MRV/EPH/TPL/AUTH/CAL; `test:cloud:unit-gate` PASS (smoke 3/3 + GATE0 G1–G5); deploy tag `v1.7.52-test-hardening`. Local Docker E2E deferred (Docker daemon offline on gate host).
 - v1.7.48: Re-audit 2026-05-30; Sonar clinical TSX extraction (EmrEditorChrome, PrescribingModalChrome, LiveTranscriptionView); MeetingResults ValidationAction; Python ROLE_* constants; **36/36** Defect-regression cloud PASS; test:quality:gate **2736** unit PASS; see `v1.7.48-final.txt` and `pdf-reaudit-v1.7.48.txt`.
 - v1.7.47: Final PDF re-audit; test:quality:gate 2731 unit PASS; Defect-regression **36 passed, 0 skipped**; test:cloud:full **85 passed**; doctor portal rev 00150 (meeting results proxy); meeting server reopen fix; see `v1.7.47-final.txt` and `pdf-reaudit-v1.7.47.txt`.
 - v1.7.46: Auth fix (izara_user); cloud STT secrets; Q/E meeting chain; 85/85 full cloud; see `v1.7.46-final.txt`.

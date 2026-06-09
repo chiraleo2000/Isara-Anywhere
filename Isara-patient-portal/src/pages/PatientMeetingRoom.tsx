@@ -12,30 +12,19 @@ import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { getIzaraDisplayName } from '../utils/jitsiDisplayName';
 import {
+  buildPatientJitsiMountOptions,
   connectMeetingSocket,
   fetchMeetingJoinConfig,
-  getJitsiExternalApiOptions,
+  loadJitsiExternalApiScript,
   resolveJitsiDomain,
+  resolvePatientMeetingDisplayName,
   waitForHostReady,
+  type MeetingJoinConfig,
 } from '../utils/jitsiMeetingConfig';
 import { JitsiMeetingShell } from '../features/meeting/JitsiMeetingShell';
+import { resolveMeetingServerUrl } from '../utils/resolveMeetingServerUrl';
 
 const JITSI_DOMAIN = resolveJitsiDomain();
-const MEETING_SERVER_URL = (() => {
-  if (globalThis.window !== undefined) {
-    const env = (globalThis as any).ENV;
-    if (env?.MEETING_SERVER_URL && !String(env.MEETING_SERVER_URL).includes('localhost')) {
-      return env.MEETING_SERVER_URL;
-    }
-    const { origin, hostname } = globalThis.location;
-    if (hostname.includes('run.app')) {
-      return origin
-        .replace('izara-doctor-portal', 'izara-meeting-server')
-        .replace('izara-patient-portal', 'izara-meeting-server');
-    }
-  }
-  return import.meta.env?.VITE_MEETING_SERVER_URL || 'http://localhost:3020';
-})();
 
 interface TranscriptSegment {
   id: string;
@@ -46,17 +35,9 @@ interface TranscriptSegment {
   timestamp: string;
 }
 
-/** Load the Jitsi Meet External API script */
-function loadJitsiScript(): Promise<void> {
-  return new Promise<void>((resolve, reject) => {
-    if ((globalThis as any).JitsiMeetExternalAPI) { resolve(); return; }
-    const script = document.createElement('script');
-    script.src = `https://${JITSI_DOMAIN}/external_api.js`;
-    script.async = true;
-    script.onload = () => resolve();
-    script.onerror = () => reject(new Error('Failed to load Jitsi'));
-    document.head.appendChild(script);
-  });
+/** Load the Jitsi Meet External API script for the resolved domain */
+function loadJitsiScript(domain: string): Promise<void> {
+  return loadJitsiExternalApiScript(domain);
 }
 
 /** Extract room name from a Jitsi meeting URL */
@@ -74,7 +55,7 @@ async function tryMeetingServer(appointmentId: string, authToken?: string | null
   try {
     const headers: Record<string, string> = {};
     if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
-    const res = await fetch(`${MEETING_SERVER_URL}/api/meetings/${appointmentId}`, { headers });
+    const res = await fetch(`${resolveMeetingServerUrl()}/api/meetings/${appointmentId}`, { headers });
     if (res.ok) {
       const data = await res.json();
       if (data.meeting?.room_name) return data.meeting.room_name;
@@ -194,6 +175,7 @@ const PatientMeetingRoom: React.FC = () => { // NOSONAR
   const socketRef = useRef<any>(null);
   const roomNameRef = useRef<string>('');
   const jitsiDomainRef = useRef(JITSI_DOMAIN);
+  const joinCfgRef = useRef<MeetingJoinConfig | null>(null);
   const previewStreamRef = useRef<MediaStream | null>(null);
   const previewVideoRef = useRef<HTMLVideoElement>(null);
 
@@ -235,10 +217,11 @@ const PatientMeetingRoom: React.FC = () => { // NOSONAR
   } | null>(null);
 
   const participantId = user?.id || guestParticipantId(appointmentId || 'room');
-  const patientName =
-    resolvedName ||
-    searchParams.get('name')?.trim() ||
-    getIzaraDisplayName(user, 'Patient');
+  const patientName = resolvePatientMeetingDisplayName({
+    user,
+    resolvedName,
+    urlName: searchParams.get('name'),
+  });
 
   const stopPreviewStream = () => {
     if (previewStreamRef.current) {
@@ -279,7 +262,7 @@ const PatientMeetingRoom: React.FC = () => { // NOSONAR
   // Poll for consultation result after meeting ends
   const pollConsultationResult = useCallback(async () => {
     try {
-      const r = await fetch(`${MEETING_SERVER_URL}/api/meetings/${appointmentId}/consultation-result`);
+      const r = await fetch(`${resolveMeetingServerUrl()}/api/meetings/${appointmentId}/consultation-result`);
       const data = await r.json();
       if (data.success) setConsultationResult(data);
       if (data.success && !data.available) {
@@ -311,7 +294,7 @@ const PatientMeetingRoom: React.FC = () => { // NOSONAR
   const connectPatientSocket = useCallback(async (appendTranscript: (data: TranscriptSegment) => void) => {
     try {
       const socket = await connectMeetingSocket(
-        MEETING_SERVER_URL,
+        resolveMeetingServerUrl(),
         appointmentId || '',
         {
           onHostReady: () => {
@@ -338,13 +321,15 @@ const PatientMeetingRoom: React.FC = () => { // NOSONAR
       try {
         const roomName = await fetchRoomName(appointmentId || 'room', token);
         roomNameRef.current = roomName;
+        const displayNameForConfig = getIzaraDisplayName(user, 'Patient');
         const joinCfg = await fetchMeetingJoinConfig(
-          MEETING_SERVER_URL,
+          resolveMeetingServerUrl(),
           appointmentId || 'room',
           'patient',
-          user ? undefined : patientName,
+          displayNameForConfig,
           token,
         );
+        joinCfgRef.current = joinCfg;
         if (joinCfg?.displayName) setResolvedName(joinCfg.displayName);
         if (joinCfg?.roomName) roomNameRef.current = joinCfg.roomName;
         if (joinCfg?.domain) jitsiDomainRef.current = joinCfg.domain;
@@ -372,7 +357,7 @@ const PatientMeetingRoom: React.FC = () => { // NOSONAR
     try {
       const ctrl = new AbortController();
       const timer = setTimeout(() => ctrl.abort(), 10_000);
-      await fetch(`${MEETING_SERVER_URL}/api/meetings/${appointmentId}/consent`, {
+      await fetch(`${resolveMeetingServerUrl()}/api/meetings/${appointmentId}/consent`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -390,7 +375,7 @@ const PatientMeetingRoom: React.FC = () => { // NOSONAR
   const shareInviteLink = async () => {
     if (!inviteName) return;
     try {
-      const res = await fetch(`${MEETING_SERVER_URL}/api/meetings/${appointmentId}/share-link`, {
+      const res = await fetch(`${resolveMeetingServerUrl()}/api/meetings/${appointmentId}/share-link`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -417,38 +402,36 @@ const PatientMeetingRoom: React.FC = () => { // NOSONAR
 
   const mountJitsiMeeting = useCallback(async () => {
     try {
-      await loadJitsiScript();
+      const joinCfg = joinCfgRef.current;
+      const mount = buildPatientJitsiMountOptions({
+        user,
+        joinCfg,
+        roomName: roomNameRef.current,
+        domain: jitsiDomainRef.current,
+        micOn,
+        cameraOn,
+        resolvedName,
+        urlName: searchParams.get('name'),
+      });
+      await loadJitsiScript(mount.domain);
       if (jitsiContainerRef.current && (globalThis as any).JitsiMeetExternalAPI) {
-        const jitsiOpts = getJitsiExternalApiOptions('patient', patientName);
-        const domain = jitsiDomainRef.current || JITSI_DOMAIN;
-        const api = new (globalThis as any).JitsiMeetExternalAPI(domain, {
-          roomName: roomNameRef.current,
+        const api = new (globalThis as any).JitsiMeetExternalAPI(mount.domain, {
+          roomName: mount.roomName,
+          ...(mount.jwt ? { jwt: mount.jwt } : {}),
           parentNode: jitsiContainerRef.current,
           width: '100%',
           height: '100%',
-          configOverwrite: {
-            ...jitsiOpts.configOverwrite,
-            startWithAudioMuted: !micOn,
-            startWithVideoMuted: !cameraOn,
-            subject: 'Izara Consultation',
-          },
-          interfaceConfigOverwrite: {
-            ...jitsiOpts.interfaceConfigOverwrite,
-            DEFAULT_REMOTE_DISPLAY_NAME: 'แพทย์',
-          },
-          userInfo: {
-            displayName: patientName,
-            email: user?.email || '',
-          },
+          ...mount.apiOptions,
         });
 
         jitsiApiRef.current = api;
 
-        // Ensure Jitsi iframe has camera/microphone permissions
         const iframe = jitsiContainerRef.current?.querySelector('iframe');
         if (iframe) {
           iframe.setAttribute('allow', 'camera *; microphone *; display-capture *; autoplay *; clipboard-write *; encrypted-media *');
         }
+        jitsiContainerRef.current?.setAttribute('data-jitsi-moderator', 'false');
+        jitsiContainerRef.current?.setAttribute('data-jitsi-participant', 'true');
 
         api.on('readyToClose', () => {
           setStatus('ended');
@@ -467,10 +450,10 @@ const PatientMeetingRoom: React.FC = () => { // NOSONAR
     } catch (err: any) {
       setError(err.message);
     }
-  }, [patientName, micOn, cameraOn, user?.email, appointmentId]);
+  }, [patientName, micOn, cameraOn, user, resolvedName, searchParams, appointmentId]);
 
   const connectVideoWhenReady = useCallback(async () => {
-    const hostReady = await waitForHostReady(MEETING_SERVER_URL, appointmentId || '', 120_000);
+    const hostReady = await waitForHostReady(resolveMeetingServerUrl(), appointmentId || '', 120_000);
     if (!hostReady) {
       setError('รอแพทย์เข้าห้องประชุม — แพทย์ต้องเข้าก่อนจึงจะเชื่อมต่อวิดีโอได้');
       return;
@@ -495,6 +478,29 @@ const PatientMeetingRoom: React.FC = () => { // NOSONAR
     videoConnectStartedRef.current = false;
   }, [appointmentId]);
 
+  // HTTP poll when Socket.IO admit event is missed (headless E2E / flaky networks)
+  useEffect(() => {
+    if (lobbyStatus !== 'waiting' || !appointmentId || !participantId) return;
+    const poll = setInterval(async () => {
+      try {
+        const r = await fetch(
+          `${resolveMeetingServerUrl()}/api/meetings/${appointmentId}/lobby/status/${encodeURIComponent(participantId)}`,
+        );
+        if (!r.ok) return;
+        const d = await r.json();
+        if (d.status === 'admitted') {
+          setLobbyStatus('admitted');
+          setStatus((s) => (s === 'lobby_waiting' ? 'waiting_host' : s));
+        } else if (d.status === 'rejected') {
+          setLobbyStatus('rejected');
+        }
+      } catch {
+        /* keep polling */
+      }
+    }, 2000);
+    return () => clearInterval(poll);
+  }, [lobbyStatus, appointmentId, participantId]);
+
   const joinMeeting = async () => {
     setError(null);
     setStatus('lobby_waiting');
@@ -503,7 +509,7 @@ const PatientMeetingRoom: React.FC = () => { // NOSONAR
     try {
       const ctrl = new AbortController();
       const timer = setTimeout(() => ctrl.abort(), 10_000);
-      const lobbyRes = await fetch(`${MEETING_SERVER_URL}/api/meetings/${appointmentId}/lobby/join`, {
+      const lobbyRes = await fetch(`${resolveMeetingServerUrl()}/api/meetings/${appointmentId}/lobby/join`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -653,7 +659,7 @@ const PatientMeetingRoom: React.FC = () => { // NOSONAR
                     <div className="w-28 h-28 rounded-full bg-emerald-500 flex items-center justify-center text-4xl font-bold text-white shadow-lg mb-3">
                       {getUserInitials(patientName)}
                     </div>
-                    <span className="text-lg font-medium text-white">{patientName}</span>
+                    <span className="text-lg font-medium text-white" data-testid="patient-display-name">{patientName}</span>
                     <span className="text-sm text-emerald-300 mt-1">ผู้ป่วย</span>
                   </div>
                 )}
@@ -717,7 +723,7 @@ const PatientMeetingRoom: React.FC = () => { // NOSONAR
                     {getUserInitials(patientName)}
                   </div>
                   <div>
-                    <div className="font-medium">{patientName}</div>
+                    <div className="font-medium" data-testid="patient-display-name">{patientName}</div>
                     <div className="text-sm text-emerald-400">ผู้ป่วย</div>
                     <div className="text-xs text-gray-500">{user?.email || ''}</div>
                   </div>

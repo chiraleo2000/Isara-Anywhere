@@ -1,6 +1,6 @@
 # Environment and Stack Check (Doctor + Patient + Jitsi)
 
-Last verified: 2026-05-23
+Last verified: 2026-06-08 (v1.7.51 — calendar API + portal image rebuild for E2E)
 
 ## Scope
 
@@ -36,7 +36,8 @@ Validated configuration parity and prerequisites for:
 
 ### Gemini (cloud E2E gate)
 
-- Meeting server **must** have `GEMINI_API_KEY` set in cloud dev-testing for Group **Q02** (`generate-summary` mandatory).
+- Dev placeholder: `GEMINI_API_KEY=xxxxx` in `.env.example` (resolved by `scripts/env/geminiKey.js`; AI routes skip live calls until a real key is set).
+- Meeting server **must** have a real `GEMINI_API_KEY` in cloud dev-testing for Group **Q02** (`generate-summary` mandatory).
 - Playwright cloud runner (`scripts/run-cloud-tests.ps1`) exits early if `GEMINI_API_KEY` / `CLOUD_GEMINI_API_KEY` is unset.
 
 ### Recordings filesystem
@@ -47,6 +48,9 @@ Validated configuration parity and prerequisites for:
 ### JWT and Auth
 
 - Doctor portal, patient portal, and meeting server enforce fail-fast behavior when `JWT_SECRET` is missing.
+- **Env schema:** `scripts/env/schema.js` (Zod) validates `JWT_SECRET`, `GEMINI_API_KEY`, optional `DATABASE_URL` / `JITSI_DOMAIN` at doctor portal boot.
+- **Jitsi roles (self-hosted + `JITSI_JWT_SECRET`):** `createJitsiRoleJwt` in `Izara-jitsi-server/server/jwtPolicy.js` — doctor `moderator: true` / `affiliation: owner`; patient `moderator: false` / `affiliation: member`; anonymous guest blocked on secured `join-config` unless `?name=` or invite token.
+- **Display names:** `getIzaraDisplayName` from auth state → `userInfo.displayName`; `prejoinPageEnabled: false` on all portal Jitsi inits.
 - Token verification paths are present in auth and protected route middleware.
 - Cloud deploy injects JWT secret from Secret Manager.
 
@@ -61,6 +65,20 @@ Validated configuration parity and prerequisites for:
 - Build args set `VITE_USE_POSTGRESQL=true` and disable GCS storage path usage.
 - Meeting server is deployed first; portal deploys consume captured meeting URL for runtime env parity.
 - SSO client ID is injected at build/runtime for both portals.
+
+## Local E2E — portal image rebuild (v1.7.51)
+
+Server and UI changes for calendar sync (`calendarEventLinks.cjs`, `appointmentMapper.cjs`, `CompleteSchedule.tsx`, patient `MainLayout` MiniCalendar) are **baked into Docker images**. After pulling or editing these files:
+
+```bash
+docker compose --env-file .env.docker build doctor-portal patient-portal
+docker compose --env-file .env.docker up -d
+# Optional DB reset for E2E baseline:
+node -e "import('./scripts/docker/e2eDockerCommon.mjs').then(m => m.resetDatabaseBaseline())"
+```
+
+**E2E env:** `PW_NO_CHROME=1`, `PW_HEADLESS=1`, `PW_WORKERS=1`  
+**June 8 gate:** Vitest **2982/2982**; core pipeline **35 passed, 0 skipped**; J+R **16/16**
 
 ## Result
 

@@ -1,7 +1,9 @@
 import { Appointment, AppointmentBooking, HealthRecord, AppointmentResult } from '../types';
 import * as authService from './authServices';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || '';
+import { resolveApiBaseUrl } from '../utils/resolveApiBaseUrl';
+
+const apiBaseUrl = () => resolveApiBaseUrl();
 
 // Appointment Service
 export class AppointmentService {
@@ -23,7 +25,7 @@ export class AppointmentService {
     }
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/appointments/book`, {
+      const response = await fetch(`${apiBaseUrl()}/api/appointments/book`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${authService.getToken()}`,
@@ -49,7 +51,7 @@ export class AppointmentService {
 
   async getAppointments(): Promise<Appointment[]> {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/appointments`, {
+      const response = await fetch(`${apiBaseUrl()}/api/appointments`, {
         headers: authService.getAuthHeaders(),
       });
 
@@ -68,7 +70,7 @@ export class AppointmentService {
 
   async getAppointmentById(id: string): Promise<Appointment> {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/appointments/${id}`, {
+      const response = await fetch(`${apiBaseUrl()}/api/appointments/${id}`, {
         headers: authService.getAuthHeaders(),
       });
 
@@ -84,7 +86,7 @@ export class AppointmentService {
 
   async cancelAppointment(id: string): Promise<void> {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/appointments/${id}/cancel`, {
+      const response = await fetch(`${apiBaseUrl()}/api/appointments/${id}/cancel`, {
         method: 'POST',
         headers: authService.getAuthHeaders(),
       });
@@ -101,7 +103,7 @@ export class AppointmentService {
 export class RecordsService {
   async getRecords(): Promise<HealthRecord[]> {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/records`, {
+      const response = await fetch(`${apiBaseUrl()}/api/records`, {
         headers: authService.getAuthHeaders(),
       });
 
@@ -122,7 +124,7 @@ export class RecordsService {
 
   async getAppointmentResults(): Promise<AppointmentResult[]> {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/records/appointment-results`, {
+      const response = await fetch(`${apiBaseUrl()}/api/records/appointment-results`, {
         headers: authService.getAuthHeaders(),
       });
 
@@ -149,7 +151,7 @@ export class RecordsService {
 export class EMRService {
   async create(data: any): Promise<any> {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/emr`, {
+      const response = await fetch(`${apiBaseUrl()}/api/emr`, {
         method: 'POST',
         headers: authService.getAuthHeaders(),
         body: JSON.stringify(data),
@@ -164,7 +166,7 @@ export class EMRService {
 
   async getByPatient(patientId: string): Promise<any[]> {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/emr/patient/${patientId}`, {
+      const response = await fetch(`${apiBaseUrl()}/api/emr/patient/${patientId}`, {
         headers: authService.getAuthHeaders(),
       });
       if (!response.ok) throw new Error('Failed to fetch EMRs');
@@ -180,7 +182,7 @@ export class EMRService {
 export class PrescriptionService {
   async create(data: any): Promise<any> {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/prescriptions`, {
+      const response = await fetch(`${apiBaseUrl()}/api/prescriptions`, {
         method: 'POST',
         headers: authService.getAuthHeaders(),
         body: JSON.stringify(data),
@@ -195,7 +197,7 @@ export class PrescriptionService {
 
   async getByPatient(patientId: string): Promise<any[]> {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/prescriptions/patient/${patientId}`, {
+      const response = await fetch(`${apiBaseUrl()}/api/prescriptions/patient/${patientId}`, {
         headers: authService.getAuthHeaders(),
       });
       if (!response.ok) throw new Error('Failed to fetch prescriptions');
@@ -211,7 +213,7 @@ export class PrescriptionService {
 export class LabOrderService {
   async create(data: any): Promise<any> {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/lab-orders`, {
+      const response = await fetch(`${apiBaseUrl()}/api/lab-orders`, {
         method: 'POST',
         headers: authService.getAuthHeaders(),
         body: JSON.stringify(data),
@@ -226,7 +228,7 @@ export class LabOrderService {
 
   async getByPatient(patientId: string): Promise<any[]> {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/lab-orders/patient/${patientId}`, {
+      const response = await fetch(`${apiBaseUrl()}/api/lab-orders/patient/${patientId}`, {
         headers: authService.getAuthHeaders(),
       });
       if (!response.ok) throw new Error('Failed to fetch lab orders');
@@ -242,7 +244,7 @@ export class LabOrderService {
 export class QueueService {
   async getQueue(doctorId: string): Promise<any[]> {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/queue/doctor/${doctorId}`, {
+      const response = await fetch(`${apiBaseUrl()}/api/queue/doctor/${doctorId}`, {
         headers: authService.getAuthHeaders(),
       });
       if (!response.ok) throw new Error('Failed to fetch queue');
@@ -256,7 +258,7 @@ export class QueueService {
 
   async callNext(doctorId: string): Promise<any> {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/queue/call-next`, {
+      const response = await fetch(`${apiBaseUrl()}/api/queue/call-next`, {
         method: 'POST',
         headers: authService.getAuthHeaders(),
         body: JSON.stringify({ doctorId }),
@@ -271,7 +273,7 @@ export class QueueService {
 
   async skip(patientId: string, reason: string): Promise<void> {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/queue/skip`, {
+      const response = await fetch(`${apiBaseUrl()}/api/queue/skip`, {
         method: 'POST',
         headers: authService.getAuthHeaders(),
         body: JSON.stringify({ patientId, reason }),
@@ -354,7 +356,7 @@ export class MeetingService {
         timestamp: results.timestamp
       };
 
-      const response = await fetch(`${API_BASE_URL}/api/video-meeting/${appointmentId}/end`, {
+      const response = await fetch(`${apiBaseUrl()}/api/video-meeting/${appointmentId}/end`, {
         method: 'POST',
         headers: {
           ...authService.getAuthHeaders(),
@@ -383,8 +385,8 @@ export class MeetingService {
   async getMeetingFiles(appointmentId: string, doctorId?: string): Promise<MeetingFilesResponse> {
     try {
       const url = doctorId 
-        ? `${API_BASE_URL}/api/video-meeting/${appointmentId}/files?doctorId=${doctorId}`
-        : `${API_BASE_URL}/api/video-meeting/${appointmentId}/files`;
+        ? `${apiBaseUrl()}/api/video-meeting/${appointmentId}/files?doctorId=${doctorId}`
+        : `${apiBaseUrl()}/api/video-meeting/${appointmentId}/files`;
         
       const response = await fetch(url, {
         headers: authService.getAuthHeaders(),
@@ -407,7 +409,7 @@ export class MeetingService {
    */
   async getMeetingTranscript(appointmentId: string): Promise<{ transcript: any[]; summary: any }> {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/video-meeting/${appointmentId}/transcript`, {
+      const response = await fetch(`${apiBaseUrl()}/api/video-meeting/${appointmentId}/transcript`, {
         headers: authService.getAuthHeaders(),
       });
 
@@ -432,7 +434,7 @@ export class MeetingService {
    */
   async generateRecommendations(appointmentId: string, patientInfo: any): Promise<any> {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/video-meeting/${appointmentId}/recommendations`, {
+      const response = await fetch(`${apiBaseUrl()}/api/video-meeting/${appointmentId}/recommendations`, {
         method: 'POST',
         headers: {
           ...authService.getAuthHeaders(),
@@ -458,7 +460,7 @@ export class MeetingService {
    */
   async checkHealth(): Promise<any> {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/video-meeting/health`, {
+      const response = await fetch(`${apiBaseUrl()}/api/video-meeting/health`, {
         headers: authService.getAuthHeaders(),
       });
 

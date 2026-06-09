@@ -1,7 +1,29 @@
 # Release notes (archived)
 
-> **Current status:** see [TECHNICAL_DOCUMENTATION.md](TECHNICAL_DOCUMENTATION.md) — Latest release v1.7.48  
-> **Detailed logs:** `reports/defect-fix/v1.7.*-final.txt`
+> **Current status:** see [TECHNICAL_DOCUMENTATION.md](TECHNICAL_DOCUMENTATION.md) — Latest release v1.7.52  
+> **Detailed logs:** `reports/defect-fix/v1.7.*-final.txt` · `reports/defect-fix/DEFECT_REGISTER.md`
+
+## v1.7.52 (9 June 2026)
+
+- **Test hardening:** +55 Vitest tests — GSUM/MRV/EPH/TPL/AUTH/CAL packs; Vitest **3037/3037** on host; `test:quality:gate` PASS (0 Sonar errors)
+- **Sonar remediation:** Dockerfile S7020, `CompleteSchedule.tsx` refactor, confirm-handler helpers in `mainApiServer.cjs`, `AppointmentPages` calendar extract, test fixture NOSONAR
+- **Infra:** `authLoginResponse.test.ts`, vitest groups include `meeting/**` + cross-portal post-meeting/calendar tests; `processWorkflowRegistry` POST_MEETING + EPH mappings
+- **Cloud gate:** `test:cloud:unit-gate` PASS (smoke 3/3 + GATE0 G1–G5); deploy tag `v1.7.52-test-hardening`
+
+## v1.7.51 (8 June 2026)
+
+- **Calendar sync on confirm:** `calendarEventUrl` (Google Calendar TEMPLATE), doctor `/schedule` (`CompleteSchedule.tsx`), patient MiniCalendar + `appointment-calendar-link`
+- **API:** `appointmentMapper.cjs`, `calendarEventLinks.cjs`; `schedule_entry_ready` doctor notification; `GET /api/schedule/:doctorId` uses `confirmed_date`
+- **3-party meeting E2E:** Q01f holds doctor + patient + guest **10s** with media checks; `assertThreePartyInMeeting`
+- **L1 unskip:** Doctor JWT via `POST /api/auth/login` in `group-L-lab-ordering.ui-test.ts`
+- **Gates:** Vitest **2982/2982**; local E2E **35 passed, 0 skipped** (A→D→Q→E→F→L) + J/R **16/16**; `test:quality:gate` PASS
+- **Docs:** `Processes/Appointment_Workflows.md`, `Notification_Workflows.md`, `VIDEO_MEETING_JITSI_GEMINI.md`, schedule + appointments process pages
+
+## v1.7.50
+
+- Queue accept traceability (`includeAccepted`, 7-day window); Jitsi JWT roles (doctor owner/moderator, guest invite token)
+- Process test registry: 2938 Vitest + 78 meeting-server contracts; `test:unit:docker:grouped`
+- Docs sync: Technical Documents 01–05, UNIT_TEST_UI_COVERAGE, Docker test instructions
 
 ## v1.7.47
 

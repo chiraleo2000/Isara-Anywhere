@@ -91,6 +91,8 @@ venv/
 test-results/
 playwright-report/
 test-logs/
+tests/output/screenshots/**/*.png
+!tests/output/screenshots/.gitkeep
 
 # Full-deck exports (regenerate locally; committed guides live under docs/)
 Presentations/IZARA_User_Guide.pdf

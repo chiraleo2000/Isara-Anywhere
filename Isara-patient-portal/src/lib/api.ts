@@ -1,7 +1,9 @@
-// Use relative paths for API calls - Vite proxy will forward /api to backend
-// This works in both development (via proxy) and production (same origin)
-const API_URL = import.meta.env.VITE_API_URL || '';
+// Use relative paths when baked API URL origin differs from page origin (Docker E2E, Cloud Run).
+import { resolveApiBaseUrl } from '../utils/resolveApiBaseUrl';
 
+function apiBaseUrl(): string {
+  return resolveApiBaseUrl();
+}
 function getToken(): string | null {
   return localStorage.getItem('auth_token');
 }
@@ -16,7 +18,7 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
     headers['Authorization'] = `Bearer ${token}`;
   }
 
-  const res = await fetch(`${API_URL}${endpoint}`, { ...options, headers });
+  const res = await fetch(`${apiBaseUrl()}${endpoint}`, { ...options, headers });
   
   if (res.status === 401) {
     localStorage.removeItem('auth_token');

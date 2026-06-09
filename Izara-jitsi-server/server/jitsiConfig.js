@@ -101,11 +101,12 @@ export function buildGuestPortalUrls({ patientPortalBase, meetingKey, guestName,
 }
 
 export function externalApiConfig(role = 'guest', displayName = 'Guest') {
-  const isHost = role === 'doctor' || role === 'host';
+  const isHost = role === 'doctor' || role === 'host' || role === 'admin';
   return {
     configOverwrite: {
       prejoinPageEnabled: false,
       requireDisplayName: false,
+      ...(isHost ? { moderator: true } : {}),
       startWithAudioMuted: !isHost,
       startWithVideoMuted: false,
       enableClosePage: false,

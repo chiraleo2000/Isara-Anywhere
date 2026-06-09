@@ -2,6 +2,7 @@
  * Configuration Service
  * Centralizes all environment variable access
  */
+import { resolveApiBaseUrl } from '../utils/resolveApiBaseUrl';
 
 function getDefaultWebSocketUrl(): string {
   if (typeof globalThis !== 'undefined' && globalThis.location) {
@@ -22,7 +23,7 @@ export const config = {
   // Backend APIs
   // Note: API calls use relative URLs in production (proxied by Nginx)
   api: {
-    baseUrl: import.meta.env.VITE_API_URL || '', // Empty = use relative URLs (proxied by Nginx/Vite)
+    baseUrl: resolveApiBaseUrl(), // Empty = use relative URLs (proxied by Nginx/Vite)
     gcsApiUrl: import.meta.env.VITE_GCS_API_URL || '', // Empty for relative paths
     authUrl: import.meta.env.VITE_AUTH_URL || '', // Empty for relative paths
     doctorUrl: import.meta.env.VITE_DOCTOR_URL || '', // Empty for relative paths

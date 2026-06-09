@@ -3,6 +3,8 @@
  */
 export type IzaraUserLike = {
   name?: string;
+  nameThai?: string;
+  name_thai?: string;
   displayName?: string;
   display_name?: string;
   email?: string;
@@ -15,6 +17,8 @@ export function getIzaraDisplayName(user: IzaraUserLike, fallback = 'Participant
     user.displayName ||
     user.display_name ||
     user.name ||
+    user.nameThai ||
+    user.name_thai ||
     ''
   ).trim();
   if (name) return name;

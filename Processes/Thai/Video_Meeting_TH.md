@@ -552,3 +552,22 @@ recognition.onresult = (event) => {
 ---
 
 เอกสารนี้สะท้อนการใช้งานปัจจุบันของ Izara Telemedicine (Phase 1 เสร็จสมบูรณ์)
+
+---
+
+## รายละเอียดเพิ่มเติม — บทบาท HOST และชื่อผู้ป่วย (v1.7.51)
+
+- แพทย์ = **HOST** (`moderator: true`) — เรียก `host-present` หลังเข้า Jitsi จริงเท่านั้น  
+- ผู้ป่วย = **participant** — ไม่ต้องกรอกชื่อ (ใช้จากบัญชี)  
+- ชื่อห้อง: ใช้ `jitsi_room_name` จากฐานข้อมูล  
+- หลังประชุม: ดู [`POST_MEETING_WORKFLOW_TH.md`](POST_MEETING_WORKFLOW_TH.md)  
+
+---
+
+## Session auth — ไม่ใช้ JWT (v1.7.52)
+
+- Login คืน **session token** จาก PostgreSQL (`sessions` table)
+- Jitsi ใช้ Izara lobby + `configOverwrite.moderator` — **ไม่ส่ง JWT** ไป `JitsiMeetExternalAPI`
+- Guest invite / recording share ใช้ **opaque token** ในฐานข้อมูล
+- E2E: headed UI เสมอ (`PW_HEADED=1`); ห้ามใช้ Google Chrome (`PW_NO_CHROME=1`)
+

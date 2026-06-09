@@ -1,8 +1,8 @@
 # Notification Workflows / ขั้นตอนการแจ้งเตือน
 
-**Version:** 1.6.0
-**Last Updated:** March 31, 2026
-**Status:** ✅ PostgreSQL Implementation Complete + Full DB Schema
+**Version:** 1.7.51
+**Last Updated:** June 8, 2026
+**Status:** ✅ PostgreSQL Implementation Complete + Calendar sync on confirm (`calendarEventUrl`, `schedule_entry_ready`)
 
 ---
 
@@ -23,12 +23,13 @@
 ```text
 📅 Appointments (นัดหมาย)
 ├── appointment_requested    - ผู้ป่วยขอนัดหมายใหม่
-├── appointment_confirmed    - แพทย์ยืนยันนัดหมาย + ลิงก์ประชุม
+├── appointment_confirmed    - แพทย์ยืนยันนัดหมาย + ลิงก์ประชุม + calendarEventUrl
 ├── appointment_declined     - แพทย์ปฏิเสธ กำลังหาแพทย์ท่านอื่น
 ├── appointment_cancelled    - นัดหมายถูกยกเลิก
 ├── appointment_assigned     - ผู้ดูแลมอบหมายนัดหมายให้แพทย์
 ├── appointment_rescheduled  - นัดหมายถูกเลื่อน
-└── appointment_reminder     - แจ้งเตือนก่อนนัด 24 ชม./1 ชม.
+├── appointment_reminder     - แจ้งเตือนก่อนนัด 24 ชม./1 ชม.
+└── schedule_entry_ready     - แพทย์: นัดยืนยันแล้ว — ปรากฏบน /schedule + ลิงก์ปฏิทิน
 
 📹 Video Meeting (การประชุมออนไลน์)
 ├── meeting_link_ready       - ลิงก์ประชุมพร้อมใช้งาน
@@ -153,6 +154,44 @@ notificationService.notifyEMRSigned(data)               // เวชระเบ
 notificationService.getUserNotifications(userId)        // ดึงการแจ้งเตือน
 notificationService.markAsRead(userId, notificationId)  // อ่านแล้ว
 notificationService.markAllAsRead(userId)               // อ่านทั้งหมด
+```
+
+### 3.4 Confirm appointment — notification payloads (v1.7.51)
+
+When `POST /api/appointments/:id/confirm` succeeds in `mainApiServer.cjs`, the server inserts **three** in-app notifications (email optional via existing templates):
+
+| # | Recipient | `type` | `data` fields (JSON) | UI consumer |
+|---|-----------|--------|------------------------|-------------|
+| 1 | Patient | `appointment_confirmed` | `appointmentId`, `meetingLink`, `calendarEventUrl`, `confirmedDate`, `confirmedTime`, `doctorName` | Notification bell; `AppointmentPages.tsx` reads `calendarEventUrl` for **Add to Calendar** |
+| 2 | Patient | `meeting_link_ready` | Same + `meet_link` alias | Redundant channel for meeting-centric UX |
+| 3 | Doctor | `schedule_entry_ready` | `appointmentId`, `patientId`, `patientName`, `calendarEventUrl`, `meetingLink`, `confirmedDate`, `confirmedTime` | Doctor bell; links to `/schedule` |
+
+**`calendarEventUrl` format** (built by `calendarEventLinks.cjs`):
+
+```text
+https://calendar.google.com/calendar/render?action=TEMPLATE
+  &text=Izara+Telehealth+—+{patientName}
+  &dates={YYYYMMDDTHHmmss}/{YYYYMMDDTHHmmss}   (Asia/Bangkok, +30 min)
+  &details=Meeting+link%3A+{meetingLink}
+  &location=Izara+Video+Meeting
+```
+
+**Patient fallback:** If notification payload is missing (older rows), `buildCalendarEventUrl.ts` rebuilds the same TEMPLATE URL from appointment fields on the detail page (`data-testid="appointment-calendar-link"`).
+
+**E2E proof:** Playwright **D4cal** — `GET /api/notifications?userId={patientId}` → find `appointment_confirmed` → assert `data.calendarEventUrl` matches `/calendar\.google\.com/`.
+
+```mermaid
+sequenceDiagram
+  participant API as mainApiServer.cjs
+  participant PG as notifications table
+  participant Patient as Patient Portal
+  participant Doctor as Doctor Portal
+
+  API->>PG: INSERT appointment_confirmed (patient)
+  API->>PG: INSERT meeting_link_ready (patient)
+  API->>PG: INSERT schedule_entry_ready (doctor)
+  Patient->>Patient: MiniCalendar dots + detail calendar link
+  Doctor->>Doctor: /schedule row + optional bell tap
 ```
 
 ---

@@ -695,3 +695,15 @@ npm run test:e2e:meeting-lifecycle   # meeting pages only; needs D→D-host firs
 
 **Matrix row:** `07_Virtual_Meeting` in [tests/PROCESS_COVERAGE_MATRIX.md](../../tests/PROCESS_COVERAGE_MATRIX.md)
 
+**v1.7.49 regression:** Doctor join uses `prepareLayoutThenMount` + `resolveMountJwt` (no JWT on public Jitsi). Vitest: `virtualMeetingLayoutFirst`, `meetingWorkflowHardening`. Docker: `npm run test:unit:docker:deploy`.
+
+---
+
+## Detailed Workflow — Doctor HOST Join (v1.7.51)
+
+1. Time check passes → consent → pre_join → join  
+2. Mount Jitsi with `moderator: true` (`data-jitsi-moderator="true"`)  
+3. On `videoConferenceJoined`: `POST /api/meetings/:id/host-present` + lobby admit-all  
+4. **Do not** call host-present on socket connect (patients must wait until doctor is in Jitsi)  
+5. Room name from appointment `jitsi_room_name` or `stableRoomNameForAppointment()`  
+

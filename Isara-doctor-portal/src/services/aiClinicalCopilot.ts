@@ -24,7 +24,7 @@ const GEMINI_MODEL = import.meta.env.VITE_GEMINI_MODEL || 'gemini-3.1-flash-lite
 let genAI: GoogleGenerativeAI | null = null;
 let isConfigured = false;
 
-if (GEMINI_API_KEY && GEMINI_API_KEY !== 'xxx' && GEMINI_API_KEY.startsWith('AIza')) {
+if (GEMINI_API_KEY && GEMINI_API_KEY !== 'xxx' && GEMINI_API_KEY !== 'xxxxx' && GEMINI_API_KEY.startsWith('AIza')) {
   try {
     genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
     isConfigured = true;

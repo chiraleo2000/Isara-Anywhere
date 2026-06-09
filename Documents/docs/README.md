@@ -1,4 +1,4 @@
-# Documentation index (v1.7.48)
+# Documentation index (v1.7.51)
 
 All deliverables under `Documents/docs/` — guides, diagrams, operations markdown, and UI evidence.
 
@@ -64,8 +64,18 @@ Defect draw.io handoff: [markdown/testing/DEFECT_REMEDIATION_DRAWIO_UPDATES.md](
 
 ## Markdown — testing & quality
 
+| Command | Purpose |
+|---------|---------|
+| `npm run test:unit:docker` | **2938** Vitest in Docker |
+| `npm run test:unit:docker:grouped` | Same suite, memory-safe shards |
+| `npm run test:unit:docker:deploy` | Rebuild stack + unit + **78** meeting contracts |
+| `npm run test:e2e:docker:core-multibrowser` | Group W — Chromium + Firefox + WebKit (18 tests) |
+| `npm run docs:sync-screenshots` | Copy green E2E PNGs → `screenshots/group-W/` |
+
+- [markdown/testing/DOCKER_MULTIBROWSER_E2E.md](markdown/testing/DOCKER_MULTIBROWSER_E2E.md) — Docker multi-browser setup, run loop, screenshot refresh
 - [markdown/testing/UNIT_TEST_UI_COVERAGE.md](markdown/testing/UNIT_TEST_UI_COVERAGE.md)
 - [markdown/testing/DEFECT_REMEDIATION_DRAWIO_UPDATES.md](markdown/testing/DEFECT_REMEDIATION_DRAWIO_UPDATES.md)
+- Process registry: [../../tests/PROCESS_COVERAGE_MATRIX.md](../../tests/PROCESS_COVERAGE_MATRIX.md)
 
 ## Markdown — ledgers
 
@@ -77,6 +87,7 @@ Defect draw.io handoff: [markdown/testing/DEFECT_REMEDIATION_DRAWIO_UPDATES.md](
 ## Screenshots & templates
 
 - [screenshots/](screenshots/) — Playwright UI evidence (groups A–Q, workflow/, sso/)
+- [screenshots/group-W/](screenshots/group-W/) — **Docker multi-browser** verified captures (W01–W06, 3 engines); sync via `npm run docs:sync-screenshots`
 - [templates/](templates/) — Doc templates
 
 ---

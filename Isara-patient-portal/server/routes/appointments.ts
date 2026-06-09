@@ -554,6 +554,7 @@ const ALLOWED_STATUS_TRANSITIONS: Record<string, Set<string>> = {
   completed: new Set([]),
   cancelled: new Set([]),
   declined: new Set(['in_pool']),
+  declined_by_doctor: new Set(['in_pool', 'cancelled']),
   rejected: new Set(['in_pool']),
   no_show: new Set([])
 };
@@ -654,10 +655,23 @@ router.put('/:appointmentId/status', authMiddleware, async (req: Request, res: R
       });
     }
 
+    // When doctor confirms, persist traceability fields (doctor_id, confirmed_by) for queue visibility
+    const effectiveDoctorId =
+      status === 'confirmed' && isDoctor
+        ? (currentAppointment.doctor_id || authUserId)
+        : currentAppointment.doctor_id;
+    const confirmedBy =
+      status === 'confirmed' && isDoctor ? authUserId : null;
+    const confirmedByEmail =
+      status === 'confirmed' && isDoctor ? (authReq.user?.email || null) : null;
+
     // Update in PostgreSQL - cast $2 to varchar to avoid type inference conflict in CASE
     const result = await client.query(
       `UPDATE appointments SET
         status = $2::varchar,
+        doctor_id = CASE WHEN $2::varchar = 'confirmed' AND $7::uuid IS NOT NULL THEN $7::uuid ELSE doctor_id END,
+        confirmed_by = CASE WHEN $2::varchar = 'confirmed' AND $8::text IS NOT NULL THEN $8::text ELSE confirmed_by END,
+        confirmed_by_email = CASE WHEN $2::varchar = 'confirmed' AND $9::text IS NOT NULL THEN $9::text ELSE confirmed_by_email END,
         confirmed_date = COALESCE($3, confirmed_date),
         confirmed_time = COALESCE($4, confirmed_time),
         meet_link = COALESCE($5, meet_link),
@@ -667,7 +681,17 @@ router.put('/:appointmentId/status', authMiddleware, async (req: Request, res: R
         updated_at = NOW()
        WHERE id = $1
        RETURNING *`,
-      [appointmentId, status, appointmentDate, appointmentTime, finalMeetingLink, jitsiRoomName]
+      [
+        appointmentId,
+        status,
+        appointmentDate,
+        appointmentTime,
+        finalMeetingLink,
+        jitsiRoomName,
+        effectiveDoctorId,
+        confirmedBy,
+        confirmedByEmail,
+      ]
     );
 
     await client.query('COMMIT');

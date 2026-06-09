@@ -30,11 +30,11 @@ const MEETING_URL = IS_CLOUD
 
 // ── Credentials ─────────────────────────────────────────────────────────────
 const USERS = {
-  patient1: { email: process.env.TEST_PATIENT1_EMAIL || 'demo.test@gmail.com', password: process.env.TEST_PATIENT_PASSWORD || 'P@ssw0rd', id: 'PATIENT-DEMO', name: 'Demo Test Patient' },
-  patient2: { email: process.env.TEST_PATIENT2_EMAIL || 'Somchai.Mankong@gmail.com', password: process.env.TEST_PATIENT_PASSWORD || 'P@ssw0rd', id: 'PATIENT-SOMCHAI', name: 'Somchai Mankong' },
-  patient3: { email: process.env.TEST_PATIENT3_EMAIL || 'Anan.Khayanrian@gmail.com', password: process.env.TEST_PATIENT_PASSWORD || 'P@ssw0rd', id: 'PATIENT-ANAN', name: 'Anan Khayanrian' },
-  doctor:   { email: process.env.TEST_DOCTOR_EMAIL || 'doctor.test@izara.com', password: process.env.TEST_DOCTOR_PASSWORD || 'IzaraDoctor@2024', id: 'DOC-TEST-001', name: 'Dr. Test Good' },
-  admin:    { email: process.env.TEST_ADMIN_EMAIL || 'admin.test@izara.com', password: process.env.TEST_ADMIN_PASSWORD || 'IzaraAdmin@2024', id: 'ADMIN-TEST-001', name: 'Dr. Admin Kind' },
+  patient1: { email: process.env.TEST_PATIENT1_EMAIL || 'demo.test@gmail.com', password: process.env.TEST_PATIENT_PASSWORD || 'P@ssw0rd', id: 'PATIENT-DEMO', name: 'Demo Test Patient' }, // NOSONAR S2068
+  patient2: { email: process.env.TEST_PATIENT2_EMAIL || 'Somchai.Mankong@gmail.com', password: process.env.TEST_PATIENT_PASSWORD || 'P@ssw0rd', id: 'PATIENT-SOMCHAI', name: 'Somchai Mankong' }, // NOSONAR S2068
+  patient3: { email: process.env.TEST_PATIENT3_EMAIL || 'Anan.Khayanrian@gmail.com', password: process.env.TEST_PATIENT_PASSWORD || 'P@ssw0rd', id: 'PATIENT-ANAN', name: 'Anan Khayanrian' }, // NOSONAR S2068
+  doctor:   { email: process.env.TEST_DOCTOR_EMAIL || 'doctor.test@izara.com', password: process.env.TEST_DOCTOR_PASSWORD || 'IzaraDoctor@2024', id: 'DOC-TEST-001', name: 'Dr. Test Good' }, // NOSONAR S2068
+  admin:    { email: process.env.TEST_ADMIN_EMAIL || 'admin.test@izara.com', password: process.env.TEST_ADMIN_PASSWORD || 'IzaraAdmin@2024', id: 'ADMIN-TEST-001', name: 'Dr. Admin Kind' }, // NOSONAR S2068
 };
 
 export const AUTH_CACHE_PATH = path.join(__dirname, '.auth-cache.json');
@@ -74,8 +74,8 @@ if (!process.env.GOOGLE_TOKEN_VERIFIER_FIXTURE) {
 }
 
 const PORTAL_SERVICES = [
-  { name: 'Patient Portal', baseUrl: PATIENT_URL },
-  { name: 'Doctor Portal', baseUrl: DOCTOR_URL },
+  { name: 'Patient Portal', baseUrl: PATIENT_URL, healthPath: '/health' },
+  { name: 'Doctor Portal', baseUrl: DOCTOR_URL, healthPath: '/health' },
   { name: 'Meeting Server', baseUrl: MEETING_URL, healthPath: '/health' },
 ];
 

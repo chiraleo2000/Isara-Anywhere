@@ -119,7 +119,10 @@
 | `status` | lifecycle (pending, in_pool, confirmed, …) |
 | `symptoms`, `ai_triage` | JSONB |
 | `jitsi_room_name`, `doctor_meeting_url`, `patient_meeting_url`, `guest_meeting_url` | ลิงก์ประชุม |
-| `confirmed_by`, `confirmed_at` | การยืนยันนัด |
+| `confirmed_by`, `confirmed_at` | แพทย์ที่ยืนยัน + เวลา — ใช้ traceability ใน pool (7 วัน) |
+| `doctor_id` | UUID แพทย์ที่รับผิดชอบ — ตั้งตอน admin assign หรือ doctor accept |
+
+**Pool visibility (application layer, ไม่ใช่ตารางแยก):** `appointmentPoolQuery.cjs` กรอง `in_pool` / `pending` / `awaiting_doctor_response` เสมอ; เมื่อ `includeAccepted=true` (default) รวม `confirmed` ภายใน 7 วัน · mapper แปลง UI label เป็น `accepted`.
 
 ### 3.4 ตาราง `meeting_records`
 

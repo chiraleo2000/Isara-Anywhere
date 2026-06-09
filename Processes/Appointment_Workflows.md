@@ -2,9 +2,11 @@
 
 This document details the full appointment workflow for Izara Telemedicine, covering video consultations, EMR documentation, and AI-assisted post-consultation features. This is the **core Phase 1 deliverable** covering the complete end-to-end flow: Appointment → Approval → Meeting (Microsoft Teams-like) → AI Summary → EMR → Patient Delivery.
 
-**Last Updated:** May 22, 2026 (GATE 0 — PG pool sync, enterprise HOST roles)
+**Last Updated:** June 8, 2026 (Calendar sync on confirm, 3-party meeting lifecycle, zero-skip local gate)
 
 > **GATE 0:** Assigned doctor confirms and is Jitsi HOST; admin assigns only. Pool = PostgreSQL `in_pool` (not GCS). See [`GATE0_IMPLEMENTATION_STATUS.md`](GATE0_IMPLEMENTATION_STATUS.md).
+>
+> **v1.7.51 (2026-06-08):** Doctor confirm now emits `calendarEventUrl` (Google Calendar TEMPLATE link), populates doctor **Schedule** (`/schedule`) and patient **MiniCalendar** sidebar dots, and runs **3-party** E2E (doctor HOST + patient + guest, 10s A/V hold → recording → Gemini EMR). Local gate: **35 Playwright passed, 0 skipped**; Vitest **2982/2982**.
 
 ---
 
@@ -179,7 +181,15 @@ External guests who are **NOT registered** in the Izara system can join meetings
   2. Modal shows: Patient info, requested date/time, AI analysis
   3. Doctor/Admin sets CONFIRMED date and time (can modify from patient's request)
   4. Doctor/Admin adds optional notes
-  5. On confirm: Meeting link generated, status → `confirmed`, appointment moves to Scheduled Meetings
+  5. On confirm: Meeting link generated, status → `confirmed` (row **updated**, never deleted)
+  6. **Recently Accepted** section: today's `confirmed` rows remain visible in Patient Queue for traceability (`GET /api/appointment-pool?includeAccepted=true`)
+
+- **State machine** (PostgreSQL `appointments.status`):
+
+```
+in_pool → awaiting_doctor_response → confirmed → in_progress → completed
+         ↘ declined_by_doctor → in_pool (patient portal may cancel)
+```
 
 ---
 
@@ -247,23 +257,83 @@ External guests who are **NOT registered** in the Izara system can join meetings
 
 ---
 
-## 6. Notification & Calendar Update
+## 6. Notification & Calendar Update (Microsoft Teams / Zoom / Google Meet parity)
 
-- **Patient**
-  - Sees appointment in dashboard calendar (`DashboardPage.tsx`)
-  - Receives meeting link and CONFIRMED time (online)
-  - Receives onsite details (onsite)
+When the **assigned doctor** confirms a telehealth appointment via `POST /api/appointments/:id/confirm`, the system performs a full calendar + notification sync (not manual-only).
 
-- **Doctor**
-  - Sees appointment in Scheduled Meetings tab
-  - Receives meeting link and time (online)
-  - Receives onsite details (onsite)
+### 6.1 Backend — Confirm API side effects
 
-- **Relatives/Consultants**
-  - Receive email/calendar invite with meeting link (online)
+| Step | Component | Detail |
+|------|-----------|--------|
+| 1 | `mainApiServer.cjs` | Sets `status=confirmed`, `confirmed_date/time`, `scheduled_date/time`, Jitsi URLs (`meeting_link`, `doctor_meeting_url`, `patient_meeting_url`, `guest_meeting_url`) |
+| 2 | `calendarEventLinks.cjs` | Builds `calendarEventUrl` — Google Calendar `action=TEMPLATE` link with title, Bangkok timezone, 30-min window, meeting link in `location` + `details` |
+| 3 | `appointmentMapper.cjs` | `GET /api/appointments` returns camelCase aliases (`appointmentDate`, `doctorId`, `meetingLink`) from snake_case PostgreSQL rows |
+| 4 | `GET /api/schedule/:doctorId` | Returns `date` = `COALESCE(confirmed_date, scheduled_date, requested_date, appointment_date)` and `meetingLink` |
+| 5 | Patient notifications | `appointment_confirmed` + `meeting_link_ready` with `data.calendarEventUrl`, `meetingLink`, `confirmedDate`, `confirmedTime` |
+| 6 | Doctor notification | New type `schedule_entry_ready` — in-app reminder with same `calendarEventUrl` + patient label |
 
-- **Admin**
-  - Receives notifications for declined appointments and cancellations
+**Confirm response JSON:**
+
+```json
+{
+  "success": true,
+  "appointment": { "id": "...", "appointmentDate": "2026-06-10", "meetingLink": "https://meet.jit.si/izara-..." },
+  "meetingLink": "https://meet.jit.si/izara-...",
+  "calendarEventUrl": "https://calendar.google.com/calendar/render?action=TEMPLATE&..."
+}
+```
+
+### 6.2 Doctor portal — Schedule page (`/schedule`)
+
+| UI element | File | Behavior |
+|------------|------|----------|
+| Route | `DoctorPortal.tsx` → `schedule/CompleteSchedule.tsx` | Canonical component (re-export from `pages/CompleteSchedule.tsx`) |
+| Data load | `fetchAllAppointments()` → `GET /api/appointments` | Filter: `doctor_id` / `doctorId` match + status `confirmed` \| `scheduled` |
+| Date/time | `resolveAppointmentSchedule.ts` | Reads `confirmed_date`, `scheduled_date`, `requested_date` (camelCase or snake_case) |
+| Today list | Day view | `data-testid="schedule-appointment-{id}"` |
+| Join link | Telehealth rows | `data-testid="schedule-meeting-link"` → opens Izara Video Meeting |
+| Month view | Emerald dot on days with appointments | `data-testid="schedule-month-appointment-day"` |
+| Page root | — | `data-testid="doctor-schedule-page"` |
+
+**User flow after confirm:**
+
+```text
+Doctor confirms in Health Meeting / Patient Queue
+  → Appointment appears on /schedule (today + upcoming)
+  → Month grid shows dot on confirmed_date
+  → "Join Video Meeting" uses stored meeting_link
+  → Optional: open calendarEventUrl from schedule_entry_ready notification
+```
+
+### 6.3 Patient portal — Calendar surfaces
+
+| Surface | File | Behavior |
+|---------|------|----------|
+| Sidebar MiniCalendar | `components/MainLayout.tsx` | Fetches `appointmentService.getByPatient()`; highlights days with `confirmed`/`scheduled` appointments (`data-testid="mini-calendar-appointment-day"`) |
+| Appointments list | `AppointmentPages.tsx` | Confirmed tab shows telehealth with join button |
+| Appointment detail | `AppointmentPages.tsx` | Auto "Add to Calendar" via `calendarEventUrl` from notification or `buildCalendarEventUrl.ts` fallback (`data-testid="appointment-calendar-link"`) |
+| Dashboard | `DashboardPage.tsx` | Upcoming appointments widget + join when `status=confirmed` && `type=telehealth` |
+
+### 6.4 Notification channels on confirm
+
+| Recipient | Type | Channels | Payload highlights |
+|-----------|------|----------|-------------------|
+| Patient | `appointment_confirmed` | in-app (+ email if configured) | `calendarEventUrl`, `meetingLink`, `appointmentId` |
+| Patient | `meeting_link_ready` | in-app | Same + `meet_link` alias |
+| Doctor | `schedule_entry_ready` | in-app | `calendarEventUrl`, `patientId`, confirmed date/time |
+
+### 6.5 E2E verification (local Docker gate)
+
+| Test | Step | Assertion |
+|------|------|-----------|
+| `group-D` **D4cal** | After D4a confirm | Patient notification `data.calendarEventUrl` present; doctor `/schedule` shows `schedule-appointment-{id}` + `schedule-meeting-link`; patient sidebar may show `mini-calendar-appointment-day` |
+| Unit **DPDF-CAL1/CAL2** | `defectIsaraPdfMeetingQueue.test.ts` | `buildTelehealthCalendarUrl` + `mapAppointmentForClient` |
+| Unit | `calendarEventLinks.test.ts`, `appointmentMapper.test.ts` | URL format + field mapping |
+
+### 6.6 Relatives / guests / admin
+
+- **Relatives/Consultants:** Guest invite links (token) separate from calendar; join via lobby after doctor admit.
+- **Admin:** Pool assignment notifications unchanged; calendar sync applies after **doctor** confirm (admin cannot confirm per GATE 0).
 
 ---
 
@@ -1470,7 +1540,7 @@ This generates:
 
 **This workflow covers the COMPLETE appointment-to-delivery lifecycle including multi-party meetings, transcript streaming, AI summary pipeline, EMR documentation, and patient delivery — the core Phase 1 deliverable.**
 
-**Last Updated:** March 31, 2026 (v1.6.0)
+**Last Updated:** June 8, 2026 (v1.7.51 — see §6 Calendar sync, D4cal, 3-party Q01)
 
 ---
 
@@ -1715,9 +1785,64 @@ Step 11: Embeddings → INSERT INTO transcriptions_embeddings (vectorized chunks
 Patient booking runs inside a database transaction. If the client disconnects or the server errors after a slot lock but before commit, the transaction rolls back so:
 
 - No orphan `appointments` row remains in `in_pool` without valid slot metadata
+
+### v1.7.49 verification (Defect PDF item 1)
+
+- Doctor accept: row **updates** to `confirmed` — visible in doctor **Recently Accepted** and patient **Confirmed** tab
+- Doctor decline: status returns to `in_pool` for reassignment
+- Automated: `npm run test:unit:docker:deploy` (**2817** tests), `defectIsaraPdfMeetingQueue.test.ts` DPDF-Q*
 - Queue counters stay consistent with `appointments` status
 
 **Automated tests:** `tests/unit/patient-portal/appointmentsRollback.test.ts`, `tests/unit/patient-portal/appointmentSlotLock.test.ts`
 
 **Cloud validation:** Group D (`tests/group-D-appointment-workflows.ui-test.ts`) after `npm run verify:gate0`
+
+---
+
+## Detailed Workflow — Queue Traceability (v1.7.51)
+
+### Status state machine (PostgreSQL)
+
+```text
+in_pool → awaiting_doctor_response → confirmed → in_progress → completed
+         ↘ declined/rejected → in_pool (reassignable)
+```
+
+### Confirm API contract (doctor portal — canonical)
+
+All confirm paths **UPDATE** the row (never delete):
+
+- `POST /api/appointments/:id/confirm`  
+- `PUT /api/appointments/:id/status` with `status: confirmed`  
+
+Required fields: `doctor_id`, `confirmed_by`, `confirmed_by_email`, `confirmed_at`, `jitsi_room_name`, meet URLs.
+
+### Traceability rules
+
+| Portal | Pending view | After doctor accept |
+|--------|--------------|---------------------|
+| Doctor Health Meeting | Patient Queue (pending statuses) | **Recently Accepted** (`data-testid="accepted-queue-list"`) |
+| Doctor Pool Management | Pool / Awaiting tabs | Accepted rows with `includeAccepted=true` |
+| Patient Appointments | **Pending** tab | **Confirmed** tab (`data-testid="confirmed-tab-hint"`) |
+
+### 7-day accepted window
+
+Doctor pool API includes `confirmed` only when `confirmed_at` (or `updated_at`) is within **7 days** (`ACCEPTED_VISIBILITY_DAYS`).
+
+### Troubleshooting
+
+| Symptom | Resolution |
+|---------|------------|
+| Gone from patient Pending | Expected — check **Confirmed** tab |
+| Gone from doctor pending queue | Expected — check **Recently Accepted** |
+| Empty pool with no error | Check API — pool errors now return HTTP 500, not `[]` |
+| Doctor without specialty sees empty pool | Pool loads without specialty filter (v1.7.51) |
+
+**Tests:** `defectIsaraPdfMeetingQueue.test.ts` DPDF-Q*, `group-D-queue-accept-traceability.ui-test.ts`
+
+### Unified patient Queue tab (v1.7.52)
+
+- Default filter **Queue** shows pending statuses **plus** `confirmed` within 7 days (recently accepted stay visible).
+- **Confirmed** tab lists all confirmed appointments.
+- Session auth only — no JWT on API calls.
 

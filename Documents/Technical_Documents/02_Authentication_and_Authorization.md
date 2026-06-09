@@ -301,6 +301,27 @@ Socket.IO บน `authServer.cjs`:
 - Server `pgValidateSession(token)` หรือ verify JWT
 - Join room `user-{user_id}` สำหรับแจ้งเตือน/auth events
 
+### 7.7 JWT สองชั้น — แอป Izara vs Jitsi room
+
+ระบบใช้ JWT **คนละชุด** — ห้ามสับสน:
+
+| ชั้น | Secret | Issuer | ใช้เมื่อ |
+|------|--------|--------|----------|
+| **App access** | `JWT_SECRET` (≥32 ตัวอักษร) | `izara-telemedicine` | Doctor login, `Authorization: Bearer` บน Main API และ Meeting API |
+| **Jitsi room** | `JITSI_JWT_SECRET` / `JITSI_APP_SECRET` | `JWT_ISSUER` | Self-hosted Jitsi token auth — `createJitsiRoleJwt` |
+
+**Jitsi room payload (HS256):** `aud: 'jitsi'`, `sub: <domain>`, `room: <roomName>`, `context.user.moderator`, `context.user.affiliation` (`owner` / `member` / `none`).
+
+| Role | `moderator` | `affiliation` |
+|------|-------------|---------------|
+| doctor / host | `true` | `owner` |
+| patient | `false` | `member` |
+| guest (invite) | `false` | `none` |
+
+**Guest join-config:** anonymous `role=guest` ถูกปฏิเสธ (`GUEST_AUTH_REQUIRED`) จนกว่าจะมี scoped invite token (`type: guest-invite`) — `validateGuestJoinAccess` / `decodeGuestInviteToken` ใน `jwtPolicy.js`.
+
+**Public `meet.jit.si`:** ไม่ส่ง room JWT; แพทย์ใช้ `configOverwrite.moderator: true` ผ่าน `buildDoctorJitsiMountOptions`.
+
 ---
 
 ## 8. ความปลอดภัยเพิ่มเติม (As-is)
@@ -312,7 +333,7 @@ Socket.IO บน `authServer.cjs`:
 | Audit | `securityAuditLog` ใน OWASP middleware (ACCESS_DENIED, GOOGLE_SSO_UNKNOWN_EMAIL) |
 | CORS | กำหนดต่อ service ใน env |
 | ไม่มี Passport | ไม่พบ `passport` ใน dependencies หลัก |
-| Meeting guest token | `verifyScopedToken` สำหรับ invite ที่ไม่มี issuer |
+| Meeting guest token | `verifyScopedToken` / `decodeGuestInviteToken` — invite `type: guest-invite` (ไม่มี issuer) |
 
 ---
 

@@ -61,6 +61,14 @@ console.log('[MAIN-API] socket.io loaded');
 // In production (Cloud Run), env vars are already set via --set-env-vars
 const dotenv = require('dotenv');
 dotenv.config();
+if (process.env.NODE_ENV !== 'test' && process.env.VITEST !== 'true') {
+  try {
+    require('./lib/schema.cjs').validateServerEnv(process.env, { service: 'server' });
+    console.log('[MAIN-API] Environment schema validated');
+  } catch (err) {
+    console.warn('[MAIN-API] Env validation warning:', err.message);
+  }
+}
 console.log('[MAIN-API] dotenv loaded, DB_HOST=' + process.env.DB_HOST);
 
 const app = express();
@@ -225,6 +233,19 @@ const {
   mapAppointmentToQueueCard,
   mapAppointmentToPoolItem,
 } = require('./appointmentQueueMapper.cjs');
+const {
+  buildPoolStatusList,
+  mergePoolItemsById,
+  buildDoctorPoolSqlFilter,
+} = require('./appointmentPoolQuery.cjs');
+const { buildTelehealthMeetingUrls } = require('./jitsiMeetingLinks.cjs');
+const { buildTelehealthCalendarUrl } = require('./calendarEventLinks.cjs');
+const { mapAppointmentForClient } = require('./appointmentMapper.cjs');
+const {
+  resolveGeminiApiKey,
+  isGeminiConfigured,
+  resolveGeminiModel,
+} = require('./lib/geminiKey.cjs');
 
 /** Emit appointment events to admin, doctor, and queue rooms */
 function emitAppointmentSync(io, event, payload, opts = {}) {
@@ -647,18 +668,13 @@ async function verifyGCSConnection(maxRetries = 5, retryDelay = 2000) {
 // AUTHENTICATION MIDDLEWARE
 // ============================================================================
 
-const jwt = require('jsonwebtoken');
+const {
+  sessionRowToReqUser,
+  validateSessionToken,
+  createAuthenticateSession,
+} = require('./sessionAuth.cjs');
 
-// JWT Configuration - SECURITY: Fail fast if JWT_SECRET not set.
-const JWT_SECRET = process.env.JWT_SECRET || process.env.VITE_JWT_SECRET;
-if (!JWT_SECRET) {
-  console.error('[SECURITY] FATAL: JWT_SECRET not set. Generate one with `openssl rand -hex 32` and set it in .env. Exiting.');
-  process.exit(1);
-}
-const JWT_SECRET_FINAL = JWT_SECRET;
-const JWT_ISSUER = process.env.JWT_ISSUER || 'izara-telemedicine';
-
-function authenticateToken(req, res, next) {
+async function authenticateToken(req, res, next) {
   const authHeader = req.headers['authorization'];
   const token = authHeader?.split(' ')[1];
 
@@ -666,42 +682,19 @@ function authenticateToken(req, res, next) {
     return res.status(401).json({ error: 'No token provided' });
   }
 
-  // SECURITY: Never log tokens or secrets in production
-  if (process.env.NODE_ENV !== 'production') {
-    console.log('[JWT] Token received (first 20 chars):', token.substring(0, 20) + '...');
+  if (!PostgresDataService?.pool) {
+    return res.status(503).json({ error: 'Database unavailable' });
   }
 
   try {
-    // Verify JWT token - restrict to HS256 only for security
-    const decoded = jwt.verify(token, JWT_SECRET_FINAL, {
-      issuer: JWT_ISSUER,
-      algorithms: ['HS256']
-    });
-
-    if (process.env.NODE_ENV !== 'production') {
-      console.log('[JWT] Token verified for:', decoded.email);
+    const row = await validateSessionToken(PostgresDataService.pool, token);
+    if (!row) {
+      return res.status(401).json({ error: 'Session expired or invalid', code: 'SESSION_INVALID' });
     }
-
-    // Attach user info from decoded token to request
-    req.user = {
-      id: decoded.userId || decoded.id || decoded.sub,
-      doctorId: decoded.doctorId,
-      email: decoded.email,
-      role: decoded.role || 'doctor',
-      name: decoded.name,
-      isAdmin: decoded.isAdmin || decoded.role === 'admin'
-    };
-
+    req.user = sessionRowToReqUser(row);
     next();
   } catch (error) {
-    console.error('[JWT] Token verification failed:', error.name);
-    if (error.name === 'TokenExpiredError') {
-      return res.status(401).json({ error: 'Token expired', code: 'TOKEN_EXPIRED' });
-    }
-    if (error.name === 'JsonWebTokenError') {
-      return res.status(401).json({ error: 'Invalid token', code: 'INVALID_TOKEN' });
-    }
-    console.error('JWT verification error:', error.message);
+    console.error('[AUTH] Session verification error:', error.message);
     return res.status(401).json({ error: 'Authentication failed' });
   }
 }
@@ -3733,7 +3726,7 @@ Urgency: ${urgencyStr}
 Respond as JSON only (no markdown, no code fences): { "specialty": string, "confidence": number (0-1), "reasoning": string (in Thai), "secondary_specialty": string or null }`;
 
     // 4. Call Gemini
-    const modelUsed = GEMINI_MODEL || 'gemini-1.5-flash';
+    const modelUsed = GEMINI_MODEL || 'gemini-3.1-flash-lite';
     let aiResult;
     try {
       const rawResponse = await callGeminiForSummary(prompt, 1024);
@@ -3914,19 +3907,23 @@ app.patch('/api/appointments/:id/assign', authenticateToken, async (req, res) =>
         ]
       );
 
-      // 4. Log to admin_actions audit table
-      await client.query(
-        `INSERT INTO admin_actions (admin_id, action, target_id, metadata)
-         VALUES ($1, $2, $3, $4)`,
-        [
-          req.user.id,
-          'assign_appointment',
-          appointmentId,
-          JSON.stringify({ doctor_id, assignedAt: new Date().toISOString() })
-        ]
-      );
-
       await client.query('COMMIT');
+
+      // 4. Audit log (best-effort — table may be missing on older DB seeds)
+      try {
+        await pool.query(
+          `INSERT INTO admin_actions (admin_id, action, target_id, metadata)
+           VALUES ($1, $2, $3, $4)`,
+          [
+            req.user.id,
+            'assign_appointment',
+            appointmentId,
+            JSON.stringify({ doctor_id, assignedAt: new Date().toISOString() }),
+          ],
+        );
+      } catch (auditErr) {
+        console.warn('[Admin Assign] admin_actions audit skipped:', auditErr.message);
+      }
 
       // 5. Emit WebSocket event to assigned doctor + admin pool
       const io = req.app.get('io');
@@ -4233,10 +4230,11 @@ app.get('/api/schedule/:doctorId', authenticateToken, async (req, res) => {
     const schedule = (appointments || []).map(a => ({
       id: a.id,
       patientId: a.patient_id,
-      date: a.scheduled_date || a.appointment_date,
-      time: a.scheduled_time || a.appointment_time,
+      date: a.confirmed_date || a.scheduled_date || a.requested_date || a.appointment_date,
+      time: a.confirmed_time || a.scheduled_time || a.requested_time || a.appointment_time,
       status: a.status,
-      type: a.appointment_type || 'consultation'
+      type: a.appointment_type || 'consultation',
+      meetingLink: a.meeting_link || a.meet_link || null,
     }));
     res.json({ schedule });
   } catch (error) {
@@ -4262,8 +4260,9 @@ app.get('/api/appointments', authenticateToken, async (req, res) => {
       appointments = await PostgresDataService.AppointmentService.getAllAppointments(status, startDate, endDate);
     }
     
-    console.log(`✅ Returning ${appointments?.length || 0} appointments`);
-    res.json({ appointments: appointments || [], count: appointments?.length || 0, success: true });
+    const mapped = (appointments || []).map(mapAppointmentForClient);
+    console.log(`✅ Returning ${mapped.length} appointments`);
+    res.json({ appointments: mapped, count: mapped.length, success: true });
   } catch (error) {
     console.error('❌ Appointments fetch error:', error);
     res.status(500).json({ error: error.message, appointments: [], count: 0 });
@@ -4306,9 +4305,9 @@ const crypto = require('node:crypto');
 const JITSI_DOMAIN = process.env.JITSI_DOMAIN || process.env.VITE_JITSI_DOMAIN || 'meet.jit.si';
 const JITSI_APP_ID = process.env.JITSI_APP_ID || process.env.JITSI_ISS || '';
 const JITSI_AUTH_SECRET = process.env.JITSI_JWT_SECRET || process.env.JITSI_APP_SECRET || '';
-const JITSI_SIGNING_SECRET = JITSI_AUTH_SECRET || JWT_SECRET_FINAL;
-const JITSI_TOKEN_ISSUER = JITSI_APP_ID || process.env.JWT_ISSUER || 'izara-telemedicine';
-const JITSI_TOKEN_AUTH_ENABLED = Boolean(JITSI_SIGNING_SECRET);
+const JITSI_SIGNING_SECRET = JITSI_AUTH_SECRET || '';
+const JITSI_TOKEN_ISSUER = JITSI_APP_ID || 'izara-telemedicine';
+const JITSI_TOKEN_AUTH_ENABLED = false;
 
 // Google Cloud Speech-to-Text API Configuration
 const GOOGLE_SPEECH_API_KEY = process.env.GOOGLE_SPEECH_API_KEY ||
@@ -4317,8 +4316,8 @@ const GOOGLE_SPEECH_API_KEY = process.env.GOOGLE_SPEECH_API_KEY ||
                               '';
 
 // Gemini AI Configuration (for summary & recommendations)
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY || '';
-const GEMINI_MODEL = process.env.GEMINI_MODEL || process.env.VITE_GEMINI_MODEL || 'gemini-3.1-flash-lite';
+const GEMINI_API_KEY = resolveGeminiApiKey();
+const GEMINI_MODEL = resolveGeminiModel();
 
 // Log video meeting configuration
 console.log('[Video Meeting] ===== Configuration =====');
@@ -4341,32 +4340,8 @@ function generateMeetingRoomName(appointmentId) {
   return `Izara-${appointmentId.substring(0, 8)}-${hash}`;
 }
 
-function createJitsiRoleJwt(roomName, user = {}, role = 'guest') {
-  if (!JITSI_TOKEN_AUTH_ENABLED) return null;
-  const normalizedRole = String(role || '').toLowerCase();
-  const isModerator = normalizedRole === 'doctor' || normalizedRole === 'host' || normalizedRole === 'moderator';
-  const now = Math.floor(Date.now() / 1000);
-  return jwt.sign(
-    {
-      aud: 'jitsi',
-      iss: JITSI_TOKEN_ISSUER,
-      sub: JITSI_DOMAIN,
-      room: roomName,
-      nbf: now - 10,
-      exp: now + (4 * 60 * 60),
-      context: {
-        user: {
-          id: user.id || '',
-          name: user.name || 'Guest',
-          email: user.email || '',
-          affiliation: isModerator ? 'owner' : 'member',
-          moderator: isModerator,
-        },
-      },
-    },
-    JITSI_SIGNING_SECRET,
-    { algorithm: 'HS256' }
-  );
+function createJitsiRoleJwt() {
+  return null;
 }
 
 /**
@@ -4413,12 +4388,7 @@ function createJitsiMeetUrl(roomName, config = {}) {
     params.set('userInfo.email', config.email);
   }
   
-  const role = config.role || (config.isHost ? 'doctor' : 'guest');
-  const jwtToken = createJitsiRoleJwt(roomName, {
-    id: config.userId,
-    name: config.displayName,
-    email: config.email,
-  }, role);
+  const jwtToken = createJitsiRoleJwt();
   const jwtQuery = jwtToken ? `?jwt=${encodeURIComponent(jwtToken)}` : '';
   return `https://${JITSI_DOMAIN}/${roomName}${jwtQuery}#${params.toString()}`;
 }
@@ -5447,24 +5417,40 @@ app.get('/api/video-meeting/history/:doctorId', authenticateToken, async (req, r
 app.get('/api/appointment-pool', authenticateToken, async (req, res) => {
   try {
     const { urgency, specialty } = req.query;
+    const includeAcceptedRaw = req.query.includeAccepted;
+    let includeAccepted = true;
+    if (includeAcceptedRaw === 'false') {
+      includeAccepted = false;
+    } else if (typeof includeAcceptedRaw === 'string') {
+      includeAccepted = includeAcceptedRaw.toLowerCase() !== 'false';
+    }
     const isAdmin = req.user.role === 'admin' || req.user.isAdmin;
-    console.log('📋 Fetching appointment pool items from PostgreSQL...');
+    console.log(`📋 Fetching appointment pool items from PostgreSQL (includeAccepted=${includeAccepted})...`);
 
+    const statusList = buildPoolStatusList(includeAccepted);
     let query = `SELECT a.*,
       u_pat.name as patient_name, u_pat.name_thai as patient_name_thai, u_pat.email as patient_email,
       u_doc.name as doctor_name, u_doc.name_thai as doctor_name_thai
       FROM appointments a
       LEFT JOIN users u_pat ON a.patient_id = u_pat.id
       LEFT JOIN users u_doc ON a.doctor_id = u_doc.id
-      WHERE a.status IN ('in_pool', 'pending', 'awaiting_doctor_response')`;
-    const params = [];
-    let paramIdx = 1;
+      WHERE a.status = ANY($1::text[])`;
+    const params = [statusList];
+    let paramIdx = 2;
 
-    // Doctors see unassigned in_pool (+ optionally specialty filter via notes/symptoms)
+    if (includeAccepted) {
+      query += ` AND (
+        a.status <> 'confirmed'
+        OR COALESCE(a.confirmed_at, a.updated_at, a.created_at) >= NOW() - INTERVAL '7 days'
+      )`;
+    }
+
+    // Doctors see unassigned pool rows + their assignments + recently accepted (traceability)
     if (!isAdmin && req.user.role === 'doctor') {
-      query += ` AND ((a.doctor_id IS NULL AND a.status IN ('in_pool', 'pending')) OR a.doctor_id = $${paramIdx})`;
-      params.push(req.user.id);
-      paramIdx++;
+      const { clause, extraParams } = buildDoctorPoolSqlFilter(req.user.id, req.user.email, paramIdx);
+      query += clause;
+      params.push(...extraParams);
+      paramIdx += extraParams.length;
     }
 
     if (urgency) {
@@ -5474,9 +5460,21 @@ app.get('/api/appointment-pool', authenticateToken, async (req, res) => {
     }
 
     if (specialty && typeof specialty === 'string' && specialty.length > 0) {
-      query += ` AND (a.notes ILIKE $${paramIdx} OR a.symptom_description ILIKE $${paramIdx} OR a.symptoms::text ILIKE $${paramIdx})`;
-      params.push(`%${specialty}%`);
-      paramIdx++;
+      if (!isAdmin && req.user.role === 'doctor') {
+        // Specialty filter applies to unassigned pool rows only — never hide doctor's own accepted assignments
+        query += ` AND (
+          a.status = 'confirmed'
+          OR a.doctor_id = $${paramIdx}
+          OR a.notes ILIKE $${paramIdx + 1}
+          OR a.symptom_description ILIKE $${paramIdx + 1}
+          OR a.symptoms::text ILIKE $${paramIdx + 1}
+        )`;
+        params.push(req.user.id, `%${specialty}%`);
+      } else {
+        query += ` AND (a.notes ILIKE $${paramIdx} OR a.symptom_description ILIKE $${paramIdx} OR a.symptoms::text ILIKE $${paramIdx})`;
+        params.push(`%${specialty}%`);
+        paramIdx++;
+      }
     }
 
     query += ` ORDER BY
@@ -5484,15 +5482,21 @@ app.get('/api/appointment-pool', authenticateToken, async (req, res) => {
       a.created_at ASC`;
 
     const result = await PostgresDataService.pool.query(query, params);
-    const poolItems = (result.rows || [])
-      .map(mapAppointmentToPoolItem)
-      .filter(Boolean);
+    const poolItems = mergePoolItemsById(
+      (result.rows || [])
+        .map(mapAppointmentToPoolItem)
+        .filter(Boolean),
+    );
 
     console.log(`✅ Returning ${poolItems.length} pool items`);
     res.json(poolItems);
   } catch (error) {
     console.error('❌ Pool fetch error:', error);
-    res.json([]);
+    res.status(500).json({
+      error: 'Failed to fetch appointment pool',
+      code: 'POOL_FETCH_ERROR',
+      message: error.message,
+    });
   }
 });
 
@@ -5632,95 +5636,88 @@ app.patch('/api/appointments/:appointmentId', authenticateToken, async (req, res
   }
 });
 
-/**
- * Doctor confirms appointment - PostgreSQL Only
- */
-app.post('/api/appointments/:appointmentId/confirm', authenticateToken, async (req, res) => {
-  try {
-    const { appointmentId } = req.params;
-    const doctorId = req.body.doctorId || req.user?.id || req.user?.doctorId;
-    const doctorEmail = req.body.doctorEmail || req.user?.email;
-    const { confirmedDate, confirmedTime, notes } = req.body;
-    
-    console.log(`✅ Doctor ${doctorId} (email: ${doctorEmail}) confirming appointment ${appointmentId} in PostgreSQL...`);
-    
-    // Get appointment from PostgreSQL
-    const appointment = await PostgresDataService.AppointmentService.getAppointmentById(appointmentId);
-    
-    if (!appointment) {
-      return res.status(404).json({ 
-        error: 'Appointment not found', 
-        code: 'APPOINTMENT_NOT_FOUND' 
-      });
-    }
-    
-    const isAdmin = req.user?.role === 'admin' || req.user?.isAdmin;
-    if (isAdmin) {
-      return res.status(403).json({
-        error: 'Admin cannot confirm appointment; assigned doctor must confirm',
-        code: 'DOCTOR_CONFIRM_REQUIRED'
-      });
-    }
+function getDoctorConfirmAccessError(req, appointment, doctorId) {
+  if (!appointment) {
+    return { status: 404, body: { error: 'Appointment not found', code: 'APPOINTMENT_NOT_FOUND' } };
+  }
+  const isAdmin = req.user?.role === 'admin' || req.user?.isAdmin;
+  if (isAdmin) {
+    return {
+      status: 403,
+      body: { error: 'Admin cannot confirm appointment; assigned doctor must confirm', code: 'DOCTOR_CONFIRM_REQUIRED' },
+    };
+  }
+  const assignedDoctorId = appointment.doctor_id;
+  const doctorMatches =
+    !assignedDoctorId ||
+    assignedDoctorId === doctorId ||
+    assignedDoctorId === req.user?.id ||
+    assignedDoctorId === req.user?.doctorId;
+  if (!doctorMatches) {
+    return {
+      status: 403,
+      body: { error: 'Only the assigned doctor can confirm this appointment', code: 'ASSIGNED_DOCTOR_ONLY' },
+    };
+  }
+  return null;
+}
 
-    const assignedDoctorId = appointment.doctor_id;
-    const doctorMatches =
-      !assignedDoctorId ||
-      assignedDoctorId === doctorId ||
-      assignedDoctorId === req.user?.id ||
-      assignedDoctorId === req.user?.doctorId;
-    if (!doctorMatches) {
-      return res.status(403).json({
-        error: 'Only the assigned doctor can confirm this appointment',
-        code: 'ASSIGNED_DOCTOR_ONLY'
-      });
-    }
+function resolveEffectiveDoctorId(appointment, doctorId, reqUser) {
+  return appointment.doctor_id || doctorId || reqUser?.id || reqUser?.doctorId;
+}
 
-    // If appointment has no doctor yet, confirming doctor becomes owner.
-    const effectiveDoctorId = assignedDoctorId || doctorId || doctorEmail;
-    
-    // Generate meeting links for telehealth appointments
-    let meetingLink = appointment.meet_link || null;
-    let doctorMeetingUrl = appointment.doctor_meeting_url || null;
-    let patientMeetingUrl = appointment.patient_meeting_url || null;
-    let guestMeetingUrl = appointment.guest_meeting_url || null;
-    if ((appointment.appointment_type === 'telehealth' || appointment.appointment_type === 'Telehealth') && !meetingLink) {
-      const JITSI_DOMAIN = process.env.JITSI_DOMAIN || 'meet.jit.si';
-      const timestamp = Date.now().toString(36);
-      const randomPart = Math.random().toString(36).substring(2, 8);
-      const roomName = `Izara-${appointmentId.substring(0, 8)}-${timestamp}-${randomPart}`;
-      meetingLink = `https://${JITSI_DOMAIN}/${roomName}`;
-      doctorMeetingUrl = `https://${JITSI_DOMAIN}/${roomName}#userInfo.displayName=Doctor&config.startWithAudioMuted=false&config.prejoinPageEnabled=false`;
-      patientMeetingUrl = `https://${JITSI_DOMAIN}/${roomName}#userInfo.displayName=Patient&config.startWithVideoMuted=false`;
-      guestMeetingUrl = `https://${JITSI_DOMAIN}/${roomName}#userInfo.displayName=Guest&config.startWithVideoMuted=true`;
-      console.log(`🔗 Generated meeting links for ${appointmentId}: ${meetingLink}`);
-    }
-    
-    // Update appointment in PostgreSQL
-    const updatedAppointment = await PostgresDataService.AppointmentService.updateAppointment(appointmentId, {
-      status: 'confirmed',
-      doctor_id: effectiveDoctorId,
-      meeting_link: meetingLink,
-      doctor_meeting_url: doctorMeetingUrl,
-      patient_meeting_url: patientMeetingUrl,
-      guest_meeting_url: guestMeetingUrl,
-      confirmed_by: doctorId || doctorEmail,
-      confirmed_by_email: doctorEmail,
-      confirmed_at: new Date().toISOString(),
-      notes: notes || appointment.notes,
-      scheduled_date: confirmedDate || appointment.scheduled_date,
-      scheduled_time: confirmedTime || appointment.scheduled_time
-    });
-    
-    console.log(`✅ Appointment ${appointmentId} confirmed by doctor ${doctorId}`);
-    
-    // Send confirmation email to patient with meeting link
-    try {
-      const appointmentDateFormatted = confirmedDate || appointment.scheduled_date;
-      const appointmentTimeFormatted = confirmedTime || appointment.scheduled_time;
-      const patientName = appointment.patient_name_thai || appointment.patient_name || 'Patient';
-      const doctorName = appointment.doctor_name_thai || appointment.doctor_name || 'Doctor';
-      
-      const emailHtml = `
+function isTelehealthAppointmentType(appointmentType) {
+  return appointmentType === 'telehealth' || appointmentType === 'Telehealth';
+}
+
+function resolveConfirmMeetingLinks(appointment, appointmentId) {
+  const links = {
+    meetingLink: appointment.meet_link || null,
+    doctorMeetingUrl: appointment.doctor_meeting_url || null,
+    patientMeetingUrl: appointment.patient_meeting_url || null,
+    guestMeetingUrl: appointment.guest_meeting_url || null,
+    jitsiRoomName: appointment.jitsi_room_name || null,
+  };
+  if (!isTelehealthAppointmentType(appointment.appointment_type) || links.meetingLink) {
+    return links;
+  }
+  const urls = buildTelehealthMeetingUrls(appointmentId, {
+    patientName: appointment.patient_name_thai || appointment.patient_name || 'Patient',
+    doctorName: appointment.doctor_name_thai || appointment.doctor_name || 'Doctor',
+  });
+  console.log(`🔗 Generated meeting links for ${appointmentId}: ${urls.meetingLink}`);
+  return {
+    meetingLink: urls.meetingLink,
+    doctorMeetingUrl: urls.doctorMeetingUrl,
+    patientMeetingUrl: urls.patientMeetingUrl,
+    guestMeetingUrl: urls.guestMeetingUrl,
+    jitsiRoomName: urls.roomName,
+  };
+}
+
+function buildConfirmCalendarUrl(appointment, appointmentId, meetingLink, confirmedDate, confirmedTime) {
+  const resolvedConfirmDate = confirmedDate || appointment.scheduled_date || appointment.requested_date;
+  const resolvedConfirmTime = confirmedTime || appointment.scheduled_time || appointment.requested_time;
+  const calendarEventUrl = resolvedConfirmDate
+    ? buildTelehealthCalendarUrl({
+        appointmentId,
+        confirmedDate: resolvedConfirmDate,
+        confirmedTime: resolvedConfirmTime,
+        doctorName: appointment.doctor_name_thai || appointment.doctor_name || 'Doctor',
+        patientName: appointment.patient_name_thai || appointment.patient_name || 'Patient',
+        meetingLink: isTelehealthAppointmentType(appointment.appointment_type) ? meetingLink : null,
+      })
+    : null;
+  return { resolvedConfirmDate, resolvedConfirmTime, calendarEventUrl };
+}
+
+async function sendAppointmentConfirmEmail(appointment, { confirmedDate, confirmedTime, meetingLink }) {
+  const appointmentDateFormatted = confirmedDate || appointment.scheduled_date;
+  const appointmentTimeFormatted = confirmedTime || appointment.scheduled_time;
+  const patientName = appointment.patient_name_thai || appointment.patient_name || 'Patient';
+  const doctorName = appointment.doctor_name_thai || appointment.doctor_name || 'Doctor';
+
+  const emailHtml = `
         <!DOCTYPE html>
         <html>
         <head>
@@ -5771,55 +5768,193 @@ app.post('/api/appointments/:appointmentId/confirm', authenticateToken, async (r
         </html>
       `;
       
-      await emailService.sendEmail({
-        to: appointment.patient_email,
-        subject: `✅ นัดหมายยืนยันแล้ว - ${appointmentDateFormatted} เวลา ${appointmentTimeFormatted}`,
-        text: `นัดหมายของคุณได้รับการยืนยันแล้ว\n\nวันที่: ${appointmentDateFormatted}\nเวลา: ${appointmentTimeFormatted}\nแพทย์: ${doctorName}${meetingLink ? '\nลิงก์เข้าประชุม: ' + meetingLink : ''}`,
-        html: emailHtml
+  await emailService.sendEmail({
+    to: appointment.patient_email,
+    subject: `✅ นัดหมายยืนยันแล้ว - ${appointmentDateFormatted} เวลา ${appointmentTimeFormatted}`,
+    text: `นัดหมายของคุณได้รับการยืนยันแล้ว\n\nวันที่: ${appointmentDateFormatted}\nเวลา: ${appointmentTimeFormatted}\nแพทย์: ${doctorName}${meetingLink ? '\nลิงก์เข้าประชุม: ' + meetingLink : ''}`,
+    html: emailHtml,
+  });
+  console.log(`📧 Confirmation email sent to ${appointment.patient_email}`);
+}
+
+async function createAppointmentConfirmNotifications(ctx) {
+  const {
+    appointment,
+    appointmentId,
+    effectiveDoctorId,
+    meetingLink,
+    calendarEventUrl,
+    resolvedConfirmDate,
+    resolvedConfirmTime,
+    confirmedDate,
+    confirmedTime,
+  } = ctx;
+  const patientId = appointment.patient_id;
+  if (patientId) {
+    const appointmentDateFormatted = confirmedDate || appointment.scheduled_date || '';
+    const appointmentTimeFormatted = confirmedTime || appointment.scheduled_time || '';
+    const doctorName = appointment.doctor_name_thai || appointment.doctor_name || 'แพทย์';
+    await PostgresDataService.NotificationService.createNotification({
+      user_id: patientId,
+      type: 'appointment_confirmed',
+      title: 'นัดหมายได้รับการยืนยัน',
+      title_thai: 'นัดหมายได้รับการยืนยัน',
+      message: `นัดหมายของคุณได้รับการยืนยันจาก ${doctorName} วันที่ ${appointmentDateFormatted} เวลา ${appointmentTimeFormatted}`,
+      message_thai: `นัดหมายของคุณได้รับการยืนยันจาก ${doctorName} วันที่ ${appointmentDateFormatted} เวลา ${appointmentTimeFormatted}`,
+      data: {
+        appointmentId,
+        meetingLink,
+        calendarEventUrl,
+        confirmedDate: resolvedConfirmDate,
+        confirmedTime: resolvedConfirmTime,
+      },
+    });
+    if (meetingLink) {
+      await PostgresDataService.NotificationService.createNotification({
+        user_id: patientId,
+        type: 'meeting_link_ready',
+        title: 'ลิงก์ประชุมพร้อมแล้ว',
+        title_thai: 'ลิงก์ประชุมพร้อมแล้ว',
+        message: 'คุณสามารถเข้าร่วมการประชุมออนไลน์ได้ที่ลิงก์ที่แนบมา',
+        message_thai: 'คุณสามารถเข้าร่วมการประชุมออนไลน์ได้ที่ลิงก์ที่แนบมา',
+        data: {
+          appointmentId,
+          meetingLink,
+          meet_link: meetingLink,
+          calendarEventUrl,
+          confirmedDate: resolvedConfirmDate,
+          confirmedTime: resolvedConfirmTime,
+        },
       });
-      console.log(`📧 Confirmation email sent to ${appointment.patient_email}`);
+    }
+    console.log(`🔔 Notification created for patient ${patientId}`);
+  }
+  if (effectiveDoctorId && calendarEventUrl) {
+    const patientLabel = appointment.patient_name_thai || appointment.patient_name || 'ผู้ป่วย';
+    await PostgresDataService.NotificationService.createNotification({
+      user_id: effectiveDoctorId,
+      type: 'schedule_entry_ready',
+      title: 'นัดหมายยืนยันแล้ว — เพิ่มในตาราง',
+      title_thai: 'นัดหมายยืนยันแล้ว — เพิ่มในตาราง',
+      message: `นัดหมายกับ ${patientLabel} วันที่ ${resolvedConfirmDate} เวลา ${resolvedConfirmTime}`,
+      message_thai: `นัดหมายกับ ${patientLabel} วันที่ ${resolvedConfirmDate} เวลา ${resolvedConfirmTime}`,
+      data: {
+        appointmentId,
+        meetingLink,
+        calendarEventUrl,
+        confirmedDate: resolvedConfirmDate,
+        confirmedTime: resolvedConfirmTime,
+        patientId: appointment.patient_id,
+      },
+    });
+    console.log(`🔔 Schedule notification created for doctor ${effectiveDoctorId}`);
+  }
+}
+
+/**
+ * Doctor confirms appointment - PostgreSQL Only
+ */
+app.post('/api/appointments/:appointmentId/confirm', authenticateToken, async (req, res) => {
+  try {
+    const { appointmentId } = req.params;
+    const doctorId = req.body.doctorId || req.user?.id || req.user?.doctorId;
+    const doctorEmail = req.body.doctorEmail || req.user?.email;
+    const { confirmedDate, confirmedTime, notes } = req.body;
+
+    console.log(`✅ Doctor ${doctorId} (email: ${doctorEmail}) confirming appointment ${appointmentId} in PostgreSQL...`);
+
+    const appointment = await PostgresDataService.AppointmentService.getAppointmentById(appointmentId);
+    const accessError = getDoctorConfirmAccessError(req, appointment, doctorId);
+    if (accessError) {
+      return res.status(accessError.status).json(accessError.body);
+    }
+
+    const effectiveDoctorId = resolveEffectiveDoctorId(appointment, doctorId, req.user);
+    const {
+      meetingLink,
+      doctorMeetingUrl,
+      patientMeetingUrl,
+      guestMeetingUrl,
+      jitsiRoomName,
+    } = resolveConfirmMeetingLinks(appointment, appointmentId);
+
+    const updatedAppointment = await PostgresDataService.AppointmentService.updateAppointment(appointmentId, {
+      status: 'confirmed',
+      doctor_id: effectiveDoctorId,
+      meeting_link: meetingLink,
+      doctor_meeting_url: doctorMeetingUrl,
+      patient_meeting_url: patientMeetingUrl,
+      guest_meeting_url: guestMeetingUrl,
+      jitsi_room_name: jitsiRoomName,
+      confirmed_by: doctorId || null,
+      confirmed_by_email: doctorEmail,
+      confirmed_at: new Date().toISOString(),
+      confirmed_date: confirmedDate || appointment.scheduled_date || appointment.requested_date,
+      confirmed_time: confirmedTime || appointment.scheduled_time || appointment.requested_time,
+      notes: notes || appointment.notes,
+      scheduled_date: confirmedDate || appointment.scheduled_date,
+      scheduled_time: confirmedTime || appointment.scheduled_time,
+    });
+
+    console.log(`✅ Appointment ${appointmentId} confirmed by doctor ${doctorId}`);
+
+    const { resolvedConfirmDate, resolvedConfirmTime, calendarEventUrl } = buildConfirmCalendarUrl(
+      appointment,
+      appointmentId,
+      meetingLink,
+      confirmedDate,
+      confirmedTime,
+    );
+
+    try {
+      await sendAppointmentConfirmEmail(appointment, { confirmedDate, confirmedTime, meetingLink });
     } catch (emailError) {
       console.warn('Failed to send confirmation email:', emailError.message);
     }
-    
-    // Create notification for the patient about the confirmed appointment
+
     try {
-      const patientId = appointment.patient_id;
-      if (patientId) {
-        const appointmentDateFormatted2 = confirmedDate || appointment.scheduled_date || '';
-        const appointmentTimeFormatted2 = confirmedTime || appointment.scheduled_time || '';
-        const doctorName2 = appointment.doctor_name_thai || appointment.doctor_name || 'แพทย์';
-        await PostgresDataService.NotificationService.createNotification({
-          user_id: patientId,
-          type: 'appointment_confirmed',
-          title: 'นัดหมายได้รับการยืนยัน',
-          title_thai: 'นัดหมายได้รับการยืนยัน',
-          message: `นัดหมายของคุณได้รับการยืนยันจาก ${doctorName2} วันที่ ${appointmentDateFormatted2} เวลา ${appointmentTimeFormatted2}`,
-          message_thai: `นัดหมายของคุณได้รับการยืนยันจาก ${doctorName2} วันที่ ${appointmentDateFormatted2} เวลา ${appointmentTimeFormatted2}`,
-          data: { appointmentId, meetingLink, confirmedDate, confirmedTime }
-        });
-        if (meetingLink) {
-          await PostgresDataService.NotificationService.createNotification({
-            user_id: patientId,
-            type: 'meeting_link_ready',
-            title: 'ลิงก์ประชุมพร้อมแล้ว',
-            title_thai: 'ลิงก์ประชุมพร้อมแล้ว',
-            message: `คุณสามารถเข้าร่วมการประชุมออนไลน์ได้ที่ลิงก์ที่แนบมา`,
-            message_thai: `คุณสามารถเข้าร่วมการประชุมออนไลน์ได้ที่ลิงก์ที่แนบมา`,
-            data: { appointmentId, meetingLink, meet_link: meetingLink, confirmedDate, confirmedTime }
-          });
-        }
-        console.log(`🔔 Notification created for patient ${patientId}`);
-      }
+      await createAppointmentConfirmNotifications({
+        appointment,
+        appointmentId,
+        effectiveDoctorId,
+        meetingLink,
+        calendarEventUrl,
+        resolvedConfirmDate,
+        resolvedConfirmTime,
+        confirmedDate,
+        confirmedTime,
+      });
     } catch (notifError) {
       console.warn('Failed to create confirmation notification:', notifError.message);
     }
-    
+
     emitDataChange(SOCKET_EVENTS.APPOINTMENT_UPDATED, { appointmentId, status: 'confirmed', appointment: updatedAppointment, meetingLink }, {
-      doctorId, patientId: appointment.patient_id
+      doctorId, patientId: appointment.patient_id,
     });
 
-    res.json({ success: true, appointment: updatedAppointment, meetingLink });
+    const io = req.app.get('io');
+    if (io) {
+      const syncPayload = {
+        appointmentId,
+        id: appointmentId,
+        action: 'accepted_confirmed',
+        doctor_id: effectiveDoctorId,
+        patient_id: appointment.patient_id,
+        status: 'confirmed',
+        confirmed_by: doctorId || doctorEmail,
+        table: 'appointments',
+        operation: 'UPDATE',
+      };
+      emitAppointmentSync(io, 'pool-updated', syncPayload);
+      emitAppointmentSync(io, SOCKET_EVENTS.APPOINTMENT_UPDATED, syncPayload);
+    }
+
+    res.json({
+      success: true,
+      appointment: mapAppointmentForClient(updatedAppointment),
+      meetingLink,
+      calendarEventUrl,
+    });
   } catch (error) {
     console.error('❌ Appointment confirmation error:', error);
     res.status(500).json({ success: false, error: error.message });
@@ -5836,10 +5971,10 @@ app.post('/api/appointments/:appointmentId/decline', authenticateToken, async (r
     
     console.log(`❌ Doctor ${doctorId} declining appointment ${appointmentId}...`);
     
-    // Use direct PostgreSQL update
+    // Return to pool so patient still sees the request and another doctor can claim it
     const result = await PostgresDataService.pool.query(
       `UPDATE appointments SET 
-        status = 'declined_by_doctor',
+        status = 'in_pool',
         doctor_id = NULL,
         notes = COALESCE(notes, '') || $2,
         updated_at = NOW()
@@ -5851,26 +5986,43 @@ app.post('/api/appointments/:appointmentId/decline', authenticateToken, async (r
     if (result.rows.length === 0) {
       return res.status(404).json({ success: false, error: 'Appointment not found' });
     }
-    
-    console.log(`✅ Appointment ${appointmentId} declined by doctor ${doctorId}`);
+
+    const row = result.rows[0];
+    console.log(`✅ Appointment ${appointmentId} declined by doctor ${doctorId} — returned to pool`);
     
     // Send email notification (non-blocking)
     try {
       await emailService.sendEmail({
         to: 'admin.test@izara.com',
-        subject: 'Appointment Needs Reassignment',
-        text: `Doctor declined appointment ${appointmentId}. Reason: ${reason || 'Not specified'}. Please reassign to another doctor.`,
-        html: `<p>Doctor declined appointment <strong>${appointmentId}</strong>.</p><p>Reason: ${reason || 'Not specified'}</p><p>Please reassign to another doctor.</p>`
+        subject: 'Appointment Returned to Pool',
+        text: `Doctor declined appointment ${appointmentId}. Reason: ${reason || 'Not specified'}. Item returned to pool for reassignment.`,
+        html: `<p>Doctor declined appointment <strong>${appointmentId}</strong>.</p><p>Reason: ${reason || 'Not specified'}</p><p>Returned to appointment pool.</p>`
       });
     } catch (emailError) {
       console.warn('Failed to send admin notification:', emailError);
     }
+
+    const io = req.app.get('io');
+    const syncPayload = {
+      appointmentId,
+      id: appointmentId,
+      action: 'declined_to_pool',
+      doctor_id: null,
+      patient_id: row.patient_id,
+      status: row.status,
+      table: 'appointments',
+      operation: 'UPDATE',
+    };
+    if (io) {
+      emitAppointmentSync(io, 'pool-updated', syncPayload);
+      emitAppointmentSync(io, SOCKET_EVENTS.APPOINTMENT_UPDATED, syncPayload);
+    }
     
-    emitDataChange(SOCKET_EVENTS.APPOINTMENT_UPDATED, { appointmentId, status: 'declined_by_doctor', appointment: result.rows[0] }, {
-      doctorId, patientId: result.rows[0]?.patient_id
+    emitDataChange(SOCKET_EVENTS.APPOINTMENT_UPDATED, { appointmentId, status: 'in_pool', appointment: row }, {
+      doctorId, patientId: row.patient_id
     });
 
-    res.json({ success: true, appointment: result.rows[0] });
+    res.json({ success: true, appointment: row });
   } catch (error) {
     console.error('❌ Appointment decline error:', error);
     res.status(500).json({ success: false, error: error.message });
@@ -6072,6 +6224,7 @@ app.put('/api/appointments/:appointmentId/status', authenticateToken, async (req
         return res.status(404).json({ error: 'Appointment not found' });
       }
       const reqDoctorId = doctorId || doctor_id || req.user?.id || req.user?.doctorId;
+      const doctorEmail = req.user?.email;
       const assignedDoctorId = current.doctor_id;
       const canConfirm =
         !assignedDoctorId ||
@@ -6084,9 +6237,88 @@ app.put('/api/appointments/:appointmentId/status', authenticateToken, async (req
           code: 'ASSIGNED_DOCTOR_ONLY'
         });
       }
+
+      const effectiveDoctorId = assignedDoctorId || reqDoctorId || req.user?.id || req.user?.doctorId;
+      const confirmedDate = appointmentDate || current.scheduled_date || current.requested_date;
+      const confirmedTime = appointmentTime || current.scheduled_time || current.requested_time;
+
+      let meetingLink = current.meet_link || null;
+      let doctorMeetingUrl = current.doctor_meeting_url || null;
+      let patientMeetingUrl = current.patient_meeting_url || null;
+      let guestMeetingUrl = current.guest_meeting_url || null;
+      const apptType = (current.appointment_type || '').toLowerCase();
+      if ((apptType === 'telehealth' || apptType === 'online') && !meetingLink) {
+        const urls = buildTelehealthMeetingUrls(appointmentId, {
+          patientName: current.patient_name_thai || current.patient_name || 'Patient',
+          doctorName: current.doctor_name_thai || current.doctor_name || 'Doctor',
+        });
+        meetingLink = urls.meetingLink;
+        doctorMeetingUrl = urls.doctorMeetingUrl;
+        patientMeetingUrl = urls.patientMeetingUrl;
+        guestMeetingUrl = urls.guestMeetingUrl;
+      }
+
+      const updatedAppointment = await PostgresDataService.AppointmentService.updateAppointment(appointmentId, {
+        status: 'confirmed',
+        doctor_id: effectiveDoctorId,
+        meeting_link: meetingLink,
+        doctor_meeting_url: doctorMeetingUrl,
+        patient_meeting_url: patientMeetingUrl,
+        guest_meeting_url: guestMeetingUrl,
+        confirmed_by: reqDoctorId || doctorEmail,
+        confirmed_by_email: doctorEmail,
+        confirmed_at: new Date().toISOString(),
+        notes: notes ? (current.notes || '') + '\n' + notes : current.notes,
+        scheduled_date: confirmedDate,
+        scheduled_time: confirmedTime,
+        jitsi_room_name: meetingLink ? meetingLink.split('/').pop()?.split('#')[0] : undefined,
+      });
+
+      const patientId = updatedAppointment?.patient_id || current.patient_id;
+      try {
+        if (patientId) {
+          await PostgresDataService.NotificationService.createNotification({
+            user_id: patientId,
+            type: 'appointment_confirmed',
+            title: 'นัดหมายได้รับการยืนยัน',
+            title_thai: 'นัดหมายได้รับการยืนยัน',
+            message: 'แพทย์ยืนยันนัดหมายของคุณ',
+            data: { appointmentId, status: 'confirmed' }
+          });
+        }
+      } catch (notifError) {
+        console.error('⚠️ Notification error (non-blocking):', notifError.message);
+      }
+
+      emitDataChange(SOCKET_EVENTS.APPOINTMENT_UPDATED, { appointmentId, status: 'confirmed', appointment: updatedAppointment }, {
+        doctorId: effectiveDoctorId, patientId
+      });
+
+      const io = req.app.get('io');
+      if (io) {
+        const syncPayload = {
+          appointmentId,
+          id: appointmentId,
+          action: 'accepted_confirmed',
+          doctor_id: effectiveDoctorId,
+          patient_id: patientId,
+          status: 'confirmed',
+          confirmed_by: reqDoctorId || doctorEmail,
+          table: 'appointments',
+          operation: 'UPDATE',
+        };
+        emitAppointmentSync(io, 'pool-updated', syncPayload);
+        emitAppointmentSync(io, SOCKET_EVENTS.APPOINTMENT_UPDATED, syncPayload);
+      }
+
+      return res.json({
+        success: true,
+        appointment: updatedAppointment,
+        message: 'Appointment confirmed'
+      });
     }
 
-    // Direct PostgreSQL update
+    // Direct PostgreSQL update for non-confirm status changes
     const setClauses = ['status = $2', 'updated_at = NOW()'];
     const params = [appointmentId, status];
     let paramIdx = 3;
@@ -6108,33 +6340,13 @@ app.put('/api/appointments/:appointmentId/status', authenticateToken, async (req
     const appointment = result.rows[0];
     const patientId = appointment.patient_id;
 
-    // Generate Jitsi meeting link for online appointments when confirmed
-    if (status === 'confirmed' && ['online', 'telehealth', 'Telehealth'].includes(appointment.appointment_type)) {
-      try {
-        const roomName = `izara-${appointmentId.substring(0, 12)}-${Date.now().toString(36)}`;
-        const meetingLink = `https://${process.env.JITSI_DOMAIN || 'meet.jit.si'}/${roomName}`;
-        await PostgresDataService.pool.query(
-          `UPDATE appointments SET meet_link = $2, jitsi_room_name = $3 WHERE id = $1`,
-          [appointmentId, meetingLink, roomName]
-        );
-        appointment.meet_link = meetingLink;
-        console.log('✅ Jitsi meeting link generated:', meetingLink);
-      } catch (e) {
-        console.warn('⚠️ Meeting link generation error:', e.message);
-      }
-    }
-
     // Send notifications based on status change (non-blocking)
     try {
       let notifType = 'appointment_updated';
       let notifTitle = 'อัปเดตนัดหมาย';
       let notifMessage = `สถานะนัดหมายของคุณเปลี่ยนเป็น ${status}`;
       
-      if (status === 'confirmed') {
-        notifType = 'appointment_confirmed';
-        notifTitle = 'นัดหมายได้รับการยืนยัน';
-        notifMessage = `แพทย์ยืนยันนัดหมายของคุณ`;
-      } else if (status === 'cancelled') {
+      if (status === 'cancelled') {
         notifType = 'appointment_cancelled';
         notifTitle = 'นัดหมายถูกยกเลิก';
         notifMessage = `นัดหมายของคุณถูกยกเลิก${notes ? ': ' + notes : ''}`;
@@ -6153,18 +6365,6 @@ app.put('/api/appointments/:appointmentId/status', authenticateToken, async (req
           message: notifMessage,
           data: { appointmentId, status }
         });
-        const meetLink = appointment.meet_link || null;
-        if (status === 'confirmed' && meetLink) {
-          await PostgresDataService.NotificationService.createNotification({
-            user_id: patientId,
-            type: 'meeting_link_ready',
-            title: 'ลิงก์ประชุมพร้อมแล้ว',
-            title_thai: 'ลิงก์ประชุมพร้อมแล้ว',
-            message: 'ลิงก์เข้าร่วมการประชุมออนไลน์พร้อมแล้ว',
-            message_thai: 'ลิงก์เข้าร่วมการประชุมออนไลน์พร้อมแล้ว',
-            data: { appointmentId, meetingLink: meetLink, meet_link: meetLink, status }
-          });
-        }
       }
     } catch (notifError) {
       console.error('⚠️ Notification error (non-blocking):', notifError.message);

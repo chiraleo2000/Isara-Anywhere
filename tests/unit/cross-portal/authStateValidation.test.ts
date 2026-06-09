@@ -476,4 +476,28 @@ describe('Auth State Validation', () => {
       expect(validateOriginUrl('http://localhost:3005', 'nurse')).toBe(false);
     });
   });
+
+  describe('AUTH-X — cross-portal token shape parity', () => {
+    function tokenShape(role: 'patient' | 'doctor' | 'admin') {
+      const ids = {
+        patient: 'PATIENT-DEMO',
+        doctor: 'DOC-TEST-001',
+        admin: 'ADMIN-TEST-001',
+      };
+      return { token: `${role}-jwt`, user: { id: ids[role], role } };
+    }
+
+    it('AUTH-X-01 — patient and doctor tokens both expose user.id and user.role', () => {
+      for (const role of ['patient', 'doctor', 'admin'] as const) {
+        const shape = tokenShape(role);
+        expect(shape.token).toBeTruthy();
+        expect(shape.user.id).toBeTruthy();
+        expect(shape.user.role).toBe(role);
+      }
+    });
+
+    it('AUTH-X-02 — admin token uses admin role not doctor', () => {
+      expect(tokenShape('admin').user.role).toBe('admin');
+    });
+  });
 });

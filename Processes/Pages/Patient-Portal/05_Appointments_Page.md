@@ -1,8 +1,9 @@
 # 📅 Patient Portal — Appointments Page
 
-**Version:** v1.4.7
+**Version:** v1.7.51
+**Last Updated:** June 8, 2026
 **Route:** `/appointments`, `/book-appointment`, `/appointments/:id`
-**Component:** `src/pages/appointments/AppointmentPages.tsx`
+**Component:** `src/pages/AppointmentPages.tsx` (canonical); sidebar calendar in `src/components/MainLayout.tsx`
 **Access:** 🔒 Authenticated patients
 **Thai Title:** นัดหมายของฉัน / ขอนัดหมายแพทย์ / รายละเอียดนัดหมาย
 
@@ -282,7 +283,7 @@ Complete appointment management: view existing appointments, book new ones with 
 │  └── AI วิเคราะห์: Routine - อายุรกรรม                               │
 │                                                                     │
 │  Actions:                                                           │
-│  [📆 Add to Google Calendar]                                        │
+│  [📆 Add to Google Calendar]  data-testid=appointment-calendar-link │
 │  [📹 เข้าร่วมประชุม] (if confirmed telehealth)                      │
 │  [📋 คัดลอกลิงก์] (copy meeting link)                               │
 │  [👥 เชิญญาติ/เพื่อน] (invite guests)                               │
@@ -312,7 +313,59 @@ Complete appointment management: view existing appointments, book new ones with 
 ---
 
 
-## 6. Workflows
+## 6. Calendar integration (v1.7.51 — Teams/Zoom parity)
+
+After the **assigned doctor** confirms a telehealth appointment, the patient sees the visit on **two calendar surfaces** without manual re-entry.
+
+### 6.1 Sidebar MiniCalendar (`MainLayout.tsx`)
+
+| Item | Detail |
+|------|--------|
+| Location | Left sidebar on every authenticated page |
+| Data | `appointmentService.getByPatient()` — filters `status` in `confirmed`, `scheduled` |
+| Visual | Emerald highlight on days with at least one confirmed visit |
+| Test ID | `data-testid="mini-calendar-appointment-day"` on highlighted day cells |
+| E2E | Playwright **D4cal** — optional assert after doctor confirm in group-D |
+
+### 6.2 Appointment detail — Add to Google Calendar
+
+| Item | Detail |
+|------|--------|
+| When shown | `status=confirmed` (or `scheduled`) and date/time known |
+| Primary source | Patient notification `appointment_confirmed` → `data.calendarEventUrl` |
+| Fallback | `buildCalendarEventUrl.ts` rebuilds Google Calendar TEMPLATE URL from appointment row |
+| Test ID | `data-testid="appointment-calendar-link"` |
+| Location field | **Izara Video Meeting** (not "Google Meet") |
+| Duration | 30 minutes from `confirmed_time` (Asia/Bangkok) |
+
+### 6.3 End-to-end calendar flow
+
+```mermaid
+sequenceDiagram
+  participant Doctor
+  participant API
+  participant Notif as notifications
+  participant Patient
+
+  Doctor->>API: POST /api/appointments/:id/confirm
+  API->>Notif: appointment_confirmed + calendarEventUrl
+  Patient->>Patient: MiniCalendar emerald dot on confirmed_date
+  Patient->>Patient: Open /appointments/:id → appointment-calendar-link
+  Patient->>Patient: Opens Google Calendar TEMPLATE in new tab
+```
+
+### 6.4 Related E2E and unit tests
+
+| Test | Scope |
+|------|-------|
+| **D4cal** | Notification `calendarEventUrl` + doctor `/schedule` + patient mini-calendar |
+| `buildCalendarEventUrl.test.ts` | Patient-side URL builder |
+| `calendarEventLinks.test.ts` | Doctor API `buildTelehealthCalendarUrl` |
+| `appointmentMapper.test.ts` | `confirmed_date` → `appointmentDate` for UI |
+
+---
+
+## 7. Workflows
 
 
 ### Workflow 1: Book New Appointment
@@ -707,4 +760,16 @@ npm run test:e2e:meeting-lifecycle   # meeting pages only; needs D→D-host firs
 ```
 
 **Matrix row:** `05_Appointments_Page` in [tests/PROCESS_COVERAGE_MATRIX.md](../../tests/PROCESS_COVERAGE_MATRIX.md)
+
+**v1.7.49 regression:** After doctor accept, appointment moves to **Confirmed** tab (not lost). Pending filter still shows `in_pool` / `awaiting_doctor_response`. Vitest: `defectIsaraPdfMeetingQueue` DPDF-Q3.
+
+---
+
+## Detailed Workflow — Tabs After Doctor Accept (v1.7.51)
+
+1. Pending tab: `in_pool`, `awaiting_doctor_response`, `pending` only  
+2. After confirm: item leaves Pending → appears on **Confirmed** tab  
+3. Banner `data-testid="confirmed-tab-hint"` when confirmed items exist while viewing Pending  
+4. Realtime refresh via `useRealtimeSync` → `onAppointmentChange`  
+5. Confirmed cards: `data-testid="appointment-confirmed-badge"`  
 

@@ -1,7 +1,7 @@
 # URLs & default users (quick reference)
 
 > Synced from [README.md](../../README.md) · Defect track **v1.7.48** · Cloud region `asia-southeast1` · Project `izara-telemedicine`  
-> Verification: unit **2736** PASS · cloud full **85/85** headed · Defect-regression **36/36** (2026-05-31)
+> Verification: unit **2938** PASS (Docker) · cloud full **85/85** headed · Defect-regression **36/36** (v1.7.50)
 
 ---
 

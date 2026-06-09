@@ -2601,15 +2601,21 @@ Step 7: Signs EMR → Patient notified
 ## 4. Workflows
 
 
-### Workflow: View Daily Schedule
+### Workflow: View Daily Schedule (v1.7.51 — calendar sync on confirm)
 
 ```text
-Step 1: Navigate to /schedule
-Step 2: GET /api/appointments filtered by doctorId
-Step 3: Today's appointments displayed with times
-Step 4: Confirmed telehealth shows "Join Meeting" button
-Step 5: Click "Join Meeting" → Opens Jitsi in new tab
+Step 1: Doctor confirms telehealth appointment (Health Meeting queue or POST /api/appointments/:id/confirm)
+Step 2: API sets confirmed_date/time, meeting_link, calendarEventUrl; inserts schedule_entry_ready notification
+Step 3: Navigate to /schedule (data-testid=doctor-schedule-page)
+Step 4: GET /api/appointments → mapAppointmentForClient → filter doctor_id + status confirmed|scheduled
+Step 5: resolveAppointmentSchedule(apt) picks confirmed_date over requested_date
+Step 6: Today's list: data-testid=schedule-appointment-{id}; Join: data-testid=schedule-meeting-link
+Step 7: Month view: emerald dot on days with appointments (schedule-month-appointment-day)
+Step 8: Upcoming section lists dates strictly after today (no duplicate of today)
+Step 9: Optional: open calendarEventUrl from schedule_entry_ready notification → Google Calendar TEMPLATE
 ```
+
+**E2E:** Playwright D4cal (group-D) · Vitest: `appointmentMapper.test.ts`, `calendarEventLinks.test.ts`
 
 ---
 
@@ -2618,7 +2624,9 @@ Step 5: Click "Join Meeting" → Opens Jitsi in new tab
 
 | Method | Endpoint | Purpose |
 | ------ | -------- | ------- |
-| GET | `/api/appointments` | Fetch doctor's appointments |
+| GET | `/api/appointments` | Fetch appointments (`mapAppointmentForClient`; optional `?doctorId=`) |
+| GET | `/api/schedule/:doctorId` | Schedule alias — date from confirmed_date, meetingLink |
+| POST | `/api/appointments/:id/confirm` | Confirm + Jitsi URLs + calendarEventUrl + notifications |
 
 ---
 
@@ -2775,10 +2783,10 @@ Step 2: Click "ยืนยัน" (Confirm)
 Step 3: Select date/time in confirmation dialog
 Step 4: Select email recipients
 Step 5: Click "ยืนยันนัดหมาย"
-Step 6: PATCH /api/appointments/:id → status: confirmed
+Step 6: PATCH /api/appointments/:id → status: confirmed (row retained — UI label accepted)
 Step 7: POST /api/meetings/create → generates Jitsi URLs
 Step 8: Confirmation email sent to patient
-Step 9: Appointment moves to Meetings tab
+Step 9: Appointment stays in pool/accepted tab (includeAccepted=true, 7-day window)
 ```
 
 
@@ -2842,9 +2850,9 @@ Step 1: Doctor opens confirmed appointment in Meetings tab
 Step 2: Clicks "เชิญผู้เข้าร่วม" (Invite Participants)
 Step 3: Search and add other doctors/admin by name or specialty
 Step 4: POST /api/meetings/:id/invite → Sends invitation + meeting URL
-Step 5: Patient separately shares Guest URL with relatives/friends
-Step 6: Non-registered guests create display name on join page
-Step 7: All guests enter lobby on meeting day
+Step 5: Patient separately shares Guest URL with relatives/friends (scoped guest-invite token)
+Step 6: Guests open invite link — anonymous join-config denied without token
+Step 7: All guests enter Izara lobby on meeting day
 Step 8: Doctor (HOST) approves/rejects each lobby participant
 Step 9: Admitted participants join multi-party video meeting
 ```

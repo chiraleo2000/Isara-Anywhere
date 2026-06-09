@@ -37,6 +37,8 @@ import {
   SearchIcon,
 } from '../../assets/NewSvgIcons';
 import MeetingResults from './MeetingResults';
+import { stableRoomNameForAppointment } from '../../utils/jitsiMeetingConfig';
+import { splitQueueSections } from '../../utils/appointmentPoolQuery';
 
 // Meeting server URL for registering meetings (same pattern as MeetingRoom.tsx)
 const MEETING_SERVER_URL = (() => {
@@ -212,6 +214,8 @@ const HealthMeeting: React.FC<HealthMeetingProps> = ({ doctor }) => {
   // Patient Queue State - Now shows ALL pending appointments (not just today's in-clinic queue)
   const [queue, setQueue] = useState<QueuePatient[]>([]);
   const [pendingQueue, setPendingQueue] = useState<AppointmentRequest[]>([]); // All pending appointments awaiting confirmation
+  const [acceptedQueue, setAcceptedQueue] = useState<AppointmentRequest[]>([]); // Recently accepted (confirmed today)
+  const [queueLoadError, setQueueLoadError] = useState<string | null>(null);
   // Queue statistics - pendingConfirmation tracked via pendingQueue.length directly
   const [skipReason, setSkipReason] = useState('');
   const [showSkipModal, setShowSkipModal] = useState(false);
@@ -383,7 +387,7 @@ const HealthMeeting: React.FC<HealthMeetingProps> = ({ doctor }) => {
       clearCache('appointments');
 
       // Load pending queue (ALL pending appointments) and scheduled meetings
-      const loadTasks = [loadPendingQueue(), loadDoctorMeetings(), loadPendingAppointments()];
+      const loadTasks = [loadPendingQueue(), loadPendingAppointments()];
 
       // Admin gets additional data: All Appointments list and doctors
       if (isAdmin) {
@@ -418,24 +422,95 @@ const HealthMeeting: React.FC<HealthMeetingProps> = ({ doctor }) => {
     status: apt.status || 'pending',
     assignedDoctorId: apt.assignedDoctorId || apt.doctor_id || apt.doctorId,
     assignedDoctorName: apt.assignedDoctorName || apt.doctor_name || apt.doctorName,
+    confirmedBy: apt.confirmedBy || apt.acceptedBy,
+    confirmedByEmail: apt.confirmedByEmail || apt.acceptedByEmail,
+    confirmedAt: apt.confirmedAt || apt.acceptedAt || apt.confirmed_at,
+    acceptedBy: apt.acceptedBy || apt.confirmedBy,
+    acceptedByEmail: apt.acceptedByEmail || apt.confirmedByEmail,
+    acceptedAt: apt.acceptedAt || apt.confirmedAt || apt.confirmed_at,
+    queueVisibility: apt.queueVisibility || (apt.status === 'confirmed' ? 'accepted' : 'pending'),
     createdAt: apt.createdAt || apt.created_at || new Date().toISOString(),
     updatedAt: apt.updatedAt || apt.updated_at,
     notes: apt.notes || '',
     requiredSpecialty: apt.requiredSpecialty || apt.required_specialty || apt.suggestedSpecialty || apt.suggested_specialty || '',
     poolStatus: apt.poolStatus || apt.pool_status || 'pending',
+    doctorMeetingUrl: apt.doctorMeetingUrl || apt.doctor_meeting_url,
+    patientMeetingUrl: apt.patientMeetingUrl || apt.patient_meeting_url || apt.meetLink || apt.meet_link,
+    guestMeetingUrl: apt.guestMeetingUrl || apt.guest_meeting_url,
+    meetLink: apt.meetLink || apt.meet_link || apt.meetingLink,
+    jitsiRoomName: apt.jitsiRoomName || apt.jitsi_room_name,
+    appointmentDate: apt.confirmedDate || apt.confirmed_date || apt.appointmentDate || apt.requested_date,
+    appointmentTime: apt.confirmedTime || apt.confirmed_time || apt.appointmentTime || apt.requested_time,
   });
   };
 
   // Helper: Check if appointment is assigned to current doctor
   const isAssignedToCurrentDoctor = (apt: any): boolean => {
     // Doctors should still see unassigned pool requests so they can claim/accept from queue workflows.
-    if (!apt.doctorId && !apt.assignedDoctorId && !apt.adminAssignedDoctorId) return true;
+    if (!apt.doctorId && !apt.doctor_id && !apt.assignedDoctorId && !apt.adminAssignedDoctorId) return true;
     const doctorIdentifier = doctor.id || doctor.email;
     return apt.doctorId === doctorIdentifier ||
+      apt.doctor_id === doctorIdentifier ||
       apt.assignedDoctorId === doctorIdentifier ||
       apt.adminAssignedDoctorId === doctorIdentifier ||
+      apt.confirmedBy === doctorIdentifier ||
+      apt.acceptedBy === doctorIdentifier ||
+      apt.confirmedByEmail === doctor.email ||
+      apt.acceptedByEmail === doctor.email ||
       apt.doctorEmail === doctor.email ||
       apt.assignedDoctorEmail === doctor.email;
+  };
+
+  const convertToScheduledMeetings = (acceptedRequests: AppointmentRequest[]): ScheduledMeeting[] => {
+    const converted = acceptedRequests.map((apt) => {
+      const patientParticipant: MeetingParticipant = {
+        id: apt.patientId || 'unknown',
+        name: apt.patientName || 'Unknown Patient',
+        role: 'patient',
+        email: apt.patientEmail || 'N/A',
+        phone: apt.patientPhone || 'N/A',
+        photo: `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(apt.patientId || 'patient')}`,
+        status: 'available',
+      };
+      const doctorParticipant: MeetingParticipant = {
+        id: doctor.id,
+        name: doctor.name || 'Dr. ' + doctor.email?.split('@')[0] || 'Doctor',
+        role: 'doctor',
+        specialty: doctor.specialty || 'General Practice',
+        email: doctor.email || '',
+        phone: '',
+        photo: doctor.avatarUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(doctor.id)}`,
+        status: 'available',
+      };
+      const rawDate = apt.appointmentDate || apt.requestedDate || apt.date || new Date().toISOString();
+      const appointmentDate = String(rawDate).split('T')[0];
+      const appointmentTime = apt.appointmentTime || apt.preferredTime || apt.time || '09:00';
+      const aptAny = apt as AppointmentRequest & {
+        doctorMeetingUrl?: string;
+        patientMeetingUrl?: string;
+        guestMeetingUrl?: string;
+        meetLink?: string;
+        jitsiRoomName?: string;
+      };
+      return {
+        id: apt.id,
+        title: apt.reason || normalizeSymptoms(apt.symptoms).join(', ') || 'Medical Consultation',
+        date: appointmentDate,
+        time: appointmentTime,
+        duration: 30,
+        meetingLink: aptAny.doctorMeetingUrl || aptAny.meetLink || `https://meet.jit.si/izara-${apt.id.substring(0, 12)}-meeting`,
+        doctorMeetingUrl: aptAny.doctorMeetingUrl,
+        patientMeetingUrl: aptAny.patientMeetingUrl || aptAny.meetLink,
+        guestMeetingUrl: aptAny.guestMeetingUrl,
+        jitsiRoomName: aptAny.jitsiRoomName,
+        participants: [patientParticipant, doctorParticipant],
+        type: getMeetingType(apt),
+        status: getMeetingStatus(apt.status),
+        notes: apt.notes || apt.symptomDescription || normalizeSymptoms(apt.symptoms).join(', ') || '',
+      };
+    });
+    converted.sort((a, b) => new Date(`${a.date}T${a.time}`).getTime() - new Date(`${b.date}T${b.time}`).getTime());
+    return converted;
   };
 
   /** Assigned doctor confirms; admin only triages (assign), not confirm on doctor's behalf */
@@ -456,12 +531,14 @@ const HealthMeeting: React.FC<HealthMeetingProps> = ({ doctor }) => {
   // This replaces the old "Patient Pool" tab - shows appointments from ALL dates, not just today
   const loadPendingQueue = async () => {
     try {
+      setQueueLoadError(null);
       // Prefer appointment-pool API for real queue state (PG source-of-truth).
       const apiBase = (import.meta as { env?: { VITE_API_URL?: string } }).env?.VITE_API_URL || '';
       const token = localStorage.getItem('token') || '';
       let appointments: any[] = [];
+      let poolFetchFailed = false;
       try {
-        const poolResp = await fetch(`${apiBase}/api/appointment-pool`, {
+        const poolResp = await fetch(`${apiBase}/api/appointment-pool?includeAccepted=true`, {
           headers: {
             'Content-Type': 'application/json',
             ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -470,9 +547,20 @@ const HealthMeeting: React.FC<HealthMeetingProps> = ({ doctor }) => {
         if (poolResp.ok) {
           const poolData = await poolResp.json();
           appointments = Array.isArray(poolData) ? poolData : (poolData.appointments || []);
+        } else {
+          poolFetchFailed = true;
+          const errBody = await poolResp.json().catch(() => ({}));
+          setQueueLoadError(errBody?.message || errBody?.error || `Pool API error (${poolResp.status})`);
         }
-      } catch {
-        // Fall back to appointments API below
+      } catch (poolErr) {
+        poolFetchFailed = true;
+        setQueueLoadError(poolErr instanceof Error ? poolErr.message : 'Failed to load appointment pool');
+      }
+
+      if (!appointments.length && poolFetchFailed) {
+        setPendingQueue([]);
+        setAcceptedQueue([]);
+        return;
       }
 
       if (!appointments.length) {
@@ -481,36 +569,37 @@ const HealthMeeting: React.FC<HealthMeetingProps> = ({ doctor }) => {
         appointments = await fetchAllAppointments();
       }
 
-      // Filter for appointments awaiting confirmation
-      // For Admin: ALL pending/in_pool appointments (regardless of doctor assignment)
-      // For Doctor: Only appointments assigned to this doctor that need confirmation
-      const pendingStatuses = new Set(['pending', 'in_pool', 'awaiting_doctor_response', 'assigned']);
+      const doctorEmail = doctor?.email || '';
+      const doctorId = doctor?.id || '';
+      const { pending: pendingRaw, accepted: acceptedRaw } = splitQueueSections(appointments, {
+        isAdmin,
+        doctorId,
+        doctorEmail,
+      });
 
-      const queueRequests = appointments
-        .filter((apt: any) => {
-          const isPendingStatus = pendingStatuses.has(apt.status);
-
-          if (isAdmin) {
-            // Admin sees ALL pending appointments
-            return isPendingStatus;
-          }
-          // Doctor sees only appointments assigned to them
-          return isPendingStatus && isAssignedToCurrentDoctor(apt);
-        })
+      const urgencyOrder: Record<string, number> = { emergency: 0, urgent: 1, normal: 2 };
+      const queueRequests = pendingRaw
         .map(mapRawToAppointmentRequest)
-        // Sort by urgency first, then by date (oldest first to process FIFO)
         .sort((a: AppointmentRequest, b: AppointmentRequest) => {
-          const urgencyOrder: { [key: string]: number } = { emergency: 0, urgent: 1, normal: 2 };
           const urgencyDiff = (urgencyOrder[a.urgency] || 2) - (urgencyOrder[b.urgency] || 2);
           if (urgencyDiff !== 0) return urgencyDiff;
           return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
         });
 
+      const acceptedRequests = acceptedRaw
+        .map(mapRawToAppointmentRequest)
+        .sort((a: AppointmentRequest, b: AppointmentRequest) =>
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+        );
+
       setPendingQueue(queueRequests);
-      console.log('[HealthMeeting] Pending Queue loaded:', queueRequests.length, 'appointments awaiting confirmation');
+      setAcceptedQueue(acceptedRequests);
+      setMeetings(convertToScheduledMeetings(acceptedRequests));
+      console.log('[HealthMeeting] Pending Queue loaded:', queueRequests.length, 'accepted:', acceptedRequests.length);
     } catch (error) {
       console.error('Error loading pending queue:', error);
       setPendingQueue([]);
+      setAcceptedQueue([]);
     }
   };
 
@@ -644,143 +733,6 @@ const HealthMeeting: React.FC<HealthMeetingProps> = ({ doctor }) => {
     }
   };
 
-  // Load doctor's meetings/appointments from GCS
-  const loadDoctorMeetings = async () => {
-    console.log('[HealthMeeting] 📞 ========== loadDoctorMeetings() CALLED ==========');
-    try {
-      // Fetch all appointments and filter for this doctor
-      // CRITICAL: Bypass cache to get fresh data
-      console.log('[HealthMeeting] 🔄 Fetching from GCS...');
-      clearCache();
-      const allAppointments = await fetchAllAppointments();
-      console.log('[HealthMeeting] ✅ Fetched appointments:', allAppointments.length);
-      console.log('[HealthMeeting] 📋 Appointment IDs:', allAppointments.map((a: any) => a.id).join(', '));
-      console.log('[HealthMeeting] 📊 Status breakdown:',
-        allAppointments.reduce((acc: any, apt: any) => {
-          acc[apt.status] = (acc[apt.status] || 0) + 1;
-          return acc;
-        }, {}));
-      console.log('[HealthMeeting] Current Doctor ID:', doctor.id);
-      console.log('[HealthMeeting] Is Admin:', isAdmin);
-
-      // Filter appointments for Scheduled Meetings tab
-      // SCHEDULED MEETINGS: Only CONFIRMED appointments
-      console.log('[HealthMeeting] 🔍 FILTERING FOR SCHEDULED MEETINGS:');
-      console.log('[HealthMeeting] Current Doctor ID:', doctor.id);
-      console.log('[HealthMeeting] Doctor Email:', doctor.email);
-      console.log('[HealthMeeting] Is Admin:', isAdmin);
-
-      // CRITICAL FIX: Use SAME filter logic as Dashboard for consistency
-      // Filter appointments for this doctor FIRST, then filter by status
-      const doctorAppointments = allAppointments.filter((apt: any) => {
-        // Only confirmed/scheduled appointments go in Scheduled Meetings tab
-        const isRelevantStatus = ['confirmed', 'scheduled'].includes(apt.status);
-        if (!isRelevantStatus) {
-          console.log(`[HealthMeeting] ❌ apt ${apt.id} skipped: status=${apt.status} not in [confirmed,scheduled]`);
-          return false;
-        }
-
-        // CRITICAL FIX: Admin sees ALL confirmed appointments
-        if (isAdmin) {
-          console.log(`[HealthMeeting] ✅ ADMIN sees apt ${apt.id}`);
-          return true;
-        }
-
-        // CRITICAL: Use EXACT SAME logic as Dashboard (lines 180-185 of DoctorDashboard.tsx)
-        // This ensures both pages show the same appointments
-        const matchesDoctorById = apt.doctorId === doctor.id ||
-          apt.assignedDoctorId === doctor.id ||
-          apt.adminAssignedDoctorId === doctor.id ||
-          apt.confirmedBy === doctor.id;
-
-        // ALSO match by email as fallback (for doctors without userId in session)
-        const matchesDoctorByEmail = doctor.email && (
-          apt.doctorEmail === doctor.email ||
-          apt.assignedDoctorEmail === doctor.email ||
-          apt.confirmedByEmail === doctor.email ||
-          apt.doctorId === doctor.email ||
-          apt.assignedDoctorId === doctor.email ||
-          apt.confirmedBy === doctor.email
-        );
-
-        const matches = matchesDoctorById || matchesDoctorByEmail;
-        console.log(`[HealthMeeting] 🔍 apt ${apt.id}: status=${apt.status}, doctorId=${apt.doctorId}, confirmedBy=${apt.confirmedBy} => doctorMatch=${matches}`);
-
-        return matches;
-      });
-
-      console.log('[HealthMeeting] Doctor confirmed appointments:', doctorAppointments.length);
-      console.log('[HealthMeeting] Filtered appointment IDs:', doctorAppointments.map((a: any) => a.id));
-
-      // Convert appointments to ScheduledMeeting format
-      const convertedMeetings: ScheduledMeeting[] = doctorAppointments.map((apt: any) => {
-        // Build participant from patient info
-        const patientParticipant: MeetingParticipant = {
-          id: apt.patientId || 'unknown',
-          name: apt.patientName || 'Unknown Patient',
-          role: 'patient',
-          email: apt.patientEmail || apt.email || 'N/A',
-          phone: apt.patientPhone || apt.phone || 'N/A',
-          photo: `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(apt.patientId || 'patient')}`,
-          status: 'available',
-        };
-
-        // Build doctor participant
-        const doctorParticipant: MeetingParticipant = {
-          id: doctor.id,
-          name: doctor.name || 'Dr. ' + doctor.email?.split('@')[0] || 'Doctor',
-          role: 'doctor',
-          specialty: doctor.specialty || 'General Practice',
-          email: doctor.email || '',
-          phone: '',
-          photo: doctor.avatarUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(doctor.id)}`,
-          status: 'available',
-        };
-
-        // Determine meeting status and type
-        const meetingStatus = getMeetingStatus(apt.status);
-        const meetingType = getMeetingType(apt);
-
-        // Normalize date - handle both "2025-12-11" and "2025-12-11T00:00:00.000Z" formats
-        const rawDate = apt.appointmentDate || apt.date || apt.preferredDates?.[0] || new Date().toISOString();
-        const appointmentDate = rawDate.split('T')[0];
-        const appointmentTime = apt.appointmentTime || apt.time || apt.preferredTimeSlot || '09:00';
-
-        return {
-          id: apt.id || apt.appointmentId,
-          title: apt.title || apt.reason || normalizeSymptoms(apt.symptoms).join(', ') || 'Medical Consultation',
-          date: appointmentDate,
-          time: appointmentTime,
-          duration: apt.duration || 30,
-          // For doctors, prioritize doctorMeetingUrl (Jitsi host URL) over generic meetingLink
-          meetingLink: apt.doctorMeetingUrl || apt.meetingLink || apt.meetLink || `https://meet.jit.si/Izara-${apt.id || apt.appointmentId}`,
-          // Store all meeting URLs for reference
-          doctorMeetingUrl: apt.doctorMeetingUrl,
-          patientMeetingUrl: apt.patientMeetingUrl || apt.meetingLink,
-          guestMeetingUrl: apt.guestMeetingUrl,
-          jitsiRoomName: apt.jitsiRoomName || apt.meetCode,
-          participants: [patientParticipant, doctorParticipant],
-          type: meetingType,
-          status: meetingStatus,
-          notes: apt.notes || apt.symptomDescription || normalizeSymptoms(apt.symptoms).join(', ') || '',
-        };
-      });
-
-      // Sort by date/time (upcoming first)
-      convertedMeetings.sort((a, b) => {
-        const dateA = new Date(`${a.date}T${a.time}`);
-        const dateB = new Date(`${b.date}T${b.time}`);
-        return dateA.getTime() - dateB.getTime();
-      });
-
-      setMeetings(convertedMeetings);
-      console.log('[HealthMeeting] Converted meetings:', convertedMeetings.length);
-    } catch (error) {
-      console.error('[HealthMeeting] Error loading appointments:', error);
-      setMeetings([]);
-    }
-  };
-
   // Load in-clinic queue (separate from appointment queue)
   const loadQueue = async () => {
     try {
@@ -872,15 +824,18 @@ const HealthMeeting: React.FC<HealthMeetingProps> = ({ doctor }) => {
   const generateMeetingLink = (appointmentId?: string): { meetLink: string; meetCode: string; calendarLink: string; doctorUrl: string; patientUrl: string; guestUrl: string } => {
     // Generate secure room name for medical consultations
     const JITSI_DOMAIN = 'meet.jit.si';
-    const timestamp = Date.now().toString(36);
-    const randomPart = Math.random().toString(36).substring(2, 8);
     const aptId = appointmentId || selectedAppointment?.id || 'direct';
-    const roomName = `Izara-Med-${aptId.substring(0, 8)}-${timestamp}-${randomPart}`;
+    const existingRoom =
+      (selectedAppointment as { jitsiRoomName?: string; jitsi_room_name?: string } | undefined)?.jitsiRoomName
+      || (selectedAppointment as { jitsi_room_name?: string } | undefined)?.jitsi_room_name;
+    const roomName = existingRoom || stableRoomNameForAppointment(aptId);
+    const patientDisplayName = selectedAppointment?.patientName || 'Patient';
+    const doctorDisplayName = doctor.displayName || doctor.name || 'Doctor';
 
     // Base Jitsi configuration for medical consultations
     const baseConfig = new URLSearchParams({
       // Basic setup
-      'config.prejoinPageEnabled': 'true',
+      'config.prejoinPageEnabled': 'false',
       'config.startWithAudioMuted': 'false',
       'config.startWithVideoMuted': 'false',
       'config.enableClosePage': 'true',
@@ -925,7 +880,7 @@ const HealthMeeting: React.FC<HealthMeetingProps> = ({ doctor }) => {
     // DOCTOR URL - Automatically becomes moderator/host
     // First person to join with this URL becomes the host
     const doctorConfig = new URLSearchParams(baseConfig);
-    doctorConfig.set('userInfo.displayName', doctor.displayName || doctor.name || 'Doctor');
+    doctorConfig.set('userInfo.displayName', doctorDisplayName);
     if (doctor.email) {
       doctorConfig.set('userInfo.email', doctor.email);
     }
@@ -935,7 +890,7 @@ const HealthMeeting: React.FC<HealthMeetingProps> = ({ doctor }) => {
 
     // PATIENT URL - Standard participant (lobby applies if enabled)
     const patientConfig = new URLSearchParams(baseConfig);
-    patientConfig.set('userInfo.displayName', selectedAppointment?.patientName || 'Patient');
+    patientConfig.set('userInfo.displayName', patientDisplayName);
     const patientUrl = `https://${JITSI_DOMAIN}/${roomName}#${patientConfig.toString()}`;
 
     // GUEST URL - For family members or other consultants (lobby applies)
@@ -1098,7 +1053,7 @@ Izara Telehealth Team
       }
 
       // Step 5b: Register meeting with the meeting server (so patient can look up room name)
-      // Non-blocking: appointment confirmation succeeds even if meeting server is unreachable
+      let meetingServerRegistered = false;
       try {
         const meetingToken = localStorage.getItem('token');
         const meetingServerRes = await fetch(`${MEETING_SERVER_URL}/api/meetings/create`, {
@@ -1147,14 +1102,20 @@ Izara Telehealth Team
               duration: 30,
             });
             console.log('✅ Meeting registered with meeting server (tokenized host URL applied)');
+            meetingServerRegistered = true;
           } else {
             console.log('✅ Meeting registered with meeting server');
+            meetingServerRegistered = true;
           }
         } else {
           console.warn('⚠️ Meeting server registration returned:', meetingServerRes.status);
         }
       } catch (meetErr) {
         console.warn('⚠️ Meeting server registration failed (non-blocking):', meetErr);
+      }
+
+      if (!meetingServerRegistered) {
+        setErrorMessage('Appointment confirmed, but meeting server registration failed. Use In-App meeting join or retry from Scheduled Meetings.');
       }
 
       // All meeting data is already saved in the appointment record above
@@ -1398,7 +1359,7 @@ Izara Telehealth Team
               : inactiveTabClass(isDark)
             }`}
         >
-          🏥 Patient Queue ({pendingQueue.length})
+          🏥 Patient Queue ({pendingQueue.length + acceptedQueue.length})
         </button>
         {/* Removed Scheduled Meetings tab button */}
 
@@ -1443,6 +1404,15 @@ Izara Telehealth Team
               Refresh
             </button>
           </div>
+
+          {queueLoadError && (
+            <div
+              data-testid="queue-load-error"
+              className="mb-4 p-4 rounded-lg bg-red-50 border border-red-200 text-red-800 text-sm"
+            >
+              {queueLoadError}
+            </div>
+          )}
 
           <div className="space-y-4" data-testid="queue-list">
             {pendingQueue.length === 0 ? (
@@ -1610,6 +1580,38 @@ Izara Telehealth Team
               ))
             )}
           </div>
+
+          {acceptedQueue.length > 0 && (
+            <div className="mt-8 pt-6 border-t border-gray-200" data-testid="accepted-queue-list">
+              <h3 className={`text-lg font-bold mb-3 ${hmDarkText(isDark)}`}>
+                Recently Accepted ({acceptedQueue.length})
+              </h3>
+              <p className={`text-sm mb-4 ${hmDarkSubtext(isDark)}`}>
+                Confirmed appointments remain visible here for 7 days (accepted by assigned doctor).
+              </p>
+              <div className="space-y-3">
+                {acceptedQueue.map((request) => (
+                  <div
+                    key={`accepted-${request.id}`}
+                    className={`border rounded-lg p-4 ${isDark ? 'bg-gray-700 border-green-700' : 'bg-green-50 border-green-200'}`}
+                  >
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+                      <div>
+                        <div className="font-semibold text-gray-900">{request.patientName}</div>
+                        <div className="text-sm text-gray-600">
+                          Accepted by {request.acceptedBy || request.assignedDoctorName || request.confirmedBy || 'Doctor'}
+                          {request.acceptedAt || request.confirmedAt ? ` · ${new Date(request.acceptedAt || request.confirmedAt || '').toLocaleDateString()}` : ''}
+                        </div>
+                      </div>
+                      <span className="px-3 py-1 rounded-full text-xs font-bold bg-green-100 text-green-800 uppercase">
+                        accepted
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
 

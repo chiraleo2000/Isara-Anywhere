@@ -131,7 +131,7 @@ export function securityHeaders() {
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com; " +
       "font-src 'self' https://fonts.gstatic.com; " +
       "img-src 'self' data: https: blob:; " +
-      "connect-src 'self' http://localhost:* ws://localhost:* wss://localhost:* https://*.googleapis.com https://maps.googleapis.com https://meet.jit.si wss://meet.jit.si https://*.run.app wss://*.run.app; " +
+      "connect-src 'self' http://localhost:* ws://localhost:* wss://localhost:* http://host.docker.internal:* ws://host.docker.internal:* wss://host.docker.internal:* https://*.googleapis.com https://maps.googleapis.com https://meet.jit.si wss://meet.jit.si https://*.run.app wss://*.run.app; " +
       "frame-src 'self' https://meet.jit.si https://8x8.vc https://meet.google.com https://accounts.google.com; " +
       "frame-ancestors 'self'; " +
       "object-src 'none'; " +
