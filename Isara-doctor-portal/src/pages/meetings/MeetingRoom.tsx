@@ -123,6 +123,87 @@ function stopRecorderAndUpload(
   });
 }
 
+type SaveRecordingFn = (chunks: Blob[], duration: number) => Promise<void>;
+
+async function flushMeetingRecording(
+  recorder: MediaRecorder | null,
+  chunks: Blob[],
+  durationMs: number,
+  wasRecording: boolean,
+  inProgress: boolean,
+  saveRecordingBlob: SaveRecordingFn,
+): Promise<void> {
+  if (recorder && recorder.state !== 'inactive') {
+    await stopRecorderAndUpload(recorder, chunks, durationMs, saveRecordingBlob);
+    return;
+  }
+  if (wasRecording || inProgress) {
+    await saveRecordingBlob(chunks, Math.max(durationMs, 10_000)).catch(
+      (err) => console.warn('[MeetingEnd] Recording save failed:', errorMessageFromUnknown(err)),
+    );
+  }
+}
+
+function stopRecordingStream(stream: MediaStream | null): void {
+  stream?.getTracks().forEach((track) => track.stop());
+}
+
+function hangupJitsi(api: { executeCommand: (cmd: string) => void } | null): void {
+  if (!api) return;
+  try {
+    api.executeCommand('hangup');
+  } catch {
+    /* ignore */
+  }
+}
+
+async function finalizeEndedMeeting(
+  appointmentId: string,
+  doctorId: string | undefined,
+  navigate: ReturnType<typeof useNavigate>,
+  setAiSummary: React.Dispatch<React.SetStateAction<string>>,
+  setShowPanel: React.Dispatch<React.SetStateAction<'transcript' | 'summary' | 'chat' | null>>,
+): Promise<void> {
+  try {
+    const res = await fetch(`${meetingServerUrl()}/api/meetings/${appointmentId}/end`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ endedBy: doctorId || 'doctor', generateSummary: true }),
+    });
+    if (res.ok) {
+      fetch(`${meetingServerUrl()}/api/meetings/${appointmentId}/process-embeddings`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+      }).catch((err) => console.warn('[MeetingEnd] Process embeddings failed:', err.message));
+
+      if (doctorId && appointmentId) {
+        navigate(`/doctor/${doctorId}/meeting/${appointmentId}/results`);
+        return;
+      }
+    }
+    const data = await res.json().catch(() => ({}));
+    if (data.summary) {
+      setAiSummary(data.summary);
+      setShowPanel('summary');
+    } else if (res.ok) {
+      fetch(`${meetingServerUrl()}/api/meetings/${appointmentId}/generate-summary`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+      })
+        .then((r) => r.json())
+        .then((d) => {
+          if (d.summary) {
+            setAiSummary(d.summary);
+            setShowPanel('summary');
+          }
+        })
+        .catch(() => { /* pipeline may still run async */ });
+    }
+  } catch (err) {
+    console.warn('[MeetingEnd] End meeting failed:', (err as Error).message);
+  }
+}
+
 const FETCH_TIMEOUT_MS = 15_000;
 
 async function fetchWithTimeout(url: string, init: RequestInit = {}, timeoutMs = FETCH_TIMEOUT_MS): Promise<Response> {
@@ -386,7 +467,8 @@ const MeetingRoom: React.FC = () => { // NOSONAR
   const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
   const [summaryValidationStatus, setSummaryValidationStatus] = useState<'pending' | 'approved' | 'rejected' | null>(null);
   const meetingInfoRef = useRef<any>(null);
-  const [showPanel, setShowPanel] = useState<'transcript' | 'chat' | 'summary' | null>('transcript');
+  // Video-first: side panel starts collapsed so the Jitsi video fills the viewport on join (ux-01).
+  const [showPanel, setShowPanel] = useState<'transcript' | 'chat' | 'summary' | null>(null);
   const [error, setError] = useState<string | null>(null);
   const participantsRef = useRef<string[]>([]);
   const [meetingDuration, setMeetingDuration] = useState(0);
@@ -1080,25 +1162,17 @@ const MeetingRoom: React.FC = () => { // NOSONAR
     const wasRecording = isRecording;
     setIsRecording(false);
 
-    // Stop recording and await upload before /end (cloud E2E requires real recordingUrl)
-    const recorder = mediaRecorderRef.current;
-    if (recorder && recorder.state !== 'inactive') {
-      await stopRecorderAndUpload(
-        recorder,
-        recordingChunksRef.current,
-        meetingDuration * 1000,
-        saveRecordingBlob,
-      );
-    } else if (wasRecording || meetingState.status === 'in_progress') {
-      await saveRecordingBlob(recordingChunksRef.current, Math.max(meetingDuration * 1000, 10_000)).catch(
-        (err) => console.warn('[MeetingEnd] Recording save failed:', errorMessageFromUnknown(err)),
-      );
-    }
+    await flushMeetingRecording(
+      mediaRecorderRef.current,
+      recordingChunksRef.current,
+      meetingDuration * 1000,
+      wasRecording,
+      meetingState.status === 'in_progress',
+      saveRecordingBlob,
+    );
 
-    if (recordingStreamRef.current) {
-      recordingStreamRef.current.getTracks().forEach((track) => track.stop());
-      recordingStreamRef.current = null;
-    }
+    stopRecordingStream(recordingStreamRef.current);
+    recordingStreamRef.current = null;
 
     fetch(`${MEETING_SERVER_URL}/api/meetings/${appointmentId}/stop-recording`, {
       method: 'POST',
@@ -1109,43 +1183,11 @@ const MeetingRoom: React.FC = () => { // NOSONAR
       clearInterval(durationTimerRef.current);
     }
 
-    if (jitsiApiRef.current) {
-      try {
-        jitsiApiRef.current.executeCommand('hangup');
-      } catch {
-        /* ignore */
-      }
-    }
+    hangupJitsi(jitsiApiRef.current);
 
     setMeetingState((prev) => ({ ...prev, status: 'ended' }));
 
-    try {
-      const res = await fetch(`${meetingServerUrl()}/api/meetings/${appointmentId}/end`, {
-        method: 'POST',
-        headers: getAuthHeaders(),
-        body: JSON.stringify({ endedBy: user?.id || 'doctor', generateSummary: true }),
-      });
-      const data = await res.json().catch(() => ({}));
-      if (data.summary) {
-        setAiSummary(data.summary);
-        setShowPanel('summary');
-      } else if (res.ok) {
-        fetch(`${meetingServerUrl()}/api/meetings/${appointmentId}/generate-summary`, {
-          method: 'POST',
-          headers: getAuthHeaders(),
-        })
-          .then((r) => r.json())
-          .then((d) => {
-            if (d.summary) {
-              setAiSummary(d.summary);
-              setShowPanel('summary');
-            }
-          })
-          .catch(() => { /* pipeline may still run async */ });
-      }
-    } catch (err) {
-      console.warn('[MeetingEnd] End meeting failed:', (err as Error).message);
-    }
+    await finalizeEndedMeeting(appointmentId, user?.id, navigate, setAiSummary, setShowPanel);
 
     fetch(`${meetingServerUrl()}/api/meetings/${appointmentId}/process-embeddings`, {
       method: 'POST',
@@ -1159,6 +1201,7 @@ const MeetingRoom: React.FC = () => { // NOSONAR
     isRecording,
     meetingDuration,
     saveRecordingBlob,
+    navigate,
   ]);
 
   // ============================================================================
@@ -1362,8 +1405,8 @@ const MeetingRoom: React.FC = () => { // NOSONAR
               </div>
 
               <div className="space-y-4 mb-6">
-                <label className="flex items-start gap-3 cursor-pointer group" data-testid="consent-recording" aria-label="ยินยอมการบันทึกวิดีโอ">
-                  <input type="checkbox" checked={consentRecording} onChange={e => setConsentRecording(e.target.checked)}
+                <label htmlFor="consent-recording-input" className="flex items-start gap-3 cursor-pointer group" data-testid="consent-recording" aria-label="ยินยอมการบันทึกวิดีโอ">
+                  <input id="consent-recording-input" type="checkbox" data-testid="consent-recording-input" checked={consentRecording} onChange={e => setConsentRecording(e.target.checked)}
                     className="mt-1 w-5 h-5 rounded border-gray-600 text-blue-600 focus:ring-blue-500" />
                   <div>
                     <span className="font-medium group-hover:text-blue-300 transition">ยินยอมการบันทึกวิดีโอ</span>
@@ -1371,8 +1414,8 @@ const MeetingRoom: React.FC = () => { // NOSONAR
                   </div>
                 </label>
 
-                <label className="flex items-start gap-3 cursor-pointer group" data-testid="consent-transcript" aria-label="ยินยอมการถอดเสียง">
-                  <input type="checkbox" checked={consentTranscript} onChange={e => setConsentTranscript(e.target.checked)}
+                <label htmlFor="consent-transcript-input" className="flex items-start gap-3 cursor-pointer group" data-testid="consent-transcript" aria-label="ยินยอมการถอดเสียง">
+                  <input id="consent-transcript-input" type="checkbox" data-testid="consent-transcript-input" checked={consentTranscript} onChange={e => setConsentTranscript(e.target.checked)}
                     className="mt-1 w-5 h-5 rounded border-gray-600 text-blue-600 focus:ring-blue-500" />
                   <div>
                     <span className="font-medium group-hover:text-blue-300 transition">ยินยอมการถอดเสียง (Transcript)</span>
@@ -1380,8 +1423,8 @@ const MeetingRoom: React.FC = () => { // NOSONAR
                   </div>
                 </label>
 
-                <label className="flex items-start gap-3 cursor-pointer group" data-testid="consent-data-sharing" aria-label="ยินยอมการแบ่งปันข้อมูล">
-                  <input type="checkbox" checked={consentDataSharing} onChange={e => setConsentDataSharing(e.target.checked)}
+                <label htmlFor="consent-data-sharing-input" className="flex items-start gap-3 cursor-pointer group" data-testid="consent-data-sharing" aria-label="ยินยอมการแบ่งปันข้อมูล">
+                  <input id="consent-data-sharing-input" type="checkbox" data-testid="consent-data-sharing-input" checked={consentDataSharing} onChange={e => setConsentDataSharing(e.target.checked)}
                     className="mt-1 w-5 h-5 rounded border-gray-600 text-blue-600 focus:ring-blue-500" />
                   <div>
                     <span className="font-medium group-hover:text-blue-300 transition">ยินยอมการแบ่งปันข้อมูล</span>
@@ -1848,9 +1891,9 @@ const MeetingRoom: React.FC = () => { // NOSONAR
           )}
         </div>
 
-        {/* Side Panel */}
+        {/* Side Panel — desktop: static right column; mobile/tablet: bottom-sheet overlay so video stays full (ux-02) */}
         {showPanel && (
-          <div className="w-96 bg-gray-800 border-l border-gray-700 flex flex-col">
+          <div className="fixed inset-x-0 bottom-0 top-[50%] z-30 border-t border-gray-700 bg-gray-800 flex flex-col lg:static lg:inset-auto lg:top-auto lg:z-auto lg:w-96 lg:border-t-0 lg:border-l">
             {/* Panel Header */}
             <div className="flex items-center justify-between p-3 border-b border-gray-700">
               <h3 className="font-medium text-sm">

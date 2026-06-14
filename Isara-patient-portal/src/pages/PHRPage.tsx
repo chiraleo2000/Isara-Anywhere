@@ -2,11 +2,11 @@ import { useEffect, useState, type Dispatch, type SetStateAction } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useSettings } from '../contexts/SettingsContext';
 import { phrService, labOrderService, imagingOrderService } from '../lib/services';
-import { PersonalHealthRecord, VitalSigns, Medication, User, LifestyleData } from '../types';
-import { Heart, Activity, Pill, AlertTriangle, Plus, Edit3, Save, X, TrendingUp, TrendingDown, Minus, Scale, Thermometer, Droplet, User as UserIcon, FileText, FlaskConical, Image as ImageIcon } from 'lucide-react';
+import { PersonalHealthRecord, VitalSigns, Medication, User, LifestyleData, MedicalDocument } from '../types';
+import { Heart, Activity, Pill, AlertTriangle, Plus, Edit3, Save, X, TrendingUp, TrendingDown, Minus, Scale, Thermometer, Droplet, User as UserIcon, FileText, FlaskConical, Image as ImageIcon, Download, FileImage, FileVideo, Paperclip } from 'lucide-react';
 import { normalizeAllergiesList } from '../utils/healthListNormalize';
 
-type TabId = 'overview' | 'vitals' | 'medications' | 'allergies' | 'lab-imaging' | 'profile';
+type TabId = 'overview' | 'vitals' | 'medications' | 'allergies' | 'lab-imaging' | 'documents' | 'profile';
 
 type SetState<T> = Dispatch<SetStateAction<T>>;
 
@@ -1278,6 +1278,99 @@ function formatLabDate(d: string | Date, language: string): string {
   return new Date(d).toLocaleDateString(language === 'th' ? 'th-TH' : 'en-US', { year: 'numeric', month: 'short', day: 'numeric' });
 }
 
+function getDocumentFileIcon(mimeType?: string) {
+  const mime = (mimeType || '').toLowerCase();
+  if (mime.includes('pdf')) return FileText;
+  if (mime.includes('image')) return FileImage;
+  if (mime.includes('video')) return FileVideo;
+  return Paperclip;
+}
+
+const DOCUMENT_TYPE_LABELS: Record<MedicalDocument['type'], { en: string; th: string }> = {
+  lab_result: { en: 'Lab result', th: 'ผลแลป' },
+  imaging: { en: 'Imaging', th: 'ภาพถ่าย' },
+  prescription: { en: 'Prescription', th: 'ใบสั่งยา' },
+  report: { en: 'Report', th: 'รายงาน' },
+  other: { en: 'Other', th: 'อื่นๆ' },
+};
+
+function DocumentsTab({ documents, language, isDark }: Readonly<{
+  documents: MedicalDocument[];
+  language: string;
+  isDark: boolean;
+}>) {
+  const cardClass = isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200';
+  const textClass = isDark ? 'text-gray-200' : 'text-gray-800';
+  const subTextClass = isDark ? 'text-gray-400' : 'text-gray-500';
+  const locale = language === 'th' ? 'th-TH' : 'en-US';
+
+  if (documents.length === 0) {
+    return (
+      <div className={`p-8 text-center rounded-xl border ${cardClass}`}>
+        <FileText className={`w-12 h-12 mx-auto mb-3 ${subTextClass}`} />
+        <p className={subTextClass}>
+          {language === 'th' ? 'ยังไม่มีเอกสารทางการแพทย์' : 'No medical documents yet'}
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      {documents.map((doc) => {
+        const Icon = getDocumentFileIcon(doc.mimeType);
+        const typeLabel = DOCUMENT_TYPE_LABELS[doc.type]?.[language === 'th' ? 'th' : 'en'] || doc.type;
+        const uploadDate = doc.uploadDate ? new Date(doc.uploadDate) : null;
+        const sizeMb = doc.fileSize ? (doc.fileSize / 1024 / 1024).toFixed(2) : null;
+
+        return (
+          <div key={doc.id} className={`p-4 rounded-xl border ${cardClass}`}>
+            <div className="flex items-start gap-3">
+              <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${isDark ? 'bg-emerald-900/40' : 'bg-emerald-50'}`}>
+                <Icon className="w-5 h-5 text-emerald-600" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <h4 className={`font-semibold truncate ${textClass}`}>{doc.title || doc.fileName}</h4>
+                    <span className={`inline-block mt-1 text-xs px-2 py-0.5 rounded-full ${isDark ? 'bg-blue-900/40 text-blue-300' : 'bg-blue-50 text-blue-700'}`}>
+                      {typeLabel}
+                    </span>
+                  </div>
+                  {doc.fileUrl && (
+                    <a
+                      href={doc.fileUrl}
+                      download={doc.fileName || doc.title}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 flex-shrink-0"
+                    >
+                      <Download className="w-4 h-4" />
+                      {language === 'th' ? 'ดาวน์โหลด' : 'Download'}
+                    </a>
+                  )}
+                </div>
+                {doc.description && (
+                  <p className={`text-sm mt-2 ${subTextClass}`}>{doc.description}</p>
+                )}
+                <div className={`flex flex-wrap gap-3 mt-2 text-xs ${subTextClass}`}>
+                  {uploadDate && (
+                    <span>
+                      {uploadDate.toLocaleDateString(locale, { day: 'numeric', month: 'short', year: 'numeric' })}
+                    </span>
+                  )}
+                  {sizeMb && <span>{sizeMb} MB</span>}
+                  {doc.fileName && doc.fileName !== doc.title && <span>{doc.fileName}</span>}
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 // ============ Order Detail View ============
 function OrderDetailView({ order, onBack, isDark, language }: Readonly<{
   order: Record<string, any>;
@@ -1786,6 +1879,7 @@ function PHRPage() {
     { id: 'medications', label: t('phr.medications'), icon: Pill },
     { id: 'allergies', label: t('phr.allergies'), icon: AlertTriangle },
     { id: 'lab-imaging', label: language === 'th' ? 'ผลตรวจ' : 'Lab & Imaging', icon: FlaskConical },
+    { id: 'documents', label: t('health.documents') || (language === 'th' ? 'เอกสาร' : 'Documents'), icon: Paperclip },
     { id: 'profile', label: t('phr.personalInfo'), icon: UserIcon },
   ] as const;
 
@@ -1844,6 +1938,13 @@ function PHRPage() {
     ),
     'lab-imaging': (
       <LabImagingTab />
+    ),
+    documents: (
+      <DocumentsTab
+        documents={phr?.documents || []}
+        language={language}
+        isDark={isDark}
+      />
     ),
     profile: (
       <ProfileTab

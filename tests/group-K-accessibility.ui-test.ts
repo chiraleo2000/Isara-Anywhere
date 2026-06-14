@@ -11,6 +11,7 @@ import { test, expect, type Page } from '@playwright/test';
 import { PATIENT_URL, DOCTOR_URL, gotoCloudWithRetry } from './helpers/multi-portal';
 
 const IS_CLOUD = process.env.TEST_ENV === 'cloud';
+const LOGIN_NAV_TIMEOUT = IS_CLOUD ? 90_000 : (process.env.PW_HEADED === '1' ? 60_000 : 30_000);
 
 const IGNORED_RULES = new Set<string>([
   // Jitsi iframe injects color-contrast failures we don't own.
@@ -43,8 +44,7 @@ function filterBlocking(r: AxeResult): AxeResult['violations'] {
 
 test.describe('Group K — Accessibility (WCAG 2.1 AA)', () => {
   test('K1 — Patient portal login page has no serious a11y violations', async ({ page }) => {
-    await page.goto(`${PATIENT_URL}/login`);
-    await page.waitForLoadState('domcontentloaded');
+    await page.goto(`${PATIENT_URL}/login`, { waitUntil: 'domcontentloaded', timeout: LOGIN_NAV_TIMEOUT });
     const results = await runAxe(page);
     const blocking = filterBlocking(results);
     if (blocking.length > 0) {
@@ -54,8 +54,7 @@ test.describe('Group K — Accessibility (WCAG 2.1 AA)', () => {
   });
 
   test('K2 — Doctor portal login page has no serious a11y violations', async ({ page }) => {
-    await page.goto(`${DOCTOR_URL}/login`);
-    await page.waitForLoadState('domcontentloaded');
+    await page.goto(`${DOCTOR_URL}/login`, { waitUntil: 'domcontentloaded', timeout: LOGIN_NAV_TIMEOUT });
     const results = await runAxe(page);
     const blocking = filterBlocking(results);
     if (blocking.length > 0) {

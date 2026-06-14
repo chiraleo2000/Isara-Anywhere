@@ -316,7 +316,7 @@ test.describe('Group A — Auth & Access Verification', () => {
 
       await snap(page, 'A2b-auth-registration', 'group-A');
     } finally {
-      await ctx.close();
+      await ctx.close().catch(() => {});
     }
   });
 

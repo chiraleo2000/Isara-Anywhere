@@ -14,6 +14,10 @@ import { useRealtimeSync } from '../../lib/useRealtimeSync';
 // In development, use relative URLs (proxied by vite) 
 const API_BASE = '';
 
+function toLang(language: string): Language {
+  return language === 'th' ? 'th' : 'en';
+}
+
 // ─── Types ───
 
 interface MedicalContentArticle {
@@ -195,7 +199,7 @@ function FeaturedCard({ article, language, onClick }: Readonly<ContentCardProps>
   const catInfo = getCategoryInfo(article.category);
   const title = localizedText(article.title, article.titleTh, language);
   const summary = localizedText(article.summary, article.summaryTh, language);
-  const lang = language;
+  const lang = toLang(language);
 
   return (
     <button
@@ -226,7 +230,7 @@ function ContentCard({ article, isDark, language, onClick }: Readonly<ContentCar
   const catInfo = getCategoryInfo(article.category);
   const title = localizedText(article.title, article.titleTh, language);
   const summary = localizedText(article.summary, article.summaryTh, language);
-  const lang = language;
+  const lang = toLang(language);
 
   const cardBg = isDark ? 'bg-gray-800' : 'bg-white';
   const thumbGradient = isDark ? 'bg-gradient-to-br from-gray-700 to-gray-800' : 'bg-gradient-to-br from-gray-100 to-gray-200';
@@ -317,7 +321,7 @@ function ArticleModalBody({ article, isDark, language }: Readonly<{
   const title = localizedText(article.title, article.titleTh, language);
   const summary = localizedText(article.summary, article.summaryTh, language);
   const mainContent = localizedText(article.content, article.contentTh, language);
-  const lang = language;
+  const lang = toLang(language);
   const ml = MODAL_LABELS[lang];
   const hasAltTitle = article.titleTh && article.title !== article.titleTh;
   const altTitle = language === 'en' ? article.titleTh : article.title;
@@ -391,7 +395,7 @@ function ArticleViewModal({ article, isDark, language, onClose }: Readonly<{
   onClose: () => void;
 }>) {
   const catInfo = getCategoryInfo(article.category);
-  const lang = language;
+  const lang = toLang(language);
 
   const cardBg = isDark ? 'bg-gray-800' : 'bg-white';
   const borderCls = isDark ? 'border-gray-700' : '';
@@ -443,7 +447,7 @@ function getContentErrorMessage(err: unknown, lang: LangKey): string {
 const MedicalContentLibrary: React.FC = () => {
   const { theme, language } = useSettings();
   const isDark = theme === 'dark';
-  const lang = language;
+  const lang = toLang(language);
   
   const [content, setContent] = useState<MedicalContentArticle[]>([]);
   const [loading, setLoading] = useState(true);

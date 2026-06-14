@@ -10,6 +10,7 @@ import React, { useState, useEffect } from 'react';
 import { PatientRecord, User } from '../types';
 import { geminiClinicalService } from '../services/geminiClinicalService';
 import { EmrEditorChrome } from './emr-editor/EmrEditorChrome';
+import { readEmrAiDraft, clearEmrAiDraft } from '../utils/emrAiDraft';
 
 // Helper to save EMR via PostgreSQL API
 async function saveEMRToAPI(emr: any, isUpdate = false): Promise<boolean> {
@@ -117,6 +118,8 @@ export const CompleteEMREditor: React.FC<CompletEMREditorProps> = ({
   const [autoSaveStatus, setAutoSaveStatus] = useState<'saved' | 'saving' | 'unsaved'>('saved');
   const [isGeneratingAI, setIsGeneratingAI] = useState(false);
   const [isSendingToPatient, setIsSendingToPatient] = useState(false);
+  const [aiDraftFromMeeting, setAiDraftFromMeeting] = useState(false);
+  const [aiDraftDegraded, setAiDraftDegraded] = useState(false);
 
   // Form state
   const [formData, setFormData] = useState<EMR>({
@@ -150,6 +153,33 @@ export const CompleteEMREditor: React.FC<CompletEMREditorProps> = ({
     lastModified: new Date().toISOString(),
     appointmentId: appointmentId || existingEMR?.appointmentId,
   });
+
+  // Pre-fill from meeting AI summary (sessionStorage emr-ai-draft)
+  useEffect(() => {
+    const draft = readEmrAiDraft();
+    if (!draft) return;
+    if (appointmentId && draft.appointmentId && draft.appointmentId !== appointmentId) return;
+    if (!appointmentId && draft.patientId && draft.patientId !== patient.id) return;
+
+    const soap = draft.structured?.soap;
+    setFormData((prev) => ({
+      ...prev,
+      chiefComplaint: draft.structured?.chiefComplaint || prev.chiefComplaint,
+      historyOfPresentIllness: soap?.subjective || prev.historyOfPresentIllness,
+      physicalExamination: {
+        ...prev.physicalExamination,
+        general: soap?.objective || prev.physicalExamination.general || '',
+      },
+      assessment: soap?.assessment || prev.assessment,
+      treatmentPlan: soap?.plan || prev.treatmentPlan,
+      aiSummary: draft.summary || prev.aiSummary,
+      status: prev.status === 'finalized' ? prev.status : 'draft',
+    }));
+    setAiDraftFromMeeting(true);
+    setAiDraftDegraded(Boolean(draft.degraded));
+    setAutoSaveStatus('unsaved');
+    clearEmrAiDraft();
+  }, [appointmentId, patient.id]);
 
   // Auto-save every 30 seconds
   useEffect(() => {
@@ -426,8 +456,8 @@ export const CompleteEMREditor: React.FC<CompletEMREditorProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-auto">
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-6xl max-h-[90vh] overflow-hidden flex flex-col">
+    <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4 overflow-y-auto">
+      <div className="bg-white rounded-t-2xl sm:rounded-xl shadow-2xl w-full max-w-6xl max-h-[95dvh] sm:max-h-[90vh] overflow-hidden flex flex-col">
         <EmrEditorChrome
           patientName={patient.demographics.name}
           patientIdNumber={patient.demographics.idNumber}
@@ -435,7 +465,9 @@ export const CompleteEMREditor: React.FC<CompletEMREditorProps> = ({
           isVoiceActive={isVoiceActive}
           encounterType={formData.encounterType}
           isFinalized={formData.status === 'finalized'}
-          showAiDraftBanner={Boolean(existingEMR?.id?.startsWith('EMR-DRAFT-'))}
+          emrStatus={formData.status}
+          showAiDraftBanner={aiDraftFromMeeting || Boolean(existingEMR?.id?.startsWith('EMR-DRAFT-'))}
+          aiDraftDegraded={aiDraftDegraded}
           onClose={onClose}
           onVoiceTranscription={handleVoiceTranscription}
           onEncounterTypeChange={(value) =>
@@ -444,7 +476,7 @@ export const CompleteEMREditor: React.FC<CompletEMREditorProps> = ({
         />
 
         {/* Tabs - Thai OPD Card Format */}
-        <div className="flex space-x-1 p-4 border-b border-gray-200">
+        <div className="flex flex-wrap gap-2 overflow-x-auto p-3 sm:p-4 border-b border-gray-200">
           {[
             { id: 'subjective', label: 'ประวัติ (S)', labelEn: 'History' },
             { id: 'objective', label: 'ตรวจร่างกาย (O)', labelEn: 'Examination' },

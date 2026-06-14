@@ -646,7 +646,11 @@ router.post('/create', async (req: Request, res: Response) => {
     try {
       existingMeeting = await MeetingService.getActiveMeeting(appointmentId);
     } catch (error_: unknown) {
-      console.warn('⚠️ Meeting lookup failed:', error_ instanceof Error ? error_.message : JSON.stringify(error_));
+      console.error('⚠️ Meeting lookup failed:', error_ instanceof Error ? error_.message : JSON.stringify(error_));
+      return res.status(503).json({
+        error: 'Meeting service temporarily unavailable',
+        code: 'meeting_lookup_failed',
+      });
     }
     
     if (existingMeeting) {
@@ -696,6 +700,7 @@ router.post('/create', async (req: Request, res: Response) => {
     
     // Save meeting to PostgreSQL (may fail due to FK constraints, fall back to memory)
     let meeting: any;
+    let persistedToDb = false;
     try {
       meeting = await MeetingService.createMeeting({
         appointmentId,
@@ -713,6 +718,7 @@ router.post('/create', async (req: Request, res: Response) => {
           jitsiDomain: JITSI_DOMAIN
         }
       });
+      persistedToDb = true;
     } catch (dbError: unknown) {
       console.warn('⚠️ Meeting DB insert failed (FK constraint?), using in-memory:', errMsg(dbError));
       meeting = {
@@ -749,6 +755,8 @@ router.post('/create', async (req: Request, res: Response) => {
     
     res.json({
       success: true,
+      persisted: persistedToDb,
+      degraded: !persistedToDb,
       meeting: {
         id: meeting.id,
         appointmentId: meeting.appointment_id,
@@ -768,7 +776,10 @@ router.post('/create', async (req: Request, res: Response) => {
         enableAnonymousAccess,
         enableRecording,
         enableTranscription: enableTranscription && !!GEMINI_API_KEY
-      }
+      },
+      ...(persistedToDb ? {} : {
+        warning: 'Meeting created in degraded mode; transcript and recording may not persist.',
+      }),
     });
     
   } catch (error) {

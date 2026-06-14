@@ -317,12 +317,14 @@ export async function mountGuestJitsiMeeting(opts: {
   opts.container.style.minHeight = '70vh';
   opts.container.style.width = '100%';
 
+  // No JWT on public meet.jit.si — a custom token yields a blank iframe. Roles come from Izara lobby.
+  const guestJwt = pickJitsiJwt(cfg, opts.jwt);
   const api = new (globalThis as any).JitsiMeetExternalAPI(resolvedDomain, {
     roomName: resolvedRoom,
     parentNode: opts.container,
     width: '100%',
     height: '100%',
-    jwt: pickJitsiJwt(cfg, opts.jwt),
+    ...(guestJwt ? { jwt: guestJwt } : {}),
     configOverwrite: mergeRecord(
       {
         ...jitsiOpts.configOverwrite,

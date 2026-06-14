@@ -535,12 +535,13 @@ const PatientMeetingRoom: React.FC = () => { // NOSONAR
         return;
       }
     } catch {
-      /* lobby unavailable — try direct connect */
+      /* lobby request failed — handled below; never bypass the host gate */
     }
 
-    setLobbyStatus('admitted');
-    setStatus('waiting_host');
-    void connectVideoWhenReady();
+    // Lobby join failed. Do NOT auto-admit — the doctor must host and admit from the lobby.
+    setLobbyStatus('none');
+    setStatus('agreement');
+    setError('ไม่สามารถเข้าห้องรอได้ในขณะนี้ กรุณารอให้แพทย์เริ่มห้องประชุมแล้วลองใหม่อีกครั้ง');
   };
 
   const fmt = (s: number) => {
@@ -550,7 +551,7 @@ const PatientMeetingRoom: React.FC = () => { // NOSONAR
 
   return (
     <JitsiMeetingShell className="fixed inset-0 z-50 min-h-[100dvh] max-h-[100dvh]">
-    <div
+    <main
       className="flex flex-1 flex-col min-h-0 bg-gray-900 text-white"
       data-lobby-status={lobbyStatus}
       data-testid="patient-meeting-room"
@@ -587,8 +588,8 @@ const PatientMeetingRoom: React.FC = () => { // NOSONAR
               </div>
 
               <div className="space-y-4 mb-6">
-                <label className="flex items-start gap-3 cursor-pointer group" data-testid="consent-recording" aria-label="ยินยอมการบันทึกวิดีโอ">
-                  <input type="checkbox" checked={consentRecording} onChange={e => setConsentRecording(e.target.checked)}
+                <label htmlFor="patient-consent-recording-input" className="flex items-start gap-3 cursor-pointer group" data-testid="consent-recording" aria-label="ยินยอมการบันทึกวิดีโอ">
+                  <input id="patient-consent-recording-input" type="checkbox" data-testid="consent-recording-input" checked={consentRecording} onChange={e => setConsentRecording(e.target.checked)}
                     className="mt-1 w-5 h-5 rounded border-gray-600 text-emerald-600 focus:ring-emerald-500" />
                   <div>
                     <span className="font-medium group-hover:text-emerald-300 transition">ยินยอมการบันทึกวิดีโอ</span>
@@ -596,8 +597,8 @@ const PatientMeetingRoom: React.FC = () => { // NOSONAR
                   </div>
                 </label>
 
-                <label className="flex items-start gap-3 cursor-pointer group" data-testid="consent-transcript" aria-label="ยินยอมการึอดเสียง">
-                  <input type="checkbox" checked={consentTranscript} onChange={e => setConsentTranscript(e.target.checked)}
+                <label htmlFor="patient-consent-transcript-input" className="flex items-start gap-3 cursor-pointer group" data-testid="consent-transcript" aria-label="ยินยอมการถอดเสียง">
+                  <input id="patient-consent-transcript-input" type="checkbox" data-testid="consent-transcript-input" checked={consentTranscript} onChange={e => setConsentTranscript(e.target.checked)}
                     className="mt-1 w-5 h-5 rounded border-gray-600 text-emerald-600 focus:ring-emerald-500" />
                   <div>
                     <span className="font-medium group-hover:text-emerald-300 transition">ยินยอมการถอดเสียง (Transcript)</span>
@@ -605,8 +606,8 @@ const PatientMeetingRoom: React.FC = () => { // NOSONAR
                   </div>
                 </label>
 
-                <label className="flex items-start gap-3 cursor-pointer group" data-testid="consent-data-sharing" aria-label="ยินยอมการแบ่งปันข้อมูล">
-                  <input type="checkbox" checked={consentDataSharing} onChange={e => setConsentDataSharing(e.target.checked)}
+                <label htmlFor="patient-consent-data-sharing-input" className="flex items-start gap-3 cursor-pointer group" data-testid="consent-data-sharing" aria-label="ยินยอมการแบ่งปันข้อมูล">
+                  <input id="patient-consent-data-sharing-input" type="checkbox" data-testid="consent-data-sharing-input" checked={consentDataSharing} onChange={e => setConsentDataSharing(e.target.checked)}
                     className="mt-1 w-5 h-5 rounded border-gray-600 text-emerald-600 focus:ring-emerald-500" />
                   <div>
                     <span className="font-medium group-hover:text-emerald-300 transition">ยินยอมการแบ่งปันข้อมูล</span>
@@ -854,7 +855,7 @@ const PatientMeetingRoom: React.FC = () => { // NOSONAR
       {/* Compact Top Bar */}
       <div className="flex items-center justify-between px-4 py-1.5 bg-[#1b1b1b] border-b border-gray-800">
         <div className="flex items-center gap-3">
-          <span className="text-emerald-400 font-semibold text-sm">ra Meeting</span>
+          <span className="text-emerald-400 font-semibold text-sm">Izara Meeting</span>
           {status === 'in_meeting' && (
             <span className="flex items-center gap-1.5 text-sm">
               <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
@@ -873,7 +874,7 @@ const PatientMeetingRoom: React.FC = () => { // NOSONAR
             onClick={() => setShowTranscript(!showTranscript)}
             className={`px-2.5 py-1 rounded text-xs transition ${showTranscript ? 'bg-blue-600 text-white' : 'text-gray-400 hover:bg-gray-700'}`}
           >
-            nscript
+            Transcript
           </button>
           <button onClick={() => navigate('/appointments')} className="text-gray-500 hover:text-white text-xs transition">
             ← กลับ
@@ -967,7 +968,7 @@ const PatientMeetingRoom: React.FC = () => { // NOSONAR
         {showTranscript && (
           <div className="w-80 bg-gray-800 border-l border-gray-700 flex flex-col">
             <div className="p-3 border-b border-gray-700 flex justify-between">
-              <h3 className="font-medium text-sm">e Transcript</h3>
+              <h3 className="font-medium text-sm">Live Transcript</h3>
               <button onClick={() => setShowTranscript(false)} aria-label="ปิดถอดเสียง" title="ปิด" className="text-gray-400 hover:text-white">✕</button>
             </div>
             <div className="flex-1 overflow-y-auto p-3 space-y-2">
@@ -995,7 +996,7 @@ const PatientMeetingRoom: React.FC = () => { // NOSONAR
       </div>
       </>
       )}
-    </div>
+    </main>
     </JitsiMeetingShell>
   );
 };

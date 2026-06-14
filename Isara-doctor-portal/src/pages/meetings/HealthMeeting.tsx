@@ -18,6 +18,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { User, QueuePatient } from '../../types';
 import { useSettings } from '../../hooks/useSettings';
+import { useResponsive } from '../../hooks/useResponsive';
+import { getToken } from '../../services/authServices';
 import { doctorDataService } from '../../services/doctorDataService';
 // PostgreSQL-backed API service - NO GCS!
 import {
@@ -100,6 +102,18 @@ interface AppointmentRequest {
   /** Postgres API snake_case aliases */
   patient_id?: string;
   patient_name?: string;
+  confirmedBy?: string;
+  confirmedByEmail?: string;
+  confirmedAt?: string;
+  acceptedBy?: string;
+  acceptedByEmail?: string;
+  acceptedAt?: string;
+  queueVisibility?: string;
+  doctorMeetingUrl?: string;
+  patientMeetingUrl?: string;
+  guestMeetingUrl?: string;
+  meetLink?: string;
+  jitsiRoomName?: string;
 }
 
 interface MeetingServerCreateResponse {
@@ -152,6 +166,103 @@ interface ScheduledMeeting {
 
 // Tab type definition - Removed 'patient-pool' as it's merged with 'queue'
 type TabType = 'queue' | 'meetings' | 'all-appointments';
+type MobileSection = 'queue' | 'today' | 'actions';
+
+interface PhrPreviewSummary {
+  allergies: string[];
+  medsCount: number;
+  loading: boolean;
+  error?: boolean;
+}
+
+const PhrPreviewMiniCard: React.FC<{ patientId?: string; className?: string }> = ({ patientId, className = '' }) => {
+  const [preview, setPreview] = useState<PhrPreviewSummary>({ allergies: [], medsCount: 0, loading: Boolean(patientId) });
+
+  useEffect(() => {
+    if (!patientId) {
+      setPreview({ allergies: [], medsCount: 0, loading: false });
+      return;
+    }
+    let cancelled = false;
+    const token = getToken();
+    setPreview({ allergies: [], medsCount: 0, loading: true });
+    fetch(`/api/phr/${patientId}`, {
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+    })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (cancelled || !data) {
+          if (!cancelled) setPreview({ allergies: [], medsCount: 0, loading: false, error: true });
+          return;
+        }
+        const allergiesRaw = data.allergies || data.phr?.allergies || [];
+        const allergies = (Array.isArray(allergiesRaw) ? allergiesRaw : []).map((a: unknown) => {
+          if (typeof a === 'string') return a;
+          if (a && typeof a === 'object' && 'allergen' in a) return String((a as { allergen: string }).allergen);
+          return '';
+        }).filter(Boolean);
+        const meds = data.medications || data.phr?.medications || [];
+        setPreview({ allergies, medsCount: Array.isArray(meds) ? meds.length : 0, loading: false });
+      })
+      .catch(() => {
+        if (!cancelled) setPreview({ allergies: [], medsCount: 0, loading: false, error: true });
+      });
+    return () => { cancelled = true; };
+  }, [patientId]);
+
+  if (!patientId) return null;
+
+  let previewBody: React.ReactNode;
+  if (preview.loading) {
+    previewBody = <p className="text-emerald-600">Loading PHR…</p>;
+  } else if (preview.error) {
+    previewBody = <p className="text-gray-500">PHR unavailable</p>;
+  } else {
+    previewBody = (
+      <div className="space-y-0.5 text-emerald-900">
+        <p>
+          <span className="font-medium">Allergies:</span>{' '}
+          {preview.allergies.length > 0 ? preview.allergies.slice(0, 3).join(', ') : 'None recorded'}
+        </p>
+        <p><span className="font-medium">Meds:</span> {preview.medsCount}</p>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      data-testid="phr-preview-mini-card"
+      className={`rounded-lg border border-emerald-200 bg-emerald-50/80 px-3 py-2 text-xs ${className}`}
+    >
+      <p className="font-semibold text-emerald-800 mb-1">PHR Preview</p>
+      {previewBody}
+    </div>
+  );
+};
+
+/** Clear the queue toast after a delay (module-level to avoid deep callback nesting). */
+const scheduleToastClear = (setter: (value: string | null) => void) => {
+  globalThis.setTimeout(() => setter(null), 5000);
+};
+
+/** Active/inactive class for the mobile section tabs (avoids nested ternary). */
+const mobileTabClass = (active: boolean, isDark: boolean): string => {
+  if (active) return 'bg-emerald-600 text-white';
+  return isDark ? 'bg-gray-800 text-gray-300' : 'bg-white text-gray-600';
+};
+
+const isAppointmentToday = (apt: { appointmentDate?: string; scheduledDate?: string; requestedDate?: string; date?: string }) => {
+  const raw = apt.appointmentDate || apt.scheduledDate || apt.requestedDate || apt.date;
+  if (!raw) return false;
+  const d = new Date(raw);
+  const now = new Date();
+  return d.getFullYear() === now.getFullYear()
+    && d.getMonth() === now.getMonth()
+    && d.getDate() === now.getDate();
+};
 
 // ============================================================================
 // MAIN COMPONENT
@@ -189,6 +300,9 @@ const HealthMeeting: React.FC<HealthMeetingProps> = ({ doctor }) => {
   const { theme } = useSettings();
   const isDark = theme === 'dark';
   const navigate = useNavigate();
+  const { isMobile } = useResponsive();
+  const [mobileSection, setMobileSection] = useState<MobileSection>('queue');
+  const [queueToast, setQueueToast] = useState<string | null>(null);
 
   const [meetings, setMeetings] = useState<ScheduledMeeting[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -253,6 +367,8 @@ const HealthMeeting: React.FC<HealthMeetingProps> = ({ doctor }) => {
   // Messages
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [confirmInProgress, setConfirmInProgress] = useState(false);
+  const [assignInProgress, setAssignInProgress] = useState(false);
 
   // Meeting Results (Teams-like recording viewer)
   const [showMeetingResults, setShowMeetingResults] = useState(false);
@@ -347,7 +463,9 @@ const HealthMeeting: React.FC<HealthMeetingProps> = ({ doctor }) => {
 
         const reload = () => {
           console.log('[HealthMeeting] 📩 realtime event — reloading queue');
+          setQueueToast('คิวนัดหมายอัปเดตแล้ว — กำลังโหลดข้อมูลใหม่');
           loadAllData();
+          scheduleToastClear(setQueueToast);
         };
         socket.on('pool-updated', reload);
         socket.on('appointment:created', reload);
@@ -659,13 +777,15 @@ const HealthMeeting: React.FC<HealthMeetingProps> = ({ doctor }) => {
     }
 
     try {
-      setLoading(true);
+      setAssignInProgress(true);
       setErrorMessage(null);
 
       const selectedDoctor = availableDoctors?.find(d => d.id === assignData.doctorId);
       const assignedDateTime = `${assignData.date}T${assignData.time}:00`;
 
       console.log(`[Admin] Assigning appointment ${selectedPoolRequest.id} to doctor ${assignData.doctorId}`);
+      setQueueToast(`Assigning ${selectedPoolRequest.id} → Dr. ${selectedDoctor?.name || assignData.doctorId}…`);
+      scheduleToastClear(setQueueToast);
 
       const result = await adminAssignAppointment(selectedPoolRequest.id, assignData.doctorId);
       if (!result?.success) {
@@ -684,6 +804,8 @@ const HealthMeeting: React.FC<HealthMeetingProps> = ({ doctor }) => {
       } as any);
 
       setSuccessMessage(`Appointment assigned to Dr. ${selectedDoctor?.name} successfully!`);
+      setQueueToast(`Assigned ${selectedPoolRequest.id} → awaiting doctor confirmation`);
+      scheduleToastClear(setQueueToast);
       setShowAssignModal(false);
       setSelectedPoolRequest(null);
       setAssignData({ doctorId: '', date: '', time: '', notes: '' });
@@ -696,7 +818,7 @@ const HealthMeeting: React.FC<HealthMeetingProps> = ({ doctor }) => {
       console.error('Error assigning appointment:', err);
       setErrorMessage(err.message || 'Failed to assign appointment');
     } finally {
-      setLoading(false);
+      setAssignInProgress(false);
     }
   };
 
@@ -1008,11 +1130,15 @@ Izara Telehealth Team
   const handleConfirmAppointment = async () => {
     if (!selectedAppointment) return;
     if (!confirmDate || !confirmTime) {
-      alert('Please select both date and time for the appointment');
+      setErrorMessage('Please select both date and time for the appointment');
       return;
     }
 
     try {
+      setConfirmInProgress(true);
+      setErrorMessage(null);
+      setQueueToast(`Confirming ${selectedAppointment.id}…`);
+      scheduleToastClear(setQueueToast);
       console.log('🔄 Starting appointment confirmation process...');
 
       // Step 1: Generate Jitsi meeting links (with doctor URL as host, patient URL, and guest URL)
@@ -1141,17 +1267,23 @@ Izara Telehealth Team
       await loadAllData();
       console.log('✅ Data reloaded');
 
-      // NOW show success message with both URLs
-      alert(`Appointment Confirmed with Jitsi Meet!\n\nYOUR LINK (HOST):\n${meetingDetails.doctorUrl?.substring(0, 60)}...\n\nPATIENT LINK:\n${meetingDetails.patientUrl?.substring(0, 60)}...\n\nThe appointment appears in Scheduled Meetings tab!\nConfirmation email prepared for patient.\n\nClick OK to add to Google Calendar.`);
-
-      // Open Google Calendar link for easy adding
+      setSuccessMessage(
+        `Appointment confirmed. Host link ready — patient link sent. Add to calendar?`,
+      );
+      setQueueToast(`Confirmed ${selectedAppointment.id} — moved to scheduled meetings`);
+      scheduleToastClear(setQueueToast);
       window.open(googleCalendarUrl, '_blank');
+      setTimeout(() => setSuccessMessage(null), 8000);
 
       console.log('🎉 Appointment confirmation complete!');
 
     } catch (error) {
       console.error('❌ Error confirming appointment:', error);
-      alert('Error confirming appointment: ' + (error instanceof Error ? error.message : 'Unknown error'));
+      setErrorMessage(
+        error instanceof Error ? error.message : 'Error confirming appointment',
+      );
+    } finally {
+      setConfirmInProgress(false);
     }
   };
 
@@ -1199,7 +1331,8 @@ Izara Telehealth Team
 
   const handleRejectAppointment = async (appointmentId: string, reason: string) => {
     if (!reason) {
-      alert('Please provide a reason for rejection');
+      setQueueToast('กรุณาระบุเหตุผลในการปฏิเสธนัดหมาย');
+      scheduleToastClear(setQueueToast);
       return;
     }
 
@@ -1211,7 +1344,8 @@ Izara Telehealth Team
       const appointmentToDecline = allAppointments.find((apt: any) => apt.id === appointmentId);
 
       if (!appointmentToDecline) {
-        alert('Appointment not found');
+        setQueueToast('ไม่พบนัดหมายที่ต้องการปฏิเสธ');
+        scheduleToastClear(setQueueToast);
         return;
       }
 
@@ -1240,7 +1374,8 @@ Izara Telehealth Team
       await sendDeclineEmail(appointmentToDecline, reason);
       console.log('✅ Decline email triggered');
 
-      alert(`❌ Appointment Declined\n\nReason: ${reason}\n\n📧 Decline notification email has been prepared.`);
+      setQueueToast(`ปฏิเสธนัดหมายแล้ว — เหตุผล: ${reason} (ส่งอีเมลแจ้งเตือนผู้ป่วยแล้ว)`);
+      scheduleToastClear(setQueueToast);
 
       await loadAllData(); // Reload all data
 
@@ -1248,12 +1383,18 @@ Izara Telehealth Team
 
     } catch (error) {
       console.error('❌ Error declining appointment:', error);
-      alert('Error declining appointment: ' + (error instanceof Error ? error.message : 'Unknown error'));
+      setQueueToast('เกิดข้อผิดพลาดในการปฏิเสธนัดหมาย: ' + (error instanceof Error ? error.message : 'Unknown error'));
+      scheduleToastClear(setQueueToast);
     }
   };
 
+  const todayConfirmedMeetings = allAppointments.filter(
+    (a: AppointmentRequest) => a.status === 'confirmed' && isAppointmentToday(a),
+  );
+  const nextTodayMeeting = todayConfirmedMeetings[0];
+
   return (
-    <div className="p-6 max-w-7xl mx-auto">
+    <div className={`p-6 max-w-7xl mx-auto ${isMobile && nextTodayMeeting ? 'pb-28' : ''}`}>
       {/* CRITICAL WARNING: Missing User ID */}
       {!doctor.id && (
         <div className="mb-6 bg-red-50 border-2 border-red-500 rounded-xl p-6">
@@ -1283,6 +1424,51 @@ Izara Telehealth Team
       )}
 
       <div data-testid="health-meeting-page">
+      {queueToast && (
+        <output
+          data-testid="queue-realtime-toast"
+          className="block mb-4 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-900"
+        >
+          {queueToast}
+        </output>
+      )}
+      {/* Breadcrumb hints */}
+      <nav aria-label="Breadcrumb" className={`text-sm mb-4 ${hmDarkSubtext(isDark)}`} data-testid="health-meeting-breadcrumb">
+        <span>Dashboard</span>
+        <span className="mx-2">›</span>
+        <span className={hmDarkText(isDark)}>Health Meeting</span>
+        <span className="mx-2">›</span>
+        <span className="text-emerald-600 font-medium">
+          {isMobile
+            ? ({ queue: 'Queue', today: 'Today', actions: 'Actions' } as const)[mobileSection]
+            : ({ queue: 'Patient Queue', meetings: 'Today\'s Meetings', 'all-appointments': 'All Appointments' } as const)[activeTab]}
+        </span>
+      </nav>
+
+      {/* Mobile tabs: Queue | Today | Actions */}
+      {isMobile && (
+        <div className="flex rounded-lg overflow-hidden border border-gray-200 mb-4" data-testid="health-meeting-mobile-tabs">
+          {([
+            { key: 'queue' as const, label: 'Queue' },
+            { key: 'today' as const, label: 'Today' },
+            { key: 'actions' as const, label: 'Actions' },
+          ]).map((tab) => (
+            <button
+              key={tab.key}
+              type="button"
+              onClick={() => {
+                setMobileSection(tab.key);
+                if (tab.key === 'queue') setActiveTab('queue');
+                if (tab.key === 'today') setActiveTab('meetings');
+              }}
+              className={`flex-1 py-2.5 text-sm font-medium transition-colors ${mobileTabClass(mobileSection === tab.key, isDark)}`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
         <div>
@@ -1351,6 +1537,7 @@ Izara Telehealth Team
       )}
 
       {/* Tabs - Queue shows ALL pending appointments, Meetings shows confirmed */}
+      {!isMobile && (
       <div className="flex flex-wrap gap-2 mb-6">
         <button
           onClick={() => setActiveTab('queue')}
@@ -1361,7 +1548,15 @@ Izara Telehealth Team
         >
           🏥 Patient Queue ({pendingQueue.length + acceptedQueue.length})
         </button>
-        {/* Removed Scheduled Meetings tab button */}
+        <button
+          onClick={() => setActiveTab('meetings')}
+          className={`px-4 py-2 rounded-lg font-medium transition-colors ${activeTab === 'meetings'
+              ? 'bg-blue-600 text-white'
+              : inactiveTabClass(isDark)
+            }`}
+        >
+          📅 Today ({allAppointments.filter((a: any) => a.status === 'confirmed' && isAppointmentToday(a)).length})
+        </button>
 
         {/* Admin-only: All Appointments tab */}
         {isAdmin && (
@@ -1376,6 +1571,7 @@ Izara Telehealth Team
           </button>
         )}
       </div>
+      )}
 
       {/* Loading State */}
       {loading && (
@@ -1385,7 +1581,7 @@ Izara Telehealth Team
       )}
 
       {/* Patient Queue Tab - Shows ALL pending appointments awaiting confirmation */}
-      {!loading && activeTab === 'queue' && (
+      {!loading && (isMobile ? mobileSection === 'queue' : activeTab === 'queue') && (
         <div className={`rounded-xl shadow-lg p-6 mb-6 ${hmDarkCard(isDark)}`}>
           <div className="flex items-center justify-between mb-4">
             <div>
@@ -1427,6 +1623,8 @@ Izara Telehealth Team
               pendingQueue.map((request) => (
                 <div
                   key={request.id}
+                  data-testid={`queue-item-${request.id}`}
+                  data-queue-status={request.status || 'pending'}
                   className={`border-2 rounded-xl p-4 transition-colors ${getUrgencyStyle(request.urgency)}`}
                 >
                   <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
@@ -1508,6 +1706,8 @@ Izara Telehealth Team
                         )}
                         <span>Requested: {new Date(request.createdAt).toLocaleDateString()}</span>
                       </div>
+
+                      <PhrPreviewMiniCard patientId={request.patientId} className="mt-3" />
                     </div>
 
                     {/* Action Buttons */}
@@ -1615,13 +1815,14 @@ Izara Telehealth Team
         </div>
       )}
 
-      {/* Meetings Tab */}
-      {!loading && activeTab === 'meetings' && (
+      {/* Meetings Tab — today's confirmed appointments */}
+      {!loading && (isMobile ? mobileSection === 'today' : activeTab === 'meetings') && (
         <div className={`${hmDarkCard(isDark)} rounded-xl shadow-lg p-6`}>
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
             <h2 className={`text-xl font-bold ${hmDarkText(isDark)} flex items-center gap-2`}>
-              🎥 Scheduled Meetings<span className="text-sm font-normal text-gray-500 ml-2">
-                ({allAppointments.filter((a: any) => a.status === 'confirmed').length} confirmed)
+              🎥 Today&apos;s Meetings{' '}
+              <span className="text-sm font-normal text-gray-500 ml-2">
+                ({allAppointments.filter((a: any) => a.status === 'confirmed' && isAppointmentToday(a)).length} today)
               </span>
             </h2>
             <button
@@ -1634,16 +1835,16 @@ Izara Telehealth Team
 
           {/* Confirmed appointments with meeting links */}
           <div className="space-y-4">
-            {allAppointments.filter((a: any) => a.status === 'confirmed').length === 0 ? (
+            {allAppointments.filter((a: any) => a.status === 'confirmed' && isAppointmentToday(a)).length === 0 ? (
               <div className="text-center py-12 text-gray-500">
                 <div className="text-6xl mb-4"></div>
-                <p>No confirmed meetings yet. Confirm appointments from Patient Queue.</p>
+                <p>No meetings scheduled for today. Confirm appointments from Patient Queue.</p>
               </div>
             ) : (
-              allAppointments.filter((a: any) => a.status === 'confirmed').map((apt: any) => (
+              allAppointments.filter((a: any) => a.status === 'confirmed' && isAppointmentToday(a)).map((apt: any) => (
                 <div key={apt.id} className={`${isDark ? 'bg-gray-700' : 'bg-gray-50'} rounded-lg p-4 border ${isDark ? 'border-gray-600' : 'border-gray-200'}`}>
-                  <div className="flex items-start justify-between">
-                    <div>
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1">
                       <h3 className={`font-bold ${hmDarkText(isDark)}`}>
                         {apt.patientName || 'Unknown Patient'}
                       </h3>
@@ -1656,31 +1857,17 @@ Izara Telehealth Team
                       {apt.jitsiRoomName && (
                         <p className="text-xs text-blue-400 mt-1">Room: {apt.jitsiRoomName}</p>
                       )}
+                      <PhrPreviewMiniCard patientId={apt.patientId || apt.patient_id} className="mt-3 max-w-xs" />
                     </div>
                     <div className="flex flex-col gap-2">
-                      {/* Start Meeting In-App (with Transcript + AI) */}
+                      {/* Start Meeting In-App — real Jitsi via Izara meeting server (host + lobby + transcript + AI) */}
                       <button
                         onClick={() => navigate(`/doctor/${doctor.id}/meeting/${apt.id}`)}
+                        data-testid="start-meeting-in-app"
                         className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-1"
                       >
-                        🎥 Start Meeting (In-App)
+                        🎥 Start Meeting
                       </button>
-                      {/* Start Meeting with Time Check */}
-                      <button
-                        onClick={() => navigate(`/doctor/${doctor.id}/virtual-meeting/${apt.id}`)}
-                        className="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-1"
-                      >
-                        ⏰ Start Meeting (Time Check)
-                      </button>
-                      {/* Open in External Tab */}
-                      {apt.doctorMeetingUrl && (
-                        <button
-                          onClick={() => window.open(apt.doctorMeetingUrl, '_blank')}
-                          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm transition-colors flex items-center gap-1"
-                        >
-                          🔗 Open Jitsi (New Tab)
-                        </button>
-                      )}
                       {/* View Meeting Results (Teams-like) */}
                       <button
                         data-testid="meeting-history-row"
@@ -1754,8 +1941,50 @@ Izara Telehealth Team
         </div>
       )}
 
+      {/* Mobile Actions — post-consult shortcuts for today's confirmed appointments */}
+      {!loading && isMobile && mobileSection === 'actions' && (
+        <div className={`${hmDarkCard(isDark)} rounded-xl shadow-lg p-6`} data-testid="health-meeting-actions-tab">
+          <h2 className={`text-xl font-bold mb-4 ${hmDarkText(isDark)}`}>Post-Consultation Actions</h2>
+          <div className="space-y-3">
+            {allAppointments
+              .filter((a: any) => a.status === 'confirmed' && isAppointmentToday(a))
+              .map((apt: any) => (
+                <div key={`actions-${apt.id}`} className={`rounded-lg p-4 border ${isDark ? 'border-gray-600 bg-gray-700' : 'border-gray-200 bg-gray-50'}`}>
+                  <p className={`font-semibold ${hmDarkText(isDark)}`}>{apt.patientName || 'Patient'}</p>
+                  <div className="grid grid-cols-2 gap-2 mt-3">
+                    <button
+                      type="button"
+                      onClick={() => navigate(`/doctor/${doctor.id}/meeting/${apt.id}/results`)}
+                      className="px-3 py-2 bg-purple-600 text-white rounded-lg text-xs font-medium"
+                    >
+                      Results
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => navigate(`/doctor/${doctor.id}/emr/${apt.id}`)}
+                      className="px-3 py-2 bg-blue-600 text-white rounded-lg text-xs font-medium"
+                    >
+                      EMR
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { setMeetingResultsId(apt.id); setShowMeetingResults(true); }}
+                      className="col-span-2 px-3 py-2 bg-emerald-600 text-white rounded-lg text-xs font-medium"
+                    >
+                      Open Meeting Summary
+                    </button>
+                  </div>
+                </div>
+              ))}
+            {allAppointments.filter((a: any) => a.status === 'confirmed' && isAppointmentToday(a)).length === 0 && (
+              <p className={`text-sm ${hmDarkSubtext(isDark)}`}>No today&apos;s appointments with actions available.</p>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* ========== ADMIN ONLY: All Appointments Tab ========== */}
-      {!loading && isAdmin && activeTab === 'all-appointments' && (
+      {!loading && !isMobile && isAdmin && activeTab === 'all-appointments' && (
         <div className="bg-white rounded-xl shadow-lg p-6">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
             <div>
@@ -1988,10 +2217,11 @@ Izara Telehealth Team
               </button>
               <button
                 onClick={handleAssignFromPool}
-                disabled={!assignData.doctorId || !assignData.date || !assignData.time}
+                disabled={!assignData.doctorId || !assignData.date || !assignData.time || assignInProgress}
+                data-testid="assign-appointment-btn"
                 className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:bg-gray-300 disabled:cursor-not-allowed font-medium"
               >
-                ✓ Assign Appointment
+                {assignInProgress ? 'Assigning…' : '✓ Assign Appointment'}
               </button>
             </div>
           </div>
@@ -2164,10 +2394,11 @@ Izara Telehealth Team
               </button>
               <button
                 onClick={handleConfirmAppointment}
-                disabled={!confirmDate || !confirmTime}
+                disabled={!confirmDate || !confirmTime || confirmInProgress}
+                data-testid="confirm-appointment-btn"
                 className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:bg-gray-300 disabled:cursor-not-allowed font-medium"
               >
-                ✓ Confirm Appointment
+                {confirmInProgress ? 'Confirming…' : '✓ Confirm Appointment'}
               </button>
             </div>
           </div>
@@ -2180,7 +2411,7 @@ Izara Telehealth Team
           meetingId={meetingResultsId}
           appointmentId={meetingResultsId}
           onClose={() => { setShowMeetingResults(false); setMeetingResultsId(''); }}
-          onNavigateToEMR={(aptId) => { setShowMeetingResults(false); navigate(`/emr/${aptId}`); }}
+          onNavigateToEMR={(aptId) => { setShowMeetingResults(false); navigate(`/doctor/${doctor.id}/emr/${aptId}`); }}
           onNavigateToPrescription={(aptId, patientId) => {
             setShowMeetingResults(false);
             navigate(`/prescriptions/new?appointmentId=${encodeURIComponent(aptId)}&patientId=${encodeURIComponent(patientId)}`);
@@ -2194,6 +2425,18 @@ Izara Telehealth Team
             navigate(`/appointments/new?patientId=${encodeURIComponent(patientId)}`);
           }}
         />
+      )}
+      {isMobile && nextTodayMeeting && (
+        <div className="fixed inset-x-0 bottom-0 z-40 lg:hidden p-3 bg-white/95 dark:bg-gray-900/95 border-t shadow-lg backdrop-blur-sm">
+          <button
+            type="button"
+            onClick={() => navigate(`/doctor/${doctor.id}/meeting/${nextTodayMeeting.id}`)}
+            data-testid="sticky-start-meeting"
+            className="w-full px-4 py-3.5 bg-green-600 hover:bg-green-700 text-white rounded-xl text-sm font-medium transition-colors flex items-center justify-center gap-2"
+          >
+            🎥 Start Meeting — {nextTodayMeeting.patientName || 'Patient'}
+          </button>
+        </div>
       )}
       </div>
     </div>

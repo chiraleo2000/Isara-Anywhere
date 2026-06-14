@@ -587,9 +587,14 @@ test.describe('Group D — Appointment Workflows', () => {
         waitForContent(doctor.page, 'D16d-doctor'),
       ]);
 
+      const bodyTimeout = IS_CLOUD ? 45_000 : 20_000;
+      const readBody = async (page: typeof admin.page) => {
+        await page.waitForLoadState('domcontentloaded', { timeout: bodyTimeout }).catch(() => {});
+        return page.locator('body').innerText({ timeout: bodyTimeout });
+      };
       const [adminText, doctorText] = await Promise.all([
-        admin.page.locator('body').innerText(),
-        doctor.page.locator('body').innerText(),
+        readBody(admin.page),
+        readBody(doctor.page),
       ]);
       expect(/Patient Queue|คิวผู้ป่วย|Awaiting Confirmation|รอยืนยัน/i.test(adminText)).toBeTruthy();
       expect(/Patient Queue|คิวผู้ป่วย|Awaiting Confirmation|รอยืนยัน/i.test(doctorText)).toBeTruthy();

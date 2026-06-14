@@ -54,13 +54,37 @@ test.describe('Defect — Notifications route and navigation', () => {
     const { patient } = portals;
     const { token } = await requirePatientAuth(patient.page, 'DN3-setup');
     const appointmentId = await seedPatientAppointmentNotification(patient.page, patient.url, token);
+    const authUserId = await patient.page.evaluate(() => {
+      const raw = localStorage.getItem('izara_user') || localStorage.getItem('user');
+      if (!raw) return '';
+      try {
+        const u = JSON.parse(raw) as { id?: string; patientId?: string };
+        return u.patientId || u.id || '';
+      } catch {
+        return '';
+      }
+    });
+    expect(authUserId, 'DN3: patient user id').toBeTruthy();
+
+    await expect.poll(async () => {
+      const resp = await patient.page.request.get(
+        `${patient.url}/api/appointments/notifications/${authUserId}`,
+        { headers: { Authorization: `Bearer ${token}` } },
+      );
+      if (!resp.ok()) return false;
+      const rows = (await resp.json()) as { appointmentId?: string }[];
+      return rows.some((n) => n.appointmentId === appointmentId);
+    }, { timeout: 20_000 }).toBeTruthy();
 
     await navPatient(patient.page, '/notifications', 'DN3');
+    await patient.page.reload({ waitUntil: 'domcontentloaded' });
     await assertFullHealth(patient.page, 'DN3');
     await expect(patient.page.getByTestId('notifications-page')).toBeVisible({ timeout: 15_000 });
 
-    const appointmentLink = patient.page.locator(`a[href="/appointments/${appointmentId}"]`).first();
-    await expect(appointmentLink, 'seeded appointment notification link').toBeVisible({ timeout: 15_000 });
+    const linkByTestId = patient.page.getByTestId(`notification-appointment-link-${appointmentId}`);
+    const linkByHref = patient.page.locator(`a[href="/appointments/${appointmentId}"]`).first();
+    await expect(linkByTestId.or(linkByHref), 'seeded appointment notification link').toBeVisible({ timeout: 20_000 });
+    const appointmentLink = (await linkByTestId.isVisible().catch(() => false)) ? linkByTestId : linkByHref;
 
     await appointmentLink.click();
     await patient.page.waitForTimeout(1000);

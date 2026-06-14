@@ -26,6 +26,7 @@ export const TreatmentResults: React.FC<TreatmentResultsProps> = ({
   const [viewType, setViewType] = useState<ViewType>('all');
   const [healthLogs, setHealthLogs] = useState<HealthLogEntry[]>([]);
   const [loadingLogs, setLoadingLogs] = useState(false);
+  const [healthLogsError, setHealthLogsError] = useState<string | null>(null);
 
   // Fetch health logs from EMR
   useEffect(() => {
@@ -38,11 +39,17 @@ export const TreatmentResults: React.FC<TreatmentResultsProps> = ({
     if (!user?.patientId && !user?.id) return;
 
     setLoadingLogs(true);
+    setHealthLogsError(null);
     try {
       const response = await healthLogsService.getHealthLogs(user.patientId || user.id);
       setHealthLogs(response.entries || []);
     } catch (error) {
       console.error('Error fetching health logs:', error);
+      const message =
+        error instanceof Error
+          ? error.message
+          : 'ไม่สามารถโหลดข้อมูล EMR ได้ กรุณาลองใหม่อีกครั้ง';
+      setHealthLogsError(message);
       setHealthLogs([]);
     } finally {
       setLoadingLogs(false);
@@ -334,6 +341,26 @@ export const TreatmentResults: React.FC<TreatmentResultsProps> = ({
 
   return (
     <div className={`space-y-4 ${className}`}>
+      {healthLogsError && (
+        <div
+          role="alert"
+          className="flex items-start gap-3 p-3 rounded-xl border border-red-200 bg-red-50 text-red-800"
+        >
+          <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium">โหลดข้อมูล EMR ไม่สำเร็จ</p>
+            <p className="text-xs mt-0.5 text-red-700">{healthLogsError}</p>
+          </div>
+          <button
+            type="button"
+            onClick={fetchHealthLogs}
+            className="text-xs font-medium px-2 py-1 rounded-lg bg-red-100 hover:bg-red-200 whitespace-nowrap"
+          >
+            ลองใหม่
+          </button>
+        </div>
+      )}
+
       {/* View Type Tabs */}
       <div className="flex items-center gap-2 overflow-x-auto pb-1 border-b border-gray-100 mb-2">
         {viewTypes.map((vt) => {

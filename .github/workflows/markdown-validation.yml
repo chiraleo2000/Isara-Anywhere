@@ -4,11 +4,11 @@ on:
   push:
     paths:
       - '**.md'
-      - 'scripts/markdown-fixer.js'
+      - 'scripts/markdown-fixer-advanced.js'
   pull_request:
     paths:
       - '**.md'
-      - 'scripts/markdown-fixer.js'
+      - 'scripts/markdown-fixer-advanced.js'
 
 jobs:
   markdown-lint:
@@ -29,7 +29,7 @@ jobs:
         run: npm ci
 
       - name: Run Markdown Check (check-only)
-        run: node scripts/markdown-fixer.js --check-only
+        run: node scripts/markdown-fixer-advanced.js --check-only
 
   markdown-auto-fix-hint:
     runs-on: ubuntu-latest
@@ -46,5 +46,5 @@ jobs:
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: 'Markdown check failed. Fix locally:\n```bash\nnode scripts/markdown-fixer.js\n```'
+              body: 'Markdown check failed. Fix locally:\n```bash\nnode scripts/markdown-fixer-advanced.js\n```'
             });

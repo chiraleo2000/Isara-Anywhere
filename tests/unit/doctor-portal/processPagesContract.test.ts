@@ -18,7 +18,6 @@ const DOCTOR_ROUTES: RouteSpec[] = [
   { path: '/schedule', roles: ['doctor', 'admin'], processPage: '04_Schedule_Page' },
   { path: '/patients', roles: ['doctor', 'admin'], processPage: '05_Patient_Management_Page' },
   { path: '/health-meeting', roles: ['doctor', 'admin'], processPage: '06_Health_Meeting_Page' },
-  { path: '/virtual-meeting/:id', roles: ['doctor', 'admin'], processPage: '07_Virtual_Meeting' },
   { path: '/meeting/:id', roles: ['doctor', 'admin'], processPage: '06_Health_Meeting_Page' },
   { path: '/clinical-resources', roles: ['doctor', 'admin'], processPage: '14_Clinical_Resources_Page' },
   { path: '/medical-content', roles: ['doctor', 'admin'], processPage: '13_Medical_Content_Page' },

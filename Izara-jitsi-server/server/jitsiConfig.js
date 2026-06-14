@@ -72,11 +72,11 @@ export function buildMeetingUrls(domain, roomName, participants = {}) {
     startAudioMuted: true,
   });
 
-  const jwtQuery = (token) => (token ? `?jwt=${encodeURIComponent(token)}` : '');
-
+  // No JWT in Jitsi URLs — public meet.jit.si ignores custom tokens (blank iframe).
+  // Roles are enforced by the Izara lobby + configOverwrite.moderator, never by query JWT.
   return {
-    meeting: `${base}${jwtQuery(participants.jwt || '')}#${patientParams.toString()}`,
-    doctor: `${base}${jwtQuery(participants.doctorJwt || '')}#${doctorParams.toString()}`,
+    meeting: `${base}#${patientParams.toString()}`,
+    doctor: `${base}#${doctorParams.toString()}`,
     patient: `${base}#${patientParams.toString()}`,
     guest: `${base}#${guestParams.toString()}`,
   };

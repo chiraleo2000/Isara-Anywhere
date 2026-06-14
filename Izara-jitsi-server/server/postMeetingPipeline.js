@@ -44,6 +44,22 @@ const MAX_WHISPER_BYTES = 25 * 1024 * 1024;
 const MAX_SYNC_STT_BYTES = 50 * 1024 * 1024;
 const PIPELINE_TIMEOUT_MS = Number.parseInt(process.env.POST_MEETING_PIPELINE_TIMEOUT_MS || '900000', 10);
 
+function mapSpeakerRole(speakerTag) {
+  if (speakerTag === 1) return 'doctor';
+  if (speakerTag === 2) return 'patient';
+  return 'guest';
+}
+
+function mapSpeakerName(speakerTag) {
+  if (speakerTag === 1) return 'แพทย์';
+  if (speakerTag === 2) return 'ผู้ป่วย';
+  return 'แขก';
+}
+
+function summaryOutputsMissing({ narrative, structured, clinicalJson }) {
+  return !narrative && !structured && !clinicalJson;
+}
+
 const CLINICAL_SUMMARY_PROMPT = `You are a licensed clinical documentation assistant for telemedicine EMR prep.
 Extract ONLY what is supported by the transcript. Do not invent diagnoses or medications.
 
@@ -66,6 +82,89 @@ Return valid JSON:
 
 Transcript (speaker-labeled):
 `;
+
+function getPipelineStatus(meetingId) {
+  return pipelineJobs.get(String(meetingId)) || { stage: 'pending', meetingId };
+}
+
+function readRecordingFileFromDisk(filePath) {
+  const raw = fs.readFileSync(filePath);
+  return decryptRecordingBuffer(raw);
+}
+
+async function transcribeWithWhisper(buffer, mimeType) {
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) return null;
+  if (buffer.length > MAX_WHISPER_BYTES) {
+    console.warn('[PostMeeting] Whisper skipped — file exceeds 25MB API limit');
+    return null;
+  }
+
+  const ext = mimeType?.includes('mp4') ? 'mp4' : 'webm';
+  const form = new FormData();
+  form.append('file', new Blob([buffer], { type: mimeType || 'audio/webm' }), `recording.${ext}`);
+  form.append('model', process.env.WHISPER_MODEL || 'whisper-1');
+  form.append('response_format', 'verbose_json');
+  form.append('language', 'th');
+
+  const data = await withRetry(
+    async () => {
+      const res = await fetch('https://api.openai.com/v1/audio/transcriptions', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${apiKey}` },
+        body: form,
+        signal: AbortSignal.timeout(Number.parseInt(process.env.WHISPER_TIMEOUT_MS || '300000', 10)),
+      });
+      if (!res.ok) {
+        const errText = await res.text();
+        throw new Error(`Whisper API ${res.status}: ${errText.slice(0, 200)}`);
+      }
+      return res.json();
+    },
+    { label: 'whisper-transcribe', shouldRetry: isTransientError },
+  );
+  const segments = (data.segments || []).map((seg, idx) => ({
+    content: (seg.text || '').trim(),
+    confidence: 1,
+    speakerTag: idx % 2 === 0 ? 1 : 2,
+    speakerRole: idx % 2 === 0 ? 'doctor' : 'patient',
+    speakerName: idx % 2 === 0 ? 'แพทย์' : 'ผู้ป่วย',
+    startTimeSeconds: Math.floor(seg.start || 0),
+    endTimeSeconds: Math.floor(seg.end || 0),
+  }));
+  if (!segments.length && data.text) {
+    segments.push({
+      content: data.text.trim(),
+      confidence: 1,
+      speakerTag: 1,
+      speakerRole: 'doctor',
+      speakerName: 'แพทย์',
+    });
+  }
+  return segments;
+}
+
+async function saveTranscriptArtifact(paths, payload) {
+  try {
+    fs.writeFileSync(paths.transcriptPath, JSON.stringify(payload, null, 2), 'utf8');
+  } catch (e) {
+    console.warn('[PostMeeting] transcript.json write failed:', e.message);
+  }
+}
+
+function pipelineUserMessage(stage, errorCode) {
+  const map = {
+    failed_transcription:
+      'ไม่สามารถถอดเสียงจากการบันทึกได้ชั่วคราว — ระบบจะใช้บันทึกระหว่างประชุมแทน (ถ้ามี) หรือลองสรุปใหม่ภายหลัง',
+    failed_summary:
+      'บันทึกการประชุมพร้อมแล้ว แต่สรุป AI ยังไม่พร้อม — กรุณากดสร้างสรุปใหม่หรือรอสักครู่',
+    failed_corrupt_recording:
+      'ไฟล์บันทึกเสียหายหรืออัปโหลดไม่สมบูรณ์ — ใช้บันทึกระหว่างประชุมหรือบันทึกใหม่',
+    partial_no_transcript:
+      'มีไฟล์บันทึกแต่ยังไม่มีข้อความถอดเสียงเพียงพอ — แพทย์สามารถกดสร้างสรุปจาก transcript สดได้',
+  };
+  return map[errorCode] || 'การประมวลผลหลังประชุมไม่สำเร็จ — กรุณาลองใหม่หรือติดต่อผู้ดูแลระบบ';
+}
 
 /**
  * @param {object} deps
@@ -93,10 +192,6 @@ export function createPostMeetingPipeline(deps) {
     const transcriptPath = path.join(dir, 'transcript.json');
     const recordingUrl = `/api/recordings/meetings/${safeDoctor}/${safeMeeting}/${videoFilename}`;
     return { dir, videoPath, transcriptPath, recordingUrl, relativeDir, videoFilename };
-  }
-
-  function getPipelineStatus(meetingId) {
-    return pipelineJobs.get(String(meetingId)) || { stage: 'pending', meetingId };
   }
 
   function emitPipelineProgress(meetingId, meeting, patch) {
@@ -248,7 +343,7 @@ export function createPostMeetingPipeline(deps) {
     cleanupEphemeralRecordingAfterPersist({
       recordingsDir,
       paths,
-      legacyMeetingKey: meetingKey !== meetingId ? meetingKey : null,
+      legacyMeetingKey: meetingKey === meetingId ? null : meetingKey,
       gcsUri,
       deleteTranscriptArtifact: false,
     });
@@ -286,11 +381,6 @@ export function createPostMeetingPipeline(deps) {
     return stored;
   }
 
-  function readRecordingFileFromDisk(filePath) {
-    const raw = fs.readFileSync(filePath);
-    return decryptRecordingBuffer(raw);
-  }
-
   /**
    * Cloud Run may retain a stale tiny file on ephemeral disk while BYTEA holds the real recording.
    * Prefer any candidate that passes validateRecordingBuffer; otherwise largest buffer.
@@ -314,7 +404,7 @@ export function createPostMeetingPipeline(deps) {
     }
     const viable = candidates.filter((b) => validateRecordingBuffer(b, mimeType).ok);
     if (viable.length) {
-      return viable.reduce((best, cur) => (cur.length > best.length ? cur : best));
+      return viable.reduce((best, cur) => (cur.length > best.length ? cur : best), viable[0]);
     }
     return candidates.reduce((best, cur) => {
       if (!cur?.length) return best;
@@ -371,60 +461,8 @@ export function createPostMeetingPipeline(deps) {
         content: alt.transcript.trim(),
         confidence: alt.confidence || 0,
         speakerTag,
-        speakerRole: speakerTag === 1 ? 'doctor' : speakerTag === 2 ? 'patient' : 'guest',
-        speakerName: speakerTag === 1 ? 'แพทย์' : speakerTag === 2 ? 'ผู้ป่วย' : 'แขก',
-      });
-    }
-    return segments;
-  }
-
-  async function transcribeWithWhisper(buffer, mimeType) {
-    const apiKey = process.env.OPENAI_API_KEY;
-    if (!apiKey) return null;
-    if (buffer.length > MAX_WHISPER_BYTES) {
-      console.warn('[PostMeeting] Whisper skipped — file exceeds 25MB API limit');
-      return null;
-    }
-
-    const ext = mimeType?.includes('mp4') ? 'mp4' : 'webm';
-    const form = new FormData();
-    form.append('file', new Blob([buffer], { type: mimeType || 'audio/webm' }), `recording.${ext}`);
-    form.append('model', process.env.WHISPER_MODEL || 'whisper-1');
-    form.append('response_format', 'verbose_json');
-    form.append('language', 'th');
-
-    const data = await withRetry(
-      async () => {
-        const res = await fetch('https://api.openai.com/v1/audio/transcriptions', {
-          method: 'POST',
-          headers: { Authorization: `Bearer ${apiKey}` },
-          body: form,
-          signal: AbortSignal.timeout(Number.parseInt(process.env.WHISPER_TIMEOUT_MS || '300000', 10)),
-        });
-        if (!res.ok) {
-          const errText = await res.text();
-          throw new Error(`Whisper API ${res.status}: ${errText.slice(0, 200)}`);
-        }
-        return res.json();
-      },
-      { label: 'whisper-transcribe', shouldRetry: isTransientError },
-    );
-    const segments = (data.segments || []).map((seg, idx) => ({
-      content: (seg.text || '').trim(),
-      confidence: 1,
-      speakerTag: idx % 2 === 0 ? 1 : 2,
-      speakerRole: idx % 2 === 0 ? 'doctor' : 'patient',
-      speakerName: idx % 2 === 0 ? 'แพทย์' : 'ผู้ป่วย',
-      startTimeSeconds: Math.floor(seg.start || 0),
-      endTimeSeconds: Math.floor(seg.end || 0),
-    }));
-    if (!segments.length && data.text) {
-      segments.push({
-        content: data.text.trim(),
-        confidence: 1,
-        speakerTag: 1,
-        speakerRole: 'doctor',
-        speakerName: 'แพทย์',
+        speakerRole: mapSpeakerRole(speakerTag),
+        speakerName: mapSpeakerName(speakerTag),
       });
     }
     return segments;
@@ -460,28 +498,6 @@ export function createPostMeetingPipeline(deps) {
       .map((s) => `[${s.speakerName || s.speakerRole}] ${s.content}`)
       .join('\n');
     return { fullText, count: capped.length, source };
-  }
-
-  async function saveTranscriptArtifact(paths, payload) {
-    try {
-      fs.writeFileSync(paths.transcriptPath, JSON.stringify(payload, null, 2), 'utf8');
-    } catch (e) {
-      console.warn('[PostMeeting] transcript.json write failed:', e.message);
-    }
-  }
-
-  function pipelineUserMessage(stage, errorCode) {
-    const map = {
-      failed_transcription:
-        'ไม่สามารถถอดเสียงจากการบันทึกได้ชั่วคราว — ระบบจะใช้บันทึกระหว่างประชุมแทน (ถ้ามี) หรือลองสรุปใหม่ภายหลัง',
-      failed_summary:
-        'บันทึกการประชุมพร้อมแล้ว แต่สรุป AI ยังไม่พร้อม — กรุณากดสร้างสรุปใหม่หรือรอสักครู่',
-      failed_corrupt_recording:
-        'ไฟล์บันทึกเสียหายหรืออัปโหลดไม่สมบูรณ์ — ใช้บันทึกระหว่างประชุมหรือบันทึกใหม่',
-      partial_no_transcript:
-        'มีไฟล์บันทึกแต่ยังไม่มีข้อความถอดเสียงเพียงพอ — แพทย์สามารถกดสร้างสรุปจาก transcript สดได้',
-    };
-    return map[errorCode] || 'การประมวลผลหลังประชุมไม่สำเร็จ — กรุณาลองใหม่หรือติดต่อผู้ดูแลระบบ';
   }
 
   async function generateClinicalSummary(fullTranscript, meeting, chatContext = '') {
@@ -535,6 +551,214 @@ export function createPostMeetingPipeline(deps) {
     }
   }
 
+  async function resolvePipelineRecording(meetingId, meeting, options) {
+    let paths = null;
+    let buffer = options.recordingBuffer || null;
+    const mimeType = options.mimeType || meeting.recording_mimetype || 'video/webm';
+
+    if (buffer) {
+      paths = await persistRecordingFromBuffer(meetingId, buffer, mimeType, { meeting });
+    } else if (meeting.recording_data) {
+      buffer = decryptRecordingBuffer(
+        Buffer.isBuffer(meeting.recording_data)
+          ? meeting.recording_data
+          : Buffer.from(meeting.recording_data),
+      );
+      paths = buildRecordingPaths(
+        meeting.doctor_id || 'unknown-doctor',
+        meetingId,
+        (mimeType || '').includes('mp4') ? 'mp4' : 'webm',
+      );
+    } else {
+      const doctorId = meeting.doctor_id || 'unknown-doctor';
+      const ext = (meeting.recording_mimetype || '').includes('mp4') ? 'mp4' : 'webm';
+      paths = buildRecordingPaths(doctorId, meetingId, ext);
+      if (fs.existsSync(paths.videoPath)) {
+        buffer = readRecordingFileFromDisk(paths.videoPath);
+      }
+    }
+
+    return { paths, buffer, mimeType };
+  }
+
+  async function markPartialIfNoRecording(meetingId, meeting, buffer, paths) {
+    if (buffer && paths) return;
+    setPipelineStatus(meetingId, { stage: 'partial', error: 'no_recording_available' }, meeting);
+    await updateMeetingConfigPipeline(meetingId, { stage: 'partial', error: 'no_recording_available' });
+  }
+
+  async function transcribeRecordingIfNeeded(meetingId, initialTranscript, buffer, mimeType, paths) {
+    let fullTranscript = initialTranscript;
+    let transcriptionMeta = { source: 'live_segments', segmentCount: 0 };
+    if (fullTranscript?.length >= 20 || !buffer) {
+      return { fullTranscript, transcriptionMeta };
+    }
+
+    let segments = null;
+    if (buffer.length <= MAX_SYNC_STT_BYTES) {
+      try {
+        segments = await transcribeWithGoogleStt(buffer, mimeType);
+        if (segments?.length) {
+          transcriptionMeta = { source: 'google-cloud-stt', segmentCount: segments.length };
+        }
+      } catch (e) {
+        console.warn('[PostMeeting] Google STT failed:', e.message);
+      }
+    }
+    if (!segments?.length) {
+      try {
+        segments = await transcribeWithWhisper(buffer, mimeType);
+        if (segments?.length) {
+          transcriptionMeta = { source: 'whisper', segmentCount: segments.length };
+        }
+      } catch (e) {
+        console.warn('[PostMeeting] Whisper failed:', e.message);
+      }
+    }
+    if (!segments?.length) {
+      return { fullTranscript, transcriptionMeta };
+    }
+
+    const persisted = await persistTranscriptSegments(meetingId, segments, transcriptionMeta.source);
+    fullTranscript = persisted.fullText;
+    transcriptionMeta.segmentCount = persisted.count;
+    await saveTranscriptArtifact(paths, {
+      segments,
+      meta: transcriptionMeta,
+      generatedAt: new Date().toISOString(),
+    });
+    return { fullTranscript, transcriptionMeta };
+  }
+
+  async function storeMeetingTranscript(meetingId, fullTranscript) {
+    if (!fullTranscript) return;
+    const storedTranscript = clampText(fullTranscript, CLINICAL_TEXT_LIMITS.MAX_TRANSCRIPT_STORE);
+    await safeQuery(
+      `UPDATE meeting_records SET transcript = $2 WHERE id::text = $1 OR appointment_id = $1`,
+      [meetingId, storedTranscript],
+    );
+  }
+
+  async function emitPipelineSummaryEvent(meetingId, meeting, failedPayload, extra = {}) {
+    setPipelineStatus(meetingId, failedPayload, meeting);
+    await updateMeetingConfigPipeline(meetingId, failedPayload);
+    io?.to(meetingId)?.emit?.('meeting-summary-ready', {
+      meetingId,
+      appointmentId: meeting.appointment_id,
+      summary: null,
+      error: failedPayload.userMessage,
+      requiresValidation: false,
+      pipeline: failedPayload,
+      timestamp: new Date().toISOString(),
+      ...extra,
+    });
+    return failedPayload;
+  }
+
+  async function handleSummaryGenerationFailure(meetingId, meeting, paths, fullTranscript, summaryResult, started) {
+    const failedSummary = {
+      stage: 'failed',
+      meetingId,
+      appointmentId: meeting.appointment_id,
+      recordingUrl: paths?.recordingUrl || meeting.recording_url,
+      error: summaryResult.error,
+      errorCode: 'failed_summary',
+      userMessage: summaryResult.userMessage || pipelineUserMessage('failed', 'failed_summary'),
+      transcriptLength: fullTranscript.length,
+      durationMs: Date.now() - started,
+    };
+    return emitPipelineSummaryEvent(meetingId, meeting, failedSummary);
+  }
+
+  async function handleTranscriptionFailure(meetingId, meeting, paths, started) {
+    const failedTx = {
+      stage: 'failed',
+      meetingId,
+      errorCode: 'failed_transcription',
+      userMessage: pipelineUserMessage('failed', 'failed_transcription'),
+      recordingUrl: paths?.recordingUrl || meeting.recording_url,
+      durationMs: Date.now() - started,
+    };
+    return emitPipelineSummaryEvent(meetingId, meeting, failedTx);
+  }
+
+  async function persistClinicalOutputs(meetingId, narrative, structured, clinicalJson) {
+    if (!narrative && !structured && !clinicalJson) return;
+    const safeSummary = prepareSummaryForDb(narrative, structured);
+    const recPayload = clinicalJson
+      ? clampText(
+          JSON.stringify({ clinical: clinicalJson, requiresValidation: true }),
+          CLINICAL_TEXT_LIMITS.MAX_JSONB_PAYLOAD,
+        )
+      : null;
+    await safeQuery(
+      `UPDATE meeting_records SET
+         ai_summary = COALESCE($2, ai_summary),
+         ai_summary_structured = COALESCE($3, ai_summary_structured),
+         ai_recommendations = COALESCE($4, ai_recommendations)
+       WHERE id::text = $1 OR appointment_id = $1`,
+      [
+        meetingId,
+        safeSummary.narrative,
+        safeSummary.structured ? JSON.stringify(safeSummary.structured) : null,
+        recPayload,
+      ],
+    );
+  }
+
+  async function finalizeSuccessfulPipeline({
+    meetingKey,
+    meetingId,
+    meeting,
+    paths,
+    fullTranscript,
+    transcriptionMeta,
+    narrative,
+    structured,
+    clinicalJson,
+    degraded,
+    started,
+  }) {
+    if (paths) {
+      cleanupEphemeralRecordingAfterPersist({
+        recordingsDir,
+        paths,
+        legacyMeetingKey: meetingKey === meetingId ? null : meetingKey,
+        gcsUri: paths.gcsUri || meeting.meeting_config?.postMeetingPipeline?.gcsUri,
+        deleteTranscriptArtifact: true,
+      });
+    }
+    sweepEmptyRecordingDirs(recordingsDir);
+
+    const completed = {
+      stage: 'completed',
+      meetingId,
+      appointmentId: meeting.appointment_id,
+      recordingUrl: paths?.recordingUrl || meeting.recording_url,
+      transcriptLength: fullTranscript?.length || 0,
+      transcription: transcriptionMeta,
+      summaryAvailable: Boolean(narrative),
+      degraded: Boolean(degraded),
+      durationMs: Date.now() - started,
+    };
+    setPipelineStatus(meetingId, completed, meeting);
+    await updateMeetingConfigPipeline(meetingId, completed);
+
+    io?.to(meetingId)?.emit?.('meeting-summary-ready', {
+      meetingId,
+      appointmentId: meeting.appointment_id,
+      summary: narrative,
+      structured,
+      clinical: clinicalJson,
+      recordingUrl: completed.recordingUrl,
+      requiresValidation: true,
+      pipeline: completed,
+      timestamp: new Date().toISOString(),
+    });
+
+    return completed;
+  }
+
   /**
    * Main async pipeline (call without awaiting from HTTP handlers).
    */
@@ -557,73 +781,22 @@ export function createPostMeetingPipeline(deps) {
         throw new Error('Pipeline timeout before start');
       }
 
-      let paths = null;
-      let buffer = options.recordingBuffer || null;
-      const mimeType = options.mimeType || meeting.recording_mimetype || 'video/webm';
-
-      if (buffer) {
-        paths = await persistRecordingFromBuffer(meetingId, buffer, mimeType, { meeting });
-      } else if (meeting.recording_data) {
-        buffer = decryptRecordingBuffer(
-          Buffer.isBuffer(meeting.recording_data)
-            ? meeting.recording_data
-            : Buffer.from(meeting.recording_data),
-        );
-        paths = buildRecordingPaths(meeting.doctor_id || 'unknown-doctor', meetingId, (mimeType || '').includes('mp4') ? 'mp4' : 'webm');
-      } else {
-        const doctorId = meeting.doctor_id || 'unknown-doctor';
-        const ext = (meeting.recording_mimetype || '').includes('mp4') ? 'mp4' : 'webm';
-        paths = buildRecordingPaths(doctorId, meetingId, ext);
-        if (fs.existsSync(paths.videoPath)) {
-          buffer = readRecordingFileFromDisk(paths.videoPath);
-        }
-      }
-
-      if (!buffer || !paths) {
-        setPipelineStatus(meetingId, { stage: 'partial', error: 'no_recording_available' }, meeting);
-        await updateMeetingConfigPipeline(meetingId, { stage: 'partial', error: 'no_recording_available' });
-      }
+      let { paths, buffer, mimeType } = await resolvePipelineRecording(meetingId, meeting, options);
+      await markPartialIfNoRecording(meetingId, meeting, buffer, paths);
 
       setPipelineStatus(meetingId, { stage: 'transcribing' }, meeting);
       await updateMeetingConfigPipeline(meetingId, { stage: 'transcribing' });
       logPipelineMemory('transcribing-start', meetingId);
 
-      let fullTranscript = options.fullTranscript || (await compileTranscriptFromDb(meetingId));
-      let transcriptionMeta = { source: 'live_segments', segmentCount: 0 };
-
-      if ((!fullTranscript || fullTranscript.length < 20) && buffer) {
-        let segments = null;
-        if (buffer.length <= MAX_SYNC_STT_BYTES) {
-          try {
-            segments = await transcribeWithGoogleStt(buffer, mimeType);
-            if (segments?.length) transcriptionMeta = { source: 'google-cloud-stt', segmentCount: segments.length };
-          } catch (e) {
-            console.warn('[PostMeeting] Google STT failed:', e.message);
-          }
-        }
-        if (!segments?.length) {
-          try {
-            segments = await transcribeWithWhisper(buffer, mimeType);
-            if (segments?.length) transcriptionMeta = { source: 'whisper', segmentCount: segments.length };
-          } catch (e) {
-            console.warn('[PostMeeting] Whisper failed:', e.message);
-          }
-        }
-        if (segments?.length) {
-          const persisted = await persistTranscriptSegments(meetingId, segments, transcriptionMeta.source);
-          fullTranscript = persisted.fullText;
-          transcriptionMeta.segmentCount = persisted.count;
-          await saveTranscriptArtifact(paths, { segments, meta: transcriptionMeta, generatedAt: new Date().toISOString() });
-        }
-      }
-
-      if (fullTranscript) {
-        const storedTranscript = clampText(fullTranscript, CLINICAL_TEXT_LIMITS.MAX_TRANSCRIPT_STORE);
-        await safeQuery(
-          `UPDATE meeting_records SET transcript = $2 WHERE id::text = $1 OR appointment_id = $1`,
-          [meetingId, storedTranscript],
-        );
-      }
+      const initialTranscript = options.fullTranscript || (await compileTranscriptFromDb(meetingId));
+      const { fullTranscript, transcriptionMeta } = await transcribeRecordingIfNeeded(
+        meetingId,
+        initialTranscript,
+        buffer,
+        mimeType,
+        paths,
+      );
+      await storeMeetingTranscript(meetingId, fullTranscript);
 
       logPipelineMemory('transcribing-end', meetingId);
       buffer = null;
@@ -632,126 +805,42 @@ export function createPostMeetingPipeline(deps) {
       await updateMeetingConfigPipeline(meetingId, { stage: 'summarizing', transcription: transcriptionMeta });
       logPipelineMemory('summarizing-start', meetingId);
 
-      const chatContext = options.chatContext || '';
-      const summaryResult = await generateClinicalSummary(fullTranscript, meeting, chatContext);
-      const { narrative, structured, clinicalJson, userMessage: summaryUserMessage, degraded } = summaryResult;
+      const summaryResult = await generateClinicalSummary(fullTranscript, meeting, options.chatContext || '');
+      const { narrative, structured, clinicalJson, degraded } = summaryResult;
 
       logPipelineMemory('summarizing-end', meetingId);
 
-      if (!narrative && !structured && !clinicalJson && fullTranscript?.length >= 20 && summaryResult.error && !degraded) {
-        const failedSummary = {
-          stage: 'failed',
-          meetingId,
-          appointmentId: meeting.appointment_id,
-          recordingUrl: paths?.recordingUrl || meeting.recording_url,
-          error: summaryResult.error,
-          errorCode: 'failed_summary',
-          userMessage: summaryUserMessage || pipelineUserMessage('failed', 'failed_summary'),
-          transcriptLength: fullTranscript.length,
-          durationMs: Date.now() - started,
-        };
-        setPipelineStatus(meetingId, failedSummary, meeting);
-        await updateMeetingConfigPipeline(meetingId, failedSummary);
-        io?.to(meetingId)?.emit?.('meeting-summary-ready', {
-          meetingId,
-          appointmentId: meeting.appointment_id,
-          summary: null,
-          error: failedSummary.userMessage,
-          requiresValidation: false,
-          pipeline: failedSummary,
-          timestamp: new Date().toISOString(),
-        });
-        return failedSummary;
+      if (
+        summaryOutputsMissing(summaryResult) &&
+        fullTranscript?.length >= 20 &&
+        summaryResult.error &&
+        !degraded
+      ) {
+        return handleSummaryGenerationFailure(meetingId, meeting, paths, fullTranscript, summaryResult, started);
       }
 
       if (
-        !narrative &&
-        !structured &&
-        !clinicalJson &&
+        summaryOutputsMissing(summaryResult) &&
         (!fullTranscript || fullTranscript.length < 20) &&
         buffer
       ) {
-        const failedTx = {
-          stage: 'failed',
-          meetingId,
-          errorCode: 'failed_transcription',
-          userMessage: pipelineUserMessage('failed', 'failed_transcription'),
-          recordingUrl: paths?.recordingUrl || meeting.recording_url,
-          durationMs: Date.now() - started,
-        };
-        setPipelineStatus(meetingId, failedTx, meeting);
-        await updateMeetingConfigPipeline(meetingId, failedTx);
-        io?.to(meetingId)?.emit?.('meeting-summary-ready', {
-          meetingId,
-          summary: null,
-          error: failedTx.userMessage,
-          pipeline: failedTx,
-          timestamp: new Date().toISOString(),
-        });
-        return failedTx;
+        return handleTranscriptionFailure(meetingId, meeting, paths, started);
       }
 
-      if (narrative || structured || clinicalJson) {
-        const safeSummary = prepareSummaryForDb(narrative, structured);
-        const recPayload = clinicalJson
-          ? clampText(
-              JSON.stringify({ clinical: clinicalJson, requiresValidation: true }),
-              CLINICAL_TEXT_LIMITS.MAX_JSONB_PAYLOAD,
-            )
-          : null;
-        await safeQuery(
-          `UPDATE meeting_records SET
-             ai_summary = COALESCE($2, ai_summary),
-             ai_summary_structured = COALESCE($3, ai_summary_structured),
-             ai_recommendations = COALESCE($4, ai_recommendations)
-           WHERE id::text = $1 OR appointment_id = $1`,
-          [
-            meetingId,
-            safeSummary.narrative,
-            safeSummary.structured ? JSON.stringify(safeSummary.structured) : null,
-            recPayload,
-          ],
-        );
-      }
-
-      if (paths) {
-        cleanupEphemeralRecordingAfterPersist({
-          recordingsDir,
-          paths,
-          legacyMeetingKey: meetingKey !== meetingId ? meetingKey : null,
-          gcsUri: paths.gcsUri || meeting.meeting_config?.postMeetingPipeline?.gcsUri,
-          deleteTranscriptArtifact: true,
-        });
-      }
-      sweepEmptyRecordingDirs(recordingsDir);
-
-      const completed = {
-        stage: 'completed',
+      await persistClinicalOutputs(meetingId, narrative, structured, clinicalJson);
+      return finalizeSuccessfulPipeline({
+        meetingKey,
         meetingId,
-        appointmentId: meeting.appointment_id,
-        recordingUrl: paths?.recordingUrl || meeting.recording_url,
-        transcriptLength: fullTranscript?.length || 0,
-        transcription: transcriptionMeta,
-        summaryAvailable: Boolean(narrative),
-        degraded: Boolean(degraded),
-        durationMs: Date.now() - started,
-      };
-      setPipelineStatus(meetingId, completed, meeting);
-      await updateMeetingConfigPipeline(meetingId, completed);
-
-      io?.to(meetingId)?.emit?.('meeting-summary-ready', {
-        meetingId,
-        appointmentId: meeting.appointment_id,
-        summary: narrative,
+        meeting,
+        paths,
+        fullTranscript,
+        transcriptionMeta,
+        narrative,
         structured,
-        clinical: clinicalJson,
-        recordingUrl: completed.recordingUrl,
-        requiresValidation: true,
-        pipeline: completed,
-        timestamp: new Date().toISOString(),
+        clinicalJson,
+        degraded,
+        started,
       });
-
-      return completed;
     } catch (err) {
       console.error('[PostMeeting] Pipeline failed:', err.message);
       const failed = {
@@ -759,7 +848,10 @@ export function createPostMeetingPipeline(deps) {
         meetingId,
         error: err.message,
         errorCode: 'pipeline_exception',
-        userMessage: pipelineUserMessage('failed', err.message?.includes('validation') ? 'failed_corrupt_recording' : 'failed_summary'),
+        userMessage: pipelineUserMessage(
+          'failed',
+          err.message?.includes('validation') ? 'failed_corrupt_recording' : 'failed_summary',
+        ),
         durationMs: Date.now() - started,
       };
       setPipelineStatus(meetingKey, failed, meeting);
@@ -786,8 +878,16 @@ export function createPostMeetingPipeline(deps) {
             error: e.message,
             errorCode: 'background_job_exception',
           });
-        } catch {
-          /* ignore */
+        } catch (configErr) {
+          console.error('[PostMeeting] Failed to update pipeline config:', configErr.message);
+          if (io) {
+            io.to(String(meetingKey)).emit('meeting-pipeline-error', {
+              meetingId: meetingKey,
+              error: e.message,
+              configError: configErr.message,
+              timestamp: new Date().toISOString(),
+            });
+          }
         }
       });
     });

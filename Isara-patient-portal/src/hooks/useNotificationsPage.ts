@@ -33,6 +33,29 @@ export function notificationRowClass(isRead: boolean, isDark: boolean): string {
   return `${base} ${isDark ? 'bg-emerald-950/20' : 'bg-emerald-50/60'}`;
 }
 
+function asOptionalString(value: unknown): string | undefined {
+  return typeof value === 'string' ? value : undefined;
+}
+
+function mapNotificationRow(raw: Notification & Record<string, unknown>): Notification {
+  const data =
+    raw.data && typeof raw.data === 'object'
+      ? (raw.data as Record<string, unknown>)
+      : {};
+  const appointmentId =
+    asOptionalString(raw.appointmentId)
+    ?? asOptionalString(data.appointmentId)
+    ?? asOptionalString(data.appointment_id);
+  return {
+    ...raw,
+    title: asOptionalString(raw.title) ?? asOptionalString(raw.title_thai) ?? '',
+    message: asOptionalString(raw.message) ?? asOptionalString(raw.message_thai) ?? '',
+    appointmentId,
+    isRead: Boolean(raw.isRead ?? raw.read_at),
+    createdAt: asOptionalString(raw.createdAt) ?? asOptionalString(raw.created_at) ?? '',
+  };
+}
+
 export function useNotificationsPage(userId: string | undefined) {
   const [items, setItems] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
@@ -44,7 +67,9 @@ export function useNotificationsPage(userId: string | undefined) {
       try {
         setLoading(true);
         const data = await notificationService.getNotifications(userId);
-        if (active) setItems(data || []);
+        if (active) {
+          setItems((data || []).map((row) => mapNotificationRow(row as Notification & Record<string, unknown>)));
+        }
       } finally {
         if (active) setLoading(false);
       }

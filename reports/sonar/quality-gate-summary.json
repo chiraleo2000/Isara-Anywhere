@@ -1,12 +1,12 @@
 {
-  "generatedAt": "2026-06-09T03:17:00.571Z",
+  "generatedAt": "2026-06-13T14:27:09.858Z",
   "projectVersion": "1.7.43",
   "passed": true,
   "steps": [
     {
       "name": "unit-coverage",
       "ok": true,
-      "durationMs": 71101,
+      "durationMs": 36713,
       "exitCode": 0
     },
     {
@@ -24,7 +24,7 @@
     {
       "name": "app-security-scan",
       "ok": true,
-      "durationMs": 455,
+      "durationMs": 408,
       "exitCode": 0
     }
   ],

@@ -234,16 +234,14 @@ export function NotificationBell({ className = '' }: Readonly<NotificationBellPr
                             </Link>
                           )}
 
-                          {notification.meetingLink && (
-                            <a
-                              href={notification.meetingLink}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              onClick={(e) => e.stopPropagation()}
+                          {notification.meetingLink && notification.appointmentId && (
+                            <Link
+                              to={`/meeting/${notification.appointmentId}`}
+                              onClick={(e) => { e.stopPropagation(); setIsOpen(false); }}
                               className="text-xs text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1"
                             >
                               <Video className="w-3 h-3" /> เข้าประชุม
-                            </a>
+                            </Link>
                           )}
 
                           {notification.calendarUrl && (

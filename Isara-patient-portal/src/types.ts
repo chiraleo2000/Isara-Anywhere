@@ -176,6 +176,8 @@ export interface Appointment {
   preferredTime?: string; // Preferred time (for API compatibility)
   requestedDate?: string; // Requested date (for API compatibility)
   requestedTime?: string; // Requested time (for API compatibility)
+  confirmedDate?: string;
+  confirmedTime?: string;
   preferredTimeSlot?: string; // morning, afternoon, evening
   urgency?: string; // normal, urgent, emergency
   aiAnalysis?: string; // AI analysis of symptoms
@@ -270,6 +272,15 @@ export interface Demographics {
   weight?: number;
   ethnicity?: string;
   occupation?: string;
+  phone?: string;
+  address?: string;
+  emergencyContactName?: string;
+  emergencyContactPhone?: string;
+  emergencyContact?: {
+    name?: string;
+    phone?: string;
+    relationship?: string;
+  };
 }
 
 export interface VitalSigns {

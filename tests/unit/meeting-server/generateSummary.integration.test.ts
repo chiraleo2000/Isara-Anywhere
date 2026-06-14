@@ -82,7 +82,13 @@ describe('generateSummary.integration — GSUM pipeline', () => {
     expect(second.status).toBe('results_ready');
   });
 
-  it('GSUM-07 — GET results returns recording URL and summary JSON', () => {
+  it('GSUM-07 — degraded summary path when Gemini unavailable', () => {
+    const degraded = canGenerateSummary('ended', '');
+    expect(degraded.ok).toBe(false);
+    expect(degraded.code).toBe('GEMINI_UNAVAILABLE');
+  });
+
+  it('GSUM-08 — GET results returns recording URL and summary JSON', () => {
     const payload = buildResultsPayload({
       status: 'results_ready',
       recordingUrl: '/api/recordings/meetings/DR-001/m-1/video.mp4',

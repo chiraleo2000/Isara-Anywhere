@@ -56,6 +56,52 @@ let guestParticipantId = '';
 let guestInviteToken = '';
 let patientParticipantId = PATIENT_ID;
 
+async function assertQ02dGeminiLite(
+  page: import('@playwright/test').Page,
+  structured: import('@playwright/test').Locator,
+  isCloud: boolean,
+): Promise<void> {
+  const degraded = page.getByTestId('summary-degraded-badge');
+  const pollMs = isCloud ? 60_000 : 45_000;
+  let hasStructured = false;
+  let hasDegraded = false;
+  let hasSummaryCopy = false;
+  const deadline = Date.now() + pollMs;
+  while (Date.now() < deadline) {
+    hasStructured = await structured.isVisible().catch(() => false);
+    hasDegraded = await degraded.isVisible().catch(() => false);
+    if (hasStructured || hasDegraded) break;
+    const resultsText = await page.getByTestId('meeting-results').innerText().catch(() => '');
+    hasSummaryCopy = /สรุป|summary|SOAP|สำรอง|degraded|clinical/i.test(resultsText);
+    if (hasSummaryCopy && resultsText.trim().length > 40) break;
+    await page.waitForTimeout(1_500);
+  }
+  expect(
+    hasStructured || hasDegraded || hasSummaryCopy,
+    'summary UI, degraded badge, or meeting-results summary copy (Gemini-lite)',
+  ).toBeTruthy();
+  console.log('  Q02d: Gemini-lite mode OK (structured, degraded, or results copy)');
+}
+
+async function assertQ02dLiveGemini(
+  page: import('@playwright/test').Page,
+  structured: import('@playwright/test').Locator,
+  isCloud: boolean,
+): Promise<void> {
+  await expect(structured).toBeVisible({ timeout: isCloud ? 120_000 : 60_000 });
+  const summaryText = await page.getByTestId('summary-structured').innerText();
+  expect(summaryText.trim().length, 'structured summary content').toBeGreaterThan(20);
+  const transcriptPanel = page.getByTestId('transcript-panel');
+  if (await transcriptPanel.isVisible({ timeout: 5_000 }).catch(() => false)) {
+    const tx = await transcriptPanel.innerText();
+    expect(tx.trim().length).toBeGreaterThan(0);
+  }
+  if (isCloud) {
+    expect(summaryText, 'no stub placeholder on cloud').not.toMatch(/placeholder|lorem|TODO/i);
+  }
+  console.log('  Q02d: Gemini summary OK');
+}
+
 async function startRecordingViaUi(
   doctorPage: import('@playwright/test').Page,
   meetingKey: string,
@@ -474,7 +520,8 @@ test.describe('Group Q - Meeting Lifecycle (3-party)', () => {
       await snap(doctor.page, 'Q02c-dashboard-recording', 'group-Q');
     });
 
-    await test.step('Q02d - generate-summary via UI only (mandatory Gemini)', async () => {
+    await test.step('Q02d - generate-summary via UI (Gemini-lite when PW_SKIP_LIVE_GEMINI=1)', async () => {
+      const skipLiveGemini = process.env.PW_SKIP_LIVE_GEMINI === '1' || process.env.PW_SKIP_LIVE_GEMINI === 'true';
       const aptId = appointmentId || wf.appointmentId;
       expect(aptId, 'Q02d appointmentId from Q01 workflow').toBeTruthy();
       await doctor.page.goto(`${DOCTOR_URL}/doctor/${DOCTOR_ID}/meeting/${aptId}/results`, {
@@ -496,21 +543,13 @@ test.describe('Group Q - Meeting Lifecycle (3-party)', () => {
           timeout: IS_CLOUD ? 45_000 : 20_000,
         });
         await summaryBtn.click();
+        await doctor.page.waitForTimeout(IS_CLOUD ? 4_000 : 2_500);
       }
-      await expect(structured).toBeVisible({
-        timeout: IS_CLOUD ? 120_000 : 60_000,
-      });
-      const summaryText = await doctor.page.getByTestId('summary-structured').innerText();
-      expect(summaryText.trim().length, 'structured summary content').toBeGreaterThan(20);
-      const transcriptPanel = doctor.page.getByTestId('transcript-panel');
-      if (await transcriptPanel.isVisible({ timeout: 5_000 }).catch(() => false)) {
-        const tx = await transcriptPanel.innerText();
-        expect(tx.trim().length).toBeGreaterThan(0);
+      if (skipLiveGemini) {
+        await assertQ02dGeminiLite(doctor.page, structured, IS_CLOUD);
+      } else {
+        await assertQ02dLiveGemini(doctor.page, structured, IS_CLOUD);
       }
-      if (IS_CLOUD) {
-        expect(summaryText, 'no stub placeholder on cloud').not.toMatch(/placeholder|lorem|TODO/i);
-      }
-      console.log('  Q02d: Gemini summary OK');
     });
   });
 });

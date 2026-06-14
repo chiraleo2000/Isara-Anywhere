@@ -15,14 +15,14 @@
 | เอกสาร Word / รายงาน PDF | **TH Sarabun New** — เนื้อหา **16 pt**, หัวข้อระดับ 1 **18 pt**, หัวข้อระดับ 2 **16 pt** (ตัวหนา), ชื่อเรื่อง **22 pt**, ระยะบรรทัด **1.15**, จัดชิดซ้าย |
 | สไลด์นำเสนอ PowerPoint | **FC Iconic** — หัวข้อสไลด์ **32 pt**, หัวข้อรอง **22 pt**, เนื้อหา **18 pt**, บันทึกวิทยากร **16 pt** |
 | ตัวเลขและวันที่ | ใช้ พ.ศ. ในข้อความไทย; คั่นหลักพันแบบไทยเมื่อจำเป็น |
-| อ้างอิงคู่มือ | `Documents/Documents/docs/guides/patient/USER_GUIDE_PATIENT_WORD_TH.docx`, `Documents/Documents/docs/guides/doctor/USER_GUIDE_DOCTOR_WORD_TH.docx`, `Documents/Documents/docs/guides/patient|doctor/USER_GUIDE_*_PPT_TH.pptx` |
-| เอกสารปฏิบัติการ Production | `Documents/docs/markdown/operations/PRODUCTION_DEPLOYMENT_AND_TECHNICAL_UPDATE.md` |
+| อ้างอิงคู่มือ | `docs/guides/patient/USER_GUIDE_PATIENT_WORD_TH.docx`, `docs/guides/doctor/USER_GUIDE_DOCTOR_WORD_TH.docx`, `docs/guides/patient|doctor/USER_GUIDE_*_PPT_TH.pptx` |
+| เอกสารปฏิบัติการ Production | `docs/markdown/operations/PRODUCTION_DEPLOYMENT_AND_TECHNICAL_UPDATE.md` |
 | สร้าง/อัปเดตคู่มือ | `python scripts/build-portal-user-guides.py` |
 | อัปเดตหน้ากระบวนการ | `python scripts/enrich-process-pages.py --force-steps` |
 | ล้างข้อมูลทดสอบ (ไม่ re-seed demo) | `npm run cleanup:cloud-test-only` |
 | การทดสอบอัตโนมัติ | Playwright Groups A–Q + Vitest — `tests/PROCESS_COVERAGE_MATRIX.md` |
 | รุ่นเอกสารหน้ากระบวนการ | **ENRICH-9** (Word TH Sarabun New 16 pt / PPT FC Iconic — ขั้นตอน 8–12 รายการ + คำอธิบายเชิงรายงานทุกหน้า) |
-| โครงสร้างเทคนิค (สถาปัตยกรรม) | `Documents/docs/technical/word/TECHNICAL_ARCHITECTURE_WORD_TH.docx`, `Documents/docs/technical/ppt/TECHNICAL_ARCHITECTURE_PPT_TH.pptx`, `Documents/docs/diagrams/diagrams.drawio` |
+| โครงสร้างเทคนิค (สถาปัตยกรรม) | `docs/technical/word/TECHNICAL_ARCHITECTURE_WORD_TH.docx`, `docs/technical/ppt/TECHNICAL_ARCHITECTURE_PPT_TH.pptx`, `docs/diagrams/diagrams.drawio` |
 | สร้างเอกสารโครงสร้างเทคนิค | `python scripts/build-technical-architecture-docs.py` |
 
 **โครงสร้างบังคับในแต่ละหน้า Processes/Pages:**
@@ -30,6 +30,30 @@
 1. **คำอธิบายและบริบท (รายงานภาษาไทย)** — บทบาทผู้ใช้ ขอบเขตข้อมูล และลิงก์ workflow  
 2. **ขั้นตอนการใช้งาน (ละเอียด)** — ลำดับปฏิบัติ พร้อมจุดตรวจสอบและ `data-testid`  
 3. **ผลลัพธ์ที่คาดหวัง** — สถานะระบบ / API / ฐานข้อมูลหลังจบขั้นตอน
+
+---
+
+## เปรียบเทียบกับ BMS Smart Hospital Demo (อ้างอิงเชิงฟังก์ชัน)
+
+Isara Anywhere นำแนวคิดด้านฟังก์ชันจากการสาธิต **Smart Hospital with BMS AI & Telemedicine**
+([YouTube](https://www.youtube.com/watch?v=ftivZGZsm5k)) มาปรับใช้ — โดย**ไม่ลอกเลียนหน้าจอ** แต่ยกระดับ
+ประสบการณ์ใช้งาน (UX) ให้เต็มจอและรองรับทั้งเว็บและมือถือ ตามตารางต่อไปนี้:
+
+| ความสามารถใน BMS / PresScribe | สิ่งที่ Isara ทำได้ (และปรับปรุงให้ดีขึ้น) |
+|--------------------------------|---------------------------------------------|
+| ปรึกษาทางวิดีโอ (Telemedicine) | Jitsi ฝังในแอปผ่าน `MeetingRoom.tsx` + `PatientMeetingRoom.tsx` — แพทย์เป็น **host** ผ่าน Izara lobby (`host-present` + `lobby/admit-all`) ไม่เปิดแท็บภายนอก |
+| ถอดเสียงสนทนาแบบเรียลไทม์ (STT) | Web Speech API + ส่ง transcript segment เข้าสู่ meeting server แบบเรียลไทม์ |
+| สรุปเวชระเบียนด้วย AI | `postMeetingPipeline.js` + Gemini สร้างสรุป SOAP (man-in-the-loop: แพทย์อนุมัติก่อนบันทึก) |
+| แดชบอร์ดคิว/นัดหมาย | `HealthMeeting.tsx` + Appointment Pool + Queue Management |
+| จัดทำเวชระเบียน (EMR) | `MeetingResults.tsx` → Apply เข้าสู่ EMR และเผยแพร่สู่ PHR ผู้ป่วย |
+
+**จุดที่ Isara ปรับปรุงเหนือกว่าการสาธิต:**
+
+- **เต็มจอ (full display)** — ห้องประชุมใช้ `100dvh` วิดีโอเป็นหลัก ไม่ใช่กรอบเล็กแบบในวิดีโอสาธิต;
+  รองรับเดสก์ท็อป แท็บเล็ต และโทรศัพท์ (responsive) ผ่าน `JitsiMeetingShell`.
+- **แพทย์เป็นเจ้าของห้องเสมอ** — ผู้ป่วยเข้าได้หลังแพทย์เริ่มห้อง (`waitForHostReady`) เท่านั้น ไม่มีทางลัดข้าม lobby.
+- **เส้นทางเดียว** — ทุกการประชุมใช้ `/meeting/:appointmentId` ในแอป (ลบ Virtual Meeting และลิงก์ `meet.jit.si`
+  ภายนอกออกทั้งหมด) เพื่อความปลอดภัยและความสม่ำเสมอของ UX.
 
 ---
 
@@ -342,7 +366,7 @@ Admin Dashboard ──→ Doctor Management (approve/reject)
 
 - **รายงาน / Word:** แบบอักษร **TH Sarabun New** ขนาดเนื้อหา **16 pt** ระยะบรรทัด **1.15** (มาตรฐานรายงานภาษาไทย)
 - **PowerPoint:** แบบอักษร **FC Iconic** หัวข้อ **32 pt** เนื้อหา **18 pt**
-- สร้างไฟล์จริง: `python scripts/build-portal-user-guides.py` → `Documents/Documents/docs/guides/patient|doctor/USER_GUIDE_*_WORD_TH.docx` และ `*_PPT_TH.pptx`
+- สร้างไฟล์จริง: `python scripts/build-portal-user-guides.py` → `docs/guides/patient|doctor/USER_GUIDE_*_WORD_TH.docx` และ `*_PPT_TH.pptx`
 
 ### ขอบเขตและบทบาท
 
@@ -374,8 +398,8 @@ Admin Dashboard ──→ Doctor Management (approve/reject)
 
 - `Processes/VIDEO_MEETING_JITSI_GEMINI.md` — วิดีโอ, lobby, บันทึก, AI
 - `Processes/Appointment_Workflows.md` — Pool และสถานะนัด
-- `Documents/docs/markdown/operations/PRODUCTION_DEPLOYMENT_AND_TECHNICAL_UPDATE.md` — deploy และ runbook
-- `Documents/Documents/docs/guides/patient|doctor/USER_GUIDE_*_WORD_TH.docx` / `Documents/Documents/docs/guides/patient|doctor/USER_GUIDE_*_PPT_TH.pptx` — คู่มือผู้ใช้ฉบับสมบูรณ์
+- `docs/markdown/operations/PRODUCTION_DEPLOYMENT_AND_TECHNICAL_UPDATE.md` — deploy และ runbook
+- `docs/guides/patient|doctor/USER_GUIDE_*_WORD_TH.docx` / `*_PPT_TH.pptx` — คู่มือผู้ใช้ฉบับสมบูรณ์
 
 ### องค์ประกอบ UI หลัก (data-testid)
 

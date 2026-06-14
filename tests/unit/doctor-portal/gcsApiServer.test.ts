@@ -5,6 +5,8 @@
  * Tests: gcsApiServer.cjs — bucket whitelist, path validation, CRUD
  */
 import { describe, it, expect } from 'vitest';
+import fs from 'node:fs';
+import path from 'node:path';
 
 // ── Bucket Configuration ────────────────────────────────────────────────
 
@@ -47,6 +49,32 @@ function getMimeType(filename: string): string {
   };
   return mimeTypes[ext || ''] || 'application/octet-stream';
 }
+
+/** Mirrors gcsApiServer.cjs multer fileFilter allowedMimes (multer 2.x upload gate). */
+const GCS_ALLOWED_MIMES = [
+  'application/json',
+  'image/jpeg',
+  'image/png',
+  'image/gif',
+  'application/pdf',
+  'video/webm',
+  'video/mp4',
+  'video/ogg',
+  'audio/webm',
+  'audio/mp3',
+  'audio/mpeg',
+  'audio/wav',
+  'audio/ogg',
+  'text/plain',
+  'text/markdown',
+] as const;
+
+function isGcsUploadMimeAllowed(mimetype: string): boolean {
+  return (GCS_ALLOWED_MIMES as readonly string[]).includes(mimetype);
+}
+
+const GCS_UPLOAD_MAX_BYTES = 200 * 1024 * 1024;
+const GCS_UPLOAD_MAX_FILES = 5;
 
 // ── Tests ───────────────────────────────────────────────────────────────
 
@@ -128,6 +156,35 @@ describe('Doctor Portal — GCS API Server', () => {
 
     it('D04 — accepts zero-byte file', () => {
       expect(validateUploadSize(0, 10)).toBe(true);
+    });
+
+    it('D05 — multer 2.x GCS route allows up to 200MB', () => {
+      expect(validateUploadSize(GCS_UPLOAD_MAX_BYTES, 200)).toBe(true);
+      expect(validateUploadSize(GCS_UPLOAD_MAX_BYTES + 1, 200)).toBe(false);
+    });
+  });
+
+  describe('D2 — Multer MIME allowlist (A05)', () => {
+    it('D2-01 — allows clinical upload MIME types', () => {
+      expect(isGcsUploadMimeAllowed('application/pdf')).toBe(true);
+      expect(isGcsUploadMimeAllowed('video/webm')).toBe(true);
+      expect(isGcsUploadMimeAllowed('audio/mpeg')).toBe(true);
+      expect(isGcsUploadMimeAllowed('text/plain')).toBe(true);
+    });
+
+    it('D2-02 — rejects executable and unknown MIME types', () => {
+      expect(isGcsUploadMimeAllowed('application/x-msdownload')).toBe(false);
+      expect(isGcsUploadMimeAllowed('application/octet-stream')).toBe(false);
+    });
+
+    it('D2-03 — enforces max 5 files per request', () => {
+      expect(GCS_UPLOAD_MAX_FILES).toBe(5);
+    });
+
+    it('D2-04 — gcsApiServer uses multer 2.x in package.json', () => {
+      const pkgPath = path.join(__dirname, '../../../Isara-doctor-portal/package.json');
+      const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
+      expect(pkg.dependencies.multer).toMatch(/^[\^~]?2\./);
     });
   });
 

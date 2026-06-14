@@ -7,6 +7,9 @@ interface PrescribingModalChromeProps {
   onClose: () => void;
 }
 
+const hasCdsOrAllergyConflict = (warnings: string[]) =>
+  warnings.some((w) => /ALLERGY|INTERACTION|CDS/i.test(w));
+
 export const PrescribingModalChrome: React.FC<PrescribingModalChromeProps> = ({
   patientName,
   patientIdNumber,
@@ -34,7 +37,11 @@ export const PrescribingModalChrome: React.FC<PrescribingModalChromeProps> = ({
     </div>
 
     {warnings.length > 0 && (
-      <div className="p-4 bg-red-50 border-b border-red-200" data-testid="allergy-block-banner">
+      <div
+        className="p-4 bg-red-50 border-b-2 border-red-400"
+        data-testid="cds-allergy-conflict-banner"
+        role="alert"
+      >
         <div className="flex items-start space-x-2">
           <svg className="w-5 h-5 text-red-600 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
             <path
@@ -44,8 +51,12 @@ export const PrescribingModalChrome: React.FC<PrescribingModalChromeProps> = ({
             />
           </svg>
           <div>
-            <p className="font-medium text-red-900">Drug Warnings:</p>
-            <ul className="mt-1 text-sm text-red-700">
+            <p className="font-semibold text-red-900">
+              {hasCdsOrAllergyConflict(warnings)
+                ? 'CDS / Allergy Conflict — review before prescribing'
+                : 'Clinical warnings detected'}
+            </p>
+            <ul className="mt-1 text-sm text-red-700 list-disc list-inside">
               {warnings.map((warning) => (
                 <li key={`warn-${warning.slice(0, 40)}`}>{warning}</li>
               ))}

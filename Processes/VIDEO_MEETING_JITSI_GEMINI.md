@@ -1,8 +1,14 @@
 # Video Meeting Implementation - Jitsi Meet + Device Speech-to-Text + Gemini AI
 
-**Version:** 1.7.51
-**Last Updated:** June 8, 2026
+**Version:** 1.7.53
+**Last Updated:** June 13, 2026
 **Status:** ✅ Phase 1 — 3-party meeting lifecycle (doctor HOST + patient + guest), 10s A/V hold, calendar sync on confirm, zero-skip local Docker gate
+
+> **v1.7.53 — Real Jitsi only.** `VirtualMeeting.tsx` and the `/virtual-meeting/:id` route are removed.
+> The single in-app flow is `MeetingRoom.tsx` (doctor host) + `PatientMeetingRoom.tsx` (patient) at
+> `/meeting/:appointmentId`. JWT is never sent to public `meet.jit.si` (it causes a blank iframe);
+> roles are enforced by the Izara lobby + `configOverwrite.moderator`. API auth uses opaque session
+> tokens (`sessions` table), not JWT. No external meeting links in the UI.
 
 > This document is the core Phase 1 deliverable describing the complete meeting workflow:
 > Appointment → Multi-Party Meeting → Transcript Streaming → AI Summary → EMR → Patient Delivery

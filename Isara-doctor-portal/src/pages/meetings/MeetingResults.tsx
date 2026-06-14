@@ -8,6 +8,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { getToken } from '../../services/authServices';
+import { storeEmrAiDraft } from '../../utils/emrAiDraft';
 
 interface MeetingResultsProps {
   meetingId: string;
@@ -75,6 +76,7 @@ interface MeetingResultsData {
     requiresValidation: boolean;
     validationStatus: string | null;
     validatedAt: string | null;
+    degraded?: boolean;
   };
   chat: {
     messages: ChatMessage[];
@@ -472,6 +474,15 @@ const SummaryTab: React.FC<{
     <div>
       <ValidationBanner requiresValidation={summary.requiresValidation} validatedAt={summary.validatedAt} validationStatus={validationStatus} />
 
+      {summary.degraded && (
+        <output
+          data-testid="summary-degraded-badge"
+          className="mb-4 block rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900"
+        >
+          AI ไม่พร้อมใช้งาน — สรุปนี้เป็นข้อความสำรอง กรุณาตรวจสอบและแก้ไขด้วยตนเองก่อนยืนยัน
+        </output>
+      )}
+
       {/* Structured SOAP Cards (or narrative fallback after generate-summary) */}
       {(summary.structured || summary.text) && (
         <div data-testid="summary-structured">
@@ -624,19 +635,37 @@ const MeetingResults: React.FC<MeetingResultsProps> = ({ meetingId, appointmentI
 
   const handleGenerateInstruction = async () => {
     setActionLoading('instruction');
+    setError(null);
     try {
       const res = await fetchMeetingApi(`/api/meetings/${lookupId}/patient-instruction`, {
         method: 'POST',
       });
       const data = await res.json();
-      if (data.success && data.instructions) {
+      if (!res.ok || !data.success) {
+        setError(data.error || data.message || 'Failed to generate patient instructions');
+        return;
+      }
+      if (data.instructions) {
         setInstructionResult(data.instructions);
       }
     } catch (err) {
       console.error('Generate instruction failed:', err);
+      setError(err instanceof Error ? err.message : 'Failed to generate patient instructions');
     } finally {
       setActionLoading(null);
     }
+  };
+
+  const handleApplyToEmr = () => {
+    if (!results || !onNavigateToEMR || !results.meeting.appointmentId) return;
+    storeEmrAiDraft({
+      appointmentId: results.meeting.appointmentId,
+      patientId: results.meeting.patient?.id,
+      summary: results.summary.text,
+      structured: results.summary.structured,
+      degraded: results.summary.degraded,
+    });
+    onNavigateToEMR(results.meeting.appointmentId);
   };
 
   if (loading) {
@@ -682,6 +711,16 @@ const MeetingResults: React.FC<MeetingResultsProps> = ({ meetingId, appointmentI
               {meeting.patient.name || 'ผู้ป่วย'} • {formatDuration(meeting.durationMinutes)} •{' '}
               {meeting.endedAt ? new Date(meeting.endedAt).toLocaleDateString('th-TH') : ''}
             </p>
+            {/* Workflow breadcrumb: Health Meeting → Meeting → Results → EMR (ux-09) */}
+            <nav aria-label="Breadcrumb" data-testid="meeting-results-breadcrumb" className="text-emerald-100/80 text-xs mt-1">
+              <span>Health Meeting</span>
+              <span className="mx-1.5">›</span>
+              <span>Meeting</span>
+              <span className="mx-1.5">›</span>
+              <span className="text-white font-medium">Results</span>
+              <span className="mx-1.5">›</span>
+              <span>EMR</span>
+            </nav>
           </div>
           <button onClick={onClose} className="text-white/80 hover:text-white p-2" title="ปิดผลการประชุม" aria-label="ปิดผลการประชุม">
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -757,6 +796,19 @@ const MeetingResults: React.FC<MeetingResultsProps> = ({ meetingId, appointmentI
             {validationStatus && ` • Validation: ${validationStatus}`}
           </p>
           <div className="flex gap-2 flex-wrap">
+            {onNavigateToEMR && meeting.appointmentId && summary.text && (
+              <button
+                type="button"
+                data-testid="apply-ai-summary-emr-btn"
+                onClick={handleApplyToEmr}
+                className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors text-sm"
+              >
+                Apply AI summary to EMR
+                {summary.degraded && (
+                  <span className="ml-1 bg-amber-300 text-amber-900 text-xs px-1.5 py-0.5 rounded-full">degraded</span>
+                )}
+              </button>
+            )}
             {onNavigateToEMR && meeting.appointmentId && (
               <button
                 onClick={() => onNavigateToEMR(meeting.appointmentId)}

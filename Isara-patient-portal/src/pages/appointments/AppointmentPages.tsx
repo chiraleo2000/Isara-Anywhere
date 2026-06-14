@@ -4,7 +4,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useSettings } from '../../contexts/SettingsContext';
 import { appointmentService, doctorService, googleService } from '../../lib/services';
 import { Appointment, Doctor, AppointmentStatus } from '../../types';
-import { Calendar, Clock, Video, MapPin, Plus, ChevronLeft, CalendarPlus, ExternalLink, FileText, AlertCircle, Activity, Pill, Stethoscope, CheckCircle2, Info, Mic, Image, Play } from 'lucide-react';
+import { Calendar, Clock, Video, MapPin, Plus, ChevronLeft, CalendarPlus, FileText, AlertCircle, Activity, Pill, Stethoscope, CheckCircle2, Info, Mic, Image, Play } from 'lucide-react';
 import SymptomInputStep from '../../components/appointments/SymptomInputStep';
 
 export function AppointmentListPage() {
@@ -122,8 +122,14 @@ export function AppointmentListPage() {
     return isDark ? 'bg-gray-800 text-gray-300 hover:bg-gray-700 border border-gray-700' : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200';
   };
 
+  const joinableAppointment = appointments.find(
+    (apt) => apt.status === 'confirmed'
+      && apt.type === 'telehealth'
+      && Boolean(apt.meetingLink || apt.patientMeetingUrl),
+  );
+
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className="max-w-4xl mx-auto pb-24 md:pb-0">
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>{labels.myAppointments[language]}</h1>
@@ -271,23 +277,13 @@ export function AppointmentListPage() {
                     <div className="mt-3 flex flex-col gap-2">
                       <Link
                         to={`/meeting/${apt.id}`}
+                        data-testid="appointment-join-meeting"
                         onClick={(e) => e.stopPropagation()}
                         className="w-full flex items-center justify-center gap-2 bg-emerald-600 text-white py-2.5 rounded-lg hover:bg-emerald-700 font-medium"
                       >
                         <Video className="w-5 h-5" />
-                        🎥 เข้าห้องประชุม (In-App)
+                        🎥 เข้าห้องประชุม
                       </Link>
-                      <button
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          window.open(apt.patientMeetingUrl || apt.meetingLink, '_blank');
-                        }}
-                        className="w-full flex items-center justify-center gap-2 bg-gray-100 text-gray-700 py-2 rounded-lg hover:bg-gray-200 text-sm"
-                      >
-                        <ExternalLink className="w-4 h-4" />
-                        Open in New Tab
-                      </button>
                     </div>
                   )}
                 </div>
@@ -326,8 +322,182 @@ export function AppointmentListPage() {
           ))}
         </div>
       )}
+      {joinableAppointment && (
+        <div className="fixed inset-x-0 bottom-0 z-40 md:hidden p-3 bg-white/95 dark:bg-gray-900/95 border-t shadow-lg backdrop-blur-sm">
+          <Link
+            to={`/meeting/${joinableAppointment.id}`}
+            data-testid="sticky-join-meeting"
+            className="w-full flex items-center justify-center gap-2 bg-emerald-600 text-white py-3.5 rounded-xl hover:bg-emerald-700 font-medium shadow-md"
+          >
+            <Video className="w-5 h-5" />
+            {language === 'th' ? '🎥 เข้าห้องประชุม' : '🎥 Join Meeting'}
+          </Link>
+        </div>
+      )}
     </div>
   );
+}
+
+const TIME_SLOT_TIME_VALUES: Record<string, string> = { morning: '09:00', afternoon: '13:00', evening: '17:00' };
+
+type BookingSymptomForm = {
+  mainSymptom: string;
+  symptomDescription: string;
+  symptomDuration: string;
+  symptomDurationUnit: string;
+  symptomSeverity: number;
+  bodyParts: string[];
+  additionalSymptoms: string[];
+  fever: boolean;
+  feverTemp: string;
+  currentMedications: string;
+  allergies: string;
+  previousTreatment: string;
+  medicalHistory: string;
+  additionalNotes: string;
+  preferredDates: string[];
+  preferredTimeSlot: string;
+  type: string;
+  urgency: string;
+  suggestedSpecialty: string;
+  skipDoctorSelection: boolean;
+};
+
+function buildSymptomSummary(form: BookingSymptomForm) {
+  return {
+    mainSymptom: form.mainSymptom,
+    description: form.symptomDescription,
+    duration: `${form.symptomDuration} ${form.symptomDurationUnit}`,
+    severity: form.symptomSeverity,
+    bodyParts: form.bodyParts,
+    additionalSymptoms: form.additionalSymptoms,
+    fever: form.fever ? form.feverTemp : null,
+    currentMedications: form.currentMedications,
+    allergies: form.allergies,
+    previousTreatment: form.previousTreatment,
+    medicalHistory: form.medicalHistory,
+    additionalNotes: form.additionalNotes,
+  };
+}
+
+async function enrollAppointmentInPool(params: {
+  appointmentId: string;
+  patientId: string;
+  patientName: string;
+  patientEmail: string;
+  form: BookingSymptomForm;
+  language: string;
+}): Promise<string | null> {
+  const { appointmentId, patientId, patientName, patientEmail, form, language } = params;
+  const poolRes = await fetch('/api/appointment-pool', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
+    },
+    body: JSON.stringify({
+      appointmentId,
+      patientId,
+      patientName,
+      patientEmail,
+      requiredSpecialty: form.suggestedSpecialty || 'General Practitioner',
+      symptoms: [form.mainSymptom, ...form.additionalSymptoms].filter(Boolean),
+      symptomDescription: form.symptomDescription,
+      urgency: form.urgency,
+      preferredDates: form.preferredDates,
+      preferredTimeSlot: form.preferredTimeSlot,
+      appointmentType: form.type,
+      poolReason: 'no_doctor_selected',
+    }),
+  });
+  if (poolRes.ok) return null;
+  const errBody = await poolRes.json().catch(() => ({}));
+  return (errBody as { error?: string }).error
+    || (language === 'th'
+      ? 'สร้างนัดหมายแล้ว แต่เพิ่มเข้าคิวจัดสรรแพทย์ไม่สำเร็จ กรุณาติดต่อเจ้าหน้าที่'
+      : 'Appointment created but pool enrollment failed. Please contact support.');
+}
+
+async function createBookedAppointment(params: {
+  user: { patientId?: string; id: string; name: string; email: string };
+  form: BookingSymptomForm;
+  selectedDoctor: Doctor | null;
+  aiAnalysis: Record<string, unknown> | null;
+  language: string;
+}): Promise<
+  | { ok: true; created: Appointment & { reroutedToPool?: boolean; notice?: string } }
+  | { ok: false; poolError: string }
+> {
+  const { user, form, selectedDoctor, aiAnalysis, language } = params;
+  const patientId = user.patientId || user.id;
+  const symptomSummary = buildSymptomSummary(form);
+  const assignmentMethod = selectedDoctor ? 'patient_selected' : undefined;
+  const initialStatus = selectedDoctor
+    ? 'awaiting_doctor_response' as AppointmentStatus
+    : 'in_pool' as AppointmentStatus;
+  const preferredDate = form.preferredDates[0]
+    ? new Date(form.preferredDates[0]).toISOString().split('T')[0]
+    : new Date().toISOString().split('T')[0];
+  const preferredTime = TIME_SLOT_TIME_VALUES[form.preferredTimeSlot];
+
+  const created = await appointmentService.create({
+    patientId,
+    patientName: user.name,
+    patientEmail: user.email,
+    doctorId: selectedDoctor?.id || 'unassigned',
+    doctorName: selectedDoctor?.name || 'รอการจัดสรรแพทย์',
+    doctorSpecialty: selectedDoctor?.specialty || form.suggestedSpecialty || 'ทั่วไป',
+    doctorAvatar: selectedDoctor?.avatarUrl,
+    preferredDate,
+    preferredTime,
+    requestedDate: preferredDate,
+    requestedTime: preferredTime,
+    appointmentType: form.type,
+    status: initialStatus,
+    reason: form.mainSymptom,
+    symptomDescription: form.symptomDescription || form.mainSymptom,
+    symptoms: symptomSummary as any,
+    preferredDates: form.preferredDates,
+    preferredTimeSlot: form.preferredTimeSlot,
+    urgency: form.urgency,
+    aiAnalysis: aiAnalysis ? JSON.stringify(aiAnalysis) : undefined,
+    notes: form.suggestedSpecialty ? `Suggested specialty: ${form.suggestedSpecialty}` : undefined,
+    assignmentMethod,
+  }) as Appointment & { reroutedToPool?: boolean; notice?: string };
+
+  if (form.skipDoctorSelection) {
+    const poolError = await enrollAppointmentInPool({
+      appointmentId: created.id,
+      patientId,
+      patientName: user.name,
+      patientEmail: user.email,
+      form,
+      language,
+    });
+    if (poolError) return { ok: false, poolError };
+  }
+
+  return { ok: true, created };
+}
+
+function buildBookingSuccessState(
+  created: Appointment & { reroutedToPool?: boolean; notice?: string },
+  selectedDoctor: Doctor | null,
+  language: string,
+) {
+  const defaultRerouteNotice = language === 'th'
+    ? 'แพทย์ที่เลือกไม่พร้อมให้บริการ ระบบจัดสรรแพทย์ท่านอื่นให้แทน'
+    : 'Selected doctor unavailable; routed to appointment pool.';
+  const rerouteNote = created.reroutedToPool
+    ? (created.notice || defaultRerouteNotice)
+    : null;
+  return {
+    message: rerouteNote
+      || (selectedDoctor
+        ? 'ส่งคำขอนัดหมายสำเร็จ! กรุณารอแพทย์ยืนยันเวลานัด หากแพทย์ไม่ว่างระบบจะจัดหาแพทย์ท่านอื่นให้'
+        : 'ส่งคำขอนัดหมายสำเร็จ! ระบบจะจัดสรรแพทย์ที่เหมาะสมกับอาการของคุณ'),
+    type: created.reroutedToPool ? 'warning' as const : 'success' as const,
+  };
 }
 
 export function BookAppointmentPage() {
@@ -337,6 +507,7 @@ export function BookAppointmentPage() {
   const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const [selectedDoctor, setSelectedDoctor] = useState<Doctor | null>(null);
   const [step, setStep] = useState(1);
 
@@ -373,7 +544,7 @@ export function BookAppointmentPage() {
     symptomDescription: '',
     symptomDuration: '',
     symptomDurationUnit: 'days' as 'hours' | 'days' | 'weeks' | 'months',
-    symptomSeverity: 3 as number, // 1-5 scale
+    symptomSeverity: 3, // 1-5 scale
     bodyParts: [] as string[],
 
     // Additional symptoms
@@ -397,8 +568,8 @@ export function BookAppointmentPage() {
 
     // Audio recording
     audioBlob: null as Blob | null,
-    audioUrl: '' as string,
-    audioTranscript: '' as string,
+    audioUrl: '',
+    audioTranscript: '',
 
     // Image uploads  
     images: [] as { file: File; preview: string; description?: string }[],
@@ -678,107 +849,20 @@ export function BookAppointmentPage() {
     if (!selectedDoctor && !form.skipDoctorSelection) return;
 
     setSubmitting(true);
+    setSubmitError(null);
 
     try {
-      const patientId = user.patientId || user.id;
-
-      // Create symptom summary for the appointment
-      const symptomSummary = {
-        mainSymptom: form.mainSymptom,
-        description: form.symptomDescription,
-        duration: `${form.symptomDuration} ${form.symptomDurationUnit}`,
-        severity: form.symptomSeverity,
-        bodyParts: form.bodyParts,
-        additionalSymptoms: form.additionalSymptoms,
-        fever: form.fever ? form.feverTemp : null,
-        currentMedications: form.currentMedications,
-        allergies: form.allergies,
-        previousTreatment: form.previousTreatment,
-        medicalHistory: form.medicalHistory,
-        additionalNotes: form.additionalNotes,
-      };
-
-      // Determine assignment method and initial status based on doctor selection
-      const assignmentMethod = selectedDoctor ? 'patient_selected' : undefined;
-      const initialStatus = selectedDoctor
-        ? 'awaiting_doctor_response' as AppointmentStatus  // Selected doctor needs to respond
-        : 'in_pool' as AppointmentStatus;  // Goes to pool for assignment
-
-      // Create appointment request - Use field names that match the backend route
-      const preferredDate = form.preferredDates[0]
-        ? new Date(form.preferredDates[0]).toISOString().split('T')[0]
-        : new Date().toISOString().split('T')[0];
-      const preferredTime = timeSlotTimeValues[form.preferredTimeSlot];
-
-      const appointment = await appointmentService.create({
-        patientId,
-        patientName: user.name,
-        patientEmail: user.email,
-        // If no doctor selected, mark as unassigned for pool
-        doctorId: selectedDoctor?.id || 'unassigned',
-        doctorName: selectedDoctor?.name || 'รอการจัดสรรแพทย์',
-        doctorSpecialty: selectedDoctor?.specialty || form.suggestedSpecialty || 'ทั่วไป',
-        doctorAvatar: selectedDoctor?.avatarUrl,
-        // Patient's preferred schedule - use field names that backend expects
-        preferredDate: preferredDate,
-        preferredTime: preferredTime,
-        requestedDate: preferredDate,  // Also send as requestedDate for compatibility
-        requestedTime: preferredTime,
-        appointmentType: form.type,  // Backend expects appointmentType not type
-        status: initialStatus,
-        reason: form.mainSymptom,
-        symptomDescription: form.symptomDescription || form.mainSymptom,
-        // Extended data
-        symptoms: symptomSummary as any,
-        preferredDates: form.preferredDates,
-        preferredTimeSlot: form.preferredTimeSlot,
-        urgency: form.urgency,
-        aiAnalysis: aiAnalysis ? JSON.stringify(aiAnalysis) : undefined,
-        notes: form.suggestedSpecialty ? `Suggested specialty: ${form.suggestedSpecialty}` : undefined,
-        assignmentMethod: assignmentMethod,
-      });
-
-      // If no doctor selected (skipDoctorSelection) or system assignment, add to pool
-      if (form.skipDoctorSelection) {
-        try {
-          await fetch('/api/appointment-pool', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
-            },
-            body: JSON.stringify({
-              appointmentId: appointment.id,
-              patientId,
-              patientName: user.name,
-              patientEmail: user.email,
-              requiredSpecialty: form.suggestedSpecialty || 'General Practitioner',
-              symptoms: [form.mainSymptom, ...form.additionalSymptoms].filter(Boolean),
-              symptomDescription: form.symptomDescription,
-              urgency: form.urgency,
-              preferredDates: form.preferredDates,
-              preferredTimeSlot: form.preferredTimeSlot,
-              appointmentType: form.type,
-              poolReason: 'no_doctor_selected',
-            }),
-          });
-        } catch (poolError) {
-          console.error('Failed to add to pool:', poolError);
-          // Appointment was still created, just not added to pool
-        }
+      const result = await createBookedAppointment({ user, form, selectedDoctor, aiAnalysis, language });
+      if (!result.ok) {
+        setSubmitError(result.poolError);
+        return;
       }
 
-      navigate('/appointments', {
-        state: {
-          message: selectedDoctor
-            ? 'ส่งคำขอนัดหมายสำเร็จ! กรุณารอแพทย์ยืนยันเวลานัด หากแพทย์ไม่ว่างระบบจะจัดหาแพทย์ท่านอื่นให้'
-            : 'ส่งคำขอนัดหมายสำเร็จ! ระบบจะจัดสรรแพทย์ที่เหมาะสมกับอาการของคุณ',
-          type: 'success'
-        }
-      });
+      navigate('/appointments', { state: buildBookingSuccessState(result.created, selectedDoctor, language) });
     } catch (e) {
       console.error(e);
-      alert('เกิดข้อผิดพลาด กรุณาลองใหม่');
+      const msg = e instanceof Error ? e.message : 'Unknown error';
+      setSubmitError(language === 'th' ? `เกิดข้อผิดพลาด: ${msg}` : `Error: ${msg}`);
     } finally {
       setSubmitting(false);
     }
@@ -794,8 +878,6 @@ export function BookAppointmentPage() {
     if (severity <= 3) return 'text-yellow-600';
     return 'text-red-600';
   };
-
-  const timeSlotTimeValues: Record<string, string> = { morning: '09:00', afternoon: '13:00', evening: '17:00' };
 
   // Step validation - NEW FLOW: Symptoms (with audio/image) → Schedule + Doctor Selection → Confirm
   const hasSymptomInput = form.mainSymptom.trim() !== '' || form.symptomDescription.trim() !== '' || form.audioBlob !== null || form.images.length > 0;
@@ -815,19 +897,19 @@ export function BookAppointmentPage() {
         </div>
       </div>
 
-      {/* Progress Steps - NEW FLOW: Symptoms (audio/image) → Schedule + Doctor → Confirm */}
-      <div className="flex items-center gap-2 mb-6">
+      {/* Progress Steps — vertical on phone/tablet, horizontal on lg+ */}
+      <div className="flex flex-col md:flex-row md:items-center gap-3 md:gap-2 mb-6" data-testid="appointment-wizard-steps">
         {[
           { num: 1, label: 'อาการ (เสียง/รูป)' },
           { num: 2, label: 'เวลา + แพทย์' },
           { num: 3, label: 'ยืนยัน' },
         ].map((s, i) => (
-          <div key={s.num} className="flex items-center flex-1">
-            <div className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-medium ${step >= s.num ? 'bg-emerald-600 text-white' : 'bg-gray-200 text-gray-500'}`}>
+          <div key={s.num} className="flex items-center flex-1 min-w-0">
+            <div className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-medium shrink-0 ${step >= s.num ? 'bg-emerald-600 text-white' : 'bg-gray-200 text-gray-500'}`}>
               {step > s.num ? <CheckCircle2 className="w-5 h-5" /> : s.num}
             </div>
-            <span className={`ml-2 text-xs hidden sm:block ${step >= s.num ? 'text-emerald-600 font-medium' : 'text-gray-400'}`}>{s.label}</span>
-            {i < 2 && <div className={`flex-1 h-1 mx-2 rounded ${step > s.num ? 'bg-emerald-600' : 'bg-gray-200'}`} />}
+            <span className={`ml-2 text-xs ${step >= s.num ? 'text-emerald-600 font-medium' : 'text-gray-400'}`}>{s.label}</span>
+            {i < 2 && <div className={`hidden md:block flex-1 h-1 mx-2 rounded ${step > s.num ? 'bg-emerald-600' : 'bg-gray-200'}`} />}
           </div>
         ))}
       </div>
@@ -1293,10 +1375,21 @@ export function BookAppointmentPage() {
             </div>
           </div>
 
+          {submitError && (
+            <div
+              role="alert"
+              className="mb-4 flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700"
+              data-testid="appointment-submit-error"
+            >
+              <AlertCircle className="mt-0.5 h-5 w-5 shrink-0" />
+              <span>{submitError}</span>
+            </div>
+          )}
+
           <button
             onClick={handleSubmit}
             disabled={submitting}
-            className="w-full bg-emerald-600 text-white py-4 rounded-xl hover:bg-emerald-700 disabled:opacity-50 font-medium flex items-center justify-center gap-2"
+            className="w-full bg-emerald-600 text-white py-4 rounded-xl hover:bg-emerald-700 disabled:opacity-50 font-medium flex items-center justify-center gap-2 sticky bottom-4 z-10 md:static"
           >
             {submitting ? (
               <>
@@ -1421,7 +1514,6 @@ export function AppointmentDetailPage() {
   };
 
   const getStatusInfo = (status: string) => {
-    type StatusInfo = { bg: string; text: string; icon: string; label: string; description: string };
     const statusColors: Record<string, { bg: string; text: string }> = {
       pending: { bg: isDark ? 'bg-yellow-900/20 border-yellow-700' : 'bg-yellow-50 border-yellow-200', text: isDark ? 'text-yellow-300' : 'text-yellow-700' },
       confirmed: { bg: isDark ? 'bg-green-900/20 border-green-700' : 'bg-green-50 border-green-200', text: isDark ? 'text-green-300' : 'text-green-700' },
@@ -1443,7 +1535,7 @@ export function AppointmentDetailPage() {
     const key = status in statusColors ? status : 'pending';
     const color = statusColors[key];
     const label = (language === 'th' ? labelsTh : labelsEn)[key];
-    return { ...color, ...label } as StatusInfo;
+    return { ...color, ...label };
   };
 
   if (loading) return <div className={`flex items-center justify-center h-64 ${isDark ? 'bg-gray-900' : ''}`}><div className="animate-spin w-8 h-8 border-4 border-emerald-600 border-t-transparent rounded-full" /></div>;
@@ -1617,17 +1709,15 @@ export function AppointmentDetailPage() {
           </button>
         )}
 
-        {/* Join Meeting button for telehealth */}
+        {/* Join Meeting button for telehealth — in-app real Jitsi meeting (Izara lobby + doctor host) */}
         {appointment.status === 'confirmed' && (meetLink || appointment.meetingLink) && (
-          <a
-            href={meetLink || appointment.meetingLink}
-            target="_blank"
-            rel="noopener noreferrer"
+          <Link
+            to={`/meeting/${appointment.id}`}
+            data-testid="appointment-detail-join-meeting"
             className="flex items-center justify-center gap-2 w-full bg-blue-600 text-white py-3 rounded-xl text-center hover:bg-blue-700 mb-3"
           >
             <Video className="w-5 h-5" /> เข้าห้องประชุม
-            <ExternalLink className="w-4 h-4" />
-          </a>
+          </Link>
         )}
 
         {(appointment.status === 'pending' || appointment.status === 'confirmed') && (

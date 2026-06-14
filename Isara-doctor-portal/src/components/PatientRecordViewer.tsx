@@ -21,12 +21,14 @@ interface PatientRecordViewerProps {
   currentDoctorId?: string;
 }
 
+type RecordTab = 'summary' | 'emr' | 'labs' | 'rx' | 'docs';
+
 export const PatientRecordViewer: React.FC<PatientRecordViewerProps> = ({
   patient,
   onClose,
   currentDoctorId
 }) => {
-  const [activeTab, setActiveTab] = useState<'phr' | 'emr' | 'ehr'>('phr');
+  const [activeTab, setActiveTab] = useState<RecordTab>('summary');
 
   // PDPA consent gate state
   const [consentStatus, setConsentStatus] = useState<'checking' | 'granted' | 'denied' | 'emergency'>('checking');
@@ -54,36 +56,42 @@ export const PatientRecordViewer: React.FC<PatientRecordViewerProps> = ({
   const contentRef = useRef<HTMLDivElement>(null);
 
   // Load tab data on first activation
-  const loadTabData = useCallback(async (tab: 'phr' | 'emr' | 'ehr') => {
+  const loadTabData = useCallback(async (tab: RecordTab) => {
     if (loadedTabs.has(tab)) return;
     setError(null);
 
     try {
-      if (tab === 'phr') {
-        setLoadingPHR(true);
-        const [data, lwData] = await Promise.all([
-          patientRecordService.getPHR(patient.id),
-          patientRecordService.getLivingWill(patient.id),
-        ]);
-        setPhrData(data);
-        setLivingWillData(lwData);
+      if (tab === 'summary' || tab === 'rx') {
+        if (!loadedTabs.has('summary') && !loadedTabs.has('rx')) {
+          setLoadingPHR(true);
+          const [data, lwData] = await Promise.all([
+            patientRecordService.getPHR(patient.id),
+            patientRecordService.getLivingWill(patient.id),
+          ]);
+          setPhrData(data);
+          setLivingWillData(lwData);
+          setLoadedTabs(prev => new Set(prev).add('summary').add('rx'));
+        }
       } else if (tab === 'emr') {
         setLoadingEMR(true);
         const data = await patientRecordService.getEMRs(patient.id);
         setEmrRecords(data);
-      } else if (tab === 'ehr') {
-        setLoadingEHR(true);
-        const data = await patientRecordService.getEHR(patient.id);
-        setEhrData(data);
+        setLoadedTabs(prev => new Set(prev).add('emr'));
+      } else if (tab === 'labs' || tab === 'docs') {
+        if (!loadedTabs.has('labs') && !loadedTabs.has('docs')) {
+          setLoadingEHR(true);
+          const data = await patientRecordService.getEHR(patient.id);
+          setEhrData(data);
+          setLoadedTabs(prev => new Set(prev).add('labs').add('docs'));
+        }
       }
-      setLoadedTabs(prev => new Set(prev).add(tab));
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Failed to load data';
       setError(msg);
     } finally {
-      if (tab === 'phr') setLoadingPHR(false);
+      if (tab === 'summary' || tab === 'rx') setLoadingPHR(false);
       if (tab === 'emr') setLoadingEMR(false);
-      if (tab === 'ehr') setLoadingEHR(false);
+      if (tab === 'labs' || tab === 'docs') setLoadingEHR(false);
     }
   }, [patient.id, loadedTabs]);
 
@@ -112,10 +120,10 @@ export const PatientRecordViewer: React.FC<PatientRecordViewerProps> = ({
     return () => { cancelled = true; };
   }, [patient.id]);
 
-  // Load initial tab (PHR) — only if consent is granted/emergency
+  // Load initial tab (Summary) — only if consent is granted/emergency
   useEffect(() => {
     if (consentStatus === 'granted' || consentStatus === 'emergency') {
-      loadTabData('phr');
+      loadTabData('summary');
     }
     return () => { patientRecordService.clearCache(); };
   }, [patient.id, consentStatus]);
@@ -135,9 +143,10 @@ export const PatientRecordViewer: React.FC<PatientRecordViewerProps> = ({
     if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
-  const isLoading = (activeTab === 'phr' && loadingPHR) ||
+  const isLoading = (activeTab === 'summary' && loadingPHR) ||
+                    (activeTab === 'rx' && loadingPHR) ||
                     (activeTab === 'emr' && loadingEMR) ||
-                    (activeTab === 'ehr' && loadingEHR);
+                    ((activeTab === 'labs' || activeTab === 'docs') && loadingEHR);
 
   // Handle request access
   const handleRequestAccess = async () => {
@@ -228,19 +237,22 @@ export const PatientRecordViewer: React.FC<PatientRecordViewerProps> = ({
           </div>
         )}
 
-        {/* Top Tabs */}
-        <div className="flex border-b border-gray-200 bg-gray-50">
-          {[
-            { key: 'phr' as const, label: 'Personal Health Record', activeClass: 'bg-yellow-50 text-emerald-600 border-emerald-600' },
-            { key: 'emr' as const, label: 'Electronic Medical Record', activeClass: 'bg-blue-50 text-blue-600 border-blue-600' },
-            { key: 'ehr' as const, label: 'Electronic Health Record', activeClass: 'bg-green-50 text-green-600 border-green-600' },
-          ].map(tab => (
+        {/* Top Tabs — Summary | EMR | Labs | Rx | Docs */}
+        <div className="flex border-b border-gray-200 bg-gray-50 overflow-x-auto">
+          {([
+            { key: 'summary' as const, label: 'Summary' },
+            { key: 'emr' as const, label: 'EMR' },
+            { key: 'labs' as const, label: 'Labs' },
+            { key: 'rx' as const, label: 'Rx' },
+            { key: 'docs' as const, label: 'Docs' },
+          ]).map(tab => (
             <button
               key={tab.key}
+              data-testid={`patient-record-tab-${tab.key}`}
               onClick={() => setActiveTab(tab.key)}
-              className={`px-6 py-3 font-medium transition-colors ${
+              className={`px-5 py-3 font-medium transition-colors whitespace-nowrap ${
                 activeTab === tab.key
-                  ? `${tab.activeClass} border-b-2`
+                  ? 'bg-white text-emerald-600 border-b-2 border-emerald-600'
                   : 'text-gray-600 hover:bg-gray-100'
               }`}
             >
@@ -285,15 +297,17 @@ export const PatientRecordViewer: React.FC<PatientRecordViewerProps> = ({
           <div ref={contentRef} className="flex-1 overflow-y-auto p-6 bg-gray-50">
             {isLoading ? (
               <>
-                {activeTab === 'phr' && <PHRSkeleton />}
+                {(activeTab === 'summary' || activeTab === 'rx') && <PHRSkeleton />}
                 {activeTab === 'emr' && <EMRSkeleton />}
-                {activeTab === 'ehr' && <EHRSkeleton />}
+                {(activeTab === 'labs' || activeTab === 'docs') && <EHRSkeleton />}
               </>
             ) : (
               <>
-                {activeTab === 'phr' && <PHRView phrData={phrData} livingWillResponse={livingWillData} />}
+                {activeTab === 'summary' && <PHRView phrData={phrData} livingWillResponse={livingWillData} />}
                 {activeTab === 'emr' && <EMRView emrRecords={emrRecords} currentDoctorId={currentDoctorId} />}
-                {activeTab === 'ehr' && <EHRView ehrData={ehrData} />}
+                {activeTab === 'labs' && <LabsView ehrData={ehrData} />}
+                {activeTab === 'rx' && <RxView phrData={phrData} />}
+                {activeTab === 'docs' && <DocsView ehrData={ehrData} />}
               </>
             )}
           </div>
@@ -962,7 +976,169 @@ const EMRView: React.FC<{ emrRecords: EMRRecord[]; currentDoctorId?: string }> =
 };
 
 // ============================================================================
-// EHR VIEW
+// LABS VIEW
+// ============================================================================
+
+const LabsView: React.FC<{ ehrData: EHRData | null }> = ({ ehrData }) => {
+  if (!ehrData || ehrData.labGroups.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center h-64 text-gray-500">
+        <p className="text-lg">ยังไม่มีผลตรวจทางห้องปฏิบัติการ</p>
+      </div>
+    );
+  }
+
+  return (
+    <section>
+      <h3 className="text-xl font-bold text-gray-900 mb-4">ผลตรวจทางห้องปฏิบัติการ (Lab Results)</h3>
+      {ehrData.labGroups.map(group => {
+        const dateKey = new Date(group.completedDate || group.orderDate).toISOString().slice(0, 7);
+        return (
+          <div
+            key={group.id}
+            id={`record-${dateKey}`}
+            className="bg-white rounded-lg shadow-sm p-5 mb-4"
+          >
+            <div className="flex items-center justify-between mb-3">
+              <div>
+                <p className="text-sm font-bold text-gray-800">
+                  {new Date(group.completedDate || group.orderDate).toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric' })}
+                </p>
+                <p className="text-xs text-gray-500">{group.doctorName}</p>
+              </div>
+              {group.priority === 'urgent' && (
+                <span className="px-2 py-0.5 rounded-full text-xs bg-red-100 text-red-700 font-medium">URGENT</span>
+              )}
+            </div>
+            <table className="w-full text-sm">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="text-left p-2">Test</th>
+                  <th className="text-left p-2">Value</th>
+                  <th className="text-left p-2">Unit</th>
+                  <th className="text-left p-2">Normal Range</th>
+                  <th className="text-left p-2">Flag</th>
+                </tr>
+              </thead>
+              <tbody>
+                {group.tests.map((test) => (
+                  <tr key={`${group.id}-${test.name}`} className="border-t">
+                    <td className="p-2">{test.name}</td>
+                    <td className="p-2 font-medium">{test.value}</td>
+                    <td className="p-2 text-gray-500">{test.unit}</td>
+                    <td className="p-2 text-gray-500">{test.normalRange}</td>
+                    <td className="p-2">
+                      <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${getLabFlagClass(test.flag)}`}>
+                        {test.flag === 'CRITICAL' ? '🔴 ' : ''}{test.flag}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {group.aiAnalysis && (
+              <div className="mt-3 bg-amber-50 rounded p-3 text-sm text-amber-800">
+                <p className="text-xs font-semibold text-amber-600 mb-1">🤖 AI Analysis</p>
+                {group.aiAnalysis}
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </section>
+  );
+};
+
+// ============================================================================
+// RX VIEW
+// ============================================================================
+
+const RxView: React.FC<{ phrData: PHRData | null }> = ({ phrData }) => {
+  if (!phrData || phrData.medications.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center h-64 text-gray-500">
+        <p className="text-lg">ไม่มีข้อมูลยา</p>
+      </div>
+    );
+  }
+
+  return (
+    <section className="bg-white rounded-lg shadow-sm p-6">
+      <h3 className="text-lg font-bold text-gray-900 mb-4 border-b border-emerald-500 pb-2">
+        รายการยา (Medications)
+      </h3>
+      <table className="w-full text-sm">
+        <thead className="bg-gray-50">
+          <tr>
+            <th className="text-left p-2">ชื่อยา</th>
+            <th className="text-left p-2">ขนาด</th>
+            <th className="text-left p-2">ความถี่</th>
+            <th className="text-left p-2">สถานะ</th>
+          </tr>
+        </thead>
+        <tbody>
+          {phrData.medications.map((m) => (
+            <tr key={m.name} className="border-t">
+              <td className="p-2 font-medium">{m.name}</td>
+              <td className="p-2">{m.dosage || '-'}</td>
+              <td className="p-2">{m.frequency || '-'}</td>
+              <td className="p-2">
+                <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                  m.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'
+                }`}>
+                  {m.status === 'active' ? 'ใช้อยู่' : 'หยุดใช้'}
+                </span>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </section>
+  );
+};
+
+// ============================================================================
+// DOCS VIEW
+// ============================================================================
+
+const DocsView: React.FC<{ ehrData: EHRData | null }> = ({ ehrData }) => {
+  if (!ehrData || ehrData.externalRecords.length === 0) {
+    return (
+      <div className="bg-gray-50 rounded-lg p-8 text-center border border-dashed border-gray-300">
+        <p className="text-gray-400">ยังไม่มีเอกสารจากภายนอก</p>
+      </div>
+    );
+  }
+
+  return (
+    <section>
+      <h3 className="text-xl font-bold text-gray-900 mb-4">เอกสารทางการแพทย์จากภายนอก (External Records)</h3>
+      <div className="space-y-2">
+        {ehrData.externalRecords.map(rec => (
+          <div key={rec.id} className="bg-white rounded-lg shadow-sm p-4 flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium">{rec.documentType}</p>
+              <p className="text-xs text-gray-500">
+                {new Date(rec.uploadedAt).toLocaleDateString('th-TH')} — {rec.uploadedBy}
+              </p>
+            </div>
+            <a
+              href={rec.viewUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-3 py-1 rounded bg-blue-600 text-white text-xs font-medium hover:bg-blue-700"
+            >
+              View
+            </a>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+};
+
+// ============================================================================
+// EHR VIEW (legacy combined — kept for timeline helpers)
 // ============================================================================
 
 const EHRView: React.FC<{ ehrData: EHRData | null }> = ({ ehrData }) => {

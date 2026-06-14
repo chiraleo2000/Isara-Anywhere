@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useSettings } from '../contexts/SettingsContext';
 import { phrService } from '../lib/services';
@@ -11,7 +12,8 @@ interface TimelineEvent {
   description: string;
   date: string;
   provider?: string;
-  details?: Record<string, any>;
+  details?: Record<string, unknown>;
+  appointmentId?: string;
 }
 
 export default function TimelinePage() {
@@ -35,7 +37,22 @@ export default function TimelinePage() {
     try {
       const data = await phrService.getTimeline(user.id);
       if (Array.isArray(data)) {
-        setEvents(data);
+        setEvents(
+          data.map((e: Record<string, unknown>) => ({
+            id: String(e.id ?? ''),
+            type: (e.type as TimelineEvent['type']) || 'appointment',
+            title: String(
+              language === 'th' ? (e.titleThai ?? e.title) : (e.title ?? ''),
+            ),
+            description: String(e.description ?? ''),
+            date: String(e.date ?? ''),
+            provider: String(e.doctorName ?? e.provider ?? '') || undefined,
+            details: (e.data ?? e.details) as Record<string, unknown> | undefined,
+            appointmentId: String(
+              (e.data as Record<string, unknown> | undefined)?.id ?? e.id ?? '',
+            ),
+          })),
+        );
       } else {
         setEvents([]);
       }
@@ -166,6 +183,15 @@ export default function TimelinePage() {
                         <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>{event.description}</p>
                         {event.provider && (
                           <p className="text-sm mt-1 text-gray-500">{event.provider}</p>
+                        )}
+                        {event.type === 'appointment' && event.appointmentId && (
+                          <Link
+                            to={`/phr?appointment=${encodeURIComponent(event.appointmentId)}`}
+                            data-testid="timeline-consultation-link"
+                            className="inline-block mt-2 text-sm font-medium text-emerald-600 hover:text-emerald-700 underline"
+                          >
+                            {language === 'th' ? 'ดูผลการปรึกษา' : 'View consultation results'}
+                          </Link>
                         )}
                       </div>
                       <div className="text-right">

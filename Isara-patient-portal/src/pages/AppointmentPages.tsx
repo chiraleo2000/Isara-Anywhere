@@ -4,7 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useSettings } from '../contexts/SettingsContext';
 import { appointmentService, doctorService, googleService, notificationService } from '../lib/services';
 import { Appointment, Doctor, AppointmentStatus } from '../types';
-import { Calendar, Clock, Video, MapPin, Plus, ChevronLeft, CalendarPlus, ExternalLink, FileText, AlertCircle, Activity, Pill, Stethoscope, CheckCircle2, Info, Mic, Image, Play } from 'lucide-react';
+import { Calendar, Clock, Video, MapPin, Plus, ChevronLeft, CalendarPlus, FileText, AlertCircle, Activity, Pill, Stethoscope, CheckCircle2, Info, Mic, Image, Play } from 'lucide-react';
 import SymptomInputStep from '../components/SymptomInputStep';
 import { useRealtimeSync } from '../lib/useRealtimeSync';
 import { buildCalendarEventUrl } from '../utils/buildCalendarEventUrl';
@@ -291,58 +291,32 @@ export function AppointmentListPage() {
                     </div>
                   </div>
 
-                  {/* Meeting Link for Telehealth - Use patientMeetingUrl if available */}
+                  {/* Telehealth notice — in-app meeting only; doctor hosts and admits from the lobby */}
                   {apt.type === 'telehealth' && (apt.meetingLink || apt.patientMeetingUrl) && (
                     <div className="mt-3 pt-3 border-t border-green-200">
                       <div className="flex items-center gap-2 mb-2">
                         <Video className="w-4 h-4 text-blue-600" />
-                        <span className="text-sm font-medium text-blue-700">ลิงก์ประชุม (Jitsi Meet):</span>
-                      </div>
-                      <div className="flex items-center gap-2 bg-white p-2 rounded-lg">
-                        <span className="text-xs text-blue-600 truncate flex-1">
-                          {(apt.patientMeetingUrl || apt.meetingLink || '').substring(0, 50)}...
-                        </span>
-                        <button
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            navigator.clipboard.writeText(apt.patientMeetingUrl || apt.meetingLink || '');
-                            alert('คัดลอกลิงก์แล้ว!');
-                          }}
-                          className="px-2 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700"
-                        >
-                          คัดลอก
-                        </button>
+                        <span className="text-sm font-medium text-blue-700">การประชุมออนไลน์ (Jitsi):</span>
                       </div>
                       {/* Important notice about waiting for doctor */}
                       <p className="text-xs text-amber-600 mt-2 flex items-center gap-1">
-                        ⚠️ แพทย์จะเริ่มห้องประชุมก่อน กรุณารอให้แพทย์อนุมัติการเข้าร่วม
+                        ⚠️ แพทย์จะเริ่มห้องประชุมก่อน กรุณารอให้แพทย์อนุมัติการเข้าร่วมจากห้องรอ (lobby)
                       </p>
                     </div>
                   )}
 
-                  {/* Quick Join Button */}
+                  {/* Quick Join Button — in-app real Jitsi meeting only (Izara lobby + doctor host) */}
                   {apt.type === 'telehealth' && (apt.meetingLink || apt.patientMeetingUrl) && (
                     <div className="mt-3 flex flex-col gap-2">
                       <Link
                         to={`/meeting/${apt.id}`}
+                        data-testid="appointment-join-meeting"
                         onClick={(e) => e.stopPropagation()}
                         className="w-full flex items-center justify-center gap-2 bg-emerald-600 text-white py-2.5 rounded-lg hover:bg-emerald-700 font-medium"
                       >
                         <Video className="w-5 h-5" />
-                        🎥 เข้าห้องประชุม (In-App)
+                        🎥 เข้าห้องประชุม
                       </Link>
-                      <button
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          window.open(apt.patientMeetingUrl || apt.meetingLink, '_blank');
-                        }}
-                        className="w-full flex items-center justify-center gap-2 bg-gray-100 text-gray-700 py-2 rounded-lg hover:bg-gray-200 text-sm"
-                      >
-                        <ExternalLink className="w-4 h-4" />
-                        Open in New Tab
-                      </button>
                     </div>
                   )}
                 </div>
@@ -451,7 +425,7 @@ export function BookAppointmentPage() {
     skipDoctorSelection: false,
 
     // Audio recording
-    audioBlob: null,
+    audioBlob: null as Blob | null,
     audioUrl: '',
     audioTranscript: '',
 
@@ -1363,10 +1337,12 @@ function findCalendarUrlInNotifications(
   appointmentId: string,
 ): string | null {
   for (const n of notifications) {
-    const d = typeof n.data === 'string' ? JSON.parse(n.data) : n.data;
-    const aptId = d?.appointmentId || d?.appointment_id;
-    if (aptId === appointmentId && (d?.calendarEventUrl || n.calendarUrl)) {
-      return d?.calendarEventUrl || n.calendarUrl || null;
+    const row = n as typeof n & { data?: string | Record<string, unknown>; calendarUrl?: string };
+    const d = typeof row.data === 'string' ? JSON.parse(row.data) : row.data;
+    const aptId = (d as { appointmentId?: string; appointment_id?: string })?.appointmentId
+      || (d as { appointment_id?: string })?.appointment_id;
+    if (aptId === appointmentId && ((d as { calendarEventUrl?: string })?.calendarEventUrl || row.calendarUrl)) {
+      return (d as { calendarEventUrl?: string })?.calendarEventUrl || row.calendarUrl || null;
     }
   }
   return null;
@@ -1377,7 +1353,9 @@ function buildFallbackCalendarUrl(data: Appointment, linkForCal?: string): strin
   return buildCalendarEventUrl({
     title: `Izara Telehealth — ${data.doctorName || 'Doctor'}`,
     description: linkForCal ? `Join: ${linkForCal}` : undefined,
-    startDate: data.appointmentDate,
+    startDate: typeof data.appointmentDate === 'string'
+      ? data.appointmentDate
+      : new Date(data.appointmentDate).toISOString().split('T')[0],
     startTime: data.appointmentTime,
     location: linkForCal || 'Izara Video Meeting',
   });
@@ -1487,7 +1465,7 @@ export function AppointmentDetailPage() {
         location: eventLocation,
       });
 
-      const url = response.addToCalendarUrl || response.calendarUrl || calendarEventUrl;
+      const url = response.calendarUrl || calendarEventUrl;
       if (url) {
         window.open(url, '_blank');
       }
@@ -1498,7 +1476,6 @@ export function AppointmentDetailPage() {
   };
 
   const getStatusInfo = (status: string) => {
-    type StatusInfo = { bg: string; text: string; icon: string; label: string; description: string };
     const statusColors: Record<string, { bg: string; text: string }> = {
       pending: { bg: isDark ? 'bg-yellow-900/20 border-yellow-700' : 'bg-yellow-50 border-yellow-200', text: isDark ? 'text-yellow-300' : 'text-yellow-700' },
       confirmed: { bg: isDark ? 'bg-green-900/20 border-green-700' : 'bg-green-50 border-green-200', text: isDark ? 'text-green-300' : 'text-green-700' },
@@ -1706,17 +1683,15 @@ export function AppointmentDetailPage() {
           )
         )}
 
-        {/* Join Meeting button for telehealth */}
+        {/* Join Meeting button for telehealth — in-app real Jitsi meeting (Izara lobby + doctor host) */}
         {appointment.status === 'confirmed' && (meetLink || appointment.meetingLink) && (
-          <a
-            href={meetLink || appointment.meetingLink}
-            target="_blank"
-            rel="noopener noreferrer"
+          <Link
+            to={`/meeting/${appointment.id}`}
+            data-testid="appointment-detail-join-meeting"
             className="flex items-center justify-center gap-2 w-full bg-blue-600 text-white py-3 rounded-xl text-center hover:bg-blue-700 mb-3"
           >
             <Video className="w-5 h-5" /> เข้าห้องประชุม
-            <ExternalLink className="w-4 h-4" />
-          </a>
+          </Link>
         )}
 
         {(appointment.status === 'pending' || appointment.status === 'confirmed') && (

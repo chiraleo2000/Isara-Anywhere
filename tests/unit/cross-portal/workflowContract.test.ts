@@ -9,7 +9,7 @@ const FULL_WORKFLOW_CONTRACT = [
   { id: 'meeting-host-lobby', domain: 'Meeting', playwright: 'Q-meeting-lifecycle', vitest: 'lobbyFlow' },
   { id: 'meeting-recording-ai', domain: 'Meeting', playwright: 'Q-meeting-lifecycle', vitest: 'aiSummary' },
   { id: 'meeting-jitsi-mount', domain: 'Meeting', playwright: 'Q-meeting-lifecycle', vitest: 'meetingWorkflowHardening' },
-  { id: 'meeting-layout-first', domain: 'Meeting', playwright: 'Q-meeting-lifecycle', vitest: 'virtualMeetingLayoutFirst' },
+  { id: 'meeting-layout-first', domain: 'Meeting', playwright: 'Q-meeting-lifecycle', vitest: 'meetingWorkflowHardening' },
   { id: 'defect-pdf-queue', domain: 'Appointments', playwright: 'D-appointments', vitest: 'defectIsaraPdfMeetingQueue' },
   { id: 'defect-pdf-jitsi-name', domain: 'Meeting', playwright: 'Q-meeting-lifecycle', vitest: 'jitsiDisplayName' },
   { id: 'process-page-coverage', domain: 'All', playwright: 'M-hardening', vitest: 'processPageCoverage' },

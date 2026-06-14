@@ -11,6 +11,10 @@ import {
   History, RotateCcw, Clock, Eye
 } from 'lucide-react';
 
+function toLang(language: string): Language {
+  return language === 'th' ? 'th' : 'en';
+}
+
 interface HealthcareProxy {
   name: string;
   relationship: string;
@@ -434,7 +438,7 @@ function ProgressStepper({ step, isDark, language, onStepClick }: Readonly<{
   language: string;
   onStepClick: (num: number) => void;
 }>) {
-  const lang = language;
+  const lang = toLang(language);
   const stepItems = [
     { num: 1, label: labels.step1[lang] },
     { num: 2, label: labels.step2[lang] },
@@ -494,7 +498,7 @@ function StepHealthcareProxy({ form, setForm, isDark, language, updateProxy, onN
   updateProxy: (type: 'primary' | 'alternate', field: keyof HealthcareProxy, value: string) => void;
   onNext: () => void;
 }>) {
-  const lang = language;
+  const lang = toLang(language);
   return (
   <div className="space-y-6">
     <div className={`rounded-2xl border p-6 ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'}`}>
@@ -948,7 +952,7 @@ function StepSignature({ canvasRef, form, startDrawing, draw, stopDrawing, clear
       <div className="border-2 border-dashed border-gray-300 rounded-xl p-2 mb-4 bg-gray-50">
         <canvas
           data-testid="living-will-signature"
-          ref={canvasRef}
+          ref={canvasRef as React.Ref<HTMLCanvasElement>}
           width={500}
           height={200}
           className="w-full bg-white rounded-lg cursor-crosshair touch-none"

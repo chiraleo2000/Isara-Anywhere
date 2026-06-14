@@ -319,6 +319,10 @@ export const MobileNav: React.FC<MobileNavProps> = ({
           </div>
 
           <button
+            type="button"
+            data-testid="doctor-mobile-menu-btn"
+            aria-expanded={showMenu}
+            aria-label={showMenu ? 'Close menu' : 'Open menu'}
             onClick={() => setShowMenu(!showMenu)}
             className={`p-2 rounded-lg ${tc.menuBtn}`}
           >
@@ -335,7 +339,7 @@ export const MobileNav: React.FC<MobileNavProps> = ({
         </div>
 
         {showMenu && (
-          <div className={`border-t ${tc.menuBg}`}>
+          <div className={`border-t ${tc.menuBg}`} data-testid="doctor-mobile-nav">
             <div className={`p-4 border-b ${tc.profileBorder}`}>
               <div className="flex items-center space-x-3">
                 <img

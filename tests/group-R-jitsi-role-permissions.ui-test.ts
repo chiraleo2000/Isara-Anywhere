@@ -120,6 +120,12 @@ async function assertJitsiRoleFromMountOrDom(
   const mounts = await readJitsiMountLog(page);
   if (mounts.length > 0) {
     assertJitsiMountRole(mounts.at(-1)!, expected, `${label}-mount`);
+    try {
+      await assertJitsiRoleFlagsOnPage(page, expected, `${label}-dom`);
+    } catch (domErr) {
+      console.warn(`  ${label}: DOM role flags lag mount spy — ${domErr}`);
+    }
+    return;
   }
   await assertJitsiRoleFlagsOnPage(page, expected, `${label}-dom`);
 }

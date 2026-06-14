@@ -4543,6 +4543,10 @@ app.get('/api/meetings/:id/results', authenticateToken, async (req, res) => { //
         requiresValidation: true,
         validationStatus: meeting.doctor_validation_status || 'pending_review',
         validatedAt: meeting.validated_at || null,
+        degraded: Boolean(
+          parseMeetingJsonField(meeting.meeting_config)?.pipeline?.degraded
+          || parseMeetingJsonField(meeting.meeting_config)?.summaryDegraded,
+        ),
       },
       chat: {
         messages: chatMessages.map(c => ({

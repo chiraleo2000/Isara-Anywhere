@@ -44,12 +44,21 @@ $allGroups = @{
     B = @{ Name = "Patient Portal";           Project = "B-patient-portal";    Type = "parallel" }
     C = @{ Name = "Doctor & Admin Portal";    Project = "C-doctor-portal";     Type = "parallel" }
     D = @{ Name = "Appointment Workflows";    Project = "D-appointments";      Type = "sequential" }
+    "D-queue" = @{ Name = "Queue Traceability"; Project = "D-queue-traceability"; Type = "sequential" }
+    "D-host" = @{ Name = "Doctor Host";       Project = "D-doctor-host";       Type = "sequential" }
+    Q = @{ Name = "Meeting Lifecycle";        Project = "Q-meeting-lifecycle"; Type = "sequential" }
     E = @{ Name = "Meeting & Clinical";       Project = "E-meeting-clinical";  Type = "sequential" }
     F = @{ Name = "PHR & Health Records";     Project = "F-phr-health-records"; Type = "sequential" }
+    L = @{ Name = "Lab Ordering";             Project = "L-lab-ordering";      Type = "sequential" }
     G = @{ Name = "Living Will & PDPA";       Project = "G-livingwill-pdpa";   Type = "parallel" }
     H = @{ Name = "Content & Resources";      Project = "H-content-resources"; Type = "parallel" }
     I = @{ Name = "Admin & Notifications";    Project = "I-admin-notifications"; Type = "parallel" }
     J = @{ Name = "AI, Timeline, Map";        Project = "J-ai-timeline-map";  Type = "parallel" }
+    "J-prejoin" = @{ Name = "Patient Jitsi Prejoin"; Project = "J-patient-jitsi-prejoin"; Type = "parallel" }
+    R = @{ Name = "Jitsi Role Permissions";   Project = "R-jitsi-role-permissions"; Type = "parallel" }
+    Defect = @{ Name = "Defect Regression";    Project = "Defect-regression";   Type = "parallel" }
+    S = @{ Name = "Responsive Layout";        Project = "S-phone-sm"; Type = "parallel" }
+    K = @{ Name = "Accessibility";             Project = "K-accessibility";     Type = "parallel" }
 }
 
 # ── Determine which groups to run ─────────────────────────────────────

@@ -1,7 +1,7 @@
 # GATE 0 — Appointment Sync (Implementation Status)
 
-**Last updated:** May 22, 2026 (v1.7.15)  
-**Gate rule:** No Phase 1 (Jitsi/Lab/SSO) work until G1–G10 pass on Cloud.
+**Last updated:** June 10, 2026 (v1.7.48)  
+**Gate rule:** Local `npm run test:local:pre-deploy-gate` must pass before cloud deploy; cloud G1–G10 via `npm run test:cloud:deploy-gate`.
 
 ## Jitsi v1.7.15 (no login, meeting room visible)
 
@@ -41,17 +41,28 @@
 | Scale | `cloudbuild.yaml` `--min-instances=1`; optional `REDIS_URL` + `socketRedisAdapter.cjs` |
 | Verify | `scripts/verify-cloud-appointment-sync.mjs`, Playwright Group D + `group-D-doctor-host-workflow` |
 
-## Acceptance G1–G10
+## Acceptance G1–G10 (local + cloud parity)
 
-| Gate | Verification |
-|------|----------------|
-| G1–G5 | `node scripts/verify-cloud-appointment-sync.mjs` |
-| G6–G8 | Playwright Group D + `D-doctor-host` |
-| G9–G10 | Playwright **Group Q** (`group-Q-meeting-lifecycle.ui-test.ts`) — 3-party admit + recording/Gemini |
+| Gate | Local (Docker) | Cloud (dev-testing) |
+|------|----------------|---------------------|
+| G1–G5 | `npm run verify:gate0:local` — pool → assign → confirm API chain | `npm run verify:gate0` — same script against Cloud Run URLs |
+| G6–G8 | Playwright Group D + `D-doctor-host` in `test:local:e2e-full` (`PW_HEADED=1`) | `TEST_ENV=cloud` Group D + D-host smoke in `test:cloud:deploy-gate` |
+| G9–G10 | Group Q meeting lifecycle (`PW_SKIP_LIVE_GEMINI=1` locally) | Group Q smoke + **one** live probe `npm run verify:cloud-meeting-ai` |
+
+**Local URLs:** patient `:3005`, doctor `:3010`, meeting `:3020`, Postgres `:5433`  
+**Cloud URLs:** from `.env.cloud` / `deploy-cloud-from-env.ps1` smoke output (dev-testing revision)
 
 ```powershell
-$env:TEST_ENV='cloud'
-npm run test:e2e:pipeline
+# Local (mandatory before deploy)
+npm run test:local:pre-deploy-gate
+
+# Cloud (after local green)
+npm run test:cloud:deploy-gate
+
+# Cloud doc screenshots (Round 2b — PNGs from Cloud Run only)
+npm run test:cloud:doc-screenshots
+npm run docs:sync-screenshots
+npm run guides:all
 ```
 
 ## Related Processes docs

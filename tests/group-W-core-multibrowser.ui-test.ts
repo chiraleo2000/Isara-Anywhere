@@ -184,13 +184,13 @@ test.describe('Group W — Core multi-browser workflow', () => {
       console.log(`  ✅ W04: meeting ${meetingId}`);
     });
 
-    await test.step('Doctor virtual-meeting route', async () => {
-      const url = `${DOCTOR_URL}/doctor/${doctor.userId}/virtual-meeting/${workflowAppointmentId}`;
+    await test.step('Doctor meeting room route', async () => {
+      const url = `${DOCTOR_URL}/doctor/${doctor.userId}/meeting/${workflowAppointmentId}`;
       await doctor.page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30_000 });
       await waitForContent(doctor.page, 'W04-doctor-meeting', 12_000);
       await assertFullHealth(doctor.page, 'W04-doctor-meeting');
       await expect(doctor.page.getByTestId('doctor-meeting-room')).toBeVisible({ timeout: 20_000 });
-      await snapSuccess(doctor.page, 'W04-doctor-virtual-meeting', WORKFLOW);
+      await snapSuccess(doctor.page, 'W04-doctor-meeting-room', WORKFLOW);
     });
 
     await test.step('Patient meeting route', async () => {

@@ -17,6 +17,7 @@ import {
   test, expect, assertFullHealth, snap,
   navPatient,
 } from './helpers/multi-portal';
+import { assertAiMountOnlyWhenSkipped } from './helpers/ai-gate-fixture';
 
 test.describe('Group J — AI Doctor, Timeline, Map & Find Doctors', () => {
   test.describe.configure({ mode: 'serial' });
@@ -26,10 +27,21 @@ test.describe('Group J — AI Doctor, Timeline, Map & Find Doctors', () => {
      ═════════════════════════════════════════════════════════════════ */
   test('J1 — AI Doctor chat interaction', async ({ portals }) => {
     const { patient } = portals;
+    let mountOnlyDone = false;
 
     await test.step('J01 — Navigate to AI Doctor', async () => {
       await navPatient(patient.page, '/ai-doctor', 'J01');
       await assertFullHealth(patient.page, 'J01');
+      const skipLive = await assertAiMountOnlyWhenSkipped(patient.page, {
+        selectors: ['textarea', 'input[type="text"]'],
+        bodyPattern: /AI|Doctor|หมอ|chat|ถาม|symptom|อาการ/i,
+        label: 'J1 AI Doctor',
+      });
+      if (skipLive) {
+        mountOnlyDone = true;
+        await snap(patient.page, 'J01-ai-doctor-mount-only', 'group-J');
+        return;
+      }
       const bookLink = patient.page.locator('a[href*="appointments"], button').filter({
         hasText: /นัด|book|appointment/i,
       }).first();
@@ -41,6 +53,11 @@ test.describe('Group J — AI Doctor, Timeline, Map & Find Doctors', () => {
       expect(/AI|Doctor|หมอ|chat|ถาม|symptom|อาการ/i.test(body)).toBeTruthy();
       console.log('  ✅ J01: AI Doctor page');
     });
+
+    if (mountOnlyDone) {
+      console.log('\n  🎉 J1 COMPLETE — AI Doctor mount-only (Gemini-lite)\n');
+      return;
+    }
 
     await test.step('J02 — Type symptom in chat input', async () => {
       const chatInput = patient.page.locator(

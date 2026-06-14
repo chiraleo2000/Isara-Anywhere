@@ -13,6 +13,8 @@ export default function ProfilePage() {
   const [editing, setEditing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [saveSuccess, setSaveSuccess] = useState(false);
   const [phr, setPhr] = useState<PersonalHealthRecord | null>(null);
   const [avatarUrl, setAvatarUrl] = useState(user?.avatarUrl || '');
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
@@ -115,6 +117,8 @@ export default function ProfilePage() {
   const handleSave = async () => {
     if (!user) return;
     setSaving(true);
+    setSaveError(null);
+    setSaveSuccess(false);
     try {
       const updatedUser: UserType = {
         ...user,
@@ -127,13 +131,13 @@ export default function ProfilePage() {
         emergencyContact: {
           name: form.emergencyContact,
           phone: form.emergencyPhone,
-          relationship: '',
+          relationship: user.emergencyContact?.relationship || '',
         },
       };
 
       const token = localStorage.getItem('auth_token');
       if (token) {
-        await fetch(`/api/phr/profile/${user.id}`, {
+        const profileResp = await fetch(`/api/phr/profile/${user.id}`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
@@ -147,33 +151,60 @@ export default function ProfilePage() {
             emergencyContactPhone: form.emergencyPhone,
           }),
         });
+        if (!profileResp.ok) {
+          const errBody = await profileResp.json().catch(() => ({}));
+          throw new Error(
+            (errBody as { message?: string; error?: string }).message
+              || (errBody as { error?: string }).error
+              || 'Failed to save profile',
+          );
+        }
       }
 
-      const demographics: PersonalHealthRecord['demographics'] = {};
-      if (phr?.demographics) {
-        Object.assign(demographics, phr.demographics);
-      }
-      demographics.name = form.name;
-      demographics.phone = form.phone;
-      demographics.address = form.address;
-      demographics.dateOfBirth = form.dateOfBirth;
-      demographics.bloodType = form.bloodType;
-      demographics.emergencyContactName = form.emergencyContact;
-      demographics.emergencyContactPhone = form.emergencyPhone;
-      demographics.emergencyContact = {
-        name: form.emergencyContact,
-        phone: form.emergencyPhone,
+      const demographics: PersonalHealthRecord['demographics'] = {
+        ...(phr?.demographics || {
+          name: form.name,
+          dateOfBirth: form.dateOfBirth || '',
+          gender: user.gender || 'other',
+        }),
+        name: form.name,
+        phone: form.phone,
+        address: form.address,
+        dateOfBirth: form.dateOfBirth,
+        bloodType: form.bloodType,
+        emergencyContactName: form.emergencyContact,
+        emergencyContactPhone: form.emergencyPhone,
+        emergencyContact: {
+          name: form.emergencyContact,
+          phone: form.emergencyPhone,
+        },
       };
 
       const updatedPhr: PersonalHealthRecord = phr
-        ? { ...phr, demographics }
-        : { id: user.id, demographics };
+        ? { ...phr, demographics, updatedAt: new Date() }
+        : {
+            id: user.id,
+            patientId: user.patientId || user.id,
+            demographics,
+            vitalSignsHistory: [],
+            lifestyle: {
+              dietType: 'regular',
+              exerciseFrequency: 'none',
+              sleepHours: 7,
+              smokingStatus: 'never',
+              alcoholConsumption: 'never',
+            },
+            updatedAt: new Date(),
+          };
       await phrService.update(user.id, updatedPhr);
 
       updateUser(updatedUser);
+      setPhr(updatedPhr);
       setEditing(false);
+      setSaveSuccess(true);
     } catch (e) {
       console.error('Failed to save profile:', e);
+      setSaveError(e instanceof Error ? e.message : 'เกิดข้อผิดพลาดในการบันทึกข้อมูล');
     } finally {
       setSaving(false);
     }
@@ -188,13 +219,19 @@ export default function ProfilePage() {
       user={user}
       editing={editing}
       saving={saving}
+      saveError={saveError}
+      saveSuccess={saveSuccess}
       uploadingAvatar={uploadingAvatar}
       form={form}
       setForm={setForm}
       avatarUrl={avatarUrl}
       fileInputRef={fileInputRef}
       onSave={handleSave}
-      onStartEdit={() => setEditing(true)}
+      onStartEdit={() => {
+        setSaveError(null);
+        setSaveSuccess(false);
+        setEditing(true);
+      }}
       onAvatarUpload={handleAvatarUpload}
     />
   );

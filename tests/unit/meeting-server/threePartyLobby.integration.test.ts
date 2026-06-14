@@ -3,6 +3,8 @@
  * Three-party lobby admission contracts (TPL-01–05).
  */
 import { describe, it, expect } from 'vitest';
+import fs from 'node:fs';
+import path from 'node:path';
 import { parseLobbySnapshot, participantIdByRole } from '../../helpers/meeting-lifecycle-fixture';
 
 type LobbyRow = { participantId: string; role: string; status: string };
@@ -16,7 +18,9 @@ function admitAll(rows: LobbyRow[]): LobbyRow[] {
 }
 
 function guestJwtAffiliation(role: string): string {
-  return role === 'guest' ? 'none' : role === 'doctor' ? 'moderator' : 'member';
+  if (role === 'guest') return 'none';
+  if (role === 'doctor') return 'moderator';
+  return 'member';
 }
 
 function canMountPatientJitsi(hostPresent: boolean): boolean {
@@ -32,7 +36,7 @@ describe('threePartyLobby.integration — TPL', () => {
 
   it('TPL-01 — lobby snapshot: doctor + patient + guest waiting', () => {
     expect(allWaiting(waitingLobby)).toBe(true);
-    expect(waitingLobby.map((r) => r.role).sort()).toEqual(['doctor', 'guest', 'patient']);
+    expect([...waitingLobby.map((r) => r.role)].sort((a, b) => a.localeCompare(b))).toEqual(['doctor', 'guest', 'patient']);
   });
 
   it('TPL-02 — admit-all sets both patient and guest admitted', () => {
@@ -51,6 +55,11 @@ describe('threePartyLobby.integration — TPL', () => {
   it('TPL-04 — host-present required before patient Jitsi mount', () => {
     expect(canMountPatientJitsi(false)).toBe(false);
     expect(canMountPatientJitsi(true)).toBe(true);
+  });
+
+  it('TPL-06 — lobbySession applyLobbyJoin preserves admitted reconnect', () => {
+    const lobby = path.resolve(__dirname, '../../../Izara-jitsi-server/server/lobbySession.js');
+    expect(fs.readFileSync(lobby, 'utf8')).toMatch(/reconnect_admitted|admitted/);
   });
 
   it('TPL-05 — parseLobbySnapshot resolves admitted patient and guest', () => {

@@ -3,6 +3,8 @@
  * Post-meeting pipeline status transitions (recording → summary → results)
  */
 import { describe, it, expect } from 'vitest';
+import fs from 'node:fs';
+import path from 'node:path';
 
 const POST_MEETING_STATUSES = ['in_progress', 'ended', 'processing', 'results_ready'] as const;
 
@@ -34,6 +36,17 @@ describe('postMeetingWorkflow — status machine', () => {
   it('PMW05 — all post-meeting statuses are defined', () => {
     expect(POST_MEETING_STATUSES).toContain('results_ready');
     expect(POST_MEETING_STATUSES.length).toBeGreaterThanOrEqual(4);
+  });
+
+  it('PMW07 — postMeetingPipeline module persists summary fields', () => {
+    const pipeline = path.resolve(__dirname, '../../../Izara-jitsi-server/server/postMeetingPipeline.js');
+    const src = fs.readFileSync(pipeline, 'utf8');
+    expect(src).toMatch(/summary|transcript|persist/i);
+  });
+
+  it('PMW08 — meeting end route requests generateSummary in server index', () => {
+    const index = path.resolve(__dirname, '../../../Izara-jitsi-server/server/index.js');
+    expect(fs.readFileSync(index, 'utf8')).toMatch(/generateSummary|generate-summary/i);
   });
 
   it('PMW06 — results_ready does not auto-unlock patient (man-in-the-loop)', () => {

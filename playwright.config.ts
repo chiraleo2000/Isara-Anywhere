@@ -137,7 +137,7 @@ export default defineConfig({
   maxFailures: 10,
   forbidOnly: true,
   // Increase fixture timeout to 3 min — 3 browser launches + navigations can be slow
-  globalTimeout: IS_CLOUD ? 3_600_000 : 1_800_000,
+  globalTimeout: IS_CLOUD || process.env.PW_HEADED === '1' ? 3_600_000 : 1_800_000,
   globalSetup: './tests/e2e/global-setup.ts',
   reporter: [
     ['list'],

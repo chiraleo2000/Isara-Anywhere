@@ -74,16 +74,15 @@ function AppointmentCard({ apt, isDarkMode, isEnglish, formatDate, getStatusBadg
 
       {showMeetingLink && (
         <div className={`mt-3 pt-3 border-t ${isDarkMode ? 'border-slate-700' : 'border-gray-200'}`}>
-          <a
-            href={apt.meetingLink}
-            target="_blank"
-            rel="noopener noreferrer"
+          <Link
+            to={`/meeting/${apt.id}`}
+            data-testid="dashboard-join-meeting"
             onClick={(e) => e.stopPropagation()}
             className="inline-flex items-center gap-2 px-3 py-1.5 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors"
           >
             <Video className="w-4 h-4" />
             {isEnglish ? 'Join Meeting' : 'เข้าร่วมการประชุม'}
-          </a>
+          </Link>
         </div>
       )}
     </Link>

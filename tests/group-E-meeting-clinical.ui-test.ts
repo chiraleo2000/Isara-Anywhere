@@ -24,6 +24,7 @@ import {
   proxyLocalMeetingServer,
   waitForMeetingHostReady,
 } from './helpers/meeting-lifecycle-fixture';
+import { assertAiMountOnlyWhenSkipped, isSkipLiveGemini } from './helpers/ai-gate-fixture';
 
 const IS_CLOUD = process.env.TEST_ENV === 'cloud';
 const API_TIMEOUT = 30_000;
@@ -73,6 +74,20 @@ test.describe('Group E - Meeting Server & Clinical Workflow', () => {
 
   test('E2 - Doctor clinical flow + meeting creation', async ({ portals }) => {
     const { doctor, patient } = portals;
+
+    if (isSkipLiveGemini()) {
+      await test.step('E2-lite — clinical UI mount-only (PW_SKIP_LIVE_GEMINI)', async () => {
+        await navDoctor(doctor.page, 'patients', 'E2-lite');
+        await assertFullHealth(doctor.page, 'E2-lite');
+        const mounted = await assertAiMountOnlyWhenSkipped(doctor.page, {
+          selectors: ['input[type="search"], input[type="text"]'],
+          bodyPattern: /patient|ผู้ป่วย|search|ค้นหา/i,
+          label: 'E2 clinical',
+        });
+        expect(mounted, 'E2 mount-only assert when PW_SKIP_LIVE_GEMINI=1').toBe(true);
+        await snap(doctor.page, 'E2-lite-clinical-mount', 'group-E');
+      });
+    }
 
     await test.step('E04 - Navigate to Patients list', async () => {
       await navDoctor(doctor.page, 'patients', 'E04');

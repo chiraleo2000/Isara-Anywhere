@@ -35,7 +35,8 @@ test.describe('Defect — AI new chat and language', () => {
 
     const bodyAfter = await patient.page.locator('body').innerText();
     await snap(patient.page, 'DA1-new-chat-cleared', 'group-defect');
-    expect(bodyAfter.length).toBeLessThan(bodyBefore.length + 50);
+    expect(bodyAfter).not.toContain('test headache symptom for defect DA1');
+    expect(bodyAfter.length).toBeLessThan(bodyBefore.length + 200);
   });
 
   test('DA2 — English setting yields Latin script in AI reply area', async ({ portals }) => {

@@ -68,23 +68,100 @@ async function reinjectAuthFromStorage(page: Page, storageStatePath: string): Pr
   }, items);
 }
 
-async function acceptMeetingConsent(page: Page, label: string): Promise<void> {
-  const agreement = page.locator('[data-testid="meeting-agreement"]');
-  if (!(await agreement.isVisible({ timeout: 5_000 }).catch(() => false))) return;
-  for (const id of ['consent-recording', 'consent-transcript', 'consent-data-sharing']) {
+async function setReactControlledCheckbox(input: import('@playwright/test').Locator): Promise<void> {
+  await input.evaluate((el: HTMLInputElement) => {
+    const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'checked')?.set;
+    if (setter) setter.call(el, true);
+    else el.checked = true;
+    el.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+    el.dispatchEvent(new Event('input', { bubbles: true }));
+    el.dispatchEvent(new Event('change', { bubbles: true }));
+  });
+}
+
+async function safeBrowserClick(
+  locator: import('@playwright/test').Locator,
+  browserName: E2eBrowserName,
+  timeout = 15_000,
+): Promise<void> {
+  if (browserName === 'firefox') {
+    await locator.evaluate((el: HTMLElement) => {
+      if (el instanceof HTMLButtonElement && el.disabled) return;
+      if (el instanceof HTMLInputElement && el.type === 'checkbox' && el.disabled) return;
+      el.click();
+    });
+    return;
+  }
+  const ok = await locator.click({ timeout }).then(() => true).catch(() => false);
+  if (!ok) {
+    await locator.evaluate((el: HTMLElement) => el.click());
+  }
+}
+
+async function acceptMeetingConsentViaKeyboard(
+  page: Page,
+  label: string,
+  consentIds: readonly string[],
+  agreeBtn: import('@playwright/test').Locator,
+): Promise<boolean> {
+  for (const id of consentIds) {
+    const input = page.locator(`[data-testid="${id}"] input[type="checkbox"]`).first();
+    if (!(await input.isVisible({ timeout: 2_000 }).catch(() => false))) continue;
+    if (await input.isChecked().catch(() => false)) continue;
+    await input.focus().catch(() => {});
+    await page.keyboard.press('Space');
+    await page.waitForTimeout(250);
+  }
+  if (await agreeBtn.isEnabled().catch(() => false)) return true;
+  for (const id of consentIds) {
     const row = page.locator(`[data-testid="${id}"]`);
-    if (await row.isVisible({ timeout: 2_000 }).catch(() => false)) {
+    const input = row.locator('input[type="checkbox"]').first();
+    await row.click({ force: true }).catch(() => {});
+    await setReactControlledCheckbox(input).catch(() => {});
+  }
+  const enabled = await agreeBtn.isEnabled().catch(() => false);
+  if (!enabled) console.warn(`  [${label}] Firefox keyboard consent path did not enable agree button`);
+  return enabled;
+}
+
+async function acceptMeetingConsentViaPolling(
+  page: Page,
+  consentIds: readonly string[],
+  agreeBtn: import('@playwright/test').Locator,
+): Promise<void> {
+  const deadline = Date.now() + 30_000;
+  while (Date.now() < deadline && !(await agreeBtn.isEnabled().catch(() => false))) {
+    for (const id of consentIds) {
+      const row = page.locator(`[data-testid="${id}"]`);
+      if (!(await row.isVisible({ timeout: 1_000 }).catch(() => false))) continue;
       const input = row.locator('input[type="checkbox"]').first();
-      if (await input.isVisible().catch(() => false)) {
-        if (!(await input.isChecked().catch(() => false))) await input.check({ force: true });
-      } else {
-        await row.click({ force: true });
+      await row.click({ force: true, timeout: 5_000 }).catch(() => {});
+      if (!(await agreeBtn.isEnabled().catch(() => false))) {
+        await setReactControlledCheckbox(input).catch(() => {});
       }
     }
+    await page.waitForTimeout(500);
   }
+}
+
+async function acceptMeetingConsent(
+  page: Page,
+  label: string,
+  browserName: E2eBrowserName = 'chrome',
+): Promise<void> {
+  const agreement = page.locator('[data-testid="meeting-agreement"]');
+  if (!(await agreement.isVisible({ timeout: 5_000 }).catch(() => false))) return;
+  const consentIds = ['consent-recording', 'consent-transcript', 'consent-data-sharing'] as const;
   const agreeBtn = page.locator('[data-testid="agree-continue-btn"]');
-  await expect(agreeBtn, `[${label}] agree continue`).toBeEnabled({ timeout: 10_000 });
-  await agreeBtn.click();
+  const enableTimeout = browserName === 'firefox' ? 15_000 : 10_000;
+
+  const enabled = await acceptMeetingConsentViaKeyboard(page, label, consentIds, agreeBtn);
+  if (!enabled) {
+    await acceptMeetingConsentViaPolling(page, consentIds, agreeBtn);
+  }
+
+  await expect(agreeBtn, `[${label}] agree continue`).toBeEnabled({ timeout: enableTimeout });
+  await safeBrowserClick(agreeBtn, browserName);
 }
 
 function meetingShellLocator(page: Page) {
@@ -126,7 +203,11 @@ export const MEETING_URL = IS_CLOUD
   : (process.env.MEETING_URL || process.env.MEETING_SERVER_URL || process.env.LOCAL_MEETING_URL || 'http://localhost:3020');
 
 /** Navigation timeout — longer for cloud cold starts */
-const NAV_TIMEOUT = IS_CLOUD ? 90_000 : 30_000;
+function resolveNavTimeout(): number {
+  if (IS_CLOUD) return 90_000;
+  return process.env.PW_HEADED === '1' ? 60_000 : 30_000;
+}
+const NAV_TIMEOUT = resolveNavTimeout();
 /** Fixture initial navigation timeout — extra generous for cold starts */
 const FIXTURE_NAV_TIMEOUT = IS_CLOUD ? 120_000 : 60_000;
 
@@ -649,7 +730,7 @@ export async function joinMeetingToLobby(
       timeout: scaleTimeoutByBrowser(IS_CLOUD ? 120_000 : 60_000, browserName),
     });
   }
-  await acceptMeetingConsent(page, label);
+  await acceptMeetingConsent(page, label, browserName);
   const preJoin = page.getByTestId('pre-join-screen');
   if (await preJoin.isVisible({ timeout: scaleTimeoutByBrowser(IS_CLOUD ? 30_000 : 15_000, browserName) }).catch(() => false)) {
     await expect(preJoin, `[${label}] pre-join before lobby`).toBeVisible({
@@ -658,7 +739,7 @@ export async function joinMeetingToLobby(
   }
   const joinBtn = page.getByTestId('join-meeting-btn');
   if (await joinBtn.isVisible({ timeout: 15_000 }).catch(() => false)) {
-    await joinBtn.click();
+    await safeBrowserClick(joinBtn, browserName);
   }
   await expect(
     page.getByTestId('lobby-waiting-screen').or(page.getByTestId('host-waiting-screen')).first(),
@@ -731,7 +812,7 @@ export async function joinIzaraMeetingInApp( // NOSONAR S3776 — multi-step mee
 
   const agreement = page.locator('[data-testid="meeting-agreement"]');
   if (await agreement.isVisible({ timeout: 5_000 }).catch(() => false)) {
-    await acceptMeetingConsent(page, label);
+    await acceptMeetingConsent(page, label, browserName);
     await expect(page.getByTestId('pre-join-screen'), `[${label}] pre-join after consent`).toBeVisible({
       timeout: scaleTimeoutByBrowser(IS_CLOUD ? 30_000 : 15_000, browserName),
     });
@@ -763,7 +844,7 @@ export async function joinIzaraMeetingInApp( // NOSONAR S3776 — multi-step mee
 
   const joinBtn = page.getByTestId('join-meeting-btn');
   await expect(joinBtn, `[${label}] join meeting button`).toBeVisible({ timeout: 15_000 });
-  await joinBtn.click();
+  await safeBrowserClick(joinBtn, browserName);
 
   const waitingLobby = page.getByTestId('lobby-waiting-screen');
   if (await waitingLobby.isVisible({ timeout: 3_000 }).catch(() => false)) {
@@ -1126,7 +1207,7 @@ export async function launchVisibleChromium(label = 'Guest'): Promise<Browser> {
   const headless = isPlaywrightHeadless();
   const slowMo = headless ? 0 : Number.parseInt(process.env.PW_SLOW_MO || '350', 10);
   const opts = { headless, slowMo, args: chromiumLaunchArgs(headless) };
-  if (!headless && process.platform === 'win32') {
+  if (!headless && process.platform === 'win32' && !USE_ISOLATED_LOCAL_BROWSERS) {
     try {
       const browser = await chromium.launch({ ...opts, channel: 'chrome' });
       console.log(`  🚀 ${label} (chrome, HEADED visible window) launched`);
@@ -1220,7 +1301,7 @@ export async function createPortals(): Promise<Portals> {
 }
 
 export async function closePortals(portals: Portals): Promise<void> {
-  if (!portals) return;
+  if (!portals || KEEP_BROWSERS_OPEN) return;
   await portals.patient.ctx.close().catch(() => {});
   await portals.doctor.ctx.close().catch(() => {});
   await portals.admin.ctx.close().catch(() => {});
@@ -1239,6 +1320,14 @@ const FORCE_HEADED =
 const DEFAULT_HEADLESS =
   (process.env.PW_HEADLESS === '1' || process.env.PW_HEADLESS === 'true') &&
   !FORCE_HEADED;
+
+/** Headed local runs use Playwright bundled Chromium/Firefox (not your daily Chrome/Edge). */
+const USE_ISOLATED_LOCAL_BROWSERS =
+  FORCE_HEADED && !IS_CLOUD && process.env.PW_USE_SYSTEM_BROWSERS !== '1';
+
+/** Leave test browser windows open after a worker finishes (developer can inspect / keep working). */
+const KEEP_BROWSERS_OPEN =
+  process.env.PW_KEEP_BROWSERS === '1' || process.env.PW_KEEP_BROWSERS === 'true';
 
 const HEADED_SLOW_MO = Number.parseInt(process.env.PW_SLOW_MO || (IS_CLOUD ? '350' : '150'), 10);
 
@@ -1273,6 +1362,9 @@ async function launchBrowserForSpec(
     });
   }
   const launchOpts = { ...SHARED_LAUNCH, args: chromiumArgsForLaunch() };
+  if (USE_ISOLATED_LOCAL_BROWSERS) {
+    return chromium.launch(launchOpts);
+  }
   const channel = spec.channel && spec.channel !== 'chrome' ? spec.channel : 'msedge';
   try {
     return await chromium.launch({ ...launchOpts, channel });
@@ -1487,11 +1579,11 @@ export const test = base.extend<{}, { portals: Portals }>({
     const setupStart = Date.now();
     console.log('\n🔧 FIXTURE SETUP — launching 3 browsers...');
 
-    // Kill any lingering Chrome processes from previous fixture teardown (cloud: workers=1)
-    if (IS_CLOUD) {
+    // Cloud CI only: never taskkill chrome/msedge locally — that closes the developer's own browser.
+    if (IS_CLOUD && process.env.PW_ALLOW_TASKKILL === '1') {
       try {
         execSync('taskkill /F /IM chrome.exe 2>NUL', { stdio: 'ignore' });
-        await new Promise(r => setTimeout(r, 3_000));
+        await new Promise(r => setTimeout(r, 2_000));
       } catch { /* No chrome processes running — OK */ }
     }
 
@@ -1625,6 +1717,10 @@ export const test = base.extend<{}, { portals: Portals }>({
     }
 
     clearInterval(keepAlive);
+    if (KEEP_BROWSERS_OPEN) {
+      console.log('  ℹ️ PW_KEEP_BROWSERS=1 — leaving test browser windows open');
+      return;
+    }
     // Close with per-operation timeout to prevent teardown hang
     // Cloud: 30s timeout — browsers take longer to close over network
     const CLOSE_TIMEOUT_MS = IS_CLOUD ? 30_000 : 10_000;
@@ -1640,7 +1736,7 @@ export const test = base.extend<{}, { portals: Portals }>({
       closeWithTimeout(doctorBrowser.close().catch(() => {}), 'doctorBrowser'),
       closeWithTimeout(adminBrowser.close().catch(() => {}), 'adminBrowser'),
     ]);
-  }, { scope: 'worker', timeout: 420_000 }],
+  }, { scope: 'worker', timeout: FORCE_HEADED && !IS_CLOUD ? 600_000 : 420_000 }],
 });
 
 // ═══════════════════════════════════════════════════════════════════════

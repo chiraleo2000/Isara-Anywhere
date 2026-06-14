@@ -1,5 +1,6 @@
 import { RefObject } from 'react';
-import { User, Phone, Mail, MapPin, Calendar, Save, Edit2, Shield, Heart, Camera } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { User, Phone, Mail, MapPin, Calendar, Save, Edit2, Shield, Heart, Camera, FileText, AlertCircle, CheckCircle } from 'lucide-react';
 import type { User as UserType } from '../../types';
 
 export interface ProfileFormState {
@@ -17,6 +18,8 @@ export interface ProfilePageViewProps {
   user: UserType | null;
   editing: boolean;
   saving: boolean;
+  saveError?: string | null;
+  saveSuccess?: boolean;
   uploadingAvatar: boolean;
   form: ProfileFormState;
   setForm: (next: ProfileFormState) => void;
@@ -40,6 +43,8 @@ export function ProfilePageView(props: Readonly<ProfilePageViewProps>) {
     user,
     editing,
     saving,
+    saveError,
+    saveSuccess,
     uploadingAvatar,
     form,
     setForm,
@@ -77,6 +82,19 @@ export function ProfilePageView(props: Readonly<ProfilePageViewProps>) {
         )}
       </div>
 
+      {saveError && (
+        <div role="alert" className="flex items-start gap-2 p-3 rounded-xl border border-red-200 bg-red-50 text-red-700 text-sm">
+          <AlertCircle className="w-5 h-5 flex-shrink-0" />
+          <span>{saveError}</span>
+        </div>
+      )}
+      {saveSuccess && !editing && (
+        <output className="flex items-center gap-2 p-3 rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-700 text-sm">
+          <CheckCircle className="w-5 h-5 flex-shrink-0" />
+          <span>บันทึกโปรไฟล์เรียบร้อยแล้ว</span>
+        </output>
+      )}
+
       <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
         <div className="bg-gradient-to-r from-emerald-500 to-teal-500 p-6">
           <div className="flex items-center gap-4">
@@ -108,7 +126,7 @@ export function ProfilePageView(props: Readonly<ProfilePageViewProps>) {
                 </button>
               )}
               <input
-                ref={fileInputRef}
+                ref={fileInputRef as React.Ref<HTMLInputElement>}
                 type="file"
                 accept="image/jpeg,image/png,image/webp"
                 onChange={onAvatarUpload}
@@ -274,6 +292,22 @@ export function ProfilePageView(props: Readonly<ProfilePageViewProps>) {
           </div>
         </div>
       </div>
+
+      <Link
+        to="/phr"
+        className="flex items-center justify-between p-4 bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200 rounded-2xl hover:shadow-md transition-all group"
+      >
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-emerald-600 flex items-center justify-center">
+            <FileText className="w-5 h-5 text-white" />
+          </div>
+          <div>
+            <p className="font-semibold text-gray-800 group-hover:text-emerald-700">ระเบียนสุขภาพ (PHR)</p>
+            <p className="text-sm text-gray-500">ดูและจัดการข้อมูลสุขภาพ ยา การแพ้ และเอกสาร</p>
+          </div>
+        </div>
+        <span className="text-emerald-600 text-sm font-medium">เปิด →</span>
+      </Link>
     </div>
   );
 }

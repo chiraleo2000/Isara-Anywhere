@@ -491,12 +491,13 @@ export async function assertJitsiRoleFlagsOnPage(
   label: string,
 ): Promise<void> {
   const container = page.getByTestId('jitsi-meeting-container');
-  await expect(container, `${label}: Jitsi container`).toBeVisible({ timeout: 60_000 });
+  const attrTimeout = 60_000;
+  await expect(container, `${label}: Jitsi container`).toBeVisible({ timeout: attrTimeout });
   if (expected === 'doctor') {
-    await expect(container).toHaveAttribute('data-jitsi-moderator', 'true');
+    await expect(container).toHaveAttribute('data-jitsi-moderator', 'true', { timeout: attrTimeout });
   } else {
-    await expect(container).toHaveAttribute('data-jitsi-moderator', 'false');
-    await expect(container).toHaveAttribute('data-jitsi-participant', 'true');
+    await expect(container).toHaveAttribute('data-jitsi-moderator', 'false', { timeout: attrTimeout });
+    await expect(container).toHaveAttribute('data-jitsi-participant', 'true', { timeout: attrTimeout });
   }
 }
 

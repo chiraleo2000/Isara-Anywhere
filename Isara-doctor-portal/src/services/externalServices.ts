@@ -97,7 +97,9 @@ export class GoogleMeetService {
   private readonly MAX_INIT_ATTEMPTS = 3;
 
   private readonly CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
-  private readonly API_KEY = import.meta.env.VITE_GOOGLE_API_KEY;
+  private readonly API_KEY =
+    import.meta.env.VITE_GOOGLE_API_KEY ||
+    import.meta.env.VITE_GOOGLE_CALENDAR_API_KEY;
   private readonly DISCOVERY_DOC = 'https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest';
   private readonly SCOPES = 'https://www.googleapis.com/auth/calendar.events';
 

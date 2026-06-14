@@ -37,57 +37,57 @@ function getTypeLabel(type: string, isEnglish: boolean): string {
 function AppointmentCard({ apt, isDarkMode, isEnglish, formatDate, getStatusBadge }: AppointmentCardProps) {
   const typeLabel = getTypeLabel(apt.type, isEnglish);
   const TypeIcon = apt.type?.toLowerCase() === 'telehealth' ? Video : MapPin;
-  const showMeetingLink = apt.status === 'confirmed' && apt.type?.toLowerCase() === 'telehealth' && apt.meetingLink;
+  const isTelehealth = apt.type?.toLowerCase() === 'telehealth';
+  const showJoinMeeting = apt.status === 'confirmed' && isTelehealth;
 
   return (
-    <Link
-      to={`/appointments/${apt.id}`}
+    <div
       className={`block p-4 rounded-xl transition-all group border ${isDarkMode ? 'bg-slate-800 hover:bg-emerald-900/30 border-slate-700 hover:border-emerald-700' : 'bg-gray-50 hover:bg-emerald-50 border-transparent hover:border-emerald-200'}`}
     >
-      <div className="flex justify-between items-start mb-2">
-        <div className="flex items-center gap-3">
-          <img
-            src={apt.doctorAvatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(apt.doctorId)}`}
-            alt={apt.doctorName}
-            className="w-10 h-10 rounded-full"
-          />
-          <div>
-            <p className={`font-medium ${isDarkMode ? 'text-white group-hover:text-emerald-400' : 'text-gray-800 group-hover:text-emerald-700'}`}>{apt.doctorName}</p>
-            <p className={`text-sm ${isDarkMode ? 'text-slate-400' : 'text-gray-600'}`}>{apt.doctorSpecialty}</p>
+      <Link to={`/appointments/${apt.id}`} className="block">
+        <div className="flex justify-between items-start mb-2">
+          <div className="flex items-center gap-3">
+            <img
+              src={apt.doctorAvatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(apt.doctorId)}`}
+              alt={apt.doctorName}
+              className="w-10 h-10 rounded-full"
+            />
+            <div>
+              <p className={`font-medium ${isDarkMode ? 'text-white group-hover:text-emerald-400' : 'text-gray-800 group-hover:text-emerald-700'}`}>{apt.doctorName}</p>
+              <p className={`text-sm ${isDarkMode ? 'text-slate-400' : 'text-gray-600'}`}>{apt.doctorSpecialty}</p>
+            </div>
           </div>
+          {getStatusBadge(apt.status)}
         </div>
-        {getStatusBadge(apt.status)}
-      </div>
-      <div className={`flex items-center gap-4 text-sm ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>
-        <span className="flex items-center gap-1">
-          <Calendar className="w-4 h-4" />
-          {formatDate(apt.appointmentDate)}
-        </span>
-        <span className="flex items-center gap-1">
-          <Clock className="w-4 h-4" />
-          {apt.appointmentTime}
-        </span>
-        <span className="flex items-center gap-1">
-          <TypeIcon className="w-4 h-4" />
-          {typeLabel}
-        </span>
-      </div>
+        <div className={`flex items-center gap-4 text-sm ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>
+          <span className="flex items-center gap-1">
+            <Calendar className="w-4 h-4" />
+            {formatDate(apt.appointmentDate)}
+          </span>
+          <span className="flex items-center gap-1">
+            <Clock className="w-4 h-4" />
+            {apt.appointmentTime}
+          </span>
+          <span className="flex items-center gap-1">
+            <TypeIcon className="w-4 h-4" />
+            {typeLabel}
+          </span>
+        </div>
+      </Link>
 
-      {showMeetingLink && (
+      {showJoinMeeting && (
         <div className={`mt-3 pt-3 border-t ${isDarkMode ? 'border-slate-700' : 'border-gray-200'}`}>
-          <a
-            href={apt.meetingLink || '#'}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={(e) => e.stopPropagation()}
-            className="inline-flex items-center gap-2 px-3 py-1.5 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors"
+          <Link
+            to={`/meeting/${apt.id}`}
+            data-testid="dashboard-join-meeting"
+            className="flex w-full items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-sm font-semibold rounded-xl hover:from-blue-700 hover:to-indigo-700 shadow-md hover:shadow-lg transition-all"
           >
-            <Video className="w-4 h-4" />
-            {isEnglish ? 'Join Meeting' : 'เข้าร่วมการประชุม'}
-          </a>
+            <Video className="w-5 h-5" />
+            {isEnglish ? 'Join Meeting Now' : 'เข้าร่วมการประชุม'}
+          </Link>
         </div>
       )}
-    </Link>
+    </div>
   );
 }
 

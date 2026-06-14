@@ -17,10 +17,12 @@ out/
 .env.production.local
 .env.*.local
 .env.docker
+.env.test
 
-# Keep example environment files
+# Keep example/template environment files (placeholders only — never real keys)
 !.env.example
 !.env.docker.example
+!.env.docker.template
 
 # Logs
 logs/
@@ -34,6 +36,7 @@ lerna-debug.log*
 # Testing
 coverage/
 *.lcov
+cve-lite-scan-*.json
 tests/e2e/test-results/
 tests/e2e/playwright-report/
 tests/e2e/.auth-cache.json

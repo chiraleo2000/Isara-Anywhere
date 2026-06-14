@@ -80,6 +80,41 @@ node -e "import('./scripts/docker/e2eDockerCommon.mjs').then(m => m.resetDatabas
 **E2E env:** `PW_NO_CHROME=1`, `PW_HEADLESS=1`, `PW_WORKERS=1`  
 **June 8 gate:** Vitest **2982/2982**; core pipeline **35 passed, 0 skipped**; J+R **16/16**
 
+## Local pre-deploy gate (v3 — mandatory before cloud)
+
+```bash
+npm run test:local:pre-deploy-gate
+```
+
+Chains: unit coverage → security hardening → meeting contracts → **sonar:lint** → **security:scan** (OWASP [CVE Lite](https://owasp.org/cve-lite-cli/) + `audit:prod` + app pattern scan) → portal lint/tsc → process Vitest contracts → Docker health (optional) → full E2E Gemini-lite (`PW_SKIP_LIVE_GEMINI=1`) → process audit.
+
+See `Processes/SECURITY_SCANNING.md` for the full Sonar + CVE Lite remediation loop.
+
+## v5.2 env audit (doctor portal)
+
+Run before local pre-deploy gate:
+
+```bash
+npm run env:audit
+# or: node scripts/env/audit-doctor-portal-env.mjs
+```
+
+**Required keys:** `MEETING_SERVER_URL`, `VITE_MEETING_SERVER_URL`, `VITE_GOOGLE_API_KEY`, `JITSI_APP_ID`, `CORS_ORIGINS`, `JWT_SECRET`, `GEMINI_API_KEY`, `DATABASE_URL`
+
+**Forbidden keys:** `VITE_GOOGLE_CLIENT_SECRET`, `VITE_ENABLE_RAG`, `VITE_RAG_CHUNK_SIZE`, `CLOUD_RUN_DOCTOR_URL`
+
+Sync rules: copy shared keys to `Isara-patient-portal/.env` and `Izara-jitsi-server/.env`; use `.env.docker` for compose.
+
+Ledger: `reports/defect-fix/scan-baseline-2026-06-10.md`
+
+## Cloud deploy gate (after local green)
+
+```bash
+npm run test:cloud:deploy-gate
+```
+
+Live Gemini: **only** `npm run verify:cloud-meeting-ai` (single probe). Playwright cloud smoke uses `PW_SKIP_LIVE_GEMINI=1`.
+
 ## Result
 
 Environment prerequisites for DB/JWT/CORS/Socket/NOTIFY are configured across local and cloud paths and are ready for workflow regression execution.

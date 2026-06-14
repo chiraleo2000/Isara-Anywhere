@@ -1,6 +1,7 @@
 import React from 'react';
 
 type AutoSaveStatus = 'saved' | 'saving' | 'unsaved';
+type EmrStatus = 'draft' | 'finalized' | 'amended' | 'awaiting_signature';
 
 interface EmrEditorChromeProps {
   patientName: string;
@@ -9,11 +10,36 @@ interface EmrEditorChromeProps {
   isVoiceActive: boolean;
   encounterType: string;
   isFinalized: boolean;
+  emrStatus?: EmrStatus;
   showAiDraftBanner: boolean;
+  aiDraftDegraded?: boolean;
   onClose: () => void;
   onVoiceTranscription: () => void;
   onEncounterTypeChange: (value: string) => void;
 }
+
+const EmrStatusBadge: React.FC<{ status: EmrStatus }> = ({ status }) => {
+  const styles: Record<EmrStatus, string> = {
+    draft: 'bg-amber-100 text-amber-800 border-amber-200',
+    finalized: 'bg-green-100 text-green-800 border-green-200',
+    amended: 'bg-blue-100 text-blue-800 border-blue-200',
+    awaiting_signature: 'bg-purple-100 text-purple-800 border-purple-200',
+  };
+  const labels: Record<EmrStatus, string> = {
+    draft: 'Draft',
+    finalized: 'Signed',
+    amended: 'Amended',
+    awaiting_signature: 'Awaiting Signature',
+  };
+  return (
+    <span
+      data-testid={`emr-status-badge-${status}`}
+      className={`px-2.5 py-0.5 rounded-full text-xs font-semibold border ${styles[status]}`}
+    >
+      {labels[status]}
+    </span>
+  );
+};
 
 export const EmrEditorChrome: React.FC<EmrEditorChromeProps> = ({
   patientName,
@@ -22,20 +48,25 @@ export const EmrEditorChrome: React.FC<EmrEditorChromeProps> = ({
   isVoiceActive,
   encounterType,
   isFinalized,
+  emrStatus = 'draft',
   showAiDraftBanner,
+  aiDraftDegraded = false,
   onClose,
   onVoiceTranscription,
   onEncounterTypeChange,
 }) => (
   <>
-    <div className="flex items-center justify-between p-6 border-b border-gray-200 bg-gradient-to-r from-emerald-50 to-teal-50">
-      <div>
-        <h2 className="text-2xl font-bold text-gray-900">Electronic Medical Record</h2>
-        <p className="text-sm text-gray-600 mt-1">
+    <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 sm:p-6 border-b border-gray-200 bg-gradient-to-r from-emerald-50 to-teal-50 gap-3">
+      <div className="min-w-0">
+        <div className="flex items-center gap-2 flex-wrap">
+          <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Electronic Medical Record</h2>
+          <EmrStatusBadge status={emrStatus} />
+        </div>
+        <p className="text-sm text-gray-600 mt-1 truncate">
           Patient: {patientName} • ID: {patientIdNumber}
         </p>
       </div>
-      <div className="flex items-center space-x-3">
+      <div className="flex items-center flex-wrap gap-2 sm:gap-3 shrink-0">
         <div className="text-sm" data-testid="emr-autosave-status" data-status={autoSaveStatus}>
           {autoSaveStatus === 'saved' && <span className="text-green-600">✓ Saved</span>}
           {autoSaveStatus === 'saving' && <span className="text-blue-600">💾 Saving...</span>}
@@ -99,6 +130,11 @@ export const EmrEditorChrome: React.FC<EmrEditorChromeProps> = ({
         <span className="text-amber-600 text-lg">🤖</span>
         <p className="text-sm text-amber-800">
           <span className="font-semibold">AI Pre-filled Draft</span> — ข้อมูลนี้สร้างจาก AI จากบทสนทนาในการประชุม กรุณาตรวจสอบก่อน Sign
+          {aiDraftDegraded && (
+            <span className="ml-2 inline-flex items-center rounded-full bg-amber-200 px-2 py-0.5 text-xs font-medium text-amber-900">
+              degraded AI summary
+            </span>
+          )}
         </p>
       </div>
     )}

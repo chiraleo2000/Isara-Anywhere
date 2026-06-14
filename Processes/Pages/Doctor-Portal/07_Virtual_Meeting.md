@@ -1,10 +1,18 @@
 # 📹 Doctor Portal — Virtual Meeting (Jitsi Video Consultation)
 
-**Component:** `src/pages/VirtualMeeting.tsx`
-**Type:** Modal (launched from DoctorPortal)
+> **REMOVED (v1.7.53)** — The `VirtualMeeting.tsx` page and the `/virtual-meeting/:id` route have been
+> deleted. All doctor consultations now use the single real Jitsi flow via the Izara meeting server,
+> documented in [`Processes/Pages/Meeting-Server/01_Meeting_Room.md`](../Meeting-Server/01_Meeting_Room.md)
+> and reached in-app at `/doctor/:id/meeting/:appointmentId` (component `src/pages/meetings/MeetingRoom.tsx`).
+> No external `meet.jit.si` browser tabs are used — the meeting is embedded with the Izara lobby,
+> doctor-as-host (`host-present` + `lobby/admit-all`), live transcription, and the Gemini SOAP summary.
+> This file is retained only for historical traceability and the process-coverage registry.
+
+**Component:** `src/pages/meetings/MeetingRoom.tsx` (was `src/pages/VirtualMeeting.tsx` — removed)
+**Type:** In-app route `/doctor/:id/meeting/:appointmentId`
 **Access:** 🔒 Doctor / Admin
 **Thai Title:** การประชุมออนไลน์ / Virtual Meeting
-**Version:** v1.4.7
+**Version:** v1.7.53 (superseded by Meeting-Server/01_Meeting_Room)
 
 
 ## มาตรฐานเอกสาร (รายงานภาษาไทย)
@@ -16,14 +24,14 @@
 | เอกสาร Word / รายงาน PDF | **TH Sarabun New** — เนื้อหา **16 pt**, หัวข้อระดับ 1 **18 pt**, หัวข้อระดับ 2 **16 pt** (ตัวหนา), ชื่อเรื่อง **22 pt**, ระยะบรรทัด **1.15**, จัดชิดซ้าย |
 | สไลด์นำเสนอ PowerPoint | **FC Iconic** — หัวข้อสไลด์ **32 pt**, หัวข้อรอง **22 pt**, เนื้อหา **18 pt**, บันทึกวิทยากร **16 pt** |
 | ตัวเลขและวันที่ | ใช้ พ.ศ. ในข้อความไทย; คั่นหลักพันแบบไทยเมื่อจำเป็น |
-| อ้างอิงคู่มือ | `Documents/Documents/docs/guides/patient/USER_GUIDE_PATIENT_WORD_TH.docx`, `Documents/Documents/docs/guides/doctor/USER_GUIDE_DOCTOR_WORD_TH.docx`, `Documents/Documents/docs/guides/patient|doctor/USER_GUIDE_*_PPT_TH.pptx` |
-| เอกสารปฏิบัติการ Production | `Documents/docs/markdown/operations/PRODUCTION_DEPLOYMENT_AND_TECHNICAL_UPDATE.md` |
+| อ้างอิงคู่มือ | `docs/guides/patient/USER_GUIDE_PATIENT_WORD_TH.docx`, `docs/guides/doctor/USER_GUIDE_DOCTOR_WORD_TH.docx`, `docs/guides/patient|doctor/USER_GUIDE_*_PPT_TH.pptx` |
+| เอกสารปฏิบัติการ Production | `docs/markdown/operations/PRODUCTION_DEPLOYMENT_AND_TECHNICAL_UPDATE.md` |
 | สร้าง/อัปเดตคู่มือ | `python scripts/build-portal-user-guides.py` |
 | อัปเดตหน้ากระบวนการ | `python scripts/enrich-process-pages.py --force-steps` |
 | ล้างข้อมูลทดสอบ (ไม่ re-seed demo) | `npm run cleanup:cloud-test-only` |
 | การทดสอบอัตโนมัติ | Playwright Groups A–Q + Vitest — `tests/PROCESS_COVERAGE_MATRIX.md` |
 | รุ่นเอกสารหน้ากระบวนการ | **ENRICH-9** (Word TH Sarabun New 16 pt / PPT FC Iconic — ขั้นตอน 8–12 รายการ + คำอธิบายเชิงรายงานทุกหน้า) |
-| โครงสร้างเทคนิค (สถาปัตยกรรม) | `Documents/docs/technical/word/TECHNICAL_ARCHITECTURE_WORD_TH.docx`, `Documents/docs/technical/ppt/TECHNICAL_ARCHITECTURE_PPT_TH.pptx`, `Documents/docs/diagrams/diagrams.drawio` |
+| โครงสร้างเทคนิค (สถาปัตยกรรม) | `docs/technical/word/TECHNICAL_ARCHITECTURE_WORD_TH.docx`, `docs/technical/ppt/TECHNICAL_ARCHITECTURE_PPT_TH.pptx`, `docs/diagrams/diagrams.drawio` |
 | สร้างเอกสารโครงสร้างเทคนิค | `python scripts/build-technical-architecture-docs.py` |
 
 **โครงสร้างบังคับในแต่ละหน้า Processes/Pages:**
@@ -504,7 +512,7 @@ Step 12: Full transcript compiled and stored
 
 - **รายงาน / Word:** แบบอักษร **TH Sarabun New** ขนาดเนื้อหา **16 pt** ระยะบรรทัด **1.15** (มาตรฐานรายงานภาษาไทย)
 - **PowerPoint:** แบบอักษร **FC Iconic** หัวข้อ **32 pt** เนื้อหา **18 pt**
-- สร้างไฟล์จริง: `python scripts/build-portal-user-guides.py` → `Documents/Documents/docs/guides/patient|doctor/USER_GUIDE_*_WORD_TH.docx` และ `*_PPT_TH.pptx`
+- สร้างไฟล์จริง: `python scripts/build-portal-user-guides.py` → `docs/guides/patient|doctor/USER_GUIDE_*_WORD_TH.docx` และ `*_PPT_TH.pptx`
 
 ### ขอบเขตและบทบาท
 
@@ -536,8 +544,8 @@ Step 12: Full transcript compiled and stored
 
 - `Processes/VIDEO_MEETING_JITSI_GEMINI.md` — วิดีโอ, lobby, บันทึก, AI
 - `Processes/Appointment_Workflows.md` — Pool และสถานะนัด
-- `Documents/docs/markdown/operations/PRODUCTION_DEPLOYMENT_AND_TECHNICAL_UPDATE.md` — deploy และ runbook
-- `Documents/Documents/docs/guides/patient|doctor/USER_GUIDE_*_WORD_TH.docx` / `Documents/Documents/docs/guides/patient|doctor/USER_GUIDE_*_PPT_TH.pptx` — คู่มือผู้ใช้ฉบับสมบูรณ์
+- `docs/markdown/operations/PRODUCTION_DEPLOYMENT_AND_TECHNICAL_UPDATE.md` — deploy และ runbook
+- `docs/guides/patient|doctor/USER_GUIDE_*_WORD_TH.docx` / `*_PPT_TH.pptx` — คู่มือผู้ใช้ฉบับสมบูรณ์
 
 ### องค์ประกอบ UI หลัก (data-testid)
 

@@ -1,9 +1,58 @@
 # Two-Round Cloud Testing & Screenshot Documentation
 
-**Release tag:** `v1.7.22`  
-**Last updated:** May 23, 2026
+**Release tag:** `v1.7.53`  
+**Last updated:** June 13, 2026
 
-## Orchestrator (canonical)
+## Round 3 signoff (2026-06-13) — BMS telemed parity (real Jitsi only, JWT removed, Gemini key renewed)
+
+| Check | Result | Notes |
+|-------|--------|-------|
+| Local pre-deploy gate | **PASS** | unit 3156/3156, security:scan 4/4, sonar 0 errors, docker health, gate0 G1–G5, **87/87 headed E2E (single clean run, 11.8m)**, process audit 0 gaps; ledger `reports/defect-fix/scan-baseline-2026-06-13.md` |
+| Cloud deploy | **PASS** | `cloud:deploy` tag `v1.7.12`; Cloud Build `0f993742-4b93-439b-ba90-11bcb8e99fbf` (SUCCESS 4m11s) |
+| Cloud deploy gate | **PASS** | smoke 3/3 (200) + gate0 G1–G5 + `verify:cloud-meeting-ai` (sttAvailable=true, renewed Gemini key) + **21/21 headed A+D+Q** |
+| Cloud full coverage | **PASS** | `test:cloud:full` **85/85** headed (9.7m) — all groups A–P including meeting lifecycle + clinical |
+| Cloud doc screenshots | **PASS** | `test:cloud:doc-screenshots` **78/78** (8.7m) → `docs:sync-screenshots` + guides rebuilt |
+
+**Cloud Run revisions (dev-testing) — Round 3:**
+
+| Service | Revision |
+|---------|----------|
+| Doctor portal | `izara-doctor-portal-dev-testing-00155-6k5` |
+| Patient portal | `izara-patient-portal-dev-testing-00123-zlm` |
+
+**Key changes in this round:** removed all demo/virtual-meeting code (single real Jitsi `/meeting/:id` flow), JWT removed from Jitsi mounts/URLs (session-token auth only), SonarQube fixes, fullscreen video-first meeting UX, env consolidation + Gemini key renewal across all `.env` files.
+
+## Round 2 signoff (2026-06-11)
+
+| Check | Result | Notes |
+|-------|--------|-------|
+| Local pre-deploy gate | **PASS** | `test:local:pre-deploy-gate` exit 0 — 87/87 headed E2E, no skip flags; ledger `reports/defect-fix/scan-baseline-2026-06-10.md` |
+| Cloud deploy | **PASS** | `cloud:deploy` tag `v1.7.12`; build `63fa0572-9ff8-4a6d-ac5b-ffd32f22819a` |
+| Cloud deploy gate | **PASS** | smoke + gate0 + `verify:cloud-meeting-ai` (sttAvailable=true) + 21/21 headed A+D+Q |
+| Cloud doc screenshots | **PASS** | 74/74 Round 2b; `docs:sync-screenshots` + guides rebuilt; process audit 0 gaps |
+
+**Cloud Run revisions (dev-testing):**
+
+| Service | Revision |
+|---------|----------|
+| Doctor portal | `izara-doctor-portal-dev-testing-00154-sw9` |
+| Patient portal | `izara-patient-portal-dev-testing-00122-nwr` |
+
+## v5.2 gate model
+
+| Round | Environment | Command |
+|-------|-------------|---------|
+| **Round 1** | Local (mandatory) | `npm run test:local:pre-deploy-gate` |
+| **Round 2** | Cloud (after Round 1 exit 0) | `npm run test:cloud:deploy-gate` |
+| **Round 2b** | Cloud doc screenshots | `npm run test:cloud:doc-screenshots` → `npm run docs:sync-screenshots` |
+
+Round 1: `PW_HEADED=1`, `PW_SKIP_LIVE_GEMINI=1`, full Vitest + docker probe + headed E2E — **no** local `docs:sync-screenshots`.
+
+Round 2: cloud smoke + `verify:gate0` + **one** live Gemini probe (`verify:cloud-meeting-ai`). Playwright smoke uses `PW_SKIP_LIVE_GEMINI=1`.
+
+Round 2b: capture PNGs from Cloud Run only (`BASELINE_VISUAL=1`, groups P/W/D/E/F/S), then rebuild guides.
+
+## Legacy orchestrator (full hardening — optional)
 
 ```powershell
 # Full dual loop (deploy → test → ledger × 2; cleanup after Round 2 pass)

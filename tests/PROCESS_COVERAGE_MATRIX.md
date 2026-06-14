@@ -1,6 +1,29 @@
 # Process Documentation → Test Coverage Matrix
 
-**Last updated:** 2026-06-09 (test hardening gate v1.7.52)
+**Last updated:** 2026-06-10 (Telemedicine Full Gate v5.2)
+
+## v5.2 contract packs
+
+| Pack | File | IDs |
+|------|------|-----|
+| EMR AI draft | `doctor-portal/emrAiDraft.test.ts` | EAD-01–08 |
+| Meeting routes | `doctor-portal/meetingRoomRoutes.test.ts` | MRR-01–08 |
+| PHR documents | `patient-portal/phrDocuments.test.ts` | PHD-01–08 |
+| Profile workflow | `patient-portal/profileWorkflow.test.ts` | PRF-01–06 |
+| Telemed dashboard | `doctor-portal/telemedDashboard.test.ts` | TDK-01–05 |
+| Combined workflows | `cross-portal/combinedWorkflowActions.test.ts` | CWA-01–10 |
+| Separated workflows | `cross-portal/separatedWorkflowFunctions.test.ts` | SWF-01–10 |
+| Notifications | `cross-portal/notificationWorkflowContract.test.ts` | NTF-01–06 |
+| Living will | `cross-portal/livingWillContract.test.ts` | LWL-01–05 |
+| Env audit | `cross-portal/doctorEnvAudit.test.ts` | ENV-01–04 |
+| Appointment UX | `cross-portal/appointmentUxContract.test.ts` | APPT-UX-01–09 |
+| Meeting UX | `cross-portal/meetingUxContract.test.ts` | MEET-UX-01–07 |
+| PHR/EMR UX | `cross-portal/phrEmrUxContract.test.ts` | PHR-UX-01–04 |
+| Breadcrumbs | `doctor-portal/clinicalBreadcrumb.test.ts` | BREAD-01–03 |
+
+**Registry:** `processWorkflowRegistry.ts` maps **50+** Processes docs → Vitest (`npm run test:unit:process-contracts`).
+
+**Screenshot policy:** `docs:sync-screenshots` runs **only after** `npm run test:cloud:doc-screenshots` (cloud PNGs). Never sync from local headed runs.
 
 ## Test hardening packs (v1.7.52)
 
@@ -22,7 +45,7 @@
 | Confirm sets confirmed_date | `doctor-portal/confirmSetsConfirmedDate.test.ts` | group-D-queue-accept |
 | splitQueueSections | `doctor-portal/queueAcceptTraceability.test.ts`, `cross-portal/defectIsaraPdfMeetingQueue.test.ts` | group-D |
 
-**E2E policy:** headed UI always (`PW_HEADED=1`); no Google Chrome channel (`PW_NO_CHROME=1`).
+**E2E policy (v5.2):** local gate uses `PW_HEADED=1` + `PW_SKIP_LIVE_GEMINI=1` (`test:local:e2e-full`); never `PW_HEADLESS` in pre-deploy gate. Cloud smoke: `TEST_ENV=cloud` + headed. Live Gemini: **only** `verify:cloud-meeting-ai`.
 
 ## UX plan checklist (2026-05-27)
 
@@ -105,6 +128,9 @@
 |------------|--------|----------|-----|--------|----------|---------------|
 | Meeting-Server/00_Meeting_Server_Overview | Meeting | meeting-server/*, meetingRuntimeApi, saveRecordingContract | E, Q | covered | P0 | group-Q/ |
 | Meeting-Server/00_Overview | Meeting | meeting-server/*, meetingRuntimeApi, saveRecordingContract | E, Q | covered | P0 | group-Q/ |
+| Meeting-Server/01_Meeting_Room | Meeting | meetingRoomRoutes, meetingUxContract, jitsiMeetingConfig | E, Q, R | covered | P0 | group-E/ (cloud capture) |
+| Meeting-Server/02_Meeting_Results | Meeting | meetingResultsValidation, meetingUxContract, postMeetingWorkflow | Q | covered | P0 | group-Q/ (cloud capture) |
+| Meeting-Server/03_Emr_Appointment_Page | Clinical | emrAiDraft, meetingRoomRoutes, phrEmrUxContract | E, F | covered | P0 | group-E/ (cloud capture) |
 
 ---
 
@@ -135,7 +161,7 @@
 | Test | Description |
 |------|-------------|
 | Q01 | 3-party cloud: doctor HOST + patient + guest lobby → admit → 10s → end |
-| Q02 | recording on disk + dashboard player + generate-summary (mandatory Gemini) |
+| Q02 | recording on disk + dashboard player + generate-summary (live Gemini) or degraded badge when `PW_SKIP_LIVE_GEMINI=1` |
 
 **Run:** `npm run test:e2e:meeting-lifecycle` (requires `D-appointments`, `D-doctor-host` first)
 

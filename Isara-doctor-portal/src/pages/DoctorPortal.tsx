@@ -17,7 +17,6 @@ import CompleteEMREditor from '../components/CompleteEMREditor';
 import CompletePrescribing from '../components/CompletePrescribing';
 import CompleteLabOrders from '../components/CompleteLabOrders';
 import GeminiAIStudio from './GeminiAIStudio';
-import VirtualMeeting from './meetings/VirtualMeeting';
 import { PatientRecordViewer } from '../components/PatientRecordViewer';
 import ClinicalResources from './content/ClinicalResources';
 import TestHarness from '../components/TestHarness';
@@ -27,6 +26,7 @@ import MedicalContent from './content/MedicalContent';
 import HealthMeeting from './meetings/HealthMeeting';
 import { MeetingRoom } from '../features/meeting';
 import MeetingResultsPage from './meetings/MeetingResultsPage';
+import EmrAppointmentPage from './meetings/EmrAppointmentPage';
 import AdminDoctorManagement from './admin/AdminDoctorManagement';
 import AdminAppointmentManagement from './admin/AdminAppointmentManagement';
 import AppointmentPoolManagement from './admin/AppointmentPoolManagement';
@@ -116,6 +116,18 @@ const DoctorPortal: React.FC = () => {
     return <Navigate to="/login" replace />;
   }
 
+  // Fullscreen meeting routes break out of portal chrome (sidebar / mobile nav)
+  const isMeetingBreakout = /\/meeting\/[^/]+/.test(location.pathname);
+
+  if (isMeetingBreakout) {
+    return (
+      <Routes>
+        <Route path="meeting/:appointmentId" element={<MeetingRoom />} />
+        <Route path="meeting/:appointmentId/results" element={<MeetingResultsPage />} />
+      </Routes>
+    );
+  }
+
   return (
     <ResponsiveLayout
       user={user}
@@ -187,9 +199,8 @@ const DoctorPortal: React.FC = () => {
         <Route path="medical-content" element={<MedicalContent />} />
         <Route path="health-meeting" element={<HealthMeeting doctor={user} />} />
         <Route path="appointment-pool" element={<AppointmentPoolManagement />} />
-        <Route path="meeting/:appointmentId" element={<MeetingRoom />} />
-        <Route path="meeting/:appointmentId/results" element={<MeetingResultsPage />} />
-        <Route path="virtual-meeting/:appointmentId" element={<VirtualMeeting />} />
+        <Route path="emr/:appointmentId" element={<EmrAppointmentPage />} />
+        {/* virtual-meeting route removed — all consultations use the real Jitsi /meeting/:id flow */}
 
         {/* Admin Only Routes */}
         {(user.isAdmin || user.role === 'admin') && (

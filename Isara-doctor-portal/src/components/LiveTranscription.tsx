@@ -63,7 +63,7 @@ declare global {
 }
 
 
-// Speech Recognition types for TypeScript
+interface LiveTranscriptionProps {
   isActive: boolean;
   onToggle: () => void;
   speakerName: string;

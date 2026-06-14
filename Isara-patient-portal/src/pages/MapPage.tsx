@@ -193,7 +193,7 @@ function loadGoogleMapsScript(apiKey: string, lang = 'th'): Promise<void> {
     mapsLoadedLang = '';
     if (mapGlobal.google) {
       // Force re-init with requested locale.
-      delete mapGlobal.google;
+      Reflect.deleteProperty(mapGlobal, 'google');
     }
   }
   if (mapGlobal.google?.maps?.places) return Promise.resolve();

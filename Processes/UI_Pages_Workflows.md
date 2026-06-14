@@ -1,8 +1,8 @@
 # Izara Telemedicine - UI Pages & Workflows
 
 **Version:** 1.6.0
-**Last Updated:** March 31, 2026
-**Status:** Phase 1 Implementation + Full DB Schema
+**Last Updated:** June 10, 2026
+**Status:** **Superseded for page-level specs** — use [`Processes/Pages/`](Pages/) (Doctor 22 + Patient 16 + Meeting Server 4). This file remains as legacy UX reference; gate mapping is in [`PROCESS_TO_TEST_GATE.md`](PROCESS_TO_TEST_GATE.md) and [`tests/PROCESS_COVERAGE_MATRIX.md`](../tests/PROCESS_COVERAGE_MATRIX.md).
 
 ---
 

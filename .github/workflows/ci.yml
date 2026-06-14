@@ -80,6 +80,40 @@ jobs:
         working-directory: Izara-jitsi-server
 
   # ────────────────────────────────────────────────────────────────────────
+  # 2b. OWASP CVE Lite — OSV lockfile scan (fail on HIGH+ production deps)
+  # ────────────────────────────────────────────────────────────────────────
+  cve-lite-scan:
+    name: OWASP CVE Lite (dependencies)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install root deps (cve-lite-cli)
+        run: npm ci --prefer-offline --no-audit --progress=false
+
+      - name: Install production lockfiles
+        run: |
+          npm ci --prefix Isara-patient-portal --omit=dev --prefer-offline --no-audit --progress=false
+          npm ci --prefix Isara-doctor-portal --omit=dev --prefer-offline --no-audit --progress=false
+          npm ci --prefix Izara-jitsi-server --omit=dev --prefer-offline --no-audit --progress=false
+
+      - name: CVE Lite scan (fail-on high)
+        run: npm run security:cve-lite
+
+      - name: Upload CVE Lite reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cve-lite-reports
+          path: reports/security/cve-lite/
+          retention-days: 30
+
+  # ────────────────────────────────────────────────────────────────────────
   # 3. Secret scanner — reject PRs that reintroduce hardcoded DB passwords
   # ────────────────────────────────────────────────────────────────────────
   secret-scan:
@@ -153,7 +187,7 @@ jobs:
     name: Playwright E2E (docker-compose)
     runs-on: ubuntu-latest
     timeout-minutes: 45
-    needs: [unit-tests, security-audit, secret-scan]
+    needs: [unit-tests, security-audit, cve-lite-scan, secret-scan]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -231,3 +265,43 @@ jobs:
       - name: Tear down
         if: always()
         run: docker compose down -v
+
+  # ────────────────────────────────────────────────────────────────────────
+  # 6. Process contracts + portal lint (no Docker)
+  # ────────────────────────────────────────────────────────────────────────
+  quality-gate:
+    name: Process contracts + portal lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    needs: [unit-tests, security-audit, cve-lite-scan]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install deps
+        run: |
+          npm ci --prefer-offline --no-audit --progress=false
+          cd tests/unit && npm ci --prefer-offline --no-audit --progress=false
+          cd ../Isara-patient-portal && npm ci --prefer-offline --no-audit --progress=false
+          cd ../Isara-doctor-portal && npm ci --prefer-offline --no-audit --progress=false
+
+      - name: Process Vitest contracts
+        run: npm run test:unit:process-contracts
+
+      - name: v5.2 UX/workflow contract pack
+        run: npm run test:unit:v5-contracts
+
+      - name: Portal lint and type-check (full tsc both portals)
+        run: npm run test:lint:portals:full
+
+      - name: Env audit (doctor portal)
+        run: npm run env:audit
+
+      - name: Sonar quality gate
+        run: npm run sonar:lint
+
+      - name: Meeting server + security contracts
+        run: npm run test:security-hardening && npm run test:meeting-server:contract && npm run test:post-meeting-pipeline

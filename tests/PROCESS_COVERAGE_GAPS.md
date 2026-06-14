@@ -1,6 +1,6 @@
 # Process coverage gaps (auto-generated)
 
-Scanned **39** page specs under `Processes/Pages/`.
+Scanned **42** page specs under `Processes/Pages/`.
 
 ## Missing from PROCESS_COVERAGE_MATRIX.md
 

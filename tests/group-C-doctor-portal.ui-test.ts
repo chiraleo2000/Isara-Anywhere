@@ -14,6 +14,15 @@
 import {
   test, expect, assertFullHealth, snap, navDoctor, DOCTOR_URL,
 } from './helpers/multi-portal';
+import type { Page } from '@playwright/test';
+
+const BODY_READ_TIMEOUT = process.env.PW_HEADED === '1' ? 45_000 : 15_000;
+
+async function readPageBodyText(page: Page): Promise<string> {
+  const text = await page.locator('main, body').first().innerText({ timeout: BODY_READ_TIMEOUT }).catch(() => '');
+  if (text.trim().length > 20) return text;
+  return page.evaluate(() => document.body?.innerText || document.documentElement?.innerText || '');
+}
 
 test.describe('Group C — Doctor & Admin Portal Continuous Flow', () => {
   test.describe.configure({ mode: 'serial' });
@@ -130,7 +139,7 @@ test.describe('Group C — Doctor & Admin Portal Continuous Flow', () => {
       await navDoctor(admin.page, 'doctors', 'C13');
       await assertFullHealth(admin.page, 'C13');
       await snap(admin.page, 'C13-manage-doctors', 'group-C');
-      const body = await admin.page.locator('body').innerText();
+      const body = await readPageBodyText(admin.page);
       expect(/doctor|แพทย์|manage|จัดการ|list|รายชื่อ/i.test(body)).toBeTruthy();
       console.log('  ✅ C13: Admin → Manage Doctors (admin-only)');
     });
@@ -139,7 +148,7 @@ test.describe('Group C — Doctor & Admin Portal Continuous Flow', () => {
       await navDoctor(admin.page, 'doctor-management', 'C14');
       await assertFullHealth(admin.page, 'C14');
       await snap(admin.page, 'C14-doctor-approval', 'group-C');
-      const body = await admin.page.locator('body').innerText();
+      const body = await readPageBodyText(admin.page);
       expect(/approval|อนุมัติ|pending|new doctor|แพทย์ใหม่|manage/i.test(body)).toBeTruthy();
       console.log('  ✅ C14: Admin → Doctor Approval (admin-only)');
     });

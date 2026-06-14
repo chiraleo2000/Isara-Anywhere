@@ -444,15 +444,16 @@ router.post('/', authMiddleware, async (req: Request, res: Response) => { // NOS
     const doctorIdRaw = appointmentData.doctorId;
     const doctorId = (doctorIdRaw && doctorIdRaw !== 'unassigned') ? doctorIdRaw : null;
     let effectiveDoctorId: string | null = doctorId;
+    let reroutedToPool = false;
     if (doctorId) {
       const docCheck = await pool.query(
         `SELECT id FROM users WHERE id = $1 AND role = 'doctor' AND is_active = true AND COALESCE(is_approved, true) = true`,
         [doctorId]
       );
       if (docCheck.rows.length === 0) {
-        // Doctor inactive/unapproved: fall back to pool rather than hard-fail the booking.
         console.warn(`[APPOINTMENT] Requested doctor ${doctorId} unavailable — routing to pool`);
         effectiveDoctorId = null;
+        reroutedToPool = true;
       }
     }
 
@@ -534,7 +535,14 @@ router.post('/', authMiddleware, async (req: Request, res: Response) => { // NOS
     }
 
     console.log(`[APPOINTMENT] Created: ${appointmentId} with meeting link: ${meetingLink}`);
-    res.json(transformAppointment(appointment));
+    res.json({
+      ...transformAppointment(appointment),
+      reroutedToPool,
+      ...(reroutedToPool ? {
+        notice: 'แพทย์ที่เลือกไม่พร้อมให้บริการ ระบบจัดสรรแพทย์ท่านอื่นให้แทน',
+        noticeEn: 'Selected doctor unavailable; your request was routed to the appointment pool.',
+      } : {}),
+    });
   } catch (error: unknown) {
     await client.query('ROLLBACK').catch(() => {});
     console.error('[APPOINTMENT] Create error:', error);
