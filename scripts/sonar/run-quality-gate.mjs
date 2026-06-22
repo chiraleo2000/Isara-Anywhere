@@ -74,7 +74,7 @@ const summary = {
   steps,
   sonarLint: {
     hint: 'Use SonarLint in IDE with sonar-project.properties at repo root (Connected Mode optional).',
-    sources: 'Isara-*-portal/src+server, Izara-jitsi-server/server',
+    sources: 'Isara-*-portal/frontend+backend, Izara-jitsi-server/backend',
   },
 };
 

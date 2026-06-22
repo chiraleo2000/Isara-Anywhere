@@ -23,7 +23,7 @@ function normalizeDoctorNotificationRow(row: Record<string, unknown>): Record<st
 
 const doctorService = path.resolve(
   __dirname,
-  '../../../Isara-doctor-portal/server/services/postgresDataService.cjs',
+  '../../../Isara-doctor-portal/backend/services/postgresDataService.cjs',
 );
 
 describe('doctor notification normalize behavior (D1)', () => {

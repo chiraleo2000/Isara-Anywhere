@@ -8,9 +8,9 @@
 FROM node:22-alpine AS frontend-builder
 WORKDIR /app
 
-COPY package*.json ./
+COPY Isara-doctor-portal/package*.json ./
 RUN npm ci && npm cache clean --force
-COPY . .
+COPY Isara-doctor-portal/ .
 
 # ============================================================================
 # Build-time environment variables for Vite (from .env)
@@ -151,14 +151,17 @@ RUN apk add --no-cache \
   && mkdir -p /run/postgresql /var/lib/postgresql/data \
   && chown -R postgres:postgres /run/postgresql /var/lib/postgresql
 
-COPY package*.json ./
+COPY Isara-doctor-portal/package*.json ./
 RUN npm ci --only=production && npm cache clean --force
 
-COPY server/ ./server/
+COPY Isara-doctor-portal/backend/ ./backend/
+COPY shared/corsPolicy.cjs ./shared/corsPolicy.cjs
+COPY shared/corsPolicy.cjs /shared/corsPolicy.cjs
+RUN test -f ./shared/corsPolicy.cjs && test -f ./backend/loadCorsPolicy.cjs || (echo "FATAL: corsPolicy loader missing" && exit 1)
 # Create public directory for credentials (mount at runtime if needed)
 # and database directory for SQL initialization
 RUN mkdir -p ./public /app/database
-COPY --from=frontend-builder /app/dist /usr/share/nginx/html
+COPY --from=frontend-builder /app/frontend/dist /usr/share/nginx/html
 
 # Database SQL is mounted from host via docker-compose volumes, not baked into image
 
@@ -182,7 +185,7 @@ RUN printf '%s\n' \
 '    set $izara_pp "camera=(self \"https://meet.jit.si\"), microphone=(self \"https://meet.jit.si\")";' \
 '    set $izara_pp "${izara_pp}, geolocation=(self), payment=(), usb=()";' \
 '    add_header Permissions-Policy $izara_pp always;' \
-'    add_header Content-Security-Policy "default-src '"'"'self'"'"' https:; script-src '"'"'self'"'"' '"'"'unsafe-inline'"'"' '"'"'unsafe-eval'"'"' https://meet.jit.si https://8x8.vc https://accounts.google.com https://apis.google.com https://maps.googleapis.com; style-src '"'"'self'"'"' '"'"'unsafe-inline'"'"' https://fonts.googleapis.com; font-src '"'"'self'"'"' https://fonts.gstatic.com; img-src '"'"'self'"'"' data: blob: https:; connect-src '"'"'self'"'"' http://localhost:* ws://localhost:* wss://localhost:* http://host.docker.internal:* ws://host.docker.internal:* wss://host.docker.internal:* https://*.googleapis.com https://*.run.app wss://*.run.app wss://meet.jit.si; frame-src '"'"'self'"'"' https://meet.jit.si https://8x8.vc https://accounts.google.com; frame-ancestors '"'"'self'"'"'; object-src '"'"'none'"'"'; base-uri '"'"'self'"'"'; form-action '"'"'self'"'"'; media-src '"'"'self'"'"' blob: https: mediastream:; worker-src '"'"'self'"'"' blob:;" always;' \
+'    add_header Content-Security-Policy "default-src '"'"'self'"'"' https:; script-src '"'"'self'"'"' '"'"'unsafe-inline'"'"' '"'"'unsafe-eval'"'"' https://meet.jit.si https://8x8.vc https://accounts.google.com https://apis.google.com https://maps.googleapis.com; style-src '"'"'self'"'"' '"'"'unsafe-inline'"'"' https://fonts.googleapis.com; font-src '"'"'self'"'"' https://fonts.gstatic.com; img-src '"'"'self'"'"' data: blob: https:; connect-src '"'"'self'"'"' http://localhost:* ws://localhost:* wss://localhost:* http://127.0.0.1:* ws://127.0.0.1:* wss://127.0.0.1:* http://host.docker.internal:* ws://host.docker.internal:* wss://host.docker.internal:* https://*.googleapis.com https://*.run.app wss://*.run.app wss://meet.jit.si; frame-src '"'"'self'"'"' https://meet.jit.si https://8x8.vc https://accounts.google.com; frame-ancestors '"'"'self'"'"'; object-src '"'"'none'"'"'; base-uri '"'"'self'"'"'; form-action '"'"'self'"'"'; media-src '"'"'self'"'"' blob: https: mediastream:; worker-src '"'"'self'"'"' blob:;" always;' \
 '    location /health {' \
 '        access_log off;' \
 '        return 200 '"'"'{"status":"healthy","service":"izara-unified"}'"'"';' \
@@ -290,11 +293,11 @@ printf '%s\n' \
 '  AUTH_URL: "${VITE_AUTH_URL}",' \
 '  DOCTOR_URL: "${VITE_DOCTOR_URL}",' \
 '  WEBSOCKET_URL: "${VITE_WEBSOCKET_URL}",' \
-'  GCP_PROJECT_ID: "${VITE_GCP_PROJECT_ID}",' \
+'  GCP_PROJECT_ID: "${GCP_PROJECT_ID}",' \
 '  GCP_REGION: "${VITE_GCP_REGION}",' \
-'  GOOGLE_CLIENT_ID: "${VITE_GOOGLE_CLIENT_ID}",' \
-'  GEMINI_API_KEY: "${VITE_GEMINI_API_KEY}",' \
-'  GEMINI_MODEL: "${VITE_GEMINI_MODEL}",' \
+'  GOOGLE_CLIENT_ID: "${GOOGLE_CLIENT_ID}",' \
+'  GEMINI_API_KEY: "${GEMINI_API_KEY}",' \
+'  GEMINI_MODEL: "${GEMINI_MODEL}",' \
 '  MEETING_SERVER_URL: "${VITE_MEETING_SERVER_URL}",' \
 '  JITSI_DOMAIN: "${JITSI_DOMAIN}",' \
 '  PDPA_ENABLED: "${VITE_PDPA_ENABLED}",' \
@@ -319,7 +322,7 @@ printf '%s\n' \
 'stderr_logfile_maxbytes=0' \
 '' \
 '[program:auth-server]' \
-'command=node /app/server/authServer.cjs' \
+'command=node /app/backend/authServer.cjs' \
 'directory=/app' \
 'priority=30' \
 'autostart=true' \
@@ -335,7 +338,7 @@ printf '%s\n' \
 'stderr_logfile_maxbytes=0' \
 '' \
 '[program:main-api]' \
-'command=node /app/server/mainApiServer.cjs' \
+'command=node /app/backend/mainApiServer.cjs' \
 'directory=/app' \
 'priority=40' \
 'autostart=true' \
@@ -367,12 +370,12 @@ ENV GEMINI_API_KEY=${GEMINI_API_KEY:-} \
     DB_PORT=${DB_PORT:-5432}
 
 # Entrypoint script - copied from repo to avoid bash quoting issues in printf
-COPY docker-entrypoint.sh /docker-entrypoint.sh
+COPY Isara-doctor-portal/docker-entrypoint.sh /docker-entrypoint.sh
 RUN sed -i 's/\r$//' /docker-entrypoint.sh && \
     chmod +x /docker-entrypoint.sh && \
     chown -R nginx:nginx /usr/share/nginx/html && \
     chmod -R 755 /usr/share/nginx/html && \
-    mkdir -p /app/server/logs /var/secrets/google /app/database
+    mkdir -p /app/backend/logs /var/secrets/google /app/database
 
 ENV NODE_ENV=production \
     PORT=8080 \

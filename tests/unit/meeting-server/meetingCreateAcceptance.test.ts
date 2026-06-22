@@ -3,7 +3,7 @@
  * Regression: patientJwt/guestJwt must be defined before activeMeetings storage
  */
 import { describe, it, expect } from 'vitest';
-import { buildMeetingUrls } from '../../../Izara-jitsi-server/server/jitsiConfig.js';
+import { buildMeetingUrls } from '../../../Izara-jitsi-server/backend/jitsiConfig.js';
 
 function buildCreateMeetingResponse(opts: {
   meetingId: string;

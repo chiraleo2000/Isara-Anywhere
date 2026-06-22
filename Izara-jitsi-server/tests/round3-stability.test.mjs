@@ -6,17 +6,17 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
-import { createPostMeetingPipeline } from '../server/postMeetingPipeline.js';
+import { createPostMeetingPipeline } from '../backend/services/postMeetingPipeline.js';
 import {
   buildChaoticTranscript2Hours,
   prepareTranscriptForLlm,
   prepareSummaryForDb,
   CLINICAL_TEXT_LIMITS,
-} from '../server/clinicalTextLimits.js';
+} from '../backend/clinicalTextLimits.js';
 import {
   cleanupEphemeralRecordingAfterPersist,
   cleanupJibriSourceFile,
-} from '../server/recordingCleanup.js';
+} from '../backend/recordingCleanup.js';
 
 describe('Round 3 — stability', () => {
   let tmpDir;

@@ -1,12 +1,12 @@
 {
-  "generatedAt": "2026-06-13T14:27:09.858Z",
+  "generatedAt": "2026-06-22T09:17:44.369Z",
   "projectVersion": "1.7.43",
   "passed": true,
   "steps": [
     {
       "name": "unit-coverage",
       "ok": true,
-      "durationMs": 36713,
+      "durationMs": 117848,
       "exitCode": 0
     },
     {
@@ -24,12 +24,12 @@
     {
       "name": "app-security-scan",
       "ok": true,
-      "durationMs": 408,
+      "durationMs": 476,
       "exitCode": 0
     }
   ],
   "sonarLint": {
     "hint": "Use SonarLint in IDE with sonar-project.properties at repo root (Connected Mode optional).",
-    "sources": "Isara-*-portal/src+server, Izara-jitsi-server/server"
+    "sources": "Isara-*-portal/frontend+backend, Izara-jitsi-server/backend"
   }
 }

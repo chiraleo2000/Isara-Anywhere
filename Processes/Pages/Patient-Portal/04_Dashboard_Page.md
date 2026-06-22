@@ -2,7 +2,7 @@
 
 **Version:** v1.4.7
 **Route:** `/` (index)
-**Component:** `src/pages/dashboard/DashboardPage.tsx`
+**Component:** `frontend/pages/dashboard/DashboardPage.tsx`
 **Access:** 🔒 Authenticated patients
 **Thai Title:** สวัสดี, {ชื่อผู้ป่วย} 👋
 

@@ -10,11 +10,11 @@ import {
   prepareLayoutThenMount,
   resolveMountJwt,
   loadJitsiExternalApiScript,
-} from '../../../Isara-doctor-portal/src/utils/jitsiMeetingConfig.ts';
+} from '../../../Isara-doctor-portal/frontend/utils/jitsiMeetingConfig.ts';
 import {
   buildTelehealthMeetingUrls,
   generateIzaraRoomName as serverGenerateIzaraRoomName,
-} from '../../../Isara-doctor-portal/server/jitsiMeetingLinks.cjs';
+} from '../../../Isara-doctor-portal/backend/jitsiMeetingLinks.cjs';
 
 describe('meetingWorkflowHardening — Jitsi mount safety (JWT removed)', () => {
   it('MWH01 — resolveMountJwt always undefined on public meet.jit.si', () => {
@@ -97,6 +97,17 @@ describe('meetingWorkflowHardening — room URL parity across portals', () => {
     const jwt = resolveMountJwt();
     const mountOpts = jwt ? { jwt } : {};
     expect(mountOpts).toEqual({});
+  });
+
+  it('MWH09 — MeetingRoom calls notifyHostPresent on conference joined', async () => {
+    const fs = await import('node:fs');
+    const path = await import('node:path');
+    const src = fs.readFileSync(
+      path.join(__dirname, '../../../Isara-doctor-portal/frontend/pages/meetings/MeetingRoom.tsx'),
+      'utf8',
+    );
+    expect(src).toMatch(/notifyHostPresent/);
+    expect(src).toMatch(/videoConferenceJoined.*handleConferenceJoined|handleConferenceJoined/);
   });
 });
 

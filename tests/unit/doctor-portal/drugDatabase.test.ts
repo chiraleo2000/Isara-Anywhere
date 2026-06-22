@@ -3,7 +3,7 @@
  * IZARA TELEMEDICINE — DRUG DATABASE UNIT TESTS
  * ═══════════════════════════════════════════════════════════════════════
  * Tests: drugDatabase, searchDrugs, getDrugById, checkDrugInteractions
- * Source: Isara-doctor-portal/src/services/drugDatabase.ts
+ * Source: Isara-doctor-portal/frontend/services/drugDatabase.ts
  * ═══════════════════════════════════════════════════════════════════════
  */
 import { describe, it, expect } from 'vitest';
@@ -12,8 +12,8 @@ import {
   searchDrugs,
   getDrugById,
   checkDrugInteractions,
-} from '../../../Isara-doctor-portal/src/services/drugDatabase';
-import type { Drug } from '../../../Isara-doctor-portal/src/services/drugDatabase';
+} from '../../../Isara-doctor-portal/frontend/services/drugDatabase';
+import type { Drug } from '../../../Isara-doctor-portal/frontend/services/drugDatabase';
 
 // ─────────────────────────────────────────────
 // A. Drug Database Integrity

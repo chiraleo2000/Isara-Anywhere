@@ -5,6 +5,10 @@ on:
     branches: [main, develop]
   pull_request:
     branches: [main, develop]
+  schedule:
+    # Nightly full local gate (headed phase 9)
+    - cron: '0 2 * * *'
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -12,55 +16,72 @@ concurrency:
 
 jobs:
   # ────────────────────────────────────────────────────────────────────────
-  # 1. Unit tests + coverage (Vitest)
+  # Tier 1 — PR fast (~15 min): structure, unit waves, contracts, lint, secrets
   # ────────────────────────────────────────────────────────────────────────
-  unit-tests:
-    name: Unit tests + coverage
+  pr-fast:
+    name: PR fast gate
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    if: github.event_name != 'schedule'
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Node 22
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
 
-      - name: Install root deps
-        run: npm ci --prefer-offline --no-audit --progress=false
+      - name: Install deps
+        run: |
+          npm ci --prefer-offline --no-audit --progress=false
+          cd tests/unit && npm ci --prefer-offline --no-audit --progress=false
+          cd ../Isara-patient-portal && npm ci --prefer-offline --no-audit --progress=false
+          cd ../Isara-doctor-portal && npm ci --prefer-offline --no-audit --progress=false
+          cd ../Izara-jitsi-server && npm ci --prefer-offline --no-audit --progress=false
 
-      - name: Install unit-test deps
-        run: npm ci --prefer-offline --no-audit --progress=false
-        working-directory: tests/unit
+      - name: Phase 0 structure
+        run: npm run phase:0
 
-      - name: Install patient-portal deps
-        run: npm ci --prefer-offline --no-audit --progress=false
-        working-directory: Isara-patient-portal
+      - name: Unit waves (fail-fast)
+        run: node scripts/run-unit-groups-sequential.mjs --fail-fast
 
-      - name: Install doctor-portal deps
-        run: npm ci --prefer-offline --no-audit --progress=false
-        working-directory: Isara-doctor-portal
+      - name: Meeting server contract
+        run: npm run test:meeting-server:contract
 
-      - name: Run unit tests with coverage
-        run: npm run test:coverage
-        working-directory: tests/unit
+      - name: Static guards
+        run: npm run test:guards:static
 
-      - name: Upload coverage report
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage-report
-          path: tests/unit/coverage/
-          retention-days: 14
+      - name: Portal lint + typecheck
+        run: npm run test:lint:portals:full
+
+      - name: Secret scan (hardcoded fallbacks)
+        run: |
+          if grep -rnE "\|\|\s*['\"]IzaraDb2024['\"]" \
+            --include='*.ts' --include='*.js' --include='*.cjs' --include='*.mjs' \
+            --include='*.yml' --include='*.yaml' --include='Dockerfile*' \
+            --exclude-dir=node_modules --exclude-dir=dist --exclude-dir=.git \
+            --exclude='*.test.*' --exclude='test-*.ps1' \
+            .; then
+            echo "::error::Hardcoded password fallback '|| IzaraDb2024' reintroduced"
+            exit 1
+          fi
+          if grep -rnE "JWT_SECRET\s*\|\|\s*['\"]" \
+            --include='*.ts' --include='*.js' --include='*.cjs' --include='*.mjs' \
+            --exclude-dir=node_modules --exclude-dir=dist --exclude-dir=.git \
+            --exclude='*.test.*' \
+            .; then
+            echo "::error::JWT_SECRET must fail-fast, no string fallback allowed"
+            exit 1
+          fi
 
   # ────────────────────────────────────────────────────────────────────────
-  # 2. Security audit — fail on any HIGH/CRITICAL in production deps
+  # Security audit (parallel to PR fast)
   # ────────────────────────────────────────────────────────────────────────
   security-audit:
     name: npm audit (production-only)
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    if: github.event_name != 'schedule'
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -79,13 +100,11 @@ jobs:
         run: npm audit --omit=dev --audit-level=high
         working-directory: Izara-jitsi-server
 
-  # ────────────────────────────────────────────────────────────────────────
-  # 2b. OWASP CVE Lite — OSV lockfile scan (fail on HIGH+ production deps)
-  # ────────────────────────────────────────────────────────────────────────
   cve-lite-scan:
     name: OWASP CVE Lite (dependencies)
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    if: github.event_name != 'schedule'
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -105,63 +124,20 @@ jobs:
       - name: CVE Lite scan (fail-on high)
         run: npm run security:cve-lite
 
-      - name: Upload CVE Lite reports
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: cve-lite-reports
-          path: reports/security/cve-lite/
-          retention-days: 30
-
-  # ────────────────────────────────────────────────────────────────────────
-  # 3. Secret scanner — reject PRs that reintroduce hardcoded DB passwords
-  # ────────────────────────────────────────────────────────────────────────
-  secret-scan:
-    name: Secret scan (hardcoded fallbacks)
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Reject IzaraDb2024 in source
-        run: |
-          if grep -rnE "\|\|\s*['\"]IzaraDb2024['\"]" \
-            --include='*.ts' --include='*.js' --include='*.cjs' --include='*.mjs' \
-            --include='*.yml' --include='*.yaml' --include='Dockerfile*' \
-            --exclude-dir=node_modules --exclude-dir=dist --exclude-dir=.git \
-            --exclude='*.test.*' --exclude='test-*.ps1' \
-            .; then
-            echo "::error::Hardcoded password fallback '|| IzaraDb2024' reintroduced"
-            exit 1
-          fi
-
-      - name: Reject JWT_SECRET default fallbacks
-        run: |
-          if grep -rnE "JWT_SECRET\s*\|\|\s*['\"]" \
-            --include='*.ts' --include='*.js' --include='*.cjs' --include='*.mjs' \
-            --exclude-dir=node_modules --exclude-dir=dist --exclude-dir=.git \
-            --exclude='*.test.*' \
-            .; then
-            echo "::error::JWT_SECRET must fail-fast, no string fallback allowed"
-            exit 1
-          fi
-
-  # ────────────────────────────────────────────────────────────────────────
-  # 4. Docker build matrix — verify every Dockerfile still builds
-  # ────────────────────────────────────────────────────────────────────────
   docker-build:
     name: Docker build (${{ matrix.service }})
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    if: github.event_name != 'schedule'
     strategy:
       fail-fast: false
       matrix:
         include:
           - service: patient-portal
-            context: Isara-patient-portal
+            context: .
             dockerfile: Isara-patient-portal/Dockerfile.unified
           - service: doctor-portal
-            context: Isara-doctor-portal
+            context: .
             dockerfile: Isara-doctor-portal/Dockerfile.unified
           - service: meeting-server
             context: Izara-jitsi-server
@@ -181,13 +157,18 @@ jobs:
           cache-to: type=gha,mode=max,scope=${{ matrix.service }}
 
   # ────────────────────────────────────────────────────────────────────────
-  # 5. Playwright E2E against docker-compose stack
+  # Tier 2 — PR docker E2E (label run-docker-e2e or push to main)
   # ────────────────────────────────────────────────────────────────────────
-  e2e-tests:
-    name: Playwright E2E (docker-compose)
+  pr-docker-e2e:
+    name: Playwright E2E (docker, headless subset)
     runs-on: ubuntu-latest
     timeout-minutes: 45
-    needs: [unit-tests, security-audit, cve-lite-scan, secret-scan]
+    needs: [pr-fast, security-audit, cve-lite-scan]
+    if: |
+      github.event_name != 'schedule' && (
+        github.ref == 'refs/heads/main' ||
+        contains(github.event.pull_request.labels.*.name, 'run-docker-e2e')
+      )
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -226,33 +207,27 @@ jobs:
           EOF
 
       - name: Start compose stack
-        run: docker compose up -d --build
+        run: docker compose --env-file .env.docker up -d --build
 
-      - name: Wait for health
-        run: |
-          for i in {1..30}; do
-            if curl -sf http://localhost:3005/health \
-               && curl -sf http://localhost:3010/health \
-               && curl -sf http://localhost:3020/health; then
-              echo "All services healthy."
-              exit 0
-            fi
-            sleep 5
-          done
-          echo "::error::Services failed to become healthy"
-          docker compose logs --tail=80
-          exit 1
+      - name: Docker probe + meeting API smoke
+        run: npm run docker:probe-health && npm run docker:meeting-api-smoke
 
-      - name: Run Playwright (all groups)
+      - name: Run Playwright (A-auth + Q-meeting-lifecycle, headless)
         env:
           CI: "1"
-        run: npx playwright test --reporter=list --workers=2
+          PW_HEADLESS: "1"
+          PW_WORKERS: "1"
+          PW_SKIP_LIVE_GEMINI: "1"
+          PATIENT_URL: http://127.0.0.1:3005
+          DOCTOR_URL: http://127.0.0.1:3010
+          MEETING_URL: http://127.0.0.1:3020
+        run: npx playwright test --project=A-auth --project=Q-meeting-lifecycle --workers=1
 
       - name: Upload Playwright report
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: playwright-report
+          name: playwright-report-docker
           path: |
             playwright-report/
             test-results/
@@ -260,20 +235,20 @@ jobs:
 
       - name: Dump compose logs on failure
         if: failure()
-        run: docker compose logs --tail=200
+        run: docker compose --env-file .env.docker logs --tail=200
 
       - name: Tear down
         if: always()
-        run: docker compose down -v
+        run: docker compose --env-file .env.docker down -v
 
   # ────────────────────────────────────────────────────────────────────────
-  # 6. Process contracts + portal lint (no Docker)
+  # Tier 3 — Nightly full local gate (phase 9)
   # ────────────────────────────────────────────────────────────────────────
-  quality-gate:
-    name: Process contracts + portal lint
+  nightly-phase9:
+    name: Nightly phase 9 (full local gate)
     runs-on: ubuntu-latest
-    timeout-minutes: 25
-    needs: [unit-tests, security-audit, cve-lite-scan]
+    timeout-minutes: 180
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -282,26 +257,41 @@ jobs:
           cache: npm
 
       - name: Install deps
+        run: npm run verify:deps
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium firefox webkit
+
+      - name: Write .env.docker
         run: |
-          npm ci --prefer-offline --no-audit --progress=false
-          cd tests/unit && npm ci --prefer-offline --no-audit --progress=false
-          cd ../Isara-patient-portal && npm ci --prefer-offline --no-audit --progress=false
-          cd ../Isara-doctor-portal && npm ci --prefer-offline --no-audit --progress=false
+          cat > .env.docker <<EOF
+          POSTGRES_USER=postgres
+          POSTGRES_PASSWORD=ci_nightly_${{ github.run_id }}
+          POSTGRES_DB=izara_phase1
+          JWT_SECRET=ci-jwt-nightly-secret-minimum-32-characters
+          VITE_GEMINI_API_KEY=ci-placeholder-gemini
+          VITE_GEMINI_MODEL=gemini-3.1-flash-lite
+          VITE_GOOGLE_MAPS_API_KEY=ci-placeholder-maps
+          RATE_LIMIT_MAX=999999
+          EOF
 
-      - name: Process Vitest contracts
-        run: npm run test:unit:process-contracts
+      - name: Phase 9 full gate
+        env:
+          GATE_SKIP_DOCKER_BUILD: "1"
+          PW_SKIP_LIVE_GEMINI: "1"
+        run: npm run phase:9
 
-      - name: v5.2 UX/workflow contract pack
-        run: npm run test:unit:v5-contracts
+      - name: Upload gate artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nightly-phase9-artifacts
+          path: |
+            reports/
+            test-results/
+            playwright-report/
+          retention-days: 30
 
-      - name: Portal lint and type-check (full tsc both portals)
-        run: npm run test:lint:portals:full
-
-      - name: Env audit (doctor portal)
-        run: npm run env:audit
-
-      - name: Sonar quality gate
-        run: npm run sonar:lint
-
-      - name: Meeting server + security contracts
-        run: npm run test:security-hardening && npm run test:meeting-server:contract && npm run test:post-meeting-pipeline
+      - name: Tear down
+        if: always()
+        run: docker compose --env-file .env.docker down -v || true

@@ -4,11 +4,11 @@ import path from 'node:path';
 
 const servicePath = path.resolve(
   __dirname,
-  '../../../Isara-doctor-portal/src/services/geminiClinicalService.ts',
+  '../../../Isara-doctor-portal/frontend/services/geminiClinicalService.ts',
 );
 const apiServerPath = path.resolve(
   __dirname,
-  '../../../Isara-doctor-portal/server/mainApiServer.cjs',
+  '../../../Isara-doctor-portal/backend/mainApiServer.cjs',
 );
 
 async function callGeminiClinicalFallback(prompt: string): Promise<string | null> {

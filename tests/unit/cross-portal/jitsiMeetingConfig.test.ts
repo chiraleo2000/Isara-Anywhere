@@ -6,7 +6,7 @@ import {
   getJitsiExternalApiOptions,
   pickJitsiJwt,
   type JitsiMeetingRole,
-} from '../../../Isara-patient-portal/src/utils/jitsiMeetingConfig.ts';
+} from '../../../Isara-patient-portal/frontend/utils/jitsiMeetingConfig.ts';
 
 describe('jitsiMeetingConfig — portal join options', () => {
   it('JM01 — doctor role is host toolbar with lobby disabled', () => {
@@ -69,7 +69,7 @@ describe('jitsiMeetingConfig — isHostReady fetch', () => {
   });
 
   it('JM06 — isHostReady parses ready flag', async () => {
-    const { isHostReady } = await import('../../../Isara-patient-portal/src/utils/jitsiMeetingConfig.ts');
+    const { isHostReady } = await import('../../../Isara-patient-portal/frontend/utils/jitsiMeetingConfig.ts');
     (fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
       ok: true,
       json: async () => ({ ready: true }),

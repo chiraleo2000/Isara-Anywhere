@@ -1,7 +1,7 @@
 # 👤 Patient Portal — Profile Page
 
 **Route:** `/profile`
-**Component:** `src/pages/profile/ProfilePage.tsx`
+**Component:** `frontend/pages/profile/ProfilePage.tsx`
 **Access:** 🔒 Authenticated patients
 **Thai Title:** โปรไฟล์
 

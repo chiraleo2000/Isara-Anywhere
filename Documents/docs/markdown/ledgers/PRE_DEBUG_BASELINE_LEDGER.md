@@ -2,17 +2,17 @@
 
 | Field | Value |
 |-------|-------|
-| Environment | local + cloud (dev-testing) |
-| Generated | 2026-05-31T10:08:21Z |
-| Defect track | v1.7.48 |
+| Environment | local Docker + cloud (dev-testing) |
+| Generated | 2026-06-22 |
+| Release track | v1.7.53 |
 
-| Passed | 85 (cloud full headed) + 2938 (unit, Docker v1.7.50) |
-| Failed | 0 |
+| Passed | ~3200 (unit, Docker) + 78 meeting contracts + phase gates 0–9 wired |
+| Failed | See `reports/local-error-ledger/*-latest.json` after `npm run ledger:local` |
 
-## Cloud full headed (2026-05-31)
+## Local pre-deploy gate (v1.7.53)
 
-`npm run test:cloud:full` — **85 passed**, 7.7m, 212 PNG → `Documents/docs/screenshots/`
+`npm run test:local:pre-deploy-gate` — phase 9 full gate with pre-phase smoke, groups A–S screenshots, static guards.
 
 ## Failures
 
-_No failures recorded._
+Pruned by `npm run cleanup:project`. Regenerate ledger: `npm run ledger:local -- --round N`.

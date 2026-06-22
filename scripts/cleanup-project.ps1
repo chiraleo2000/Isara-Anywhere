@@ -152,7 +152,34 @@ Remove-PathSafe -Path $datedShowup -Label "reports\cloud-unit-gate\ui-showup\202
 # Old rev extract superseded by cloud-unit-gate / defect-fix
 Remove-PathSafe -Path (Join-Path $root "reports\doctor-rev104-extract") -Label "reports\doctor-rev104-extract"
 
+Write-Host "--- Gate / E2E run logs & stale ledgers ---" -ForegroundColor Cyan
+Remove-PathSafe -Path (Join-Path $root "reports\local-failures") -Label "reports\local-failures"
+Get-ChildItem (Join-Path $root "reports") -Filter "*.log" -File -ErrorAction SilentlyContinue | ForEach-Object {
+    Remove-FilesSafe @($_.FullName)
+}
+Get-ChildItem (Join-Path $root "reports") -Filter "local-unit-gate-*.log" -File -ErrorAction SilentlyContinue | ForEach-Object {
+    Remove-FilesSafe @($_.FullName)
+}
+$localLedger = Join-Path $root "reports\local-error-ledger"
+if (Test-Path $localLedger) {
+    Get-ChildItem $localLedger -Filter "round-*-20*.json" -File -ErrorAction SilentlyContinue | ForEach-Object {
+        Remove-FilesSafe @($_.FullName)
+    }
+}
+Get-ChildItem $root -Filter "LOCAL_E2E_ERROR_LEDGER_ROUND*.md" -File -ErrorAction SilentlyContinue | ForEach-Object {
+    Remove-FilesSafe @($_.FullName)
+}
+Get-ChildItem $root -Filter "CLOUD_E2E_ERROR_LEDGER_ROUND*.md" -File -ErrorAction SilentlyContinue | ForEach-Object {
+    Remove-FilesSafe @($_.FullName)
+}
+Remove-PathSafe -Path (Join-Path $root "tests\unit\coverage") -Label "tests\unit\coverage"
+Remove-FilesSafe @(
+    (Join-Path $root "reports\eslint-deep-doctor.txt"),
+    (Join-Path $root "reports\eslint-deep-patient.txt"),
+    (Join-Path $root "reports\eslint-deep-jitsi.txt")
+)
+
 Write-Host ""
-Write-Host "Kept: Documents/, Processes/, reports/cloud-unit-gate/, reports/defect-fix/, latest JSON per round folder" -ForegroundColor Green
+Write-Host "Kept: Documents/, Processes/, reports/defect-fix/, *-latest.json ledgers, security/sonar summaries" -ForegroundColor Green
 Write-Host "Regenerate Playwright cache: npm run test:e2e" -ForegroundColor DarkGray
 if (-not $DryRun) { Write-Host "Done." -ForegroundColor Green }

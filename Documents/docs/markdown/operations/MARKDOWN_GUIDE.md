@@ -1,6 +1,6 @@
 # Markdown validation guide
 
-**Izara Telemedicine** · Last updated: 31 May 2026 (พ.ศ. 2569)
+**Izara Telemedicine** · Last updated: 22 June 2026 (พ.ศ. 2569)
 
 Automated checks keep documentation consistent across `Processes/`, `docs/`, and portal READMEs.
 
@@ -18,7 +18,7 @@ HTML slides (Sarabun 16 pt): `Documents/docs/technical/slides/TECHNICAL_ARCHITEC
 
 **After cloud / Code Breaker testing:** purge demo data only (no re-seed): `npm run cleanup:cloud-test-only` (requires valid `DB_PASSWORD` in `.env`)
 
-**Current doc build:** v1.7.50 · Unit **2938** + meeting contracts **78** · Cloud full **85/85** headed · Docker Group W **18/18** (Chromium/Firefox/WebKit) · Word `TH Sarabun New` 16 pt · PPT `FC Iconic` 32/18/16 pt · Screenshots **212** cloud + **52** Group W in `Documents/docs/screenshots/group-W/` (sync: `npm run docs:sync-screenshots`)
+**Current doc build:** v1.7.53 · Unit **~3200** + meeting contracts **78** + Socket.IO integration · Phase gates **0–9** · LAN Mode B (`deploy/nginx/`) · Static guards `test:guards:static` · Word `TH Sarabun New` 16 pt · PPT `FC Iconic` 32/18/16 pt · Screenshots groups A–S in `Documents/docs/screenshots/` (sync: `npm run docs:sync-screenshots`) · Prune stale artifacts: `npm run cleanup:project`
 
 ---
 

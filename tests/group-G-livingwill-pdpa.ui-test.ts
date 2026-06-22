@@ -52,6 +52,23 @@ test.describe('Group G — Living Will & PDPA', () => {
       console.log(`  ✅ G02: Explored ${tabCount} PDPA tabs`);
     });
 
+    await test.step('G02b — PDPA tabs show no Invalid Date or error banners', async () => {
+      const auditTab = patient.page.getByRole('button', { name: /Access History|ประวัติการเข้าถึง/i });
+      if (await auditTab.isVisible({ timeout: 5_000 }).catch(() => false)) {
+        await auditTab.click();
+        await patient.page.waitForTimeout(1_000);
+      }
+      const doctorsTab = patient.page.getByRole('button', { name: /Doctor Access|แพทย์ที่เข้าถึง/i });
+      if (await doctorsTab.isVisible({ timeout: 3_000 }).catch(() => false)) {
+        await doctorsTab.click();
+        await patient.page.waitForTimeout(1_000);
+      }
+      const body = await patient.page.locator('body').innerText();
+      expect(body, 'G02b: no Invalid Date on PDPA').not.toMatch(/invalid date/i);
+      expect(body, 'G02b: no generic error banner on PDPA').not.toMatch(/เกิดข้อผิดพลาด|an error occurred|session.*invalid|invalid session/i);
+      console.log('  ✅ G02b: PDPA tabs free of Invalid Date / session errors');
+    });
+
     await test.step('G03 — Toggle privacy switches (data-testid)', async () => {
       const consentToggle = patient.page.getByTestId(/^pdpa-consent-toggle-/).first();
       const cloud = process.env.TEST_ENV === 'cloud';

@@ -7,7 +7,7 @@ import {
   createJitsiRoleJwt,
   validateGuestJoinAccess,
   generateOpaqueToken,
-} from '../../../Izara-jitsi-server/server/sessionAuth.js';
+} from '../../../Izara-jitsi-server/backend/sessionAuth.js';
 
 describe('sessionAuth — Jitsi JWT removed', () => {
   it('JR01 — createJitsiRoleJwt always returns null', () => {

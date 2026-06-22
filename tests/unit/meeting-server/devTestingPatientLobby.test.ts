@@ -2,7 +2,7 @@
  * Dev-testing patient lobby auth — session tokens vs meeting-server JWT.
  */
 import { describe, it, expect, vi } from 'vitest';
-import { resolveDevTestingPatientLobbyUser } from '../../../Izara-jitsi-server/server/meetingAuth.js';
+import { resolveDevTestingPatientLobbyUser } from '../../../Izara-jitsi-server/backend/meetingAuth.js';
 
 describe('resolveDevTestingPatientLobbyUser', () => {
   it('DTP01 — matches in-memory active meeting patient', async () => {

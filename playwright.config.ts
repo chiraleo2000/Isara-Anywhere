@@ -78,6 +78,12 @@ function resolveSlowMo(headless: boolean, isCloud: boolean): number {
 
 const coreSlowMo = resolveSlowMo(USE_HEADLESS, IS_CLOUD);
 
+function resolveGlobalTimeout(isCloud: boolean, headed: boolean): number {
+  if (isCloud) return 3_600_000;
+  if (headed) return 7_200_000;
+  return 1_800_000;
+}
+
 function resolvePlaywrightChannel(headless: boolean): string | undefined {
   if (headless || isChromeChannelBanned()) return undefined;
   return process.platform === 'win32' ? 'msedge' : undefined;
@@ -103,7 +109,7 @@ const sharedUse = {
   browserName: defaultBrowserName,
   baseURL: IS_CLOUD
     ? (process.env.CLOUD_PATIENT_URL || 'https://izara-patient-portal-dev-testing-724889190329.asia-southeast1.run.app')
-    : 'http://localhost:3005',
+    : 'http://127.0.0.1:3005',
 };
 
 /** 5" phone through 13" tablet matrix (Group S). */
@@ -132,12 +138,12 @@ export default defineConfig({
   testDir: './tests',
   outputDir: PRE_DEBUG_OUTPUT,
   timeout: IS_CLOUD ? 420_000 : 300_000,
-  retries: 0,
+  retries: IS_CLOUD ? 0 : process.env.PW_HEADED === '1' ? 1 : 0,
   workers,
   maxFailures: 10,
   forbidOnly: true,
-  // Increase fixture timeout to 3 min — 3 browser launches + navigations can be slow
-  globalTimeout: IS_CLOUD || process.env.PW_HEADED === '1' ? 3_600_000 : 1_800_000,
+  // Headed full A–P gate needs >1h on Windows (GT-01); cloud keeps 1h cap
+  globalTimeout: resolveGlobalTimeout(IS_CLOUD, process.env.PW_HEADED === '1'),
   globalSetup: './tests/e2e/global-setup.ts',
   reporter: [
     ['list'],
@@ -227,6 +233,12 @@ export default defineConfig({
       timeout: IS_CLOUD ? 900_000 : 600_000,
     },
     {
+      name: 'Q2-post-meeting-doctor',
+      testMatch: 'group-Q2-post-meeting-doctor.ui-test.ts',
+      dependencies: ['Q-meeting-lifecycle'],
+      timeout: IS_CLOUD ? 600_000 : 300_000,
+    },
+    {
       name: 'R1-code-breaker-network',
       testMatch: 'group-R1-code-breaker-network.ui-test.ts',
       dependencies: ['D-appointments'],
@@ -235,7 +247,7 @@ export default defineConfig({
     {
       name: 'E-meeting-clinical',
       testMatch: /group-E-(meeting-clinical|cross-browser-matrix)\.ui-test\.ts/,
-      dependencies: ['D-appointments', 'Q-meeting-lifecycle'],  // Q validates 3-party lifecycle before E clinical extras
+      dependencies: ['D-appointments', 'Q-meeting-lifecycle', 'Q2-post-meeting-doctor'],
       // Jitsi multi-party: Firefox (patient) + Edge (doctor) + Firefox (admin) — multi-portal.ts
     },
     {

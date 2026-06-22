@@ -6,7 +6,7 @@ import {
   getJitsiExternalApiOptions,
   loadJitsiExternalApiScript,
   pickJitsiJwt,
-} from '../../../Isara-doctor-portal/src/utils/jitsiMeetingConfig.ts';
+} from '../../../Isara-doctor-portal/frontend/utils/jitsiMeetingConfig.ts';
 
 describe('doctor meeting join config contract', () => {
   beforeEach(() => {
@@ -89,7 +89,7 @@ describe('doctor meeting join config contract', () => {
   });
 
   it('MJ06 — resolveMountJwt never passes JWT to public meet.jit.si mount', async () => {
-    const { resolveMountJwt } = await import('../../../Isara-doctor-portal/src/utils/jitsiMeetingConfig.ts');
+    const { resolveMountJwt } = await import('../../../Isara-doctor-portal/frontend/utils/jitsiMeetingConfig.ts');
     expect(resolveMountJwt()).toBeUndefined();
   });
 

@@ -5,3 +5,7 @@
 Documents/docs/screenshots/**/*.png filter=lfs diff=lfs merge=lfs -text
 docs/screenshots/**/*.png filter=lfs diff=lfs merge=lfs -text
 screenshots/**/*.png filter=lfs diff=lfs merge=lfs -text
+
+# Shell scripts must use LF on Ubuntu (CRLF breaks `set -euo pipefail`)
+*.sh text eol=lf
+deploy/nginx/** text eol=lf

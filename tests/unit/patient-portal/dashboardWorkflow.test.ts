@@ -245,11 +245,16 @@ describe('Dashboard & Stats Workflow (Process: 04_Dashboard_Page.md)', () => {
   // H — CONTINUOUS WORKFLOW: Patient Login → Dashboard Load → Actions
   // ═══════════════════════════════════════════════════════════════════════════
   describe('H — Patient Dashboard Continuous Workflow', () => {
+    const isoDateOffset = (daysFromNow: number): string => {
+      const d = new Date();
+      d.setDate(d.getDate() + daysFromNow);
+      return d.toISOString().slice(0, 10);
+    };
     const appointments: AppointmentSummary[] = [
-      { id: 'APT-001', patientName: 'สมชาย', doctorName: 'Dr. วิชัย', date: '2026-06-15', time: '09:00', status: 'confirmed', type: 'telemedicine' },
-      { id: 'APT-002', patientName: 'สมชาย', doctorName: 'Dr. วิชัย', date: '2026-06-10', time: '14:00', status: 'completed', type: 'telemedicine' },
-      { id: 'APT-003', patientName: 'สมชาย', doctorName: 'Dr. สมศรี', date: '2026-06-20', time: '10:30', status: 'confirmed', type: 'telemedicine' },
-      { id: 'APT-004', patientName: 'สมชาย', doctorName: 'Dr. วิชัย', date: '2026-05-01', time: '11:00', status: 'completed', type: 'telemedicine' },
+      { id: 'APT-001', patientName: 'สมชาย', doctorName: 'Dr. วิชัย', date: isoDateOffset(7), time: '09:00', status: 'confirmed', type: 'telemedicine' },
+      { id: 'APT-002', patientName: 'สมชาย', doctorName: 'Dr. วิชัย', date: isoDateOffset(-12), time: '14:00', status: 'completed', type: 'telemedicine' },
+      { id: 'APT-003', patientName: 'สมชาย', doctorName: 'Dr. สมศรี', date: isoDateOffset(14), time: '10:30', status: 'confirmed', type: 'telemedicine' },
+      { id: 'APT-004', patientName: 'สมชาย', doctorName: 'Dr. วิชัย', date: isoDateOffset(-45), time: '11:00', status: 'completed', type: 'telemedicine' },
     ];
     let upcoming: AppointmentSummary[] = [];
     let completionRate = 0;

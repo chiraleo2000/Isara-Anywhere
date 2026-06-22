@@ -4,7 +4,7 @@
  * ═══════════════════════════════════════════════════════════════════════
  * Tests: chunkTranscript, room name generation, meeting status logic,
  *        CDS rule checks, and API route validation
- * Source: Izara-jitsi-server/server/index.js
+ * Source: Izara-jitsi-server/backend/index.js
  * ═══════════════════════════════════════════════════════════════════════
  */
 import { describe, it, expect } from 'vitest';

@@ -8,7 +8,7 @@ import { fileURLToPath } from 'node:url';
 
 const appointmentPagesPath = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
-  '../../../Isara-patient-portal/src/pages/AppointmentPages.tsx',
+  '../../../Isara-patient-portal/frontend/pages/AppointmentPages.tsx',
 );
 
 const REQUIRED_LABEL_KEYS = [

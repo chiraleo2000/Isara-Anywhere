@@ -1,7 +1,7 @@
 # 🤖 Patient Portal — AI Doctor Page
 
 **Route:** `/ai-doctor`
-**Component:** `src/pages/health/AIDoctorPage.tsx`
+**Component:** `frontend/pages/health/AIDoctorPage.tsx`
 **Access:** 🔒 Authenticated patients
 **Thai Title:** AI สุขภาพ / AI Health Assistant
 

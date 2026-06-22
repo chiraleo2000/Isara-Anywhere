@@ -3,7 +3,8 @@
  * Requires workflow state from Group D serial run (appointmentId).
  */
 import { test, expect, DOCTOR_URL, MEETING_URL } from './helpers/multi-portal';
-import { loadWorkflowState } from './helpers/workflow-state';
+import { loadWorkflowState, reloadWorkflowStateFromDisk } from './helpers/workflow-state';
+import { resolveWorkflowAppointmentId } from './helpers/meeting-lifecycle-fixture';
 
 const IS_CLOUD = process.env.TEST_ENV === 'cloud';
 
@@ -11,14 +12,17 @@ test.describe('Group D — Doctor HOST workflow (G8–G9)', () => {
   test.describe.configure({ mode: 'serial' });
 
   test('G8–G9 — Doctor confirm creates meeting with moderator for doctor', async ({ portals }) => {
-    const { appointmentId } = loadWorkflowState();
-    test.skip(!appointmentId, 'Run Group D first to create appointmentId in workflow state');
-
     const page = portals.doctor.page;
     const token = await page.evaluate(() =>
       localStorage.getItem('token') || localStorage.getItem('izara_auth_token') || '',
     );
     expect(token, 'doctor fixture must provide JWT (use TEST_DOCTOR_PASSWORD in Docker)').toBeTruthy();
+
+    let appointmentId = reloadWorkflowStateFromDisk().appointmentId || loadWorkflowState().appointmentId;
+    if (!appointmentId) {
+      appointmentId = await resolveWorkflowAppointmentId(page.request, DOCTOR_URL, token);
+    }
+    test.skip(!appointmentId, 'Run Group D first to create appointmentId in workflow state');
 
     const doctorId = await page.evaluate(() => {
       const u = localStorage.getItem('izara_current_user');

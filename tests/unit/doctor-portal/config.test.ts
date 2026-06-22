@@ -3,7 +3,7 @@
  * IZARA TELEMEDICINE — DOCTOR PORTAL CONFIG SERVICE UNIT TESTS
  * ═══════════════════════════════════════════════════════════════════════
  * Tests: GCS bucket helpers, feature flags, session timeout config
- * Source: Isara-doctor-portal/src/services/config.ts
+ * Source: Isara-doctor-portal/frontend/services/config.ts
  * ═══════════════════════════════════════════════════════════════════════
  */
 import { describe, it, expect } from 'vitest';

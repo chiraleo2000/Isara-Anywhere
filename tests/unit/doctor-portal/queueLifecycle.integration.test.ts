@@ -9,8 +9,8 @@ import {
   splitQueueSections,
   isWithinAcceptedWindow,
   PENDING_POOL_STATUSES,
-} from '../../../Isara-doctor-portal/server/appointmentPoolQuery.cjs';
-import { buildTelehealthMeetingUrls } from '../../../Isara-doctor-portal/server/jitsiMeetingLinks.cjs';
+} from '../../../Isara-doctor-portal/backend/appointmentPoolQuery.cjs';
+import { buildTelehealthMeetingUrls } from '../../../Isara-doctor-portal/backend/jitsiMeetingLinks.cjs';
 
 type PoolStatus = 'in_pool' | 'awaiting_doctor_response' | 'confirmed' | 'cancelled';
 

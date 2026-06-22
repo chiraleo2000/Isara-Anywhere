@@ -4,7 +4,7 @@
  * ═══════════════════════════════════════════════════════════════════════
  * Tests: calculateNextWeekSlot, handleMissedMeeting, sendToPool,
  *        RescheduleRecord structure, MissedMeetingResult actions
- * Source: Isara-doctor-portal/src/services/appointmentRescheduleService.ts
+ * Source: Isara-doctor-portal/frontend/services/appointmentRescheduleService.ts
  * ═══════════════════════════════════════════════════════════════════════
  */
 import { describe, it, expect } from 'vitest';

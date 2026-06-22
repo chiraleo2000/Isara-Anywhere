@@ -8,14 +8,14 @@ import path from 'node:path';
 const root = path.resolve(__dirname, '../../..');
 
 const domainFiles: Record<string, string> = {
-  auth: 'Isara-patient-portal/server/routes/auth.ts',
-  appointments: 'Isara-doctor-portal/server/appointmentPoolQuery.cjs',
-  meeting: 'Izara-jitsi-server/server/index.js',
-  emr: 'Isara-doctor-portal/src/components/CompleteEMREditor.tsx',
-  phr: 'Isara-patient-portal/server/routes/phr.ts',
-  livingWill: 'Isara-patient-portal/server/routes/pdpa.ts',
-  notifications: 'Isara-patient-portal/server/routes/notifications.ts',
-  queue: 'Isara-doctor-portal/src/pages/meetings/HealthMeeting.tsx',
+  auth: 'Isara-patient-portal/backend/routes/auth.ts',
+  appointments: 'Isara-doctor-portal/backend/appointmentPoolQuery.cjs',
+  meeting: 'Izara-jitsi-server/backend/index.js',
+  emr: 'Isara-doctor-portal/frontend/components/CompleteEMREditor.tsx',
+  phr: 'Isara-patient-portal/backend/routes/phr.ts',
+  livingWill: 'Isara-patient-portal/backend/routes/pdpa.ts',
+  notifications: 'Isara-patient-portal/backend/routes/notifications.ts',
+  queue: 'Isara-doctor-portal/frontend/pages/meetings/HealthMeeting.tsx',
 };
 
 describe('Separated workflow functions (SWF)', () => {

@@ -5,8 +5,8 @@ import { describe, it, expect } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
 
-const healthMeeting = path.resolve(__dirname, '../../../Isara-doctor-portal/src/pages/meetings/HealthMeeting.tsx');
-const meetingResults = path.resolve(__dirname, '../../../Isara-doctor-portal/src/pages/meetings/MeetingResults.tsx');
+const healthMeeting = path.resolve(__dirname, '../../../Isara-doctor-portal/frontend/pages/meetings/HealthMeeting.tsx');
+const meetingResults = path.resolve(__dirname, '../../../Isara-doctor-portal/frontend/pages/meetings/MeetingResults.tsx');
 
 describe('Clinical breadcrumb hints (BREAD)', () => {
   it('BREAD-01 — health meeting breadcrumb testid', () => {

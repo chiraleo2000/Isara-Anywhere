@@ -96,11 +96,25 @@ function buildCoreBrowserSpec(role: PortalRole, engine: BrowserEngine): RoleBrow
 export function getRoleBrowserSpec(role: PortalRole): RoleBrowserSpec {
   const core = resolveCoreBrowserEngine();
   if (core) return buildCoreBrowserSpec(role, core);
+  // Local headed runs: Firefox admin dashboard often whiteouts on Windows — use Edge for stability.
+  const localHeaded =
+    process.env.TEST_ENV !== 'cloud' &&
+    (process.env.PW_HEADED === '1' || process.env.PW_HEADLESS !== '1');
+  if (role === 'admin' && localHeaded) {
+    return {
+      role: 'admin',
+      engine: 'chromium',
+      channel: 'msedge',
+      browserName: 'edge',
+      navTimeoutMultiplier: 1,
+      launchRetries: 2,
+    };
+  }
   return ROLE_BROWSER_MATRIX[role];
 }
 
 export function scaleTimeout(baseMs: number, role: PortalRole): number {
-  return Math.round(baseMs * ROLE_BROWSER_MATRIX[role].navTimeoutMultiplier);
+  return Math.round(baseMs * getRoleBrowserSpec(role).navTimeoutMultiplier);
 }
 
 export function scaleTimeoutByBrowser(baseMs: number, browserName: string): number {

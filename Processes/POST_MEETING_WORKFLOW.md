@@ -48,9 +48,10 @@ in_progress → ended → processing → results_ready
 
 | Variable | Required | Notes |
 |----------|----------|-------|
-| `GEMINI_API_KEY` | For AI summary | Use `xxxxx` placeholder locally; real `AIza…` key on cloud |
+| `GEMINI_API_KEY` | For AI summary | Server canonical in `.env`; compose bridges to `VITE_GEMINI_API_KEY` at build |
 | `GEMINI_MODEL` | Optional | Default `gemini-3.1-flash-lite` |
-| `MEETING_SERVER_URL` | Yes | Izara-jitsi-server base URL |
+| `MEETING_SERVER_URL` | Yes (server) | Internal Docker: `http://meeting-server:3020` |
+| `VITE_MEETING_SERVER_URL` | Yes (browser) | Local Docker: `http://localhost:3020` |
 
 ### Session authentication (v1.7.52)
 

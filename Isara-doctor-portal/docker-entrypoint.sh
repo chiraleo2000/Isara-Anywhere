@@ -6,7 +6,7 @@ echo "======================================="
 
 # Inject runtime env vars into frontend config
 envsubst < /usr/share/nginx/html/env-config.template.js > /usr/share/nginx/html/env-config.js
-mkdir -p /app/server/logs /var/log /var/run
+mkdir -p /app/backend/logs /var/log /var/run
 echo "Environment configured"
 
 # ---- Start Embedded PostgreSQL (only when no external DB is provided) ----
@@ -76,12 +76,12 @@ fi
 
 # Start Auth server
 echo "Starting Auth server (port 3011)..."
-cd /app && NODE_ENV=production AUTH_PORT=3011 node /app/server/authServer.cjs &
+cd /app && NODE_ENV=production AUTH_PORT=3011 node /app/backend/authServer.cjs &
 sleep 3
 
 # Start Main API server (in background)
 echo "Starting Main API server (port 3009)..."
-cd /app && MAIN_API_PORT=3009 PORT=3009 node /app/server/mainApiServer.cjs &
+cd /app && MAIN_API_PORT=3009 PORT=3009 node /app/backend/mainApiServer.cjs &
 sleep 5
 
 # Wait for Main API to be ready

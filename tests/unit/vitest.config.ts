@@ -242,12 +242,12 @@ export default defineConfig({
       reporter: ['text', 'text-summary', 'json-summary', 'html', 'lcov'],
       reportsDirectory: './coverage',
       include: [
-        '../../Isara-doctor-portal/server/**/*.{ts,js,cjs,mjs}',
-        '../../Isara-doctor-portal/src/services/**/*.{ts,tsx}',
-        '../../Isara-doctor-portal/src/utils/**/*.{ts,tsx}',
-        '../../Isara-patient-portal/server/**/*.{ts,js,cjs,mjs}',
-        '../../Isara-patient-portal/src/services/**/*.{ts,tsx}',
-        '../../Izara-jitsi-server/server/**/*.{ts,js,cjs,mjs}',
+        '../../Isara-doctor-portal/backend/**/*.{ts,js,cjs,mjs}',
+        '../../Isara-doctor-portal/frontend/services/**/*.{ts,tsx}',
+        '../../Isara-doctor-portal/frontend/utils/**/*.{ts,tsx}',
+        '../../Isara-patient-portal/backend/**/*.{ts,js,cjs,mjs}',
+        '../../Isara-patient-portal/frontend/services/**/*.{ts,tsx}',
+        '../../Izara-jitsi-server/backend/**/*.{ts,js,cjs,mjs}',
       ],
       exclude: ['**/node_modules/**', '**/dist/**', '**/*.test.*', '**/*.spec.*'],
       all: true,
@@ -262,9 +262,9 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      '@doctor': path.resolve(__dirname, '../../Isara-doctor-portal/src'),
-      '@patient': path.resolve(__dirname, '../../Isara-patient-portal/src'),
-      '@meeting': path.resolve(__dirname, '../../Izara-jitsi-server/server'),
+      '@doctor': path.resolve(__dirname, '../../Isara-doctor-portal/frontend'),
+      '@patient': path.resolve(__dirname, '../../Isara-patient-portal/frontend'),
+      '@meeting': path.resolve(__dirname, '../../Izara-jitsi-server/backend'),
     },
   },
 });

@@ -4,7 +4,7 @@ import {
   sanitizeRouteId,
   assertJsonObjectBody,
   parseBase64Payload,
-} from '../server/requestValidation.js';
+} from '../backend/requestValidation.js';
 
 describe('requestValidation', () => {
   it('RV-01 — path traversal in id blocked', () => {

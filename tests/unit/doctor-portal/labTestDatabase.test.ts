@@ -4,7 +4,7 @@
  * ═══════════════════════════════════════════════════════════════════════
  * Tests: labTests data, labPanels data, searchLabTests, getLabTestByCode,
  *        imagingModalities
- * Source: Isara-doctor-portal/src/services/labTestDatabase.ts
+ * Source: Isara-doctor-portal/frontend/services/labTestDatabase.ts
  * ═══════════════════════════════════════════════════════════════════════
  */
 import { describe, it, expect } from 'vitest';

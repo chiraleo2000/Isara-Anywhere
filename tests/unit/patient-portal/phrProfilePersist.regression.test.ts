@@ -4,7 +4,7 @@ import path from 'node:path';
 
 const profilePagePath = path.resolve(
   __dirname,
-  '../../../Isara-patient-portal/src/pages/ProfilePage.tsx',
+  '../../../Isara-patient-portal/frontend/pages/ProfilePage.tsx',
 );
 
 async function persistPhrProfile(

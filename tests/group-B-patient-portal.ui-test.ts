@@ -15,6 +15,7 @@
  */
 import {
   test, expect, assertFullHealth, snap, navPatient,
+  refreshPatientSession, waitForContent, PATIENT_URL,
 } from './helpers/multi-portal';
 
 test.describe('Group B — Patient Portal Continuous Flow', () => {
@@ -24,6 +25,9 @@ test.describe('Group B — Patient Portal Continuous Flow', () => {
 
     /* B01 — Dashboard (already loaded by fixture) */
     await test.step('B01 — Dashboard loaded', async () => {
+      await refreshPatientSession(patient.page);
+      await patient.page.goto(`${PATIENT_URL}/`, { waitUntil: 'domcontentloaded', timeout: 45_000 });
+      await waitForContent(patient.page, 'B01', 8_000);
       await assertFullHealth(patient.page, 'B01-dashboard');
       await snap(patient.page, 'B01-dashboard', 'group-B');
       const body = await patient.page.locator('body').innerText();

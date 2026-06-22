@@ -1,6 +1,6 @@
 # รายงานโครงสร้างทางเทคนิค — Izara Anywhere (บันทึกวิทยากร)
 
-**เวอร์ชัน:** v1.7.50 · **วันที่:** 5 มิถุนายน 2569 · Cloud full **85/85** headed · Unit **2938** PASS (Docker) · Group W **18/18** (Chromium/Firefox/WebKit)  
+**เวอร์ชัน:** v1.7.53 · **วันที่:** 22 มิถุนายน 2569 · Phase gates 0–9 · Unit **~3200** PASS (Docker) · LAN Mode B docs  
 **มาตรฐานเอกสาร:** Word **TH Sarabun New** เนื้อหา **16 pt** ระยะบรรทัด **1.15** · PowerPoint **FC Iconic** หัวข้อ **32 pt** เนื้อหา **18 pt** บันทึกวิทยากร **16 pt**  
 **ไฟล์:** [diagrams.drawio](../../diagrams/diagrams.drawio) · [สไลด์ HTML](TECHNICAL_ARCHITECTURE_SLIDES.html) · [Word](../word/TECHNICAL_ARCHITECTURE_WORD_TH.docx) · [PowerPoint](../ppt/TECHNICAL_ARCHITECTURE_PPT_TH.pptx)
 

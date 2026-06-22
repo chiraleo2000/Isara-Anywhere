@@ -4,7 +4,7 @@ import path from 'node:path';
 
 const appRoutesPath = path.resolve(
   __dirname,
-  '../../../Isara-patient-portal/src/App.tsx',
+  '../../../Isara-patient-portal/frontend/App.tsx',
 );
 
 describe('notifications route regression guard', () => {

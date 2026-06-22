@@ -44,7 +44,7 @@ function filterBlocking(r: AxeResult): AxeResult['violations'] {
 
 test.describe('Group K — Accessibility (WCAG 2.1 AA)', () => {
   test('K1 — Patient portal login page has no serious a11y violations', async ({ page }) => {
-    await page.goto(`${PATIENT_URL}/login`, { waitUntil: 'domcontentloaded', timeout: LOGIN_NAV_TIMEOUT });
+    await gotoCloudWithRetry(page, `${PATIENT_URL}/login`, 'K1-login', LOGIN_NAV_TIMEOUT);
     const results = await runAxe(page);
     const blocking = filterBlocking(results);
     if (blocking.length > 0) {
@@ -54,7 +54,7 @@ test.describe('Group K — Accessibility (WCAG 2.1 AA)', () => {
   });
 
   test('K2 — Doctor portal login page has no serious a11y violations', async ({ page }) => {
-    await page.goto(`${DOCTOR_URL}/login`, { waitUntil: 'domcontentloaded', timeout: LOGIN_NAV_TIMEOUT });
+    await gotoCloudWithRetry(page, `${DOCTOR_URL}/login`, 'K2-login', LOGIN_NAV_TIMEOUT);
     const results = await runAxe(page);
     const blocking = filterBlocking(results);
     if (blocking.length > 0) {

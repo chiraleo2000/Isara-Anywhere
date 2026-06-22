@@ -1,7 +1,7 @@
 # 👤 Doctor Portal — Doctor Profile Page
 
 **Route:** `/profile`
-**Component:** `src/pages/DoctorProfilePage.tsx`
+**Component:** `frontend/pages/DoctorProfilePage.tsx`
 **Access:** 🔒 Doctor / Admin
 **Thai Title:** โปรไฟล์แพทย์ / Doctor Profile
 

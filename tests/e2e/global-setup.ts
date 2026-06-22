@@ -20,13 +20,13 @@ import {
 const IS_CLOUD = process.env.TEST_ENV === 'cloud';
 const PATIENT_URL = IS_CLOUD
   ? (process.env.CLOUD_PATIENT_URL || 'https://izara-patient-portal-dev-testing-724889190329.asia-southeast1.run.app')
-  : (process.env.LOCAL_PATIENT_URL || 'http://localhost:3005');
+  : (process.env.PATIENT_URL || process.env.PATIENT_PORTAL_URL || process.env.LOCAL_PATIENT_URL || 'http://127.0.0.1:3005');
 const DOCTOR_URL = IS_CLOUD
   ? (process.env.CLOUD_DOCTOR_URL || 'https://izara-doctor-portal-dev-testing-724889190329.asia-southeast1.run.app')
-  : (process.env.LOCAL_DOCTOR_URL || 'http://localhost:3010');
+  : (process.env.DOCTOR_URL || process.env.DOCTOR_PORTAL_URL || process.env.LOCAL_DOCTOR_URL || 'http://127.0.0.1:3010');
 const MEETING_URL = IS_CLOUD
   ? (process.env.CLOUD_MEETING_URL || 'https://izara-meeting-server-dev-testing-724889190329.asia-southeast1.run.app')
-  : (process.env.LOCAL_MEETING_URL || 'http://localhost:3020');
+  : (process.env.MEETING_URL || process.env.MEETING_SERVER_URL || process.env.LOCAL_MEETING_URL || 'http://127.0.0.1:3020');
 
 // ── Credentials ─────────────────────────────────────────────────────────────
 const USERS = {

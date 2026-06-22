@@ -7,10 +7,10 @@
   "scripts": {
     "dev": "concurrently \"npm run backend\" \"npm run frontend\"",
     "start": "npm run dev",
-    "backend": "node server/startAll.cjs",
-    "backend:main": "node server/mainApiServer.cjs",
-    "backend:auth": "node server/authServer.cjs",
-    "backend:gcs": "node server/gcsApiServer.cjs",
+    "backend": "node backend/startAll.cjs",
+    "backend:main": "node backend/mainApiServer.cjs",
+    "backend:auth": "node backend/authServer.cjs",
+    "backend:gcs": "node backend/gcsApiServer.cjs",
     "frontend": "vite --port 3010 --host 0.0.0.0",
     "build": "vite build",
     "build:typecheck": "tsc && vite build",
@@ -42,6 +42,7 @@
     "bucket": "ultra-mason-473703-h8_uploads"
   },
   "dependencies": {
+    "@fontsource/sarabun": "^5.2.8",
     "@google/generative-ai": "^0.21.0",
     "@headlessui/react": "^1.7.17",
     "@react-oauth/google": "^0.13.5",
@@ -57,14 +58,14 @@
     "googleapis": "^167.0.0",
     "jsonwebtoken": "^9.0.2",
     "moment": "^2.29.4",
-    "multer": "^2.1.1",
+    "multer": "^2.2.0",
     "pg": "^8.17.1",
     "react": "^18.2.0",
     "react-big-calendar": "^1.8.5",
     "react-dom": "^18.2.0",
-    "react-router-dom": "^7.15.0",
-    "socket.io": "^4.7.2",
-    "socket.io-client": "^4.7.2"
+    "react-router-dom": "^7.15.1",
+    "socket.io": "^4.8.3",
+    "socket.io-client": "^4.8.3"
   },
   "devDependencies": {
     "@faker-js/faker": "^9.3.0",
@@ -96,5 +97,8 @@
     "typescript": "^5.2.2",
     "vite": "^7.2.2",
     "vitest": "^4.0.18"
+  },
+  "overrides": {
+    "ws": "^8.21.0"
   }
 }

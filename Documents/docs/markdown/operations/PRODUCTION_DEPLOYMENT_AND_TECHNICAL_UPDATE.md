@@ -5,8 +5,8 @@
 **Release track:** `v1.7.25-post-meeting-pipeline` (guest video, Izara lobby, encrypted recording → AI EMR)  
 **Target environment:** Google Cloud Run (`asia-southeast1`) + PostgreSQL + optional GCS  
 **Classification:** Internal — Operations & Engineering  
-**Last updated:** 2026-05-31  
-**Verification:** v1.7.50 — unit **2938** (Docker PASS) + meeting contracts **78**; Defect-regression **36/36**; cloud full **85/85** headed
+**Last updated:** 2026-06-22  
+**Verification:** v1.7.53 — unit **~3200** (Docker PASS) + meeting contracts **78** + Socket.IO integration; phase gates 0–9; LAN Mode B (`*.isara.local` CORS); `npm run test:local:pre-deploy-gate`
 
 ### Document typography (มาตรฐานรายงานภาษาไทย)
 
@@ -25,8 +25,8 @@ python scripts/build-portal-user-guides.py
 
 | Output | Typography |
 |--------|------------|
-| `Documents/Documents/docs/guides/patient|doctor/USER_GUIDE_*_WORD_TH.docx` | **TH Sarabun New** — body **16 pt**, H1 **18 pt**, title **22 pt**, line spacing **1.15** |
-| `Documents/Documents/docs/guides/patient|doctor/USER_GUIDE_*_PPT_TH.pptx` | **FC Iconic** — title **32 pt**, body **18 pt**, speaker notes **16 pt** |
+| `Documents/docs/guides/patient|doctor/USER_GUIDE_*_WORD_TH.docx` | **TH Sarabun New** — body **16 pt**, H1 **18 pt**, title **22 pt**, line spacing **1.15** |
+| `Documents/docs/guides/patient|doctor/USER_GUIDE_*_PPT_TH.pptx` | **FC Iconic** — title **32 pt**, body **18 pt**, speaker notes **16 pt** |
 | `Processes/Pages/**/*.md` | Thai **คำอธิบายและบริบท** + **ขั้นตอนการใช้งาน (ละเอียด)** per page |
 
 **Last regeneration:** 2026-05-23 (demo data purged; process pages force-refreshed)
@@ -910,8 +910,8 @@ Setup: [DOCKER_MULTIBROWSER_E2E.md](../testing/DOCKER_MULTIBROWSER_E2E.md) · Us
 
 **Related artifacts:**
 
-- `Documents/Documents/docs/guides/doctor/USER_GUIDE_DOCTOR_WORD_TH.docx` / `Documents/Documents/docs/guides/doctor/USER_GUIDE_DOCTOR_PPT_TH.pptx` (Sarabun 16 pt / FC Iconic)
-- `Documents/Documents/docs/guides/patient/USER_GUIDE_PATIENT_WORD_TH.docx` / `Documents/Documents/docs/guides/patient/USER_GUIDE_PATIENT_PPT_TH.pptx`
+- `Documents/docs/guides/doctor/USER_GUIDE_DOCTOR_WORD_TH.docx` / `Documents/docs/guides/doctor/USER_GUIDE_DOCTOR_PPT_TH.pptx` (Sarabun 16 pt / FC Iconic)
+- `Documents/docs/guides/patient/USER_GUIDE_PATIENT_WORD_TH.docx` / `Documents/docs/guides/patient/USER_GUIDE_PATIENT_PPT_TH.pptx`
 - `Phase2/PRODUCTION_READINESS_SIGNOFF.md`
 - `cloudbuild.yaml`
 

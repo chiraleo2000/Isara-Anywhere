@@ -1,7 +1,7 @@
 # 🔑 Patient Portal — Reset Password Page
 
 **Route:** `/reset-password?token=xxx`
-**Component:** `src/pages/auth/ResetPasswordPage.tsx`
+**Component:** `frontend/pages/auth/ResetPasswordPage.tsx`
 **Access:** Public (via email link)
 **Thai Title:** รีเซ็ตรหัสผ่าน
 

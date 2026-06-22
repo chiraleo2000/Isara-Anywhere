@@ -1,0 +1,58 @@
+{
+  "syncedAt": "2026-06-22T08:58:30.917Z",
+  "group": "group-Q",
+  "source": [
+    "tests/output/screenshots",
+    "docs/screenshots"
+  ],
+  "canonicalBrowser": "chromium",
+  "browsers": [
+    "chromium",
+    "firefox",
+    "webkit"
+  ],
+  "workflows": [
+    {
+      "id": "Q01b",
+      "stage": "doctor Jitsi host iframe",
+      "files": [
+        "Q01b-doctor-host-jitsi.png"
+      ]
+    },
+    {
+      "id": "Q01c",
+      "stage": "patient lobby waiting (no Jitsi)",
+      "files": [
+        "Q01c-patient-lobby-waiting.png"
+      ]
+    },
+    {
+      "id": "Q01d",
+      "stage": "guest lobby waiting (no Jitsi)",
+      "files": [
+        "Q01d-guest-lobby-waiting.png"
+      ]
+    },
+    {
+      "id": "Q01e",
+      "stage": "doctor admitted lobby panel",
+      "files": [
+        "Q01e-doctor-admitted.png"
+      ]
+    },
+    {
+      "id": "Q01f",
+      "stage": "three-party in-meeting hold",
+      "files": [
+        "Q01f-three-party-held.png"
+      ]
+    },
+    {
+      "id": "Q02c",
+      "stage": "post-meeting results/recording",
+      "files": [
+        "Q02c-dashboard-recording.png"
+      ]
+    }
+  ]
+}

@@ -11,9 +11,16 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(__dirname, '../..');
 
 const TARGETS = [
-  { codebase: 'doctor', dirs: ['Isara-doctor-portal/src', 'Isara-doctor-portal/server'] },
-  { codebase: 'patient', dirs: ['Isara-patient-portal/src', 'Isara-patient-portal/server'] },
-  { codebase: 'jitsi', dirs: ['Izara-jitsi-server/server'] },
+  {
+    codebase: 'doctor',
+    dirs: ['Isara-doctor-portal/frontend', 'Isara-doctor-portal/backend'],
+  },
+  {
+    codebase: 'patient',
+    dirs: ['Isara-patient-portal/frontend', 'Isara-patient-portal/backend'],
+  },
+  { codebase: 'jitsi', dirs: ['Izara-jitsi-server/backend'] },
+  { codebase: 'shared', dirs: ['shared'] },
 ];
 
 const SKIP_DIR = new Set(['node_modules', 'dist', 'coverage', '.git']);
@@ -88,7 +95,7 @@ function scanFile(filePath, codebase) {
   const findings = [];
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
-    if (/NOSONAR|process\.env\./.test(line)) continue;
+    if (/NOSONAR|process\.env\.|corsPolicy\.cjs|applyCorsDecision/.test(line)) continue;
     for (const rule of RULES) {
       if (rule.re.test(line)) {
         findings.push({

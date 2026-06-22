@@ -178,10 +178,8 @@ export function playwrightEnvVars() {
 
     LOCAL_MEETING_URL: meeting,
 
-    ...(process.env.PW_HEADED === '1' || process.env.PW_HEADED === 'true'
-      ? { PW_HEADED: '1' }
-      : { PW_HEADLESS: process.env.PW_HEADLESS ?? '1' }),
-
+    // Docker Playwright image has no X server — headed mode must run on the host OS.
+    PW_HEADLESS: '1',
     PW_WORKERS: '1',
 
     TEST_DOCTOR_PASSWORD: process.env.TEST_DOCTOR_PASSWORD || 'IzaraDoctor@2024', // NOSONAR S2068 — E2E fixture default; override via env in CI
@@ -249,6 +247,17 @@ export function waitForPostgresReady(timeoutMs = 180_000) {
 export function resetDatabaseBaseline() {
 
   console.log('\n[e2e-docker] Resetting database to clean baseline…');
+
+  // Drop stale D→E→F workflow ids when DB is wiped (prevents D4 confirm 404).
+  try {
+    const workflowStatePath = path.join(repoRoot, 'tests', 'e2e', '.workflow-state.json');
+    if (fs.existsSync(workflowStatePath)) {
+      fs.unlinkSync(workflowStatePath);
+      console.log('[e2e-docker] Cleared tests/e2e/.workflow-state.json');
+    }
+  } catch (err) {
+    console.warn('[e2e-docker] Could not clear workflow state:', err?.message || err);
+  }
 
   const cleanupSql = path.join(repoRoot, 'scripts', 'database', 'cleanup-test-data.sql');
 

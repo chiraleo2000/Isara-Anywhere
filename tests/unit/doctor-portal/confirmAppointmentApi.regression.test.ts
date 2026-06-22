@@ -4,7 +4,7 @@ import path from 'node:path';
 
 const healthMeetingPath = path.resolve(
   __dirname,
-  '../../../Isara-doctor-portal/src/pages/meetings/HealthMeeting.tsx',
+  '../../../Isara-doctor-portal/frontend/pages/meetings/HealthMeeting.tsx',
 );
 
 async function confirmAppointmentApiCall(

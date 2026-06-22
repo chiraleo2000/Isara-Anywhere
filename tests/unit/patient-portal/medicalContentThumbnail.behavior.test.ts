@@ -4,7 +4,7 @@ import path from 'node:path';
 
 const libraryPath = path.resolve(
   __dirname,
-  '../../../Isara-patient-portal/src/pages/MedicalContentLibrary.tsx',
+  '../../../Isara-patient-portal/frontend/pages/MedicalContentLibrary.tsx',
 );
 
 describe('medical content thumbnail (P7)', () => {

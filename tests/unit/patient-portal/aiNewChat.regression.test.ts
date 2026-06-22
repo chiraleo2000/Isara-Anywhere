@@ -4,7 +4,7 @@ import path from 'node:path';
 
 const aiDoctorPagePath = path.resolve(
   __dirname,
-  '../../../Isara-patient-portal/src/pages/health/AIDoctorPage.tsx',
+  '../../../Isara-patient-portal/frontend/pages/health/AIDoctorPage.tsx',
 );
 
 describe('AI new chat regression guard', () => {

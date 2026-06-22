@@ -4,7 +4,7 @@ import path from 'node:path';
 
 const livingWillPath = path.resolve(
   __dirname,
-  '../../../Isara-patient-portal/src/pages/pdpa/LivingWillPage.tsx',
+  '../../../Isara-patient-portal/frontend/pages/pdpa/LivingWillPage.tsx',
 );
 
 describe('living will input behavior (P11–P12)', () => {

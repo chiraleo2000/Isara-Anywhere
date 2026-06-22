@@ -1,7 +1,7 @@
 # 💊 Patient Portal — PHR Page (Personal Health Records)
 
 **Route:** `/phr`
-**Component:** `src/pages/health/PHRPage.tsx`
+**Component:** `frontend/pages/health/PHRPage.tsx`
 **Access:** 🔒 Authenticated patients
 **Thai Title:** ระเบียนสุขภาพส่วนบุคคล
 

@@ -1,6 +1,6 @@
 # 📋 Doctor Portal — Appointment Pool Management
 
-**Component:** `src/pages/AppointmentPoolManagement.tsx`
+**Component:** `frontend/pages/AppointmentPoolManagement.tsx`
 **Access:** 🔒 Doctor / Admin
 **Thai Title:** กลุ่มนัดหมายรอจัดสรร / Appointment Pool
 

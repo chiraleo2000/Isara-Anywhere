@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { mapAppointmentForClient } from '../../../Isara-doctor-portal/server/appointmentMapper.cjs';
-import { resolveAppointmentSchedule } from '../../../Isara-doctor-portal/src/utils/appointmentSchedule';
+import { mapAppointmentForClient } from '../../../Isara-doctor-portal/backend/appointmentMapper.cjs';
+import { resolveAppointmentSchedule } from '../../../Isara-doctor-portal/frontend/utils/appointmentSchedule';
 
 describe('mapAppointmentForClient', () => {
   it('maps snake_case confirmed telehealth row to camelCase UI fields', () => {

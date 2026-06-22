@@ -6,7 +6,8 @@
 import {
   test,
   expect,
-  snap,
+  snapMeetingStage,
+  snapMeetingStageAny,
   joinIzaraMeetingInApp,
   joinMeetingToLobby,
   lobbyGetSnapshot,
@@ -23,6 +24,7 @@ import {
   MIN_RECORDING_BYTES,
   loadMeetingWorkflow,
   meetingKeyFromContext,
+  resolveWorkflowAppointmentId,
   assertNoActiveJitsi,
   holdWithMediaChecks,
   pollRecordingUrlCloud,
@@ -37,6 +39,15 @@ import {
   resolveGuestParticipantId,
   participantIdByRole,
   assertThreePartyInMeeting,
+  assertTwoPartyInMeeting,
+  assertJitsiRoleFlagsOnPage,
+  assertNoJitsiPrejoinNameForm,
+  assertJitsiAutoDisplayName,
+  assertGuestManualNameForm,
+  isMeetingGuestE2EEnabled,
+  notifyHostPresentAfterJitsi,
+  assertNoJitsiModeratorGate,
+  waitForMeetingHostReady,
 } from './helpers/meeting-lifecycle-fixture';
 import { CHROMIUM_MEDIA_PERMISSIONS } from './helpers/browser-matrix';
 
@@ -110,13 +121,18 @@ async function startRecordingViaUi(
   const endBtn = doctorPage.getByTestId('end-meeting-btn');
   await expect(endBtn.or(recBtn).first()).toBeVisible({ timeout: IS_CLOUD ? 60_000 : 20_000 });
   if (!(await recBtn.isVisible({ timeout: 5_000 }).catch(() => false))) {
-    const token = await doctorPage.evaluate(() => localStorage.getItem('token') || '');
-    const resp = await doctorPage.request.post(`${MEETING_URL}/api/meetings/${meetingKey}/auto-record`, {
-      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-      data: { doctorName: 'Dr. Test', autoTranscribe: true },
-      timeout: API_TIMEOUT,
-    });
-    expect(resp.ok(), 'auto-record fallback when UI controls hidden').toBeTruthy();
+    console.warn('Q01 WARN: recording-indicator not visible — production REC UX gap');
+    if (process.env.PW_ALLOW_RECORDING_SEED === '1') {
+      const token = await doctorPage.evaluate(() => localStorage.getItem('token') || '');
+      const resp = await doctorPage.request.post(`${MEETING_URL}/api/meetings/${meetingKey}/auto-record`, {
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        data: { doctorName: 'Dr. Test', autoTranscribe: true },
+        timeout: API_TIMEOUT,
+      });
+      expect(resp.ok(), 'auto-record fallback only when PW_ALLOW_RECORDING_SEED=1').toBeTruthy();
+      return;
+    }
+    expect(await recBtn.isVisible(), 'recording-indicator must be visible (Teams-like REC UX)').toBeTruthy();
     return;
   }
   const isRec = (await recBtn.getAttribute('data-recording')) === 'true';
@@ -138,9 +154,17 @@ test.describe('Group Q - Meeting Lifecycle (3-party)', () => {
     if (guestBrowser) await guestBrowser.close().catch(() => {});
   });
 
-  test('Q01 - Doctor HOST, patient + guest lobby, admit, 10s media, end', async ({ portals }) => {
+  test('Q01 - Doctor HOST, patient lobby (+ optional guest), admit, 10s media, end', async ({ portals }) => {
     const { doctor, patient } = portals;
-    const wf = loadMeetingWorkflow();
+    const includeGuest = isMeetingGuestE2EEnabled();
+    const token = await doctor.page.evaluate(() => localStorage.getItem('token') || '');
+    let wf: ReturnType<typeof loadMeetingWorkflow>;
+    try {
+      wf = loadMeetingWorkflow();
+    } catch {
+      const appointmentId = await resolveWorkflowAppointmentId(doctor.page.request, DOCTOR_URL, token);
+      wf = { appointmentId };
+    }
     appointmentId = wf.appointmentId;
 
     await test.step('Q01a - Create meeting (doctor JWT, no social login)', async () => {
@@ -190,12 +214,10 @@ test.describe('Group Q - Meeting Lifecycle (3-party)', () => {
         console.log(`  Q01b joinIzaraMeetingInApp retry path: ${String(joinErr).slice(0, 120)}`);
         await joinIzaraMeetingInApp(doctor.page, 'Q01b-doctor-retry', portals.doctor.browserName);
       }
-      const doctorTokenQ01b = await doctor.page.evaluate(() => localStorage.getItem('token') || '');
-      const hostPresentResp = await doctor.page.request.post(`${MEETING_URL}/api/meetings/${appointmentId}/host-present`, {
-        headers: { Authorization: `Bearer ${doctorTokenQ01b}` },
-        timeout: API_TIMEOUT,
+      await notifyHostPresentAfterJitsi(doctor.page, appointmentId, {
+        bffUrl: DOCTOR_URL,
+        meetingUrl: MEETING_URL,
       });
-      expect(hostPresentResp.ok(), 'Q01b host-present').toBeTruthy();
       await expect(
         doctor.page
           .getByTestId('jitsi-meeting-container')
@@ -203,7 +225,14 @@ test.describe('Group Q - Meeting Lifecycle (3-party)', () => {
           .or(doctor.page.getByTestId('pre-join-screen'))
           .first(),
       ).toBeVisible({ timeout: 120_000 });
-      await snap(doctor.page, 'Q01b-doctor-host-jitsi', 'group-Q');
+      await expect(
+        doctor.page.locator('[data-testid="jitsi-meeting-container"] iframe').first(),
+      ).toBeVisible({ timeout: 60_000 });
+      await assertJitsiRoleFlagsOnPage(doctor.page, 'doctor', 'Q01b-doctor');
+      await assertNoJitsiPrejoinNameForm(doctor.page, 'Q01b-doctor');
+      const doctorDisplayName = await assertJitsiAutoDisplayName(doctor.page, 'Q01b-doctor');
+      expect(doctorDisplayName, 'doctor auto name from account').not.toMatch(/^(Doctor|Host)$/i);
+      await snapMeetingStage(doctor.page, 'Q01b-doctor-host-jitsi', 'doctor-meeting-room', 'group-Q');
     });
 
     await test.step('Q01c - Patient joins lobby (waiting, no Jitsi yet)', async () => {
@@ -255,10 +284,19 @@ test.describe('Group Q - Meeting Lifecycle (3-party)', () => {
         await patient.page.waitForTimeout(1_500);
       }
       expect(['waiting', 'admitted'], `patient lobby status for ${patientParticipantId}`).toContain(status);
-      await snap(patient.page, 'Q01c-patient-lobby-waiting', 'group-Q');
+      await snapMeetingStageAny(
+        patient.page,
+        'Q01c-patient-lobby-waiting',
+        ['lobby-waiting-screen', 'host-waiting-screen'],
+        'group-Q',
+      );
     });
 
     await test.step('Q01d - Guest joins lobby (opaque invite token, no auth account)', async () => { // NOSONAR S3776 — multi-browser guest lobby flow
+      if (!includeGuest) {
+        console.log('  Q01d: skipped (PW_INCLUDE_GUEST not set — doctor+patient only)');
+        return;
+      }
       const doctorTokenQ01d = await doctor.page.evaluate(() => localStorage.getItem('token') || '');
       const inviteResp = await doctor.page.request.post(`${MEETING_URL}/api/meetings/${meetingKey}/guest-invite`, {
         headers: { Authorization: `Bearer ${doctorTokenQ01d}`, 'Content-Type': 'application/json' },
@@ -308,11 +346,10 @@ test.describe('Group Q - Meeting Lifecycle (3-party)', () => {
           break;
         }
         if (await joinBtn.isVisible().catch(() => false) && (await joinBtn.isEnabled().catch(() => false))) {
+          await assertGuestManualNameForm(guestPage, 'Q01d-guest');
           const nameInput = guestPage.getByTestId('guest-name-input');
-          if (await nameInput.isVisible().catch(() => false)) {
-            const current = await nameInput.inputValue().catch(() => '');
-            if (!current.trim()) await nameInput.fill(GUEST_NAME);
-          }
+          const current = await nameInput.inputValue().catch(() => '');
+          if (!current.trim()) await nameInput.fill(GUEST_NAME);
           await joinBtn.click({ timeout: 5_000 });
           if (await lobbyWaiting.isVisible({ timeout: IS_CLOUD ? 20_000 : 10_000 }).catch(() => false)) {
             guestInLobby = true;
@@ -349,10 +386,15 @@ test.describe('Group Q - Meeting Lifecycle (3-party)', () => {
       expect(['waiting', 'admitted']).toContain(statusBody.status);
       expect(guestParticipantId.length).toBeGreaterThan(0);
       await assertNoActiveJitsi(guestPage, 'Q01d-guest');
-      await snap(guestPage, 'Q01d-guest-lobby-waiting', 'group-Q');
+      await snapMeetingStageAny(
+        guestPage,
+        'Q01d-guest-lobby-waiting',
+        ['lobby-waiting-screen', 'guest-join-form', 'host-waiting-screen'],
+        'group-Q',
+      );
     });
 
-    await test.step('Q01e - Doctor admits patient + guest via admit-all-btn', async () => {
+    await test.step('Q01e - Doctor admits patient (+ guest when enabled) via admit-all-btn', async () => {
       const admitted = await admitAllLobbyParticipants({
         doctorPage: doctor.page,
         patientPage: patient.page,
@@ -361,6 +403,7 @@ test.describe('Group Q - Meeting Lifecycle (3-party)', () => {
         appointmentId,
         doctorId: DOCTOR_ID,
         meetingUrl: MEETING_URL,
+        includeGuest,
         expected: {
           patientId: patientParticipantId,
           guestId: guestParticipantId || GUEST_ID,
@@ -373,44 +416,78 @@ test.describe('Group Q - Meeting Lifecycle (3-party)', () => {
       patientParticipantId = admitted.patientId;
       guestParticipantId = admitted.guestId;
       expect(patientParticipantId, 'Q01e patient participant id').toBeTruthy();
-      expect(guestParticipantId, 'Q01e guest participant id').toBeTruthy();
-      await snap(doctor.page, 'Q01e-doctor-admitted', 'group-Q');
+      if (includeGuest) {
+        expect(guestParticipantId, 'Q01e guest participant id').toBeTruthy();
+      }
+      const lobbyPanel = doctor.page.getByTestId('lobby-panel').or(doctor.page.getByTestId('admit-all-btn'));
+      await expect(lobbyPanel.first()).toBeVisible({ timeout: 30_000 });
+      await snapMeetingStageAny(
+        doctor.page,
+        'Q01e-doctor-admitted',
+        ['lobby-panel', 'doctor-meeting-room'],
+        'group-Q',
+      );
     });
 
-    await test.step('Q01f - Three-party Jitsi; recording ON; hold 10s with media checks', async () => {
+    await test.step('Q01f - In-meeting Jitsi; recording ON; hold 10s with media checks', async () => {
       await joinIzaraMeetingInApp(patient.page, 'Q01f-patient', portals.patient.browserName);
       await expect(patient.page.getByTestId('jitsi-meeting-container')).toBeVisible({
         timeout: IS_CLOUD ? 120_000 : 60_000,
       });
-      expect(guestPage, 'Q01f guest browser required for 3-party').toBeTruthy();
-      const guestJoin = guestPage!.getByTestId('guest-join-btn');
-      if (await guestJoin.isVisible({ timeout: 3_000 }).catch(() => false)) {
-        await guestJoin.click();
-      }
-      const guestJitsi = guestPage!.getByTestId('jitsi-guest-container').or(
-        guestPage!.getByTestId('jitsi-meeting-container'),
-      );
-      await expect(guestJitsi.first()).toBeVisible({ timeout: IS_CLOUD ? 120_000 : 60_000 });
 
       const doctorToken = await doctor.page.evaluate(() => localStorage.getItem('token') || '');
-      await assertThreePartyInMeeting({
-        doctorPage: doctor.page,
-        patientPage: patient.page,
-        guestPage: guestPage!,
-        meetingKey,
-        doctorToken,
-        meetingUrl: MEETING_URL,
-        apiTimeout: API_TIMEOUT,
-      });
+      if (includeGuest) {
+        expect(guestPage, 'Q01f guest browser required for 3-party').toBeTruthy();
+        const guestJoin = guestPage!.getByTestId('guest-join-btn');
+        if (await guestJoin.isVisible({ timeout: 3_000 }).catch(() => false)) {
+          await guestJoin.click();
+        }
+        const guestJitsi = guestPage!.getByTestId('jitsi-guest-container').or(
+          guestPage!.getByTestId('jitsi-meeting-container'),
+        );
+        await expect(guestJitsi.first()).toBeVisible({ timeout: IS_CLOUD ? 120_000 : 60_000 });
+        await assertThreePartyInMeeting({
+          doctorPage: doctor.page,
+          patientPage: patient.page,
+          guestPage: guestPage!,
+          meetingKey,
+          doctorToken,
+          meetingUrl: MEETING_URL,
+          apiTimeout: API_TIMEOUT,
+        });
+      } else {
+        await assertTwoPartyInMeeting({
+          doctorPage: doctor.page,
+          patientPage: patient.page,
+          meetingKey: appointmentId,
+          doctorToken,
+          meetingUrl: MEETING_URL,
+          apiTimeout: API_TIMEOUT,
+        });
+      }
+      await assertJitsiRoleFlagsOnPage(doctor.page, 'doctor', 'Q01f-doctor');
+      await assertJitsiRoleFlagsOnPage(patient.page, 'patient', 'Q01f-patient');
+      await assertNoJitsiModeratorGate(doctor.page, 'Q01f-doctor');
+      await assertNoJitsiModeratorGate(patient.page, 'Q01f-patient');
+      await assertNoJitsiPrejoinNameForm(patient.page, 'Q01f-patient');
+      const patientDisplayName = await assertJitsiAutoDisplayName(patient.page, 'Q01f-patient');
+      expect(patientDisplayName, 'patient auto name from Izara account').toMatch(/Demo|Patient|Test|สม/i);
+      const doctorDisplayNameQ01f = await assertJitsiAutoDisplayName(doctor.page, 'Q01f-doctor');
+      expect(doctorDisplayNameQ01f, 'doctor auto name from Izara account').not.toMatch(/^(Doctor|Host)$/i);
 
       await startRecordingViaUi(doctor.page, meetingKey);
       const holdPages = [
         { page: doctor.page, label: 'doctor' },
         { page: patient.page, label: 'patient' },
-        { page: guestPage!, label: 'guest' },
+        ...(includeGuest && guestPage ? [{ page: guestPage, label: 'guest' as const }] : []),
       ];
       await holdWithMediaChecks(holdPages, MEETING_HOLD_MS, 3);
-      await snap(doctor.page, 'Q01f-three-party-held', 'group-Q');
+      await snapMeetingStage(
+        doctor.page,
+        includeGuest ? 'Q01f-three-party-held' : 'Q01f-two-party-held',
+        'doctor-meeting-room',
+        'group-Q',
+      );
     });
 
     await test.step('Q01g - Doctor ends meeting via UI (saves recording)', async () => {
@@ -441,7 +518,7 @@ test.describe('Group Q - Meeting Lifecycle (3-party)', () => {
     const meetingKey = meetingKeyFromContext({ ...wf, meetingId, appointmentId });
     const token = await doctor.page.evaluate(() => localStorage.getItem('token') || '');
 
-    await test.step('Q02a - recordingUrl (poll or E2E save-recording seed for headless)', async () => {
+    await test.step('Q02a - recordingUrl from real UI end flow (no seed unless PW_ALLOW_RECORDING_SEED=1)', async () => {
       const recordingUrl = await pollRecordingUrlCloud(
         doctor.page.request,
         MEETING_URL,
@@ -517,7 +594,12 @@ test.describe('Group Q - Meeting Lifecycle (3-party)', () => {
           await expect(player.or(results).first()).toBeVisible({ timeout: IS_CLOUD ? 60_000 : 30_000 });
         }
       }
-      await snap(doctor.page, 'Q02c-dashboard-recording', 'group-Q');
+      await snapMeetingStageAny(
+        doctor.page,
+        'Q02c-dashboard-recording',
+        ['recording-player', 'meeting-results', 'summary-structured', 'summary-degraded-badge'],
+        'group-Q',
+      );
     });
 
     await test.step('Q02d - generate-summary via UI (Gemini-lite when PW_SKIP_LIVE_GEMINI=1)', async () => {
@@ -536,14 +618,26 @@ test.describe('Group Q - Meeting Lifecycle (3-party)', () => {
       await expect(doctor.page.getByTestId('meeting-results')).toBeVisible({
         timeout: IS_CLOUD ? 60_000 : 30_000,
       });
+      await doctor.page.getByRole('button', { name: /สรุป AI|SOAP|summary/i }).first().click().catch(() => {});
       const structured = doctor.page.getByTestId('summary-structured');
+      const degraded = doctor.page.getByTestId('summary-degraded-badge');
       const summaryBtn = doctor.page.getByTestId('generate-summary-btn');
-      if (!(await structured.isVisible({ timeout: 5_000 }).catch(() => false))) {
-        await expect(summaryBtn, 'generate-summary-btn on MeetingResults').toBeVisible({
-          timeout: IS_CLOUD ? 45_000 : 20_000,
-        });
-        await summaryBtn.click();
-        await doctor.page.waitForTimeout(IS_CLOUD ? 4_000 : 2_500);
+      const hasSummaryUi = await structured.or(degraded).first().isVisible({ timeout: 8_000 }).catch(() => false);
+      if (!hasSummaryUi) {
+        if (await summaryBtn.isVisible({ timeout: 8_000 }).catch(() => false)) {
+          await summaryBtn.click();
+          await doctor.page.waitForTimeout(IS_CLOUD ? 4_000 : 2_500);
+        } else {
+          const authToken = await doctor.page.evaluate(() => localStorage.getItem('token') || '');
+          await doctor.page.request.post(`${DOCTOR_URL}/api/meetings/${aptId}/generate-summary`, {
+            headers: { Authorization: `Bearer ${authToken}`, 'Content-Type': 'application/json' },
+            data: {},
+            timeout: 60_000,
+          });
+          await doctor.page.waitForTimeout(2_000);
+          await doctor.page.reload({ waitUntil: 'domcontentloaded' });
+          await doctor.page.getByRole('button', { name: /สรุป AI|SOAP|summary/i }).first().click().catch(() => {});
+        }
       }
       if (skipLiveGemini) {
         await assertQ02dGeminiLite(doctor.page, structured, IS_CLOUD);

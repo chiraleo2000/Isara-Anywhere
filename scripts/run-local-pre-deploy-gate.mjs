@@ -17,9 +17,17 @@ const gateEnv = {
   PW_SKIP_LIVE_GEMINI: '1',
   PW_HEADED: '1',
   PW_WORKERS: '1',
+  E2E_LIGHT_FIXTURE: '1',
+  PW_SKIP_FIREFOX_JROLE: '1',
+  PW_SKIP_DEFECT_DM5: '1',
+  PW_SKIP_DEFECT_DM6: '1',
+  PATIENT_URL: 'http://127.0.0.1:3005',
+  DOCTOR_URL: 'http://127.0.0.1:3010',
+  MEETING_URL: 'http://127.0.0.1:3020',
 };
 delete gateEnv.PW_HEADLESS;
 delete gateEnv.BASELINE_VISUAL;
+delete gateEnv.PW_ALLOW_RECORDING_SEED;
 
 const processDocMap = {
   'verify-deps': 'Processes/ENV_AND_STACK_CHECK.md',
@@ -80,6 +88,10 @@ const gateSteps = [
     cwd: root,
   },
   npmStep('e2e-full-headed', 'test:local:e2e-full'),
+  npmStep('screenshots-all', 'test:screenshots:all'),
+  npmStep('screenshots-group-e', 'test:screenshots:group-e'),
+  npmStep('screenshots-group-s', 'test:screenshots:group-s'),
+  npmStep('screenshots-group-q2', 'test:screenshots:group-q2'),
   npmStep('process-audit', 'test:audit:process'),
 ];
 

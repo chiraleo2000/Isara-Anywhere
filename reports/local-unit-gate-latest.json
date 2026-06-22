@@ -1,0 +1,92 @@
+{
+  "checkedAt": "2026-06-22T09:08:30.876Z",
+  "logPath": "reports\\local-unit-gate-2026-06-22T09-06-39.log",
+  "results": [
+    {
+      "script": "test:unit:coverage",
+      "ok": true,
+      "durationMs": 84612
+    },
+    {
+      "script": "test:unit:auth",
+      "ok": true,
+      "durationMs": 2146
+    },
+    {
+      "script": "test:unit:appointments",
+      "ok": true,
+      "durationMs": 1501
+    },
+    {
+      "script": "test:unit:clinical",
+      "ok": true,
+      "durationMs": 1656
+    },
+    {
+      "script": "test:unit:meeting",
+      "ok": true,
+      "durationMs": 2337
+    },
+    {
+      "script": "test:unit:meeting-acceptance",
+      "ok": true,
+      "durationMs": 1387
+    },
+    {
+      "script": "test:unit:ai",
+      "ok": true,
+      "durationMs": 1192
+    },
+    {
+      "script": "test:unit:api",
+      "ok": true,
+      "durationMs": 1266
+    },
+    {
+      "script": "test:unit:database",
+      "ok": true,
+      "durationMs": 1262
+    },
+    {
+      "script": "test:unit:workflows",
+      "ok": true,
+      "durationMs": 1686
+    },
+    {
+      "script": "test:unit:security",
+      "ok": true,
+      "durationMs": 3379
+    },
+    {
+      "script": "test:unit:notifications",
+      "ok": true,
+      "durationMs": 1210
+    },
+    {
+      "script": "test:unit:process-contracts",
+      "ok": true,
+      "durationMs": 1408
+    },
+    {
+      "script": "test:unit:v5-contracts",
+      "ok": true,
+      "durationMs": 1573
+    },
+    {
+      "script": "test:meeting-server:contract",
+      "ok": true,
+      "durationMs": 2596
+    },
+    {
+      "script": "test:post-meeting-pipeline",
+      "ok": true,
+      "durationMs": 518
+    },
+    {
+      "script": "test:security-hardening",
+      "ok": true,
+      "durationMs": 1381
+    }
+  ],
+  "pass": true
+}

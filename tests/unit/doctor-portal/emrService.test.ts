@@ -4,8 +4,8 @@
  * ═══════════════════════════════════════════════════════════════════════
  * Tests: clinical templates structure, EMR creation, template validation,
  *        encounter types, doctor personality data
- * Source: Isara-doctor-portal/src/services/emrService.ts
- *         Isara-doctor-portal/src/services/enhancedMeetingService.ts
+ * Source: Isara-doctor-portal/frontend/services/emrService.ts
+ *         Isara-doctor-portal/frontend/services/enhancedMeetingService.ts
  * ═══════════════════════════════════════════════════════════════════════
  */
 import { describe, it, expect } from 'vitest';

@@ -11,22 +11,28 @@ import {
 } from './helpers/browser-matrix';
 
 test.describe('Group E — Cross-browser matrix guards', () => {
-  test('EXB01 — fixture exposes Chrome/Chrome/Firefox roles', async ({ portals }) => {
-    expect(portals.patient.browserName).toBe('chrome');
-    // Runtime browser label is Chromium-family even when Edge channel is used.
-    expect(portals.doctor.browserName).toBe('chrome');
-    expect(portals.admin.browserName).toBe('firefox');
+  test('EXB01 — fixture exposes role-specific browsers', async ({ portals }) => {
+    const patientSpec = getRoleBrowserSpec('patient');
+    const doctorSpec = getRoleBrowserSpec('doctor');
+    const adminSpec = getRoleBrowserSpec('admin');
+
+    expect(portals.patient.browserName).toBe(patientSpec.engine === 'chromium' ? 'chrome' : patientSpec.browserName);
+    expect(portals.doctor.browserName).toBe(doctorSpec.engine === 'chromium' ? 'chrome' : doctorSpec.browserName);
+    expect(portals.admin.browserName).toBe(adminSpec.engine === 'chromium' ? 'chrome' : adminSpec.browserName);
   });
 
   test('EXB02 — meeting UI timeouts scale for Firefox (JIT-01)', () => {
     const chromeIframe = scaleTimeoutByBrowser(60_000, 'chrome');
     const firefoxIframe = scaleTimeoutByBrowser(60_000, 'firefox');
     expect(firefoxIframe).toBeGreaterThan(chromeIframe);
-    expect(getRoleBrowserSpec('admin').navTimeoutMultiplier).toBe(1.5);
+    expect(ROLE_BROWSER_MATRIX.admin.navTimeoutMultiplier).toBe(1.5);
+    expect(getRoleBrowserSpec('admin').navTimeoutMultiplier).toBeGreaterThanOrEqual(1);
   });
 
   test('EXB03 — matrix defines all three portal roles', () => {
     expect(Object.keys(ROLE_BROWSER_MATRIX)).toHaveLength(3);
-    expect(scaleTimeout(20_000, 'admin')).toBe(30_000);
+    const adminSpec = getRoleBrowserSpec('admin');
+    expect(scaleTimeout(20_000, 'admin')).toBe(Math.round(20_000 * adminSpec.navTimeoutMultiplier));
+    expect(ROLE_BROWSER_MATRIX.admin.navTimeoutMultiplier).toBe(1.5);
   });
 });

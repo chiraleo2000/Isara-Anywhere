@@ -1,7 +1,7 @@
 # 📝 Patient Portal — Register Page
 
 **Route:** `/register`
-**Component:** `src/pages/auth/RegisterPage.tsx`
+**Component:** `frontend/pages/auth/RegisterPage.tsx`
 **Access:** Public (unauthenticated users only)
 **Thai Title:** สมัครสมาชิก
 

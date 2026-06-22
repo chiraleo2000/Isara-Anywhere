@@ -1,7 +1,7 @@
 # 📜 Patient Portal — Living Will Page
 
 **Route:** `/living-will`
-**Component:** `src/pages/pdpa/LivingWillPage.tsx`
+**Component:** `frontend/pages/pdpa/LivingWillPage.tsx`
 **Access:** 🔒 Authenticated patients
 **Thai Title:** พินัยกรรมชีวิต / Living Will
 

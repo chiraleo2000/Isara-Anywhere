@@ -3,9 +3,9 @@
  */
 import { describe, it, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { applyChaosLatency, getChaosLatencyMs } from '../server/chaosLatency.js';
-import { createLobbyKeyResolver } from '../server/lobbyKey.js';
-import { applyLobbyJoin, applyLobbyLeave } from '../server/lobbySession.js';
+import { applyChaosLatency, getChaosLatencyMs } from '../backend/chaosLatency.js';
+import { createLobbyKeyResolver } from '../backend/lobbyKey.js';
+import { applyLobbyJoin, applyLobbyLeave } from '../backend/lobbySession.js';
 
 describe('Code Breaker Round 1 — network chaos', () => {
   const prevDb = process.env.IZARA_CHAOS_DB_LATENCY_MS;

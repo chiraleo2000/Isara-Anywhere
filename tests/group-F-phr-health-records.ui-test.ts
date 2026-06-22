@@ -19,13 +19,17 @@ import {
   test, expect, assertFullHealth, snap,
   navPatient, navDoctor, waitForContent, PATIENT_URL,
 } from './helpers/multi-portal';
-import { loadWorkflowState } from './helpers/workflow-state';
+import { loadWorkflowState, reloadWorkflowStateFromDisk } from './helpers/workflow-state';
 
 test.describe('Group F — PHR & Health Records', () => {
   test.describe.configure({ mode: 'serial' });
 
   test('F00 — Workflow state from D/E chain intact', async () => {
-    const state = loadWorkflowState();
+    let state = loadWorkflowState();
+    for (let attempt = 0; attempt < 8 && !state.appointmentId; attempt++) {
+      await new Promise((r) => setTimeout(r, 400 * (attempt + 1)));
+      state = reloadWorkflowStateFromDisk();
+    }
     expect(state.appointmentId, 'F00: appointmentId from Group D').toBeTruthy();
     expect(state.patientId, 'F00: patientId from workflow').toBeTruthy();
     console.log(`  F00: Workflow OK — apt=${state.appointmentId}, patient=${state.patientId}`);

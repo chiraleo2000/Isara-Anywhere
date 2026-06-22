@@ -14,7 +14,10 @@ function parseArgs() {
   const args = process.argv.slice(2);
   let round = 1;
   for (let i = 0; i < args.length; i++) {
-    if (args[i] === '--round' && args[i + 1]) round = Number.parseInt(args[++i], 10);
+    if (args[i] === '--round' && args[i + 1]) {
+      const next = args[++i];
+      round = /^\d+$/.test(next) ? Number.parseInt(next, 10) : next;
+    }
   }
   return { round };
 }
@@ -70,31 +73,40 @@ function loadPlaywrightReport() {
   return JSON.parse(fs.readFileSync(jsonPath, 'utf8'));
 }
 
+function buildFailureEntry({ res, err, title, projectName, file }) {
+  return {
+    group: file ? path.basename(file).replace(/\.ui-test\.ts$/, '') : 'unknown',
+    testId: title,
+    project: projectName,
+    service: inferService(projectName, file),
+    category: categorize(err.message || title, projectName),
+    status: res.status,
+    message: err.message || res.status,
+    stack: err.stack || '',
+    screenshotPath: findScreenshots(title),
+    durationMs: res.duration,
+  };
+}
+
+function collectSpecFailures(spec, suiteTitle, project, file) {
+  const title = [...(suiteTitle ? [suiteTitle] : []), spec.title].filter(Boolean).join(' > ');
+  const failures = [];
+  for (const r of spec.tests || []) {
+    const projectName = r.projectName || project;
+    for (const res of r.results || []) {
+      if (res.status === 'passed' || res.status === 'skipped') continue;
+      failures.push(buildFailureEntry({ res, err: res.error || {}, title, projectName, file }));
+    }
+  }
+  return failures;
+}
+
 function flattenSuites(suites, project = '', parentFile = '') {
   const tests = [];
   for (const suite of suites || []) {
     const file = suite.file || parentFile;
     for (const spec of suite.specs || []) {
-      const title = [...(suite.title ? [suite.title] : []), spec.title].filter(Boolean).join(' > ');
-      for (const r of spec.tests || []) {
-        const projectName = r.projectName || project;
-        for (const res of r.results || []) {
-          if (res.status === 'passed' || res.status === 'skipped') continue;
-          const err = res.error || {};
-          tests.push({
-            group: file ? path.basename(file).replace(/\.ui-test\.ts$/, '') : 'unknown',
-            testId: title,
-            project: projectName,
-            service: inferService(projectName, file),
-            category: categorize(err.message || title, projectName),
-            status: res.status,
-            message: err.message || res.status,
-            stack: err.stack || '',
-            screenshotPath: findScreenshots(title),
-            durationMs: res.duration,
-          });
-        }
-      }
+      tests.push(...collectSpecFailures(spec, suite.title, project, file));
     }
     if (suite.suites) tests.push(...flattenSuites(suite.suites, project, file));
   }
@@ -109,7 +121,9 @@ function priorityFor(cat) {
 
 function writeLedger(round, failures, stats) {
   const ts = new Date().toISOString().replace(/[:.]/g, '-');
-  const dir = path.join(root, 'reports', 'cloud-error-ledger');
+  const isLocal = process.env.TEST_ENV === 'local' || (!process.env.TEST_ENV && !process.env.CLOUD_PATIENT_URL);
+  const ledgerSubdir = isLocal ? 'local-error-ledger' : 'cloud-error-ledger';
+  const dir = path.join(root, 'reports', ledgerSubdir);
   fs.mkdirSync(dir, { recursive: true });
 
   const payload = {
@@ -117,10 +131,16 @@ function writeLedger(round, failures, stats) {
     timestamp: new Date().toISOString(),
     immutable: true,
     environment: {
-      testEnv: process.env.TEST_ENV || 'cloud',
-      patientUrl: process.env.CLOUD_PATIENT_URL || '',
-      doctorUrl: process.env.CLOUD_DOCTOR_URL || '',
-      meetingUrl: process.env.CLOUD_MEETING_URL || '',
+      testEnv: isLocal ? 'local' : (process.env.TEST_ENV || 'cloud'),
+      patientUrl: isLocal
+        ? (process.env.PATIENT_URL || 'http://localhost:3005')
+        : (process.env.CLOUD_PATIENT_URL || ''),
+      doctorUrl: isLocal
+        ? (process.env.DOCTOR_URL || 'http://localhost:3010')
+        : (process.env.CLOUD_DOCTOR_URL || ''),
+      meetingUrl: isLocal
+        ? (process.env.MEETING_URL || 'http://localhost:3020')
+        : (process.env.CLOUD_MEETING_URL || ''),
     },
     stats: {
       expected: stats.expected ?? 0,
@@ -137,7 +157,7 @@ function writeLedger(round, failures, stats) {
   fs.writeFileSync(jsonOut, JSON.stringify(payload, null, 2));
 
   const mdLines = [
-    `# Cloud E2E Error Ledger - Round ${round}`,
+    `# ${isLocal ? 'Local' : 'Cloud'} E2E Error Ledger - Round ${round}`,
     '',
     `**Generated:** ${payload.timestamp} (immutable)`,
     '',

@@ -3,7 +3,7 @@ import path from 'node:path';
 
 import { test, expect, navPatient, assertFullHealth, snap } from './helpers/multi-portal';
 
-const AUTH_DIR = path.join(__dirname, 'e2e', '.auth');
+const AUTH_DIR = path.join(__dirname, 'e2e', '.auth-states');
 
 function reinjectPatientAuth(page: import('@playwright/test').Page): Promise<void> {
   const patientState = path.join(AUTH_DIR, 'patient1.json');
@@ -36,8 +36,14 @@ test.describe('Defect — PHR profile persistence after re-login', () => {
     await addressInput.fill(marker);
 
     const saveBtn = patient.page.getByRole('button', { name: /บันทึก|save/i });
+    const saveResp = patient.page.waitForResponse(
+      (r) => r.url().includes('/api/phr/profile') && r.request().method() === 'PUT',
+      { timeout: 20_000 },
+    );
     await saveBtn.click();
-    await patient.page.waitForTimeout(2000);
+    const saved = await saveResp;
+    expect(saved.ok(), `profile save HTTP ${saved.status()}`).toBeTruthy();
+    await expect(patient.page.locator('body')).toContainText(marker, { timeout: 10_000 });
 
     await patient.page.evaluate(() => {
       localStorage.clear();

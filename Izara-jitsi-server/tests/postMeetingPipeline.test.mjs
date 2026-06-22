@@ -6,7 +6,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
-import { createPostMeetingPipeline, sanitizePathSegment } from '../server/postMeetingPipeline.js';
+import { createPostMeetingPipeline, sanitizePathSegment } from '../backend/services/postMeetingPipeline.js';
 
 describe('postMeetingPipeline paths', () => {
   it('sanitizePathSegment strips unsafe characters', () => {

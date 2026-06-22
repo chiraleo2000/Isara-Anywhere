@@ -1,7 +1,7 @@
 # 📋 Doctor Portal — Clinical Resources Page
 
 **Route:** `/clinical-resources`
-**Component:** `src/pages/ClinicalResources.tsx`
+**Component:** `frontend/pages/ClinicalResources.tsx`
 **Access:** 🔒 Doctor (create + edit own) / Admin (approve + full CRUD)
 **Thai Title:** ทรัพยากรทางคลินิก / Clinical Resources
 

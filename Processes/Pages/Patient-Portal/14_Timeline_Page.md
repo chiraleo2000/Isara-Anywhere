@@ -2,7 +2,7 @@
 
 **Version:** v1.4.7
 **Route:** `/timeline`
-**Component:** `src/pages/timeline/TimelinePage.tsx`
+**Component:** `frontend/pages/timeline/TimelinePage.tsx`
 **Access:** 🔒 Authenticated patients
 **Thai Title:** ประวัติการรักษา / Complete Treatment History
 

@@ -4,14 +4,14 @@
  * ═══════════════════════════════════════════════════════════════════════
  * Tests: createEmptyPHR, createEmptyLivingWill, convertLivingWillToDoctorView,
  *        convertPHRToDoctorView — pure data transform functions
- * Source: Isara-patient-portal/src/types/sharedPHRTypes.ts
+ * Source: Isara-patient-portal/frontend/types/sharedPHRTypes.ts
  * ═══════════════════════════════════════════════════════════════════════
  */
 import { describe, it, expect } from 'vitest';
 import {
   createEmptyPHR,
   convertPHRToDoctorView,
-} from '../../../Isara-doctor-portal/src/types/sharedPHRTypes';
+} from '../../../Isara-doctor-portal/frontend/types/sharedPHRTypes';
 
 // ─────────────────────────────────────────────
 // A. createEmptyPHR

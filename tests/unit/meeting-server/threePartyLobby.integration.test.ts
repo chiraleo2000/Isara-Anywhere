@@ -23,8 +23,8 @@ function guestJwtAffiliation(role: string): string {
   return 'member';
 }
 
-function canMountPatientJitsi(hostPresent: boolean): boolean {
-  return hostPresent;
+function canMountPatientJitsi(hostPresent: boolean, inJitsi: boolean): boolean {
+  return hostPresent && inJitsi;
 }
 
 describe('threePartyLobby.integration — TPL', () => {
@@ -52,13 +52,14 @@ describe('threePartyLobby.integration — TPL', () => {
     expect(guestJwtAffiliation('doctor')).toBe('moderator');
   });
 
-  it('TPL-04 — host-present required before patient Jitsi mount', () => {
-    expect(canMountPatientJitsi(false)).toBe(false);
-    expect(canMountPatientJitsi(true)).toBe(true);
+  it('TPL-04 — host-present with inJitsi required before patient Jitsi mount', () => {
+    expect(canMountPatientJitsi(false, false)).toBe(false);
+    expect(canMountPatientJitsi(true, false)).toBe(false);
+    expect(canMountPatientJitsi(true, true)).toBe(true);
   });
 
   it('TPL-06 — lobbySession applyLobbyJoin preserves admitted reconnect', () => {
-    const lobby = path.resolve(__dirname, '../../../Izara-jitsi-server/server/lobbySession.js');
+    const lobby = path.resolve(__dirname, '../../../Izara-jitsi-server/backend/lobbySession.js');
     expect(fs.readFileSync(lobby, 'utf8')).toMatch(/reconnect_admitted|admitted/);
   });
 

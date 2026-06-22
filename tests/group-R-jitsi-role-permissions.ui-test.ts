@@ -16,6 +16,8 @@ import {
   joinMeetingToLobby,
   lobbyAdmitAll,
   pageRequestPatch,
+  readPageBearerToken,
+  refreshPageAuth,
   PATIENT_URL,
   DOCTOR_URL,
   MEETING_URL,
@@ -27,6 +29,8 @@ import {
   assertJitsiMountRole,
   assertJitsiRoleFlagsOnPage,
   waitForMeetingHostReady,
+  notifyHostPresentAfterJitsi,
+  assertNoJitsiModeratorGate,
   overrideBrowserMeetingServerUrl,
   proxyLocalMeetingServer,
   ensureJitsiMountSpy,
@@ -40,6 +44,11 @@ import {
 
 const IS_CLOUD = process.env.TEST_ENV === 'cloud';
 const API_TIMEOUT = IS_CLOUD ? 30_000 : 15_000;
+
+function resolveJitsiNavTimeoutMs(): number {
+  if (IS_CLOUD || process.env.PW_HEADED === '1') return 90_000;
+  return 45_000;
+}
 const PATIENT_ID = 'PATIENT-DEMO';
 const DOCTOR_ID = 'DOC-TEST-001';
 const AUTH_DIR = path.join(__dirname, 'e2e', '.auth-states');
@@ -77,10 +86,9 @@ async function seedTelehealthAppointment(
     timeout: API_TIMEOUT,
   });
 
-  const doctorToken = await doctorPage.evaluate(() =>
-    localStorage.getItem('token') || localStorage.getItem('izara_auth_token') || '',
-  );
-  const confirmResp = await doctorPage.request.post(`${DOCTOR_URL}/api/appointments/${appointmentId}/confirm`, {
+  await refreshPageAuth(doctorPage, DOCTOR_URL);
+  const doctorToken = await readPageBearerToken(doctorPage);
+  let confirmResp = await doctorPage.request.post(`${DOCTOR_URL}/api/appointments/${appointmentId}/confirm`, {
     headers: { Authorization: `Bearer ${doctorToken}`, 'Content-Type': 'application/json' },
     data: {
       doctorId: DOCTOR_ID,
@@ -89,12 +97,25 @@ async function seedTelehealthAppointment(
     },
     timeout: API_TIMEOUT,
   });
+  if (confirmResp.status() === 401) {
+    await refreshPageAuth(doctorPage, DOCTOR_URL);
+    const retryToken = await readPageBearerToken(doctorPage);
+    confirmResp = await doctorPage.request.post(`${DOCTOR_URL}/api/appointments/${appointmentId}/confirm`, {
+      headers: { Authorization: `Bearer ${retryToken}`, 'Content-Type': 'application/json' },
+      data: {
+        doctorId: DOCTOR_ID,
+        confirmedDate: new Date().toISOString().split('T')[0],
+        confirmedTime: '14:00',
+      },
+      timeout: API_TIMEOUT,
+    });
+  }
   expect(confirmResp.status()).toBe(200);
   return appointmentId;
 }
 
 async function createMeetingRecord(doctorPage: Page, appointmentId: string): Promise<string> {
-  const token = await doctorPage.evaluate(() => localStorage.getItem('token') || '');
+  const token = await readPageBearerToken(doctorPage);
   const resp = await doctorPage.request.post(`${MEETING_URL}/api/meetings/create`, {
     headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
     data: {
@@ -152,17 +173,26 @@ async function runJitsiRoleParityFlow(
   browserName: 'chrome' | 'firefox',
   label: string,
 ): Promise<void> {
-  await Promise.all([
-    patientPage.goto(`${PATIENT_URL}/`, { waitUntil: 'domcontentloaded', timeout: IS_CLOUD ? 90_000 : 45_000 }),
-    doctorPage.goto(`${DOCTOR_URL}/doctor/${DOCTOR_ID}/dashboard`, {
-      waitUntil: 'domcontentloaded',
-      timeout: IS_CLOUD ? 90_000 : 45_000,
-    }),
-    adminPage.goto(`${DOCTOR_URL}/doctor/ADMIN-TEST-001/dashboard`, {
-      waitUntil: 'domcontentloaded',
-      timeout: IS_CLOUD ? 90_000 : 45_000,
-    }),
-  ]);
+  const navTimeout = resolveJitsiNavTimeoutMs();
+  await patientPage.goto(`${PATIENT_URL}/`, { waitUntil: 'domcontentloaded', timeout: navTimeout });
+  await doctorPage.goto(`${DOCTOR_URL}/doctor/${DOCTOR_ID}/dashboard`, {
+    waitUntil: 'domcontentloaded',
+    timeout: navTimeout,
+  });
+  // Firefox: parallel admin warmup can NET_RESET under load — stagger + retry
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    try {
+      await adminPage.goto(`${DOCTOR_URL}/doctor/ADMIN-TEST-001/dashboard`, {
+        waitUntil: 'domcontentloaded',
+        timeout: navTimeout,
+      });
+      break;
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      if (attempt === 3 || !/NET_RESET|TIMED_OUT|timeout/i.test(msg)) throw err;
+      await adminPage.waitForTimeout(1_500 * attempt);
+    }
+  }
 
   const appointmentId = await seedTelehealthAppointment(patientPage, doctorPage, adminPage);
   const meetingKey = await createMeetingRecord(doctorPage, appointmentId);
@@ -184,17 +214,10 @@ async function runJitsiRoleParityFlow(
     await ensureJitsiMountSpy(doctorPage);
     await joinIzaraMeetingInApp(doctorPage, `${label}-doctor`, browserName);
 
-    const doctorToken = await doctorPage.evaluate(() => localStorage.getItem('token') || '');
-    await doctorPage.request.post(`${MEETING_URL}/api/meetings/${appointmentId}/host-present`, {
-      headers: { Authorization: `Bearer ${doctorToken}` },
-      timeout: API_TIMEOUT,
+    await notifyHostPresentAfterJitsi(doctorPage, appointmentId, {
+      bffUrl: DOCTOR_URL,
+      meetingUrl: MEETING_URL,
     });
-    await waitForMeetingHostReady(
-      doctorPage.request,
-      MEETING_URL,
-      appointmentId,
-      IS_CLOUD ? 120_000 : 90_000,
-    );
 
     await assertJitsiRoleFromMountOrDom(doctorPage, 'doctor', `${label}a-doctor`);
   });
@@ -217,6 +240,8 @@ async function runJitsiRoleParityFlow(
     await joinIzaraMeetingInApp(patientPage, `${label}-patient`, browserName);
 
     await assertJitsiRoleFromMountOrDom(patientPage, 'patient', `${label}b-patient`);
+    await assertNoJitsiModeratorGate(doctorPage, `${label}b-doctor`);
+    await assertNoJitsiModeratorGate(patientPage, `${label}b-patient`);
   });
 
   await test.step(`${label}c — join-config JWT roles (when token auth enabled)`, async () => {
@@ -322,6 +347,9 @@ test.describe('Group R — Jitsi role permissions (doctor HOST / patient partici
 
   test('JROLE02 — Firefox: doctor moderator controls, patient standard attendee', async () => {
     test.setTimeout(IS_CLOUD ? 600_000 : 420_000);
+    if (process.env.PW_SKIP_FIREFOX_JROLE === '1') {
+      test.skip(true, 'PW_SKIP_FIREFOX_JROLE=1 (local full-gate resource recovery)');
+    }
     const { browser, doctorPage, patientPage, adminPage, browserName } = await launchDualBrowserPair('firefox');
     try {
       await runJitsiRoleParityFlow(doctorPage, patientPage, adminPage, browserName, 'JROLE02-firefox');

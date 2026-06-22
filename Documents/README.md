@@ -1,7 +1,7 @@
 # Documents — Izara Anywhere documentation hub
 
-> **Layout version:** June 2026 · **Git tag (docs bundle):** `v1.0-docs`  
-> **App release (reference):** v1.7.51 (calendar sync on confirm + 3-party meeting E2E + zero-skip local gate)
+> **Layout version:** June 2026 · **App release:** v1.7.53  
+> **Gates:** `npm run phase:0` … `phase:9` · LAN Mode B: [deploy/nginx/LOCAL_DOCKER_DEPLOYMENT.md](../deploy/nginx/LOCAL_DOCKER_DEPLOYMENT.md)
 
 รวมเอกสารทั้งหมดของโปรเจกต์ภายใต้โฟลเดอร์เดียว `Documents/`
 
@@ -66,19 +66,23 @@ python scripts/build-appendix-process-steps.py
 
 ---
 
-## การทดสอบ (v1.7.51)
+## การทดสอบ (v1.7.53)
 
 | คำสั่ง | ความหมาย |
 |--------|----------|
-| `npm run test:unit:docker` | **2982** Vitest tests ใน `node:20-alpine` (167+ files) |
-| `npm run test:unit:docker:grouped` | ชุดเดียวกัน แบ่ง 4 กลุ่ม (doctor / patient / cross-portal / meeting-server) — ใช้เมื่อ RAM จำกัด |
-| `npm run test:unit:docker:deploy` | Rebuild `docker-compose` stack + Vitest ครบ + **78** meeting-server HTTP contracts |
-| `npm run test:meeting-server:contract` | Meeting-server contracts บน host (ไม่ rebuild stack) |
-| `npm run test:e2e:docker:core-multibrowser` | Group W E2E — Chromium + Firefox + WebKit (18/18) |
-| `npm run docs:sync-screenshots` | คัดลอก screenshot จาก E2E ไป `Documents/docs/screenshots/group-W/` |
+| `npm run phase:0` … `phase:9` | Phase gates — smoke, unit, headed E2E, screenshots, ledger |
+| `npm run test:local:pre-deploy-gate` | Phase 9 full gate (alias `phase:9`) |
+| `npm run test:unit:docker` | **~3200** Vitest tests ใน `node:20-alpine` |
+| `npm run test:unit:groups-sequential` | 17 unit groups แบบ sequential + fail-fast |
+| `npm run test:meeting-server:contract` | Meeting-server HTTP/JWT contracts |
+| `npm run test:meeting-server:integration` | Socket.IO lobby + integration (skip ถ้า :3020 ไม่ขึ้น) |
+| `npm run test:guards:static` | Legacy-src, credentials-include, dev-env guards |
+| `npm run docker:probe-health` / `docker:meeting-api-smoke` | Pre-phase smoke ก่อน E2E |
+| `bash deploy/nginx/compose.sh` | Docker Compose wrapper (V2 หรือ `docker-compose` V1) |
+| `npm run cleanup:project` | ลบ log/cache/regenerable artifacts |
 
-คู่มือ Docker multi-browser: [docs/markdown/testing/DOCKER_MULTIBROWSER_E2E.md](docs/markdown/testing/DOCKER_MULTIBROWSER_E2E.md)
+คู่มือ LAN: [deploy/nginx/LOCAL_DOCKER_DEPLOYMENT.md](../deploy/nginx/LOCAL_DOCKER_DEPLOYMENT.md) · รายงาน gate: [Processes/FULL_WORKFLOW_HARDENING_COMPLETION_REPORT.md](../Processes/FULL_WORKFLOW_HARDENING_COMPLETION_REPORT.md)
 
-**Registry:** `tests/unit/cross-portal/processWorkflowRegistry.ts` · gate: `processPageCoverage.test.ts` (49 PCOV) · matrix: [tests/PROCESS_COVERAGE_MATRIX.md](../tests/PROCESS_COVERAGE_MATRIX.md)
+**Registry:** `tests/unit/cross-portal/processWorkflowRegistry.ts` · matrix: [tests/PROCESS_COVERAGE_MATRIX.md](../tests/PROCESS_COVERAGE_MATRIX.md)
 
-Defect PDF (queue/meeting/calendar): `reports/defect-fix/DEFECT_REGISTER.md` — Q1, J1, M3, DPDF-CAL1/CAL2 · Vitest: `queueAcceptTraceability.test.ts`, `defectIsaraPdfMeetingQueue.test.ts`, `calendarEventLinks.test.ts`, `appointmentMapper.test.ts` · Local E2E: **35 passed, 0 skipped** (A→D→Q→E→F→L) + J/R **16/16** (2026-06-08)
+**Ledgers:** `reports/local-error-ledger/*-latest.json` (ไม่เก็บ round เก่าที่ repo root — รัน `npm run ledger:local`)

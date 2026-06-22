@@ -5,8 +5,8 @@ import { describe, it, expect } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
 
-const profilePage = path.resolve(__dirname, '../../../Isara-patient-portal/src/pages/ProfilePage.tsx');
-const phrRoute = path.resolve(__dirname, '../../../Isara-patient-portal/server/routes/phr.ts');
+const profilePage = path.resolve(__dirname, '../../../Isara-patient-portal/frontend/pages/ProfilePage.tsx');
+const phrRoute = path.resolve(__dirname, '../../../Isara-patient-portal/backend/routes/phr.ts');
 
 describe('Profile workflow (PRF)', () => {
   const profileSrc = fs.readFileSync(profilePage, 'utf8');

@@ -4,7 +4,7 @@ import path from 'node:path';
 
 const servicesPath = path.resolve(
   __dirname,
-  '../../../Isara-patient-portal/src/lib/services.ts',
+  '../../../Isara-patient-portal/frontend/lib/services.ts',
 );
 
 describe('notification markAllAsRead (P5)', () => {

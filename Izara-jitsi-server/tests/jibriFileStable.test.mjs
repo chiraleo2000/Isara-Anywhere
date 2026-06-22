@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
-import { waitForStableFile } from '../server/jibriFileStable.js';
+import { waitForStableFile } from '../backend/jibriFileStable.js';
 
 describe('jibriFileStable', () => {
   it('JFS-01 — waits until file size stops growing', async () => {

@@ -1,6 +1,6 @@
 # 💊 Doctor Portal — E-Prescribing
 
-**Component:** `src/components/CompletePrescribing.tsx`
+**Component:** `frontend/components/CompletePrescribing.tsx`
 **Type:** Modal (launched from DoctorPortal)
 **Access:** 🔒 Doctor / Admin
 **Thai Title:** ระบบสั่งยาอิเล็กทรอนิกส์ / E-Prescribing

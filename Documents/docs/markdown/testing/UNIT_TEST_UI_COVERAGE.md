@@ -1,8 +1,21 @@
-# Unit Test + UI Screenshot Coverage — v1.7.52
+# Unit Test + UI Screenshot Coverage — v1.7.53
 
-> Generated: 2026-06-09 | Defect track: test hardening gate + Sonar remediation | Registry: [tests/PROCESS_COVERAGE_MATRIX.md](../../../tests/PROCESS_COVERAGE_MATRIX.md)
+> Generated: 2026-06-22 | Phase gates 0–9 + LAN Mode B + static guards | Registry: [tests/PROCESS_COVERAGE_MATRIX.md](../../../tests/PROCESS_COVERAGE_MATRIX.md)
 
-## Summary
+## Summary (v1.7.53)
+
+| Metric | Value |
+|--------|-------|
+| Unit tests passed (Vitest) | **~3200** |
+| Meeting-server HTTP contracts | **78** |
+| Meeting-server Socket.IO integration | **13** (live :3020; skip if down) |
+| Static regression guards | `npm run test:guards:static` |
+| Phase gates | `npm run phase:0` … `phase:9` · pre-deploy: `test:local:pre-deploy-gate` |
+| UI screenshot groups | A–S (phase 9 includes E + S) |
+| Error ledger | `reports/local-error-ledger/*-latest.json` · `npm run ledger:local` |
+| Cleanup | `npm run cleanup:project` — prunes logs, caches, stale ledgers |
+
+## Summary (v1.7.52 baseline)
 
 | Metric | Value |
 |--------|-------|

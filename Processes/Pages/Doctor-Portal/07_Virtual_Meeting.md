@@ -3,12 +3,12 @@
 > **REMOVED (v1.7.53)** — The `VirtualMeeting.tsx` page and the `/virtual-meeting/:id` route have been
 > deleted. All doctor consultations now use the single real Jitsi flow via the Izara meeting server,
 > documented in [`Processes/Pages/Meeting-Server/01_Meeting_Room.md`](../Meeting-Server/01_Meeting_Room.md)
-> and reached in-app at `/doctor/:id/meeting/:appointmentId` (component `src/pages/meetings/MeetingRoom.tsx`).
+> and reached in-app at `/doctor/:id/meeting/:appointmentId` (component `frontend/pages/meetings/MeetingRoom.tsx`).
 > No external `meet.jit.si` browser tabs are used — the meeting is embedded with the Izara lobby,
 > doctor-as-host (`host-present` + `lobby/admit-all`), live transcription, and the Gemini SOAP summary.
 > This file is retained only for historical traceability and the process-coverage registry.
 
-**Component:** `src/pages/meetings/MeetingRoom.tsx` (was `src/pages/VirtualMeeting.tsx` — removed)
+**Component:** `frontend/pages/meetings/MeetingRoom.tsx` (was `frontend/pages/VirtualMeeting.tsx` — removed)
 **Type:** In-app route `/doctor/:id/meeting/:appointmentId`
 **Access:** 🔒 Doctor / Admin
 **Thai Title:** การประชุมออนไลน์ / Virtual Meeting

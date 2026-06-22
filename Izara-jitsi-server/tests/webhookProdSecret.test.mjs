@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { validateJibriWebhookRequest } from '../server/jibriWebhook.js';
+import { validateJibriWebhookRequest } from '../backend/jibriWebhook.js';
 
 describe('webhookProdSecret', () => {
   it('rejects wrong secret when expected set', () => {

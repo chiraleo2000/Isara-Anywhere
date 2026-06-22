@@ -6,11 +6,14 @@ WORKDIR /app
 RUN apk add --no-cache wget
 
 # Install dependencies
-COPY package*.json ./
+COPY Izara-jitsi-server/package*.json ./
 RUN npm ci --omit=dev && npm cache clean --force
 
 # Copy application
-COPY . .
+COPY Izara-jitsi-server/ .
+COPY shared/corsPolicy.cjs ./shared/corsPolicy.cjs
+COPY shared/corsPolicy.cjs /shared/corsPolicy.cjs
+RUN test -f ./shared/corsPolicy.cjs || (echo "FATAL: shared/corsPolicy.cjs missing in image" && exit 1)
 
 # Create non-root user and recordings directory
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup \
@@ -29,4 +32,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
   CMD wget --no-verbose --tries=1 --spider http://localhost:3020/health || exit 1
 
 # Start server
-CMD ["node", "server/index.js"]
+CMD ["node", "backend/index.js"]

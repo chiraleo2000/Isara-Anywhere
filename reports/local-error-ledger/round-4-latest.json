@@ -1,0 +1,20 @@
+{
+  "round": 4,
+  "timestamp": "2026-06-22T04:27:32.171Z",
+  "immutable": true,
+  "environment": {
+    "testEnv": "local",
+    "patientUrl": "http://localhost:3005",
+    "doctorUrl": "http://localhost:3010",
+    "meetingUrl": "http://localhost:3020"
+  },
+  "stats": {
+    "expected": 18,
+    "unexpected": 0,
+    "skipped": 0,
+    "durationMs": 69731.41
+  },
+  "failures": [],
+  "p0Count": 0,
+  "p1Count": 0
+}

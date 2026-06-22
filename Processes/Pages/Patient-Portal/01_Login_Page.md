@@ -1,7 +1,7 @@
 # 🔐 Patient Portal — Login Page
 
 **Route:** `/login`
-**Component:** `src/pages/auth/LoginPage.tsx`
+**Component:** `frontend/pages/auth/LoginPage.tsx`
 **Access:** Public (unauthenticated users only)
 **Thai Title:** เข้าสู่ระบบ
 

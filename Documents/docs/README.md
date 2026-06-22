@@ -1,8 +1,8 @@
-# Documentation index (v1.7.51)
+# Documentation index (v1.7.53)
 
 All deliverables under `Documents/docs/` — guides, diagrams, operations markdown, and UI evidence.
 
-**Related:** [Documents hub](../README.md) · [Thai technical As-is](../Technical_Documents/) · [Presentations](../Presentations/README.md) · [Processes specs](../../Processes/Pages/README.md)
+**Related:** [Documents hub](../README.md) · [Thai technical As-is](../Technical_Documents/) · [Presentations](../Presentations/README.md) · [LAN deploy](../../deploy/nginx/LOCAL_DOCKER_DEPLOYMENT.md) · [Hardening report](../../Processes/FULL_WORKFLOW_HARDENING_COMPLETION_REPORT.md)
 
 ---
 
@@ -25,11 +25,9 @@ Build: `npm run guides:all` · Export PDF: `npm run guides:pdf` (Word + PowerPoi
 | **Diagram report (12 pages)** | [technical/word/TECHNICAL_DIAGRAM_REPORT_TH.docx](technical/word/TECHNICAL_DIAGRAM_REPORT_TH.docx) · [technical/ppt/TECHNICAL_DIAGRAM_REPORT_PPT_TH.pptx](technical/ppt/TECHNICAL_DIAGRAM_REPORT_PPT_TH.pptx) |
 | PowerPoint (FC Iconic) | [technical/ppt/TECHNICAL_ARCHITECTURE_PPT_TH.pptx](technical/ppt/TECHNICAL_ARCHITECTURE_PPT_TH.pptx) |
 | PDF exports | [technical/pdf/](technical/pdf/) |
-| HTML slides | [technical/slides/TECHNICAL_ARCHITECTURE_SLIDES.html](technical/slides/TECHNICAL_ARCHITECTURE_SLIDES.html) · [MD](technical/slides/TECHNICAL_ARCHITECTURE_SLIDES.md) |
+| HTML slides | [technical/slides/TECHNICAL_ARCHITECTURE_SLIDES.html](technical/slides/TECHNICAL_ARCHITECTURE_SLIDES.html) |
 
 Build: `npm run guides:technical`
-
-**Thai Markdown As-is (source-aligned):** [../Technical_Documents/01_System_Architecture_and_Workflow.md](../Technical_Documents/01_System_Architecture_and_Workflow.md) — ชุด 01–05 อัปเดตจาก `Processes/` โดยตรง
 
 ---
 
@@ -38,56 +36,48 @@ Build: `npm run guides:technical`
 | File | Purpose |
 | ---- | ------- |
 | [diagrams/diagrams.drawio](diagrams/diagrams.drawio) | Master deck (**12 report tabs** + extras) |
-| [diagrams/Isara_Anywhere_System_Diagram.drawio](diagrams/Isara_Anywhere_System_Diagram.drawio) | System overview |
-| [diagrams/Isara_Anywhere_Full_Diagram.drawio](diagrams/Isara_Anywhere_Full_Diagram.drawio) | Full platform |
-| [diagrams/Isara_Anywhere_Complete_Diagram.drawio](diagrams/Isara_Anywhere_Complete_Diagram.drawio) | Complete flows |
-| [diagrams/export/pages/](diagrams/export/pages/) | PNG exports + [manifest.json](diagrams/export/pages/manifest.json) |
+| [diagrams/export/pages/](diagrams/export/pages/) | PNG exports |
 
 | Task | Command |
 |------|---------|
 | Diagram report (Word/PPT) | `npm run diagrams:report` |
 | Export PNG pages | `npm run diagrams:export` |
-| Interactive Mermaid HTML | `.\Documents\Presentations\generate-diagrams.ps1` → open [html-diagrams/index.html](../Presentations/html-diagrams/index.html) |
-
-Defect draw.io handoff: [markdown/testing/DEFECT_REMEDIATION_DRAWIO_UPDATES.md](markdown/testing/DEFECT_REMEDIATION_DRAWIO_UPDATES.md)
 
 ---
 
 ## Markdown — operations
 
-- [markdown/operations/URLS_AND_DEFAULT_USERS.md](markdown/operations/URLS_AND_DEFAULT_USERS.md)
+- [markdown/operations/URLS_AND_DEFAULT_USERS.md](markdown/operations/URLS_AND_DEFAULT_USERS.md) — cloud, localhost, **LAN** URLs + demo users
 - [markdown/operations/CLOUD_ACCESS_TH.md](markdown/operations/CLOUD_ACCESS_TH.md)
 - [markdown/operations/APPOINTMENT_USER_GUIDE.md](markdown/operations/APPOINTMENT_USER_GUIDE.md)
 - [markdown/operations/PRODUCTION_DEPLOYMENT_AND_TECHNICAL_UPDATE.md](markdown/operations/PRODUCTION_DEPLOYMENT_AND_TECHNICAL_UPDATE.md)
-- [markdown/operations/TECHNICAL_DIAGRAM_REPORT_TH.md](markdown/operations/TECHNICAL_DIAGRAM_REPORT_TH.md)
 - [markdown/operations/MARKDOWN_GUIDE.md](markdown/operations/MARKDOWN_GUIDE.md)
 
-## Markdown — testing & quality
+## Markdown — testing & quality (v1.7.53)
 
 | Command | Purpose |
 |---------|---------|
-| `npm run test:unit:docker` | **2938** Vitest in Docker |
-| `npm run test:unit:docker:grouped` | Same suite, memory-safe shards |
-| `npm run test:unit:docker:deploy` | Rebuild stack + unit + **78** meeting contracts |
-| `npm run test:e2e:docker:core-multibrowser` | Group W — Chromium + Firefox + WebKit (18 tests) |
-| `npm run docs:sync-screenshots` | Copy green E2E PNGs → `screenshots/group-W/` |
+| `npm run phase:0` … `phase:9` | Phase gates with pre-phase smoke + ledger |
+| `npm run test:unit:docker` | ~3200 Vitest in Docker |
+| `npm run test:meeting-server:integration` | Socket.IO lobby (live :3020) |
+| `npm run test:guards:static` | Regression guards (phase 8) |
+| `npm run test:screenshots:all` | Groups A,B,D,E,Q,Q2,S |
+| `npm run cleanup:project` | Prune logs, caches, stale ledgers |
 
-- [markdown/testing/DOCKER_MULTIBROWSER_E2E.md](markdown/testing/DOCKER_MULTIBROWSER_E2E.md) — Docker multi-browser setup, run loop, screenshot refresh
+- [markdown/testing/DOCKER_MULTIBROWSER_E2E.md](markdown/testing/DOCKER_MULTIBROWSER_E2E.md)
 - [markdown/testing/UNIT_TEST_UI_COVERAGE.md](markdown/testing/UNIT_TEST_UI_COVERAGE.md)
-- [markdown/testing/DEFECT_REMEDIATION_DRAWIO_UPDATES.md](markdown/testing/DEFECT_REMEDIATION_DRAWIO_UPDATES.md)
-- Process registry: [../../tests/PROCESS_COVERAGE_MATRIX.md](../../tests/PROCESS_COVERAGE_MATRIX.md)
+- Process matrix: [../../tests/PROCESS_COVERAGE_MATRIX.md](../../tests/PROCESS_COVERAGE_MATRIX.md)
 
 ## Markdown — ledgers
 
-- [markdown/ledgers/PRE_DEBUG_BASELINE_LEDGER.md](markdown/ledgers/PRE_DEBUG_BASELINE_LEDGER.md)
 - [markdown/ledgers/SECURITY_SCANNING_LEDGER.md](markdown/ledgers/SECURITY_SCANNING_LEDGER.md)
+- Runtime JSON: `reports/local-error-ledger/*-latest.json` · `npm run ledger:local`
 
 ---
 
 ## Screenshots & templates
 
-- [screenshots/](screenshots/) — Playwright UI evidence (groups A–Q, workflow/, sso/)
-- [screenshots/group-W/](screenshots/group-W/) — **Docker multi-browser** verified captures (W01–W06, 3 engines); sync via `npm run docs:sync-screenshots`
+- [screenshots/](screenshots/) — Playwright UI evidence (groups A–S, workflow/)
 - [templates/](templates/) — Doc templates
 
 ---
@@ -96,8 +86,8 @@ Defect draw.io handoff: [markdown/testing/DEFECT_REMEDIATION_DRAWIO_UPDATES.md](
 
 | Task | Command |
 |------|---------|
-| Reorganize layout (idempotent) | `scripts/reorganize-docs.ps1` |
-| Prune caches & doc junk | `npm run cleanup:project` |
+| Prune caches & gate logs | `npm run cleanup:project` |
 | Regenerate process appendix | `python scripts/build-appendix-process-steps.py` |
+| LAN diagnostic (Ubuntu) | `bash deploy/nginx/diagnose-502.sh` |
 
-Removes under `Documents/docs`: `~$*`, `*.bkp`, `*.dtmp`, `*_BUILD.docx|pptx`
+Removes: `test-results/`, `playwright-report/`, `reports/*.log`, timestamped ledgers, root `*_ERROR_LEDGER_ROUND*.md`

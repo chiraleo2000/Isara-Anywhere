@@ -52,6 +52,26 @@ Round 2: cloud smoke + `verify:gate0` + **one** live Gemini probe (`verify:cloud
 
 Round 2b: capture PNGs from Cloud Run only (`BASELINE_VISUAL=1`, groups P/W/D/E/F/S), then rebuild guides.
 
+## Phase 12 — Cloud release gate (after local Phase 9 P0=0)
+
+Prerequisite: `npm run test:local:pre-deploy-gate` exits 0.
+
+```powershell
+npm run test:cloud:deploy-gate                # smoke + gate0 + verify:cloud-meeting-ai + A+D+Q
+npm run test:cloud:full                       # 85 headed tests
+npm run test:cloud:doc-screenshots            # Round 2b PNGs
+npm run docs:sync-screenshots
+npm run ledger:cloud -- --round final
+```
+
+Or single orchestrator:
+
+```powershell
+npm run test:cloud:release-gate
+```
+
+Immutable ledger: `reports/cloud-error-ledger/round-final-*.json` and `CLOUD_E2E_ERROR_LEDGER_ROUND*.md`.
+
 ## Legacy orchestrator (full hardening — optional)
 
 ```powershell

@@ -1,0 +1,59 @@
+{
+  "syncedAt": "2026-06-22T08:58:30.902Z",
+  "group": "group-W",
+  "source": [
+    "tests/output/screenshots",
+    "docs/screenshots"
+  ],
+  "canonicalBrowser": "chromium",
+  "browsers": [
+    "chromium",
+    "firefox",
+    "webkit"
+  ],
+  "workflows": [
+    {
+      "id": "W01",
+      "files": [
+        "W01-patient-dashboard.png",
+        "W01-doctor-dashboard.png",
+        "W01-admin-dashboard.png"
+      ]
+    },
+    {
+      "id": "W02",
+      "files": [
+        "W02-appointments-list.png",
+        "W02-appointment-created.png"
+      ]
+    },
+    {
+      "id": "W03",
+      "files": [
+        "W03-health-meeting.png",
+        "W03-appointment-pool.png"
+      ]
+    },
+    {
+      "id": "W04",
+      "files": [
+        "W04-doctor-virtual-meeting.png",
+        "W04-patient-meeting-room.png"
+      ]
+    },
+    {
+      "id": "W05",
+      "files": [
+        "W05-patient-detail.png",
+        "W05-emr-editor.png"
+      ]
+    },
+    {
+      "id": "W06",
+      "files": [
+        "W06-gemini-studio-open.png",
+        "W06-gemini-api-connected.png"
+      ]
+    }
+  ]
+}

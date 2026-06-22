@@ -4,7 +4,7 @@ import {
   createJitsiRoleJwt,
   validateGuestJoinAccess,
   generateOpaqueToken,
-} from '../server/sessionAuth.js';
+} from '../backend/sessionAuth.js';
 
 describe('sessionAuth', () => {
   it('createJitsiRoleJwt returns null (JWT removed)', () => {

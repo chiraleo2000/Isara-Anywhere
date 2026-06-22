@@ -1,7 +1,7 @@
 # Izara Telemedicine Platform (อิสระ เทเลเมดิซิน)
 
-![Version](https://img.shields.io/badge/release-v1.7.50-blue.svg)
-![Tests](https://img.shields.io/badge/unit%20tests-2938%20passing-brightgreen.svg)
+![Version](https://img.shields.io/badge/release-v1.7.53-blue.svg)
+![Tests](https://img.shields.io/badge/unit%20tests-3200%2B%20passing-brightgreen.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 ![Node](https://img.shields.io/badge/node-%3E%3D22.0.0-brightgreen.svg)
 ![Database](https://img.shields.io/badge/database-PostgreSQL%2018-blue.svg)
@@ -10,7 +10,7 @@
 
 Full-stack telemedicine for Thailand: video consultations (Jitsi), PHR/EMR, e-prescribing, AI clinical tools, appointment pool, and PDPA-aware data handling.
 
-**Quick links:** [Documents hub](Documents/README.md) · [Thai technical 01–05](Documents/Technical_Documents/01_System_Architecture_and_Workflow.md) · [Docs index](Documents/docs/README.md) · [Diagram report — Word](Documents/Documents/docs/technical/word/TECHNICAL_DIAGRAM_REPORT_TH.docx) · [Diagram report — PPT](Documents/Documents/docs/technical/ppt/TECHNICAL_DIAGRAM_REPORT_PPT_TH.pptx) · [URLs & demo users](Documents/Documents/docs/markdown/operations/URLS_AND_DEFAULT_USERS.md) · [Technical diagrams (draw.io)](Documents/Documents/docs/diagrams/diagrams.drawio) · [Architecture slides (Sarabun 16pt)](Documents/Documents/docs/technical/slides/TECHNICAL_ARCHITECTURE_SLIDES.html) · [Architecture Word TH](Documents/Documents/docs/technical/word/TECHNICAL_ARCHITECTURE_WORD_TH.docx) · [Architecture PPT TH (FC Iconic)](Documents/Documents/docs/technical/ppt/TECHNICAL_ARCHITECTURE_PPT_TH.pptx) · [Patient Word (TH)](Documents/Documents/docs/guides/patient/USER_GUIDE_PATIENT_WORD_TH.docx) · [Doctor Word (TH)](Documents/Documents/docs/guides/doctor/USER_GUIDE_DOCTOR_WORD_TH.docx) · [Patient PPT (TH)](Documents/Documents/docs/guides/patient/USER_GUIDE_PATIENT_PPT_TH.pptx) · [Doctor PPT (TH)](Documents/Documents/docs/guides/doctor/USER_GUIDE_DOCTOR_PPT_TH.pptx) · [Cloud access (TH)](Documents/Documents/docs/markdown/operations/CLOUD_ACCESS_TH.md) · [Process pages](Processes/Pages/README.md) · [Markdown guide](Documents/Documents/docs/markdown/operations/MARKDOWN_GUIDE.md)
+**Quick links:** [Local Docker deployment](deploy/nginx/LOCAL_DOCKER_DEPLOYMENT.md) · [Documents hub](Documents/README.md) · [Thai technical 01–05](Documents/Technical_Documents/01_System_Architecture_and_Workflow.md) · [Docs index](Documents/docs/README.md) · [Diagram report — Word](Documents/docs/technical/word/TECHNICAL_DIAGRAM_REPORT_TH.docx) · [Diagram report — PPT](Documents/docs/technical/ppt/TECHNICAL_DIAGRAM_REPORT_PPT_TH.pptx) · [URLs & demo users](Documents/docs/markdown/operations/URLS_AND_DEFAULT_USERS.md) · [Technical diagrams (draw.io)](Documents/docs/diagrams/diagrams.drawio) · [Architecture slides (Sarabun 16pt)](Documents/docs/technical/slides/TECHNICAL_ARCHITECTURE_SLIDES.html) · [Architecture Word TH](Documents/docs/technical/word/TECHNICAL_ARCHITECTURE_WORD_TH.docx) · [Architecture PPT TH (FC Iconic)](Documents/docs/technical/ppt/TECHNICAL_ARCHITECTURE_PPT_TH.pptx) · [Patient Word (TH)](Documents/docs/guides/patient/USER_GUIDE_PATIENT_WORD_TH.docx) · [Doctor Word (TH)](Documents/docs/guides/doctor/USER_GUIDE_DOCTOR_WORD_TH.docx) · [Patient PPT (TH)](Documents/docs/guides/patient/USER_GUIDE_PATIENT_PPT_TH.pptx) · [Doctor PPT (TH)](Documents/docs/guides/doctor/USER_GUIDE_DOCTOR_PPT_TH.pptx) · [Cloud access (TH)](Documents/docs/markdown/operations/CLOUD_ACCESS_TH.md) · [Process pages](Processes/Pages/README.md) · [Markdown guide](Documents/docs/markdown/operations/MARKDOWN_GUIDE.md)
 
 ---
 
@@ -40,17 +40,23 @@ Full-stack telemedicine for Thailand: video consultations (Jitsi), PHR/EMR, e-pr
 | Doctor | `00132-ts6` | `v1.7.12` | Cloud SQL · port **8080** (nginx unified) |
 | Meeting | latest | `v1.7.12` | Cloud SQL |
 
-Region: `asia-southeast1` · Project: `izara-telemedicine`. Health: `npm run cloud:smoke`. Details: [Documents/Documents/docs/markdown/operations/CLOUD_ACCESS_TH.md](Documents/Documents/docs/markdown/operations/CLOUD_ACCESS_TH.md).
+Region: `asia-southeast1` · Project: `izara-telemedicine`. Health: `npm run cloud:smoke`. Details: [Documents/docs/markdown/operations/CLOUD_ACCESS_TH.md](Documents/docs/markdown/operations/CLOUD_ACCESS_TH.md).
 
 ### Local (Docker Compose)
 
-| Service | URL |
-| ------- | --- |
-| Patient Portal | http://localhost:3005 |
-| Doctor Portal | http://localhost:3010 |
-| Meeting Server | http://localhost:3020 |
-| PostgreSQL | localhost:5433 |
-| pgAdmin | http://localhost:5050 |
+Full guide: **[deploy/nginx/LOCAL_DOCKER_DEPLOYMENT.md](deploy/nginx/LOCAL_DOCKER_DEPLOYMENT.md)** — Mode A (localhost) **or** Mode B (Ubuntu + Nginx LAN).
+
+| Mode | Patient | Doctor | Meeting |
+| ---- | ------- | ------ | ------- |
+| **A — localhost** | http://localhost:3005 | http://localhost:3010 | http://localhost:3020 |
+| **B — LAN** | http://patient.isara.local | http://doctor.isara.local | http://meeting.isara.local |
+
+| Service | Port (host) |
+| ------- | ----------- |
+| PostgreSQL | 5433 |
+| pgAdmin | 5050 |
+
+**Ubuntu redeploy:** `bash deploy/nginx/compose.sh --env-file .env.docker up -d --build` (works with `docker compose` V2 or `docker-compose` V1).
 
 ### Demo accounts (default startup / testing)
 
@@ -73,10 +79,10 @@ node scripts/database/db-tool.cjs --seed
 
 **Where to log in**
 
-| Role | Cloud URL | Local URL |
-| ---- | --------- | --------- |
-| Patient | [Patient login](https://izara-patient-portal-dev-testing-724889190329.asia-southeast1.run.app/login) | http://localhost:3005/login |
-| Doctor / Admin | [Doctor login](https://izara-doctor-portal-dev-testing-724889190329.asia-southeast1.run.app/login) | http://localhost:3010/login |
+| Role | Cloud URL | Local URL | LAN URL |
+| ---- | --------- | --------- | ------- |
+| Patient | [Patient login](https://izara-patient-portal-dev-testing-724889190329.asia-southeast1.run.app/login) | http://localhost:3005/login | http://patient.isara.local/login |
+| Doctor / Admin | [Doctor login](https://izara-doctor-portal-dev-testing-724889190329.asia-southeast1.run.app/login) | http://localhost:3010/login | http://doctor.isara.local/login |
 
 **Google SSO:** Set `VITE_GOOGLE_CLIENT_ID` in each portal `.env` (see `.env.example`). SSO accounts must match a registered email.
 
@@ -101,7 +107,8 @@ cd Isara-Anywhere
 cp .env.docker.example .env.docker
 # Add API keys (see table below)
 
-docker-compose up -d --build
+bash deploy/nginx/compose.sh up -d --build
+# or: docker compose up -d --build  /  docker-compose up -d --build
 ```
 
 Open patient portal at http://localhost:3005 and doctor portal at http://localhost:3010.
@@ -120,9 +127,11 @@ Copy `.env.example` → `.env` (or use `.env.test` for Vitest). Required keys ar
 ### Docker commands
 
 ```bash
-docker-compose logs -f          # follow logs
-docker-compose down             # stop
-docker-compose down -v && docker-compose up -d --build   # full DB reset
+bash deploy/nginx/compose.sh logs -f    # follow logs
+bash deploy/nginx/compose.sh down       # stop
+bash deploy/nginx/compose.sh down -v && bash deploy/nginx/compose.sh up -d --build   # full DB reset
+bash deploy/nginx/diagnose-502.sh       # LAN health + login smoke (Ubuntu)
+npm run cleanup:project                 # prune logs, caches, stale ledgers
 ```
 
 | Service | Port |
@@ -183,11 +192,16 @@ Details: [Processes/GATE0_IMPLEMENTATION_STATUS.md](Processes/GATE0_IMPLEMENTATI
 
 | Layer | Tool | Scope |
 | ----- | ---- | ----- |
-| Unit | Vitest (`tests/unit/`) | **2938** tests · 167 files · API, auth, workflows, queue/JWT hardening |
-| Meeting contracts | Vitest (`tests/unit/meeting-server/`) | **78** HTTP + JWT role tests |
-| Process registry | `processWorkflowRegistry.ts` + PCOV gate | 44 process docs → Vitest mapping |
+| Unit | Vitest (`tests/unit/`) | **~3200** tests · 219 files · auth, workflows, meeting BFF |
+| Meeting contracts | `npm run test:meeting-server:contract` | HTTP + JWT + pipeline contracts |
+| Meeting integration | `npm run test:meeting-server:integration` | Socket.IO lobby (live :3020, skip if down) |
+| Phase gates | `npm run phase:0` … `phase:9` | Pre-phase smoke → unit → headed E2E → screenshots → ledger |
 | Cloud UI | Playwright (`tests/group-*.ui-test.ts`) | Groups A–P + **Q** (meeting lifecycle P0) |
-| Coverage | [tests/PROCESS_COVERAGE_MATRIX.md](tests/PROCESS_COVERAGE_MATRIX.md) | Process pages + workflow docs |
+| Static guards | `npm run test:guards:static` | No legacy `src/`, credentials-include, dev env |
+
+**Local release gate:** `npm run test:local:pre-deploy-gate` (alias `npm run phase:9`)
+
+Canonical contract: [Processes/FULL_WORKFLOW_CONTRACT.md](Processes/FULL_WORKFLOW_CONTRACT.md) · completion: [Processes/FULL_WORKFLOW_HARDENING_COMPLETION_REPORT.md](Processes/FULL_WORKFLOW_HARDENING_COMPLETION_REPORT.md)
 
 ### Local Docker (recommended for full suite)
 
@@ -288,17 +302,18 @@ Isara-Anywhere/
 | Document | Audience |
 | -------- | -------- |
 | [Docs index](Documents/docs/README.md) | Full layout by type + content |
-| [URLs & demo users + user guides](Documents/Documents/docs/markdown/operations/URLS_AND_DEFAULT_USERS.md) | Cloud/local URLs, demo accounts, **Word / PPT / PDF** links |
-| [Patient Word guide](Documents/Documents/docs/guides/patient/USER_GUIDE_PATIENT_WORD_TH.docx) | Patients — Word (**TH Sarabun New 16 pt**) |
-| [Patient PPT guide](Documents/Documents/docs/guides/patient/USER_GUIDE_PATIENT_PPT_TH.pptx) | Patients — slides (**FC Iconic**) |
-| [Doctor Word guide](Documents/Documents/docs/guides/doctor/USER_GUIDE_DOCTOR_WORD_TH.docx) | Doctor/Admin — Word (**TH Sarabun New 16 pt**) |
-| [Doctor PPT guide](Documents/Documents/docs/guides/doctor/USER_GUIDE_DOCTOR_PPT_TH.pptx) | Doctor/Admin — slides (**FC Iconic**) |
-| [CLOUD_ACCESS_TH.md](Documents/Documents/docs/markdown/operations/CLOUD_ACCESS_TH.md) | Cloud URLs & health checks |
-| [APPOINTMENT_USER_GUIDE.md](Documents/Documents/docs/markdown/operations/APPOINTMENT_USER_GUIDE.md) | Appointment flows |
-| [GATE0_IMPLEMENTATION_STATUS.md](Processes/GATE0_IMPLEMENTATION_STATUS.md) | Release gate status |
+| [URLs & demo users + user guides](Documents/docs/markdown/operations/URLS_AND_DEFAULT_USERS.md) | Cloud/local URLs, demo accounts, **Word / PPT / PDF** links |
+| [Patient Word guide](Documents/docs/guides/patient/USER_GUIDE_PATIENT_WORD_TH.docx) | Patients — Word (**TH Sarabun New 16 pt**) |
+| [Patient PPT guide](Documents/docs/guides/patient/USER_GUIDE_PATIENT_PPT_TH.pptx) | Patients — slides (**FC Iconic**) |
+| [Doctor Word guide](Documents/docs/guides/doctor/USER_GUIDE_DOCTOR_WORD_TH.docx) | Doctor/Admin — Word (**TH Sarabun New 16 pt**) |
+| [Doctor PPT guide](Documents/docs/guides/doctor/USER_GUIDE_DOCTOR_PPT_TH.pptx) | Doctor/Admin — slides (**FC Iconic**) |
+| [CLOUD_ACCESS_TH.md](Documents/docs/markdown/operations/CLOUD_ACCESS_TH.md) | Cloud URLs & health checks |
+| [APPOINTMENT_USER_GUIDE.md](Documents/docs/markdown/operations/APPOINTMENT_USER_GUIDE.md) | Appointment flows |
+| [FULL_WORKFLOW_HARDENING_COMPLETION_REPORT.md](Processes/FULL_WORKFLOW_HARDENING_COMPLETION_REPORT.md) | Phase gates 0–12, LAN, CI, cloud ladder |
+| [LOCAL_DOCKER_DEPLOYMENT.md](deploy/nginx/LOCAL_DOCKER_DEPLOYMENT.md) | Docker + Nginx Mode A/B |
 | [FULL_WORKFLOW_CONTRACT.md](Processes/FULL_WORKFLOW_CONTRACT.md) | End-to-end contracts |
 | [VIDEO_MEETING_JITSI_GEMINI.md](Processes/VIDEO_MEETING_JITSI_GEMINI.md) | Video + AI pipeline |
-| [MARKDOWN_GUIDE.md](Documents/Documents/docs/markdown/operations/MARKDOWN_GUIDE.md) | Doc linting & auto-fix |
+| [MARKDOWN_GUIDE.md](Documents/docs/markdown/operations/MARKDOWN_GUIDE.md) | Doc linting & auto-fix |
 | [SPEC_KIT.md](specs/SPEC_KIT.md) | Full specification |
 
 Regenerate Word/PPT from passing UI screenshots:
@@ -330,26 +345,39 @@ npm run cleanup:cloud-test   # after E2E — purge test rows + re-seed baseline 
 
 ---
 
-## Quality gates (v1.7.50+)
+## Quality gates (v1.7.53)
 
 ```powershell
-npm run test:unit              # 2938 Vitest tests (process registry + queue/JWT hardening)
-npm run test:unit:docker       # same suite inside node:20-alpine container
-npm run test:unit:docker:grouped # memory-safe 4-group shard
-npm run test:unit:docker:deploy # rebuild docker-compose stack + full unit + 78 meeting contracts
-npm run test:unit:coverage     # lcov for SonarLint
-npm run sonar:lint             # coverage + eslint sonarjs + app-scan
-npm run test:quality:gate      # full local quality gate
-npm run test:cloud:unit-gate   # unit + cloud smoke + GATE0
+npm run phase:0                  # lint, typecheck, meeting-server contract
+npm run test:unit:groups-sequential -- --fail-fast
+npm run docker:probe-health
+npm run docker:meeting-api-smoke
+npm run phase:2                  # … through phase:9
+npm run test:local:pre-deploy-gate   # full pre-deploy (phase 9)
+npm run test:guards:static
+npm run test:cloud:deploy-gate   # smoke + GATE0 (after local gate green)
+npm run test:cloud:release-gate  # full cloud chain → ledger:cloud --round final
+npm run ledger:local -- --round N
+npm run cleanup:project          # prune stale logs & caches
 ```
 
-**Defect remediation (`Defect หมออิสระ.pdf`, 23 items):** see [`reports/defect-fix/DEFECT_REGISTER.md`](reports/defect-fix/DEFECT_REGISTER.md), [`reports/defect-fix/v1.7.41-final.txt`](reports/defect-fix/v1.7.41-final.txt), and draw.io updates [`Documents/Documents/docs/markdown/testing/DEFECT_REMEDIATION_DRAWIO_UPDATES.md`](Documents/Documents/docs/markdown/testing/DEFECT_REMEDIATION_DRAWIO_UPDATES.md). Cloud UI: `$env:TEST_ENV='cloud'; npx playwright test --project=Defect-regression --workers=1`.
+CI tiers: [.github/workflows/ci.yml](.github/workflows/ci.yml) — PR fast / `run-docker-e2e` label / nightly `phase:9`.
 
-SonarLint: open repo root; uses [`sonar-project.properties`](sonar-project.properties) (includes `server/`). See [`reports/sonar/sonarlint-summary.md`](reports/sonar/sonarlint-summary.md).
+**Defect remediation:** [`reports/defect-fix/DEFECT_REGISTER.md`](reports/defect-fix/DEFECT_REGISTER.md) · draw.io: [Documents/docs/markdown/testing/DEFECT_REMEDIATION_DRAWIO_UPDATES.md](Documents/docs/markdown/testing/DEFECT_REMEDIATION_DRAWIO_UPDATES.md)
+
+Error ledgers: `reports/local-error-ledger/*-latest.json` (run `npm run ledger:local`; root `*_ERROR_LEDGER_ROUND*.md` are not kept).
 
 ---
 
 ## Changelog (recent)
+
+### v1.7.53 (June 2026)
+
+- **Phase gates 0–9** with pre-phase smoke (`docker:probe-health`, `meeting-api-smoke`, DB reset), failure archive, `PW_WORKERS=1`
+- **LAN Mode B:** `*.isara.local` CORS, `deploy/nginx/compose.sh`, patient runtime `env-config.js`, redeploy docs
+- **CI restored:** PR fast / docker-e2e label / nightly phase 9
+- **Static guards:** `npm run test:guards:static` · Socket.IO integration tests
+- **~3200** Vitest unit tests · cleanup: `npm run cleanup:project` prunes logs & stale ledgers
 
 ### v1.7.50 (June 5, 2026)
 
@@ -365,7 +393,7 @@ SonarLint: open repo root; uses [`sonar-project.properties`](sonar-project.prope
 ### v1.7.40 (May 30, 2026)
 
 - Sonar/static pass: tsconfig deprecations, Maps AdvancedMarker, NotificationsPage hook, appointment PUT helper
-- Deploy tag v1.7.40; draw.io update instructions in `Documents/Documents/docs/markdown/testing/DEFECT_REMEDIATION_DRAWIO_UPDATES.md`
+- Deploy tag v1.7.40; draw.io update instructions in `Documents/docs/markdown/testing/DEFECT_REMEDIATION_DRAWIO_UPDATES.md`
 
 ### v1.7.39 (May 29, 2026)
 
@@ -378,7 +406,7 @@ SonarLint: open repo root; uses [`sonar-project.properties`](sonar-project.prope
 - Unit tests: sanitize middleware regression, PHR timeline degraded mode, responsive breakpoints
 - Patient `/api/phr/:id/timeline` returns 200 `[]` for demo patients on DB errors (fixes cloud S03 500)
 - Responsive UI: doctor login/dashboard padding, ResponsiveLayout mobile gutters, patient 44px touch nav
-- **Docs:** [Documents/Documents/docs/markdown/testing/UNIT_TEST_UI_COVERAGE.md](Documents/Documents/docs/markdown/testing/UNIT_TEST_UI_COVERAGE.md) (2646 unit + UI screenshots), diagram [Documents/Presentations/html-diagrams/17-testing-quality-gate.html](Documents/Presentations/html-diagrams/17-testing-quality-gate.html), TH Word/PPT via `npm run guides:technical`
+- **Docs:** [Documents/docs/markdown/testing/UNIT_TEST_UI_COVERAGE.md](Documents/docs/markdown/testing/UNIT_TEST_UI_COVERAGE.md) (2646 unit + UI screenshots), diagram [Documents/Presentations/html-diagrams/17-testing-quality-gate.html](Documents/Presentations/html-diagrams/17-testing-quality-gate.html), TH Word/PPT via `npm run guides:technical`
 
 ### v1.7.18 (May 22, 2026)
 
@@ -409,7 +437,7 @@ Older entries: git history and [Documents/Presentations/TECHNICAL_DOCUMENTATION.
 ## Contributing
 
 1. Fork → feature branch → commit → push → pull request
-2. For markdown changes: `node scripts/markdown-fixer.js --check-only` (see [Documents/Documents/docs/markdown/operations/MARKDOWN_GUIDE.md](Documents/Documents/docs/markdown/operations/MARKDOWN_GUIDE.md))
+2. For markdown changes: `node scripts/markdown-fixer.js --check-only` (see [Documents/docs/markdown/operations/MARKDOWN_GUIDE.md](Documents/docs/markdown/operations/MARKDOWN_GUIDE.md))
 
 ---
 

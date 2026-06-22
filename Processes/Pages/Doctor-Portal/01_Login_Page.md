@@ -1,7 +1,7 @@
 # 🔐 Doctor Portal — Login Page
 
 **Route:** `/login`
-**Component:** `src/pages/LoginPage.tsx`
+**Component:** `frontend/pages/LoginPage.tsx`
 **Access:** Public (unauthenticated users only)
 **Thai Title:** เข้าสู่ระบบ Izara Doctor Portal
 

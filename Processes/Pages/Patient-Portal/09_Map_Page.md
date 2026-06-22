@@ -1,7 +1,7 @@
 # 🗺️ Patient Portal — Map Page (Nearby Healthcare)
 
 **Route:** `/map`
-**Component:** `src/pages/map/MapPage.tsx`
+**Component:** `frontend/pages/map/MapPage.tsx`
 **Access:** 🔒 Authenticated patients
 **Thai Title:** สถานพยาบาลใกล้เคียง / Nearby Healthcare
 

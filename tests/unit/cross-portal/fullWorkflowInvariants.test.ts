@@ -3,11 +3,11 @@
  * Global invariants — auth, appointments, meeting roles, clinical boundaries.
  */
 import { describe, it, expect } from 'vitest';
-import { createJitsiRoleJwt, validateGuestJoinAccess } from '../../../Izara-jitsi-server/server/sessionAuth.js';
-import { buildDoctorJitsiMountOptions, resolveMountJwt } from '../../../Isara-doctor-portal/src/utils/jitsiMeetingConfig.ts';
-import { buildPatientJitsiMountOptions } from '../../../Isara-patient-portal/src/utils/jitsiMeetingConfig.ts';
-import { matchesPoolFilter, PENDING_POOL_STATUSES } from '../../../Isara-doctor-portal/server/appointmentPoolQuery.cjs';
-import { derivePoolStatus } from '../../../Isara-doctor-portal/server/appointmentQueueMapper.cjs';
+import { createJitsiRoleJwt, validateGuestJoinAccess } from '../../../Izara-jitsi-server/backend/sessionAuth.js';
+import { buildDoctorJitsiMountOptions, resolveMountJwt } from '../../../Isara-doctor-portal/frontend/utils/jitsiMeetingConfig.ts';
+import { buildPatientJitsiMountOptions } from '../../../Isara-patient-portal/frontend/utils/jitsiMeetingConfig.ts';
+import { matchesPoolFilter, PENDING_POOL_STATUSES } from '../../../Isara-doctor-portal/backend/appointmentPoolQuery.cjs';
+import { derivePoolStatus } from '../../../Isara-doctor-portal/backend/appointmentQueueMapper.cjs';
 
 describe('FULL_WORKFLOW_CONTRACT — global invariants', () => {
   it('FWI-01 — doctor is Jitsi host via moderator config (no room JWT)', () => {

@@ -3,7 +3,7 @@
 **Version:** v1.7.51
 **Last Updated:** June 8, 2026
 **Route:** `/appointments`, `/book-appointment`, `/appointments/:id`
-**Component:** `src/pages/AppointmentPages.tsx` (canonical); sidebar calendar in `src/components/MainLayout.tsx`
+**Component:** `frontend/pages/AppointmentPages.tsx` (canonical); sidebar calendar in `frontend/components/MainLayout.tsx`
 **Access:** 🔒 Authenticated patients
 **Thai Title:** นัดหมายของฉัน / ขอนัดหมายแพทย์ / รายละเอียดนัดหมาย
 

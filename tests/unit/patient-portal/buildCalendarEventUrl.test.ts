@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildCalendarEventUrl } from '../../../Isara-patient-portal/src/utils/buildCalendarEventUrl';
+import { buildCalendarEventUrl } from '../../../Isara-patient-portal/frontend/utils/buildCalendarEventUrl';
 
 describe('buildCalendarEventUrl', () => {
   it('returns Google Calendar TEMPLATE URL', () => {

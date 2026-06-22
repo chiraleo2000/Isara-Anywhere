@@ -1,7 +1,7 @@
 /**
  * Unit tests for tests/helpers/browser-matrix.ts (multi-party E2E matrix).
  */
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import {
   ROLE_BROWSER_MATRIX,
   getRoleBrowserSpec,
@@ -15,6 +15,25 @@ import {
 } from '../../helpers/browser-matrix';
 
 describe('browser-matrix — role assignment', () => {
+  const prevHeaded = process.env.PW_HEADED;
+  const prevHeadless = process.env.PW_HEADLESS;
+  const prevCore = process.env.PW_CORE_BROWSER;
+
+  beforeEach(() => {
+    delete process.env.PW_HEADED;
+    process.env.PW_HEADLESS = '1';
+    delete process.env.PW_CORE_BROWSER;
+  });
+
+  afterEach(() => {
+    if (prevHeaded === undefined) delete process.env.PW_HEADED;
+    else process.env.PW_HEADED = prevHeaded;
+    if (prevHeadless === undefined) delete process.env.PW_HEADLESS;
+    else process.env.PW_HEADLESS = prevHeadless;
+    if (prevCore === undefined) delete process.env.PW_CORE_BROWSER;
+    else process.env.PW_CORE_BROWSER = prevCore;
+  });
+
   it('BM01 — patient Chrome, doctor Edge', () => {
     expect(getRoleBrowserSpec('patient').channel).toBe('chrome');
     expect(getRoleBrowserSpec('doctor').channel).toBe('msedge');

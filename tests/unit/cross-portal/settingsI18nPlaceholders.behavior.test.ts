@@ -3,9 +3,9 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 const TARGET_PAGES = [
-  '../../../Isara-patient-portal/src/pages/ProfilePage.tsx',
-  '../../../Isara-patient-portal/src/pages/NotificationsPage.tsx',
-  '../../../Isara-patient-portal/src/pages/health/AIDoctorPage.tsx',
+  '../../../Isara-patient-portal/frontend/pages/ProfilePage.tsx',
+  '../../../Isara-patient-portal/frontend/pages/NotificationsPage.tsx',
+  '../../../Isara-patient-portal/frontend/pages/health/AIDoctorPage.tsx',
 ];
 
 /** Hard-coded English placeholder attributes that should use t() (G3). */
@@ -28,7 +28,7 @@ describe('settings i18n placeholders behavior (G3)', () => {
   it('SettingsContext defines placeholder translation keys for auth and profile', () => {
     const settingsPath = path.resolve(
       __dirname,
-      '../../../Isara-patient-portal/src/contexts/SettingsContext.tsx',
+      '../../../Isara-patient-portal/frontend/contexts/SettingsContext.tsx',
     );
     const source = fs.readFileSync(settingsPath, 'utf8');
     expect(source).toMatch(/'auth\.login'/);

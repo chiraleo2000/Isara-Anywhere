@@ -1,7 +1,7 @@
 # 📅 Doctor Portal — Schedule Page
 
 **Route:** `/schedule`  
-**Component:** [`src/pages/schedule/CompleteSchedule.tsx`](../../../Isara-doctor-portal/src/pages/schedule/CompleteSchedule.tsx) (canonical; [`pages/CompleteSchedule.tsx`](../../../Isara-doctor-portal/src/pages/CompleteSchedule.tsx) re-exports)  
+**Component:** [`frontend/pages/schedule/CompleteSchedule.tsx`](../../../Isara-doctor-portal/frontend/pages/schedule/CompleteSchedule.tsx) (canonical; [`pages/CompleteSchedule.tsx`](../../../Isara-doctor-portal/frontend/pages/CompleteSchedule.tsx) re-exports)  
 **Access:** 🔒 Doctor / Admin  
 **Thai Title:** ตารางนัดหมาย / Schedule  
 **Last Updated:** June 8, 2026 (v1.7.51 — calendar sync on confirm)
@@ -170,10 +170,10 @@ Step 6: Patient reload → optional mini-calendar-appointment-day on sidebar
 
 | File | Role |
 |------|------|
-| [`appointmentMapper.cjs`](../../../Isara-doctor-portal/server/appointmentMapper.cjs) | Snake_case → camelCase for API consumers |
-| [`calendarEventLinks.cjs`](../../../Isara-doctor-portal/server/calendarEventLinks.cjs) | `buildTelehealthCalendarUrl`, `buildGoogleCalendarUrl` |
-| [`appointmentSchedule.ts`](../../../Isara-doctor-portal/src/utils/appointmentSchedule.ts) | `resolveAppointmentSchedule(apt)` — unified date/time |
-| [`mainApiServer.cjs`](../../../Isara-doctor-portal/server/mainApiServer.cjs) | Confirm handler + schedule route |
+| [`appointmentMapper.cjs`](../../../Isara-doctor-portal/backend/appointmentMapper.cjs) | Snake_case → camelCase for API consumers |
+| [`calendarEventLinks.cjs`](../../../Isara-doctor-portal/backend/calendarEventLinks.cjs) | `buildTelehealthCalendarUrl`, `buildGoogleCalendarUrl` |
+| [`appointmentSchedule.ts`](../../../Isara-doctor-portal/frontend/utils/appointmentSchedule.ts) | `resolveAppointmentSchedule(apt)` — unified date/time |
+| [`mainApiServer.cjs`](../../../Isara-doctor-portal/backend/mainApiServer.cjs) | Confirm handler + schedule route |
 
 ---
 

@@ -15,7 +15,7 @@
 
 ทุกหน้าในโฟลเดอร์นี้มี **§ มาตรฐานเอกสาร**, **§ คำอธิบายและบริบท (รายงานภาษาไทย)** และ **§ ขั้นตอนการใช้งาน (ละเอียด)** — อัปเดตด้วย `python scripts/enrich-process-pages.py --force-steps`
 
-คู่มือผู้ใช้: `Documents/Documents/docs/guides/patient|doctor/USER_GUIDE_*_WORD_TH.docx` · `Documents/Documents/docs/guides/patient|doctor/USER_GUIDE_*_PPT_TH.pptx` — `python scripts/build-portal-user-guides.py`
+คู่มือผู้ใช้: `Documents/docs/guides/patient|doctor/USER_GUIDE_*_WORD_TH.docx` · `Documents/docs/guides/patient|doctor/USER_GUIDE_*_PPT_TH.pptx` — `python scripts/build-portal-user-guides.py`
 
 โครงสร้างเทคนิค: `Documents/docs/technical/word/TECHNICAL_ARCHITECTURE_WORD_TH.docx` · `Documents/docs/technical/ppt/TECHNICAL_ARCHITECTURE_PPT_TH.pptx` · `Documents/docs/diagrams/diagrams.drawio` · `Documents/docs/technical/slides/TECHNICAL_ARCHITECTURE_SLIDES.html` — `npm run guides:technical`
 

@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { resolveMeetingServerUrl } from '../../../Isara-patient-portal/src/utils/resolveMeetingServerUrl';
+import { resolveMeetingServerUrl } from '../../../Isara-patient-portal/frontend/utils/resolveMeetingServerUrl';
 
 describe('resolveMeetingServerUrl (patient portal)', () => {
   const originalLocation = globalThis.location;

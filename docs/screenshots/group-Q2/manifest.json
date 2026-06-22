@@ -1,0 +1,51 @@
+{
+  "syncedAt": "2026-06-22T08:58:30.923Z",
+  "group": "group-Q2",
+  "source": [
+    "tests/output/screenshots",
+    "docs/screenshots"
+  ],
+  "canonicalBrowser": "chromium",
+  "browsers": [
+    "chromium",
+    "firefox",
+    "webkit"
+  ],
+  "workflows": [
+    {
+      "id": "Q2-01",
+      "stage": "results route",
+      "files": [
+        "Q2-01-results-route.png"
+      ]
+    },
+    {
+      "id": "Q2-03",
+      "stage": "transcript tab",
+      "files": [
+        "Q2-03-transcript-tab.png"
+      ]
+    },
+    {
+      "id": "Q2-04",
+      "stage": "summary tab",
+      "files": [
+        "Q2-04-summary-tab.png"
+      ]
+    },
+    {
+      "id": "Q2-05",
+      "stage": "dashboard AI summary",
+      "files": [
+        "Q2-05-dashboard-summary.png"
+      ]
+    },
+    {
+      "id": "Q2-06",
+      "stage": "health meeting completed",
+      "files": [
+        "Q2-06-post-meeting-complete.png"
+      ]
+    }
+  ]
+}

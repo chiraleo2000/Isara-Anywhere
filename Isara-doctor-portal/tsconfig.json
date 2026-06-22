@@ -26,6 +26,6 @@
     /* Types */
     "types": ["vite/client"]
   },
-  "include": ["src", "*.tsx", "*.ts", "vite-env.d.ts", "components/**/*", "services/**/*", "hooks/**/*", "types.ts"],
+  "include": ["frontend", "frontend/**/*.ts", "frontend/**/*.tsx"],
   "exclude": ["node_modules", "dist", "scripts"]
 }

@@ -4,15 +4,15 @@ import path from 'node:path';
 
 const pagePath = path.resolve(
   __dirname,
-  '../../../Isara-patient-portal/src/pages/health/AIDoctorPage.tsx',
+  '../../../Isara-patient-portal/frontend/pages/health/AIDoctorPage.tsx',
 );
 const servicePath = path.resolve(
   __dirname,
-  '../../../Isara-patient-portal/src/lib/services.ts',
+  '../../../Isara-patient-portal/frontend/lib/services.ts',
 );
 const routePath = path.resolve(
   __dirname,
-  '../../../Isara-patient-portal/server/routes/ai.ts',
+  '../../../Isara-patient-portal/backend/routes/ai.ts',
 );
 
 async function sendAiChat(

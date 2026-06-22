@@ -1,7 +1,7 @@
 # 📊 Doctor Portal — Dashboard Page
 
 **Route:** `/dashboard`
-**Component:** `src/pages/DoctorDashboard.tsx`
+**Component:** `frontend/pages/DoctorDashboard.tsx`
 **Access:** 🔒 Doctor / Admin
 **Thai Title:** แดชบอร์ดแพทย์ / Doctor Dashboard
 **Version:** v1.4.7

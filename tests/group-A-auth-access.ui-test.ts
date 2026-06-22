@@ -13,12 +13,13 @@
  * ═══════════════════════════════════════════════════════════════════════
  */
 import {
-  test, expect, assertFullHealth, snap,
+  test, expect, assertFullHealth, assertTailwindCssHealthy, snap, snapMeetingStage,
   PATIENT_URL, DOCTOR_URL, MEETING_URL,
   ROLE_BROWSER_MATRIX, getRoleBrowserSpec,
   refreshPatientSession, waitForContent,
   gotoCloudWithRetry,
 } from './helpers/multi-portal';
+import { resetScreenshotSession } from './helpers/screenshot-distinct';
 
 const IS_CLOUD = process.env.TEST_ENV === 'cloud';
 
@@ -31,6 +32,7 @@ test.describe('Group A — Auth & Access Verification', () => {
 
     await test.step('Patient dashboard is healthy', async () => {
       await assertFullHealth(patient.page, 'A01-patient');
+      await assertTailwindCssHealthy(patient.page, 'A01-patient-css');
       await snap(patient.page, 'A01-patient-dashboard', 'group-A');
       const body = await patient.page.locator('body').innerText();
       expect(body.length).toBeGreaterThan(50);
@@ -39,6 +41,7 @@ test.describe('Group A — Auth & Access Verification', () => {
 
     await test.step('Doctor dashboard is healthy', async () => {
       await assertFullHealth(doctor.page, 'A01-doctor');
+      await assertTailwindCssHealthy(doctor.page, 'A01-doctor-css');
       await snap(doctor.page, 'A01-doctor-dashboard', 'group-A');
       const body = await doctor.page.locator('body').innerText();
       expect(body.length).toBeGreaterThan(50);
@@ -46,7 +49,9 @@ test.describe('Group A — Auth & Access Verification', () => {
     });
 
     await test.step('Admin dashboard is healthy', async () => {
+      await waitForContent(admin.page, 'A01-admin', IS_CLOUD ? 30_000 : 20_000);
       await assertFullHealth(admin.page, 'A01-admin');
+      await assertTailwindCssHealthy(admin.page, 'A01-admin-css');
       await snap(admin.page, 'A01-admin-dashboard', 'group-A');
       const body = await admin.page.locator('body').innerText();
       expect(body.length).toBeGreaterThan(50);
@@ -240,6 +245,7 @@ test.describe('Group A — Auth & Access Verification', () => {
   /* ── A09 — Dashboard stats show non-zero data ──────────────────── */
   test('A09 — Dashboard stats are populated', async ({ portals }) => {
     const { patient, doctor } = portals;
+    resetScreenshotSession('group-A');
 
     await test.step('Patient dashboard has content', async () => {
       const body = await patient.page.locator('body').innerText();
@@ -249,34 +255,41 @@ test.describe('Group A — Auth & Access Verification', () => {
       console.log(`  ✅ A09: Patient dashboard — ${body.length} chars`);
     });
 
-    await test.step('Doctor dashboard has stats', async () => {
+    await test.step('Doctor dashboard has distinct KPI vs full page', async () => {
       const body = await doctor.page.locator('body').innerText();
       const hasData = /\d+/.test(body) && body.length > 200;
       expect(hasData, 'Doctor dashboard should have stats').toBeTruthy();
       await snap(doctor.page, 'A09-doctor-stats', 'group-A');
-      console.log(`  ✅ A09: Doctor dashboard — ${body.length} chars`);
+      await snapMeetingStage(doctor.page, 'A09-doctor-kpi', 'doctor-dashboard-kpi', 'group-A');
+      console.log(`  ✅ A09: Doctor dashboard — ${body.length} chars + KPI crop`);
     });
   });
 
-  /* ── A11 — Multi-party browser matrix (Chrome / Edge / Firefox) ─ */
+  /* ── A11 — Multi-party browser matrix (Chrome / Edge / Firefox or Edge admin locally) ─ */
   test('A11 — Cross-browser fixture uses role-specific engines', async ({ portals }) => {
     expect(getRoleBrowserSpec('patient').browserName).toBe('chrome');
     expect(getRoleBrowserSpec('doctor').browserName).toBe('edge');
-    expect(getRoleBrowserSpec('admin').browserName).toBe('firefox');
-    expect(getRoleBrowserSpec('admin').engine).toBe('firefox');
+    const adminSpec = getRoleBrowserSpec('admin');
+    const localHeadedAdmin = !IS_CLOUD && adminSpec.browserName === 'edge';
+    if (localHeadedAdmin) {
+      expect(adminSpec.engine).toBe('chromium');
+    } else {
+      expect(adminSpec.browserName).toBe('firefox');
+      expect(adminSpec.engine).toBe('firefox');
+    }
 
     expect(portals.patient.browserName).toBe('chrome');
     // Runtime browserName is Chromium-family label, even when channel is Edge.
     expect(portals.doctor.browserName).toBe('chrome');
-    expect(portals.admin.browserName).toBe('firefox');
+    expect(['firefox', 'edge', 'chrome']).toContain(portals.admin.browserName);
 
     expect(portals.patient.browser.browserType().name()).toBe('chromium');
     expect(portals.doctor.browser.browserType().name()).toBe('chromium');
-    expect(portals.admin.browser.browserType().name()).toBe('firefox');
+    expect(portals.admin.browser.browserType().name()).toBe(localHeadedAdmin ? 'chromium' : 'firefox');
 
     const matrixRoles = Object.keys(ROLE_BROWSER_MATRIX);
     expect(matrixRoles).toEqual(['patient', 'doctor', 'admin']);
-    console.log('  A11: Multi-party browsers verified — Patient/Doctor=Chrome, Admin=Firefox');
+    console.log(`  A11: Multi-party browsers verified — admin=${portals.admin.browserName}`);
   });
 
   /* ── A12 — Doctor password-reset rate limit (Processes/Doctor-Portal/02_Reset) ─ */

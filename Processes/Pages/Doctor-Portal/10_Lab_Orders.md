@@ -1,6 +1,6 @@
 # 🔬 Doctor Portal — Lab & Imaging Orders
 
-**Component:** `src/components/CompleteLabOrders.tsx`
+**Component:** `frontend/components/CompleteLabOrders.tsx`
 **Type:** Modal (launched from DoctorPortal)
 **Access:** 🔒 Doctor / Admin
 **Thai Title:** สั่งแล็บและภาพวินิจฉัย / Lab & Imaging Orders

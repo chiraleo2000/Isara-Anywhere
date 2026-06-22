@@ -6,8 +6,8 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
-import { createPostMeetingPipeline } from '../server/postMeetingPipeline.js';
-import { withRetry, isTransientError } from '../server/pipelineRetry.js';
+import { createPostMeetingPipeline } from '../backend/services/postMeetingPipeline.js';
+import { withRetry, isTransientError } from '../backend/pipelineRetry.js';
 
 describe('postMeetingPipeline stress', () => {
   let tmpDir;

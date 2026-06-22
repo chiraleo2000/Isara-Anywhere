@@ -14,9 +14,9 @@
     "ignoreDeprecations": "5.0",
     "baseUrl": ".",
     "paths": {
-      "@doctor/*": ["../../Isara-doctor-portal/src/*"],
-      "@patient/*": ["../../Isara-patient-portal/src/*"],
-      "@meeting/*": ["../../Izara-jitsi-server/server/*"]
+      "@doctor/*": ["../../Isara-doctor-portal/frontend/*"],
+      "@patient/*": ["../../Isara-patient-portal/frontend/*"],
+      "@meeting/*": ["../../Izara-jitsi-server/backend/*"]
     }
   },
   "include": ["./**/*.ts"],

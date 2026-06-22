@@ -1,6 +1,6 @@
 # Environment and Stack Check (Doctor + Patient + Jitsi)
 
-Last verified: 2026-06-08 (v1.7.51 — calendar API + portal image rebuild for E2E)
+Last verified: 2026-06-22 (v1.7.53 — LAN Mode B CORS, patient runtime env-config, phase gates)
 
 ## Scope
 
@@ -49,7 +49,7 @@ Validated configuration parity and prerequisites for:
 
 - Doctor portal, patient portal, and meeting server enforce fail-fast behavior when `JWT_SECRET` is missing.
 - **Env schema:** `scripts/env/schema.js` (Zod) validates `JWT_SECRET`, `GEMINI_API_KEY`, optional `DATABASE_URL` / `JITSI_DOMAIN` at doctor portal boot.
-- **Jitsi roles (self-hosted + `JITSI_JWT_SECRET`):** `createJitsiRoleJwt` in `Izara-jitsi-server/server/jwtPolicy.js` — doctor `moderator: true` / `affiliation: owner`; patient `moderator: false` / `affiliation: member`; anonymous guest blocked on secured `join-config` unless `?name=` or invite token.
+- **Jitsi roles (public meet.jit.si):** Session auth via Izara lobby + `configOverwrite.moderator`; `createJitsiRoleJwt` in `Izara-jitsi-server/backend/sessionAuth.js` returns null on public Jitsi.
 - **Display names:** `getIzaraDisplayName` from auth state → `userInfo.displayName`; `prejoinPageEnabled: false` on all portal Jitsi inits.
 - Token verification paths are present in auth and protected route middleware.
 - Cloud deploy injects JWT secret from Secret Manager.
@@ -99,9 +99,13 @@ npm run env:audit
 # or: node scripts/env/audit-doctor-portal-env.mjs
 ```
 
-**Required keys:** `MEETING_SERVER_URL`, `VITE_MEETING_SERVER_URL`, `VITE_GOOGLE_API_KEY`, `JITSI_APP_ID`, `CORS_ORIGINS`, `JWT_SECRET`, `GEMINI_API_KEY`, `DATABASE_URL`
+**Required keys:** `MEETING_SERVER_URL`, `VITE_MEETING_SERVER_URL`, `GOOGLE_CLIENT_ID`, `JITSI_APP_ID`, `CORS_ORIGINS` (include `:3020`), `JWT_SECRET`, `GEMINI_API_KEY`, `DATABASE_URL`, `GCP_PROJECT_ID`, `GOOGLE_MAPS_API_KEY`
 
-**Forbidden keys:** `VITE_GOOGLE_CLIENT_SECRET`, `VITE_ENABLE_RAG`, `VITE_RAG_CHUNK_SIZE`, `CLOUD_RUN_DOCTOR_URL`
+**Consolidated (server canonical — no duplicate VITE_ in .env):** `GEMINI_API_KEY`, `GEMINI_MODEL`, `JITSI_DOMAIN`, `GOOGLE_MAPS_API_KEY`, `USE_POSTGRESQL`, `GCP_PROJECT_ID`. Docker compose bridges these to `VITE_*` build-args.
+
+**Forbidden keys:** `VITE_GOOGLE_CLIENT_SECRET`, `GOOGLE_CLIENT_SECRET` in portal `.env` (server-only), `VITE_ENABLE_RAG`, `VITE_RAG_CHUNK_SIZE`, `CLOUD_RUN_DOCTOR_URL`
+
+**Folder layout (v3.8):** `Isara-*-portal/frontend` + `backend`; `Izara-jitsi-server/backend` only.
 
 Sync rules: copy shared keys to `Isara-patient-portal/.env` and `Izara-jitsi-server/.env`; use `.env.docker` for compose.
 

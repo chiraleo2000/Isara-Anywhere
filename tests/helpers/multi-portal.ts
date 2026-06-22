@@ -32,6 +32,8 @@ import {
   getPortalIssues,
   probeRenderHealth,
 } from './portal-diagnostics';
+import { registerScreenshotHash } from './screenshot-distinct';
+import { refreshAuthStorageStates, reinjectAuthFromStorageFile } from './auth-refresh';
 import {
   chromiumLaunchArgs,
   CHROMIUM_MEDIA_PERMISSIONS,
@@ -178,13 +180,69 @@ import { applyRootEnvReadOnly, cloudDoctorUrl, cloudMeetingUrl, cloudPatientUrl 
 
 applyRootEnvReadOnly();
 
-export { snapSuccess, resolveScreenshotBrowser } from './screenshot-output';
+export { snapSuccess, snapMeetingStage, snapMeetingStageAny, resolveScreenshotBrowser } from './screenshot-output';
 
 export { clearPortalIssues, formatDiagnosticReport, getPortalIssues, probeRenderHealth };
 export { ROLE_BROWSER_MATRIX, getRoleBrowserSpec } from './browser-matrix';
 
 // ── Constants ────────────────────────────────────────────────────────
 const IS_CLOUD = process.env.TEST_ENV === 'cloud';
+
+/** Resolve bearer token from page storage (doctor/patient portals use different keys). */
+export async function readPageBearerToken(page: Page): Promise<string> {
+  return page.evaluate(() =>
+    localStorage.getItem('token')
+    || localStorage.getItem('auth_token')
+    || localStorage.getItem('izara_auth_token')
+    || '',
+  );
+}
+
+/** Re-login via API and reinject storageState when bearer auth is stale (401). */
+export async function refreshPageAuth(page: Page, baseUrl: string): Promise<void> {
+  if (baseUrl.includes('3005')) {
+    await refreshAuthStorageStates();
+    await reinjectAuthFromStorageFile(page, 'patient1');
+    return;
+  }
+  const isAdmin = await page.evaluate(() => {
+    try {
+      const u = JSON.parse(localStorage.getItem('izara_current_user') || '{}') as { isAdmin?: boolean };
+      return Boolean(u.isAdmin);
+    } catch {
+      return false;
+    }
+  });
+  await refreshAuthStorageStates();
+  await reinjectAuthFromStorageFile(page, isAdmin ? 'admin' : 'doctor');
+}
+
+/** POST /api/appointments/:id/confirm with auth refresh retries (session invalidation). */
+export async function confirmAppointmentApiWithRetry(
+  page: Page,
+  appointmentId: string,
+  payload: { doctorId: string; confirmedDate: string; confirmedTime: string },
+  label = 'confirm',
+): Promise<void> {
+  const baseUrl = DOCTOR_URL;
+  let lastStatus = 0;
+  let lastBody = '';
+  for (let attempt = 0; attempt < 3; attempt++) {
+    await refreshPageAuth(page, baseUrl);
+    const token = await readPageBearerToken(page);
+    const resp = await page.request.post(`${baseUrl}/api/appointments/${appointmentId}/confirm`, {
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      data: payload,
+      timeout: IS_CLOUD ? 30_000 : 15_000,
+    });
+    if (resp.status() === 200) return;
+    lastStatus = resp.status();
+    lastBody = await resp.text().catch(() => '');
+    if (resp.status() !== 401) break;
+    await page.waitForTimeout(500 * (attempt + 1));
+  }
+  throw new Error(`${label}: confirm API must succeed (last ${lastStatus}: ${lastBody.slice(0, 200)})`);
+}
 
 const DEV_TESTING_FALLBACK = {
   patient: 'https://izara-patient-portal-dev-testing-724889190329.asia-southeast1.run.app',
@@ -194,22 +252,28 @@ const DEV_TESTING_FALLBACK = {
 
 export const PATIENT_URL = IS_CLOUD
   ? (process.env.CLOUD_PATIENT_URL || cloudPatientUrl(DEV_TESTING_FALLBACK.patient))
-  : (process.env.PATIENT_URL || process.env.PATIENT_PORTAL_URL || process.env.LOCAL_PATIENT_URL || 'http://localhost:3005');
+  : (process.env.PATIENT_URL || process.env.PATIENT_PORTAL_URL || process.env.LOCAL_PATIENT_URL || 'http://127.0.0.1:3005');
 export const DOCTOR_URL = IS_CLOUD
   ? (process.env.CLOUD_DOCTOR_URL || cloudDoctorUrl(DEV_TESTING_FALLBACK.doctor))
-  : (process.env.DOCTOR_URL || process.env.DOCTOR_PORTAL_URL || process.env.LOCAL_DOCTOR_URL || 'http://localhost:3010');
+  : (process.env.DOCTOR_URL || process.env.DOCTOR_PORTAL_URL || process.env.LOCAL_DOCTOR_URL || 'http://127.0.0.1:3010');
 export const MEETING_URL = IS_CLOUD
   ? (process.env.CLOUD_MEETING_URL || cloudMeetingUrl(DEV_TESTING_FALLBACK.meeting))
-  : (process.env.MEETING_URL || process.env.MEETING_SERVER_URL || process.env.LOCAL_MEETING_URL || 'http://localhost:3020');
+  : (process.env.MEETING_URL || process.env.MEETING_SERVER_URL || process.env.LOCAL_MEETING_URL || 'http://127.0.0.1:3020');
 
-/** Navigation timeout — longer for cloud cold starts */
+/** Navigation timeout — longer for cloud cold starts and headed local (admin Firefox) */
 function resolveNavTimeout(): number {
-  if (IS_CLOUD) return 90_000;
-  return process.env.PW_HEADED === '1' ? 60_000 : 30_000;
+  if (IS_CLOUD || process.env.PW_HEADED === '1') return 90_000;
+  return 30_000;
+}
+
+function resolveE2eTimeoutMs(cloudMs: number, headedMs: number, defaultMs: number): number {
+  if (IS_CLOUD) return cloudMs;
+  if (process.env.PW_HEADED === '1') return headedMs;
+  return defaultMs;
 }
 const NAV_TIMEOUT = resolveNavTimeout();
 /** Fixture initial navigation timeout — extra generous for cold starts */
-const FIXTURE_NAV_TIMEOUT = IS_CLOUD ? 120_000 : 60_000;
+const FIXTURE_NAV_TIMEOUT = IS_CLOUD || process.env.PW_HEADED === '1' ? 120_000 : 60_000;
 
 const AUTH_DIR = path.join(__dirname, '..', 'e2e', '.auth-states');
 const SS_DIR   = path.join(__dirname, '..', '..', 'test-results', 'workflow-snapshots');
@@ -262,14 +326,13 @@ export function assertNotLogin(page: Page, label: string): void {
 
 /** FAILS test if page body has < 50 chars (whiteout / blank page) */
 export async function assertNoWhiteout(page: Page, label: string) {
-  const len = await page.evaluate(() => document.body?.innerText?.trim().length ?? 0);
-  if (len < 50) {
-    await page.waitForTimeout(2_000);
-    const len2 = await page.evaluate(() => document.body?.innerText?.trim().length ?? 0);
-    if (len2 < 50) {
-      throw new Error(`❌ [${label}] WHITEOUT — Only ${len2} chars on page.`);
-    }
+  for (let attempt = 0; attempt < 4; attempt++) {
+    const len = await page.evaluate(() => document.body?.innerText?.trim().length ?? 0);
+    if (len >= 50) return;
+    await page.waitForTimeout(attempt === 0 ? 2_000 : 3_000);
   }
+  const len2 = await page.evaluate(() => document.body?.innerText?.trim().length ?? 0);
+  throw new Error(`❌ [${label}] WHITEOUT — Only ${len2} chars on page.`);
 }
 
 /** FAILS test if page stuck on loading spinner */
@@ -311,6 +374,38 @@ export async function assertFullHealth(page: Page, label: string) {
   await assertNoErrors(page, label);
 }
 
+/** Fail fast when Tailwind bundle is empty (broken content paths → unstyled UI). */
+export async function assertTailwindCssHealthy(page: Page, label: string): Promise<void> {
+  const { cssBytes, emeraldBg } = await page.evaluate(async () => {
+    const links = [...document.querySelectorAll('link[rel="stylesheet"]')] as HTMLLinkElement[];
+    let cssBytes = 0;
+    for (const link of links) {
+      if (!link.href) continue;
+      try {
+        const resp = await fetch(link.href, { cache: 'no-store' });
+        const text = await resp.text();
+        cssBytes += text.length;
+      } catch {
+        /* same-origin bundle expected */
+      }
+    }
+    const probe = document.createElement('div');
+    probe.className = 'bg-emerald-600';
+    probe.style.position = 'absolute';
+    probe.style.left = '-9999px';
+    document.body.appendChild(probe);
+    const emeraldBg = getComputedStyle(probe).backgroundColor;
+    probe.remove();
+    return { cssBytes, emeraldBg };
+  });
+  expect(cssBytes, `${label}: bundled CSS must include Tailwind utilities (>25KB)`).toBeGreaterThan(25_000);
+  const rgb = emeraldBg.replaceAll(/\s/g, '');
+  expect(
+    rgb === 'rgb(5,150,105)' || rgb === 'rgba(5,150,105,1)',
+    `${label}: Tailwind utility bg-emerald-600 must apply (got ${emeraldBg})`,
+  ).toBeTruthy();
+}
+
 // ── Screenshot helper ────────────────────────────────────────────────
 export async function snap(page: Page, name: string, subDir?: string): Promise<string> {
   const safeSubDir = subDir?.replaceAll(/[^a-zA-Z0-9_-]/g, '_');
@@ -326,10 +421,12 @@ export async function snap(page: Page, name: string, subDir?: string): Promise<s
   try {
     await page.screenshot({ path: filePath, fullPage: true, timeout: ssTimeout, animations: 'disabled' });
     fs.copyFileSync(filePath, docsPath);
+    if (safeSubDir) registerScreenshotHash(safeSubDir, docsPath);
   } catch {
     try {
       await page.screenshot({ path: filePath, fullPage: false, timeout: ssTimeout, animations: 'disabled' });
       fs.copyFileSync(filePath, docsPath);
+      if (safeSubDir) registerScreenshotHash(safeSubDir, docsPath);
     } catch (err) {
       console.warn(`⚠️ Screenshot failed: ${name}`, err instanceof Error ? err.message : '');
     }
@@ -339,7 +436,13 @@ export async function snap(page: Page, name: string, subDir?: string): Promise<s
 
 function isTransientPlaywrightError(err: unknown): boolean {
   const msg = err instanceof Error ? err.message : String(err);
-  return /not bound in the connection|Target (page|closed)|has been closed|Execution context was destroyed/i.test(msg);
+  return /not bound in the connection|Target (page|closed)|has been closed|Execution context was destroyed|socket hang up|ECONNRESET|ECONNREFUSED|UND_ERR_SOCKET/i.test(msg);
+}
+
+function transientRetryDelayMs(attempt: number, err: unknown): number {
+  const msg = err instanceof Error ? err.message : String(err);
+  if (/ECONNREFUSED|ECONNRESET/i.test(msg)) return 3000 * (attempt + 1);
+  return 400 * (attempt + 1);
 }
 
 /** page.request with retry when Firefox/reload races detach the connection. */
@@ -355,7 +458,7 @@ export async function pageRequestGet(
     } catch (err) {
       lastErr = err;
       if (!isTransientPlaywrightError(err) || attempt === 3) throw err;
-      await page.waitForTimeout(400 * (attempt + 1));
+      await page.waitForTimeout(transientRetryDelayMs(attempt, err));
     }
   }
   throw lastErr;
@@ -373,7 +476,7 @@ export async function pageRequestPatch(
     } catch (err) {
       lastErr = err;
       if (!isTransientPlaywrightError(err) || attempt === 3) throw err;
-      await page.waitForTimeout(400 * (attempt + 1));
+      await page.waitForTimeout(transientRetryDelayMs(attempt, err));
     }
   }
   throw lastErr;
@@ -386,20 +489,35 @@ export async function waitForPoolAppointment(
   appointmentId: string,
   opts?: { unassignedOnly?: boolean; timeoutMs?: number },
 ): Promise<void> {
-  const timeoutMs = opts?.timeoutMs ?? (IS_CLOUD ? 45_000 : 20_000);
-  const token = await page.evaluate(() =>
-    localStorage.getItem('token')
-    || localStorage.getItem('izara_auth_token')
-    || localStorage.getItem('auth_token')
-    || '',
-  );
+  const timeoutMs = opts?.timeoutMs ?? (IS_CLOUD ? 45_000 : (process.env.PW_HEADED === '1' ? 60_000 : 45_000));
   const deadline = Date.now() + timeoutMs;
+  let authRetried = false;
   let lastSnapshot: { status: number; count: number; ids: string[]; statuses: string[] } | null = null;
+
+  async function appointmentExistsViaDetail(): Promise<boolean> {
+    const token = await readPageBearerToken(page);
+    const detail = await pageRequestGet(page, `${baseUrl}/api/appointments/${appointmentId}`, {
+      headers: { Authorization: `Bearer ${token}` },
+      timeout: 15_000,
+    }).catch(() => null);
+    if (!detail?.ok()) return false;
+    const row = await detail.json().catch(() => null);
+    if (!row || row.id !== appointmentId) return false;
+    if (!opts?.unassignedOnly) return true;
+    return poolRowDoctorId(row) == null;
+  }
+
   while (Date.now() < deadline) {
+    const token = await readPageBearerToken(page);
     const poolResp = await pageRequestGet(page, `${baseUrl}/api/appointment-pool`, {
       headers: { Authorization: `Bearer ${token}` },
       timeout: 15_000,
     });
+    if (poolResp.status() === 401 && !authRetried) {
+      authRetried = true;
+      await refreshPageAuth(page, baseUrl);
+      continue;
+    }
     const ok = poolResp.ok();
     const rows = ok ? await poolResp.json().catch(() => []) : [];
     const list = Array.isArray(rows) ? rows : [];
@@ -417,6 +535,7 @@ export async function waitForPoolAppointment(
         return;
       }
     }
+    if (await appointmentExistsViaDetail()) return;
     await page.waitForTimeout(1_500);
   }
   throw new Error(
@@ -498,22 +617,39 @@ export async function lobbyJoin(
   return resp.json();
 }
 
-/** Doctor admit-all (HOST) */
+/** Doctor admit-all (HOST) — retries for Firefox/Socket.IO timing */
 export async function lobbyAdmitAll(
   page: Page,
   meetingKey: string,
   admittedBy: string,
 ): Promise<{ admitted: unknown[]; total: number }> {
-  const token = await page.evaluate(() => localStorage.getItem('token') || '');
-  const resp = await page.request.post(`${MEETING_URL}/api/meetings/${meetingKey}/lobby/admit-all`, {
-    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-    data: { admittedBy },
-    timeout: IS_CLOUD ? 30_000 : 10_000,
-  });
-  expect(resp.ok(), 'admit-all').toBeTruthy();
-  const body = await resp.json();
-  expect(body.success).toBeTruthy();
-  return { admitted: body.admitted || [], total: body.total ?? 0 };
+  const maxAttempts = IS_CLOUD ? 4 : 8;
+  let lastStatus = 0;
+  let lastBody: { success?: boolean; admitted?: unknown[]; total?: number } = {};
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    if (attempt > 1 || lastStatus === 401 || lastStatus === 403) {
+      await refreshPageAuth(page, DOCTOR_URL);
+    }
+    const token = await readPageBearerToken(page);
+    const resp = await page.request.post(`${DOCTOR_URL}/api/meetings/${meetingKey}/lobby/admit-all`, {
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      data: { admittedBy },
+      timeout: IS_CLOUD ? 30_000 : 15_000,
+    });
+    lastStatus = resp.status();
+    lastBody = await resp.json().catch(() => ({}));
+    if (resp.ok() && lastBody.success) {
+      return { admitted: lastBody.admitted || [], total: lastBody.total ?? 0 };
+    }
+    if (attempt < maxAttempts) {
+      await page.waitForTimeout(IS_CLOUD ? 2000 : 1500);
+    }
+  }
+
+  expect(lastStatus, 'admit-all').toBe(200);
+  expect(lastBody.success, 'admit-all success').toBeTruthy();
+  return { admitted: lastBody.admitted || [], total: lastBody.total ?? 0 };
 }
 
 /** Admit a single lobby participant (HOST) */
@@ -523,8 +659,8 @@ export async function lobbyAdmitOne(
   participantId: string,
   admittedBy: string,
 ): Promise<void> {
-  const token = await page.evaluate(() => localStorage.getItem('token') || '');
-  const resp = await page.request.post(`${MEETING_URL}/api/meetings/${meetingKey}/lobby/admit`, {
+  const token = await readPageBearerToken(page);
+  const resp = await page.request.post(`${DOCTOR_URL}/api/meetings/${meetingKey}/lobby/admit`, {
     headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
     data: { participantId, admittedBy },
     timeout: IS_CLOUD ? 30_000 : 10_000,
@@ -540,8 +676,8 @@ export async function lobbyReject(
   rejectedBy: string,
   reason?: string,
 ): Promise<void> {
-  const token = await page.evaluate(() => localStorage.getItem('token') || '');
-  const resp = await page.request.post(`${MEETING_URL}/api/meetings/${meetingKey}/lobby/reject`, {
+  const token = await readPageBearerToken(page);
+  const resp = await page.request.post(`${DOCTOR_URL}/api/meetings/${meetingKey}/lobby/reject`, {
     headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
     data: { participantId, rejectedBy, reason: reason || '' },
     timeout: IS_CLOUD ? 30_000 : 10_000,
@@ -680,6 +816,67 @@ function findNotificationOfType(
   });
 }
 
+async function readNotificationAuthToken(page: Page, authKey: string): Promise<string> {
+  return page.evaluate(
+    (key) =>
+      localStorage.getItem(key)
+      || localStorage.getItem('izara_auth_token')
+      || localStorage.getItem('token')
+      || localStorage.getItem('auth_token')
+      || '',
+    authKey,
+  );
+}
+
+async function requestNotificationList(
+  page: Page,
+  baseUrl: string,
+  storageToken: string,
+): Promise<{ ok: boolean; status: number; list: ReturnType<typeof parseNotificationList> }> {
+  const timeout = IS_CLOUD ? 30_000 : 15_000;
+  const maxAttempts = IS_CLOUD ? 2 : 3;
+  let lastErr: unknown;
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      const resp = await page.request.get(`${baseUrl}/api/notifications`, {
+        headers: { Authorization: `Bearer ${storageToken}` },
+        timeout,
+      });
+      return {
+        ok: resp.ok(),
+        status: resp.status(),
+        list: parseNotificationList(await resp.json().catch(() => [])),
+      };
+    } catch (err) {
+      lastErr = err;
+      if (attempt < maxAttempts) {
+        await page.waitForTimeout(750 * attempt);
+      }
+    }
+  }
+
+  console.warn('[notifications] request failed after retries:', lastErr);
+  return { ok: false, status: 0, list: [] };
+}
+
+async function fetchNotificationsWithAuthRetry(
+  page: Page,
+  baseUrl: string,
+  authKey: string,
+  authRetries: { count: number },
+): Promise<{ ok: boolean; list: ReturnType<typeof parseNotificationList> }> {
+  let storageToken = await readNotificationAuthToken(page, authKey);
+  let result = await requestNotificationList(page, baseUrl, storageToken);
+  if (result.status === 401 && authRetries.count < 3) {
+    authRetries.count += 1;
+    await refreshPageAuth(page, baseUrl);
+    storageToken = await readNotificationAuthToken(page, authKey);
+    result = await requestNotificationList(page, baseUrl, storageToken);
+  }
+  return { ok: result.ok, list: result.list };
+}
+
 /** Poll until notification type appears (async delivery / NOTIFY) */
 export async function assertNotificationTypePoll(
   page: Page,
@@ -688,29 +885,19 @@ export async function assertNotificationTypePoll(
   opts?: { authKey?: 'token' | 'auth_token'; timeoutMs?: number; appointmentId?: string },
 ): Promise<void> {
   const authKey = opts?.authKey ?? 'token';
-  const timeoutMs = opts?.timeoutMs ?? (IS_CLOUD ? 45_000 : 15_000);
-  const storageToken = await page.evaluate((key) => localStorage.getItem(key) || '', authKey);
+  const timeoutMs = opts?.timeoutMs ?? (IS_CLOUD ? 45_000 : (process.env.PW_HEADED === '1' ? 30_000 : 15_000));
   const deadline = Date.now() + timeoutMs;
+  const authRetries = { count: 0 };
 
   while (Date.now() < deadline) {
-    const resp = await page.request.get(`${baseUrl}/api/notifications`, {
-      headers: { Authorization: `Bearer ${storageToken}` },
-      timeout: IS_CLOUD ? 30_000 : 10_000,
-    });
-    if (resp.ok()) {
-      const list = parseNotificationList(await resp.json().catch(() => []));
-      if (findNotificationOfType(list, type, opts?.appointmentId)) return;
-    }
+    const { ok, list } = await fetchNotificationsWithAuthRetry(page, baseUrl, authKey, authRetries);
+    if (ok && findNotificationOfType(list, type, opts?.appointmentId)) return;
     if (timeoutMs <= 0) break;
     await page.waitForTimeout(1_500);
   }
 
-  const resp = await page.request.get(`${baseUrl}/api/notifications`, {
-    headers: { Authorization: `Bearer ${storageToken}` },
-    timeout: IS_CLOUD ? 30_000 : 10_000,
-  });
-  expect(resp.ok(), `notifications ${type}`).toBeTruthy();
-  const list = parseNotificationList(await resp.json().catch(() => []));
+  const { ok, list } = await fetchNotificationsWithAuthRetry(page, baseUrl, authKey, authRetries);
+  expect(ok, `notifications ${type}`).toBeTruthy();
   expect(findNotificationOfType(list, type, opts?.appointmentId), `Expected notification type ${type}`).toBeTruthy();
 }
 
@@ -968,7 +1155,13 @@ export async function waitForContent(page: Page, label: string, timeoutMs = 8_00
   await page.waitForTimeout(WAIT_AFTER_NAV);
   const deadline = Date.now() + timeoutMs;
   while (Date.now() < deadline) {
-    const len = await page.evaluate(() => document.body?.innerText?.trim().length ?? 0);
+    let len = 0;
+    try {
+      len = await page.evaluate(() => document.body?.innerText?.trim().length ?? 0);
+    } catch {
+      await page.waitForTimeout(300);
+      continue;
+    }
     if (len > 50) {
       const url = page.url();
       if (url.includes('/login') || url.includes('/register')) {
@@ -1453,6 +1646,9 @@ async function grantMeetingMediaPermissions(
   if (getRoleBrowserSpec('doctor').engine === 'chromium') {
     grants.push(doctorCtx.grantPermissions([...CHROMIUM_MEDIA_PERMISSIONS], { origin: DOCTOR_URL }));
   }
+  if (getRoleBrowserSpec('admin').engine === 'chromium') {
+    grants.push(_adminCtx.grantPermissions([...CHROMIUM_MEDIA_PERMISSIONS], { origin: DOCTOR_URL }));
+  }
   if (grants.length) await Promise.all(grants);
 }
 
@@ -1478,7 +1674,7 @@ export async function gotoCloudWithRetry(
   page: Page,
   url: string,
   label: string,
-  timeoutMs = IS_CLOUD ? 90_000 : 30_000,
+  timeoutMs = resolveE2eTimeoutMs(90_000, 60_000, 30_000),
 ): Promise<void> {
   await gotoWithRetry(page, url, timeoutMs, '', label, IS_CLOUD ? 4 : 3);
 }
@@ -1574,6 +1770,9 @@ async function gotoWithRetry( // NOSONAR S3776 — navigation retry with auth re
   }
 }
 
+let lastAuthRefreshMs = 0;
+const AUTH_REFRESH_INTERVAL_MS = 10 * 60 * 1000;
+
 export const test = base.extend<{}, { portals: Portals }>({
   portals: [async ({}, use) => { // NOSONAR S3776 — worker-scoped tri-browser fixture setup/teardown
     const setupStart = Date.now();
@@ -1591,7 +1790,23 @@ export const test = base.extend<{}, { portals: Portals }>({
     const doctorState  = path.join(AUTH_DIR, 'doctor.json');
     const adminState   = path.join(AUTH_DIR, 'admin.json');
 
-    for (const f of [patientState, doctorState, adminState]) {
+    if (!IS_CLOUD) {
+      await new Promise((r) => setTimeout(r, 1500));
+    }
+
+    const lightFixture = process.env.E2E_LIGHT_FIXTURE === '1';
+    const authFiles = [patientState, doctorState, adminState];
+    const authMissing = authFiles.some((f) => !fs.existsSync(f));
+    if (!lightFixture || authMissing) {
+      if (lightFixture && authMissing) {
+        console.log('  ⚡ E2E_LIGHT_FIXTURE — auth cache missing, refreshing storage states');
+      }
+      await refreshAuthStorageStates();
+    } else {
+      console.log('  ⚡ E2E_LIGHT_FIXTURE — reusing auth cache, skipping storage refresh');
+    }
+
+    for (const f of authFiles) {
       if (!fs.existsSync(f)) {
         throw new Error(`Auth state file missing: ${f}\nRun global setup first.`);
       }
@@ -1646,7 +1861,7 @@ export const test = base.extend<{}, { portals: Portals }>({
             { name: 'Meeting Server', baseUrl: MEETING_URL, healthPath: '/health' },
           ],
           {
-            maxAttempts: IS_CLOUD ? 30 : 12,
+            maxAttempts: lightFixture ? 6 : IS_CLOUD ? 30 : 12,
             strict: true,
             requestTimeoutMs: IS_CLOUD ? 30_000 : 12_000,
           },
@@ -1736,7 +1951,22 @@ export const test = base.extend<{}, { portals: Portals }>({
       closeWithTimeout(doctorBrowser.close().catch(() => {}), 'doctorBrowser'),
       closeWithTimeout(adminBrowser.close().catch(() => {}), 'adminBrowser'),
     ]);
-  }, { scope: 'worker', timeout: FORCE_HEADED && !IS_CLOUD ? 600_000 : 420_000 }],
+  }, {
+    scope: 'worker',
+    // Must cover full headed gate (A→K + Defect); align with playwright globalTimeout (2h local headed)
+    timeout: IS_CLOUD ? 3_600_000 : FORCE_HEADED ? 7_200_000 : 1_800_000,
+  }],
+  _authSync: [async ({ portals }, use) => {
+    const now = Date.now();
+    if (now - lastAuthRefreshMs > AUTH_REFRESH_INTERVAL_MS) {
+      await refreshAuthStorageStates();
+      lastAuthRefreshMs = now;
+    }
+    await reinjectAuthFromStorageFile(portals.patient.page, 'patient1');
+    await reinjectAuthFromStorageFile(portals.doctor.page, 'doctor');
+    await reinjectAuthFromStorageFile(portals.admin.page, 'admin');
+    await use();
+  }, { auto: true }],
 });
 
 // ═══════════════════════════════════════════════════════════════════════

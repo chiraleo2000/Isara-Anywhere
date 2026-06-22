@@ -2,7 +2,7 @@
  * Lobby GET response parsing — waiting vs all participants.
  */
 import { describe, it, expect } from 'vitest';
-import { parseLobbySnapshot } from '../../helpers/meeting-lifecycle-fixture';
+import { parseLobbySnapshot } from '../../helpers/lobbySnapshot';
 
 describe('parseLobbySnapshot', () => {
   it('LSP01 — participants are waiting, lobby is all', () => {

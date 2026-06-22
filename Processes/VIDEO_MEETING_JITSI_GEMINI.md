@@ -10,6 +10,8 @@
 > roles are enforced by the Izara lobby + `configOverwrite.moderator`. API auth uses opaque session
 > tokens (`sessions` table), not JWT. No external meeting links in the UI.
 
+> **v1.7.54 — Env consolidation (June 2026).** `.env` uses server-canonical names (`GEMINI_API_KEY`, `JITSI_DOMAIN`, `GOOGLE_MAPS_API_KEY`, `GCP_PROJECT_ID`). Browser URLs use `VITE_MEETING_SERVER_URL` + `resolveEnv()` / `window.ENV`. Docker compose bridges server vars to Vite build-args. Repo layout: `frontend/` + `backend/` per portal; `Izara-jitsi-server/backend/`.
+
 > This document is the core Phase 1 deliverable describing the complete meeting workflow:
 > Appointment → Multi-Party Meeting → Transcript Streaming → AI Summary → EMR → Patient Delivery
 

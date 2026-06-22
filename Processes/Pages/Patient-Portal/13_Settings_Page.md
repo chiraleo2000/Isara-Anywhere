@@ -1,7 +1,7 @@
 # ⚙️ Patient Portal — Settings Page
 
 **Route:** `/settings`
-**Component:** `src/pages/settings/SettingsPage.tsx`
+**Component:** `frontend/pages/settings/SettingsPage.tsx`
 **Access:** 🔒 Authenticated patients
 **Thai Title:** ตั้งค่า / Settings
 

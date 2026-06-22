@@ -121,10 +121,12 @@ test.describe('Defect — Notifications route and navigation', () => {
     await bellBtn.click();
     await patient.page.waitForTimeout(500);
 
-    const viewAll = patient.page
-      .locator('.absolute.right-0')
-      .getByRole('link', { name: /view all notifications|ดูการแจ้งเตือนทั้งหมด/i })
-      .first();
+    const viewAll = patient.page.getByTestId('notifications-view-all-link').or(
+      patient.page
+        .locator('.absolute.right-0')
+        .getByRole('link', { name: /view all notifications|ดูการแจ้งเตือนทั้งหมด/i })
+        .first(),
+    );
     await expect(viewAll).toBeVisible({ timeout: 10_000 });
     await viewAll.click();
     await patient.page.waitForTimeout(1000);

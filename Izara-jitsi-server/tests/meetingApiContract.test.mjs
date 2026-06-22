@@ -5,7 +5,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import jwt from 'jsonwebtoken';
-import { buildGuestPortalUrls } from '../server/jitsiConfig.js';
+import { buildGuestPortalUrls } from '../backend/jitsiConfig.js';
 
 const SECRET = 'test-jwt-secret-for-contract-only';
 

@@ -1,7 +1,7 @@
 # 🎥 Doctor Portal — Health Meeting Page
 
 **Route:** `/health-meeting`
-**Component:** `src/pages/HealthMeeting.tsx`
+**Component:** `frontend/pages/HealthMeeting.tsx`
 **Access:** 🔒 Doctor / Admin
 **Thai Title:** การประชุมสุขภาพ / Health Meeting
 **Version:** v1.4.7
@@ -352,10 +352,11 @@ Step 9: Appointment moves to Meetings tab
 ```text
 Step 1: Find confirmed appointment in Meetings tab
 Step 2: Click "เริ่มประชุม" (Start Meeting)
-Step 3: Jitsi opens in new tab (doctor as HOST)
-Step 4: Doctor waits for patient to join lobby
-Step 5: Doctor admits patient from lobby
-Step 6: Consultation begins with live transcription
+Step 3: In-app MeetingRoom opens at /doctor/:userId/meeting/:appointmentId (doctor as HOST)
+Step 4: Doctor Jitsi iframe mounts; host-present fires on videoConferenceJoined
+Step 5: Patient waits in Izara lobby until host-ready
+Step 6: Doctor admits patient from lobby panel
+Step 7: Consultation begins with live transcription (Web Speech API)
 ```
 
 

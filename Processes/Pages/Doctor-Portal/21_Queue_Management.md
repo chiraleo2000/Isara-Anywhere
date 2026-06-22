@@ -1,6 +1,6 @@
 # 📋 Doctor Portal — Queue Management
 
-**Component:** `src/pages/QueueManagement.tsx`
+**Component:** `frontend/pages/QueueManagement.tsx`
 **Type:** Component (embedded in Health Meeting)
 **Access:** 🔒 Doctor / Admin
 **Thai Title:** จัดการคิว / Queue Management

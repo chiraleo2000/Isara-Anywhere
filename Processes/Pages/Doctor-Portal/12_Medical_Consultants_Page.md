@@ -1,7 +1,7 @@
 # 👨‍⚕️ Doctor Portal — Medical Consultants Page
 
 **Route:** `/consultants`
-**Component:** `src/pages/MedicalConsultants.tsx`
+**Component:** `frontend/pages/MedicalConsultants.tsx`
 **Access:** 🔒 Doctor (read + rate) / Admin (full CRUD)
 **Thai Title:** แพทย์ที่ปรึกษา / Medical Consultants
 

@@ -10,6 +10,7 @@ import {
   snap,
   lobbyAdmitAll,
   joinIzaraMeetingInApp,
+  readPageBearerToken,
   PATIENT_URL,
   DOCTOR_URL,
   MEETING_URL,
@@ -22,6 +23,8 @@ import {
   assertJitsiMediaActive,
   assertJitsiRoleFlagsOnPage,
   waitForMeetingHostReady,
+  notifyHostPresentAfterJitsi,
+  assertNoJitsiModeratorGate,
   overrideBrowserMeetingServerUrl,
   proxyLocalMeetingServer,
   ensureJitsiMountSpy,
@@ -87,7 +90,7 @@ let meetingKey = '';
 
     await test.step('JPRE01b — Create meeting record (doctor HOST)', async () => {
       const token = await doctor.page.evaluate(() => localStorage.getItem('token') || '');
-      const resp = await doctor.page.request.post(`${MEETING_URL}/api/meetings/create`, {
+      const resp = await doctor.page.request.post(`${DOCTOR_URL}/api/meetings/create`, {
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
         data: {
           appointmentId,
@@ -104,7 +107,25 @@ let meetingKey = '';
       meetingKey = meeting.id || meeting.meetingId || appointmentId;
     });
 
-    await test.step('JPRE01c — Patient pre-join shows auth display name (not empty)', async () => {
+    await test.step('JPRE01c — Doctor HOST opens meeting before patient pre-join', async () => {
+      await overrideBrowserMeetingServerUrl(doctor.page, MEETING_URL);
+      await proxyLocalMeetingServer(doctor.page, MEETING_URL);
+      await installJitsiMountSpy(doctor.page);
+      await doctor.page.goto(`${DOCTOR_URL}/doctor/${DOCTOR_ID}/meeting/${appointmentId}`, {
+        waitUntil: 'domcontentloaded',
+        timeout: IS_CLOUD ? 90_000 : 45_000,
+      });
+      await joinIzaraMeetingInApp(doctor.page, 'JPRE01c-doctor', portals.doctor.browserName);
+      await notifyHostPresentAfterJitsi(doctor.page, appointmentId, {
+        bffUrl: DOCTOR_URL,
+        meetingUrl: MEETING_URL,
+      });
+      await expect(doctor.page.getByTestId('jitsi-meeting-container')).toBeVisible({
+        timeout: IS_CLOUD ? 90_000 : 60_000,
+      });
+    });
+
+    await test.step('JPRE01d — Patient pre-join shows auth display name (not empty)', async () => {
       await overrideBrowserMeetingServerUrl(patient.page, MEETING_URL);
       await proxyLocalMeetingServer(patient.page, MEETING_URL);
       await installJitsiMountSpy(patient.page);
@@ -135,45 +156,22 @@ let meetingKey = '';
       const displayNameEl = patient.page.locator(
         '[data-testid="patient-display-name"], [data-testid="pre-join-screen"] .font-medium',
       ).first();
-      await expect(displayNameEl, 'JPRE01c: patient display name on pre-join').toBeVisible();
+      await expect(displayNameEl, 'JPRE01d: patient display name on pre-join').toBeVisible();
       const displayName = (await displayNameEl.innerText()).trim();
-      expect(displayName.length, 'JPRE01c: auth display name must not be empty').toBeGreaterThan(0);
-      expect(displayName, 'JPRE01c: fallback Patient when auth empty').not.toBe('');
+      expect(displayName.length, 'JPRE01d: auth display name must not be empty').toBeGreaterThan(0);
+      expect(displayName, 'JPRE01d: fallback Patient when auth empty').not.toBe('');
       expect(/enter your name|type your name|กรอกชื่อ/i.test(displayName)).toBe(false);
-      await snap(patient.page, 'JPRE01c-patient-prejoin-autoname', 'group-J-jitsi-prejoin');
+      await snap(patient.page, 'JPRE01d-patient-prejoin-autoname', 'group-J-jitsi-prejoin');
     });
 
-    await test.step('JPRE01d — Patient joins lobby; doctor HOST opens meeting', async () => {
+    await test.step('JPRE01e — Patient joins lobby; doctor admits; Jitsi bypasses name prompt', async () => {
+      await ensureJitsiMountSpy(patient.page);
       await patient.page.getByTestId('join-meeting-btn').click();
       await expect(
         patient.page.getByTestId('lobby-waiting-screen').or(patient.page.getByTestId('host-waiting-screen')).first(),
       ).toBeVisible({ timeout: 45_000 });
 
-      await overrideBrowserMeetingServerUrl(doctor.page, MEETING_URL);
-      await proxyLocalMeetingServer(doctor.page, MEETING_URL);
-      await doctor.page.goto(`${DOCTOR_URL}/doctor/${DOCTOR_ID}/meeting/${appointmentId}`, {
-        waitUntil: 'domcontentloaded',
-        timeout: IS_CLOUD ? 90_000 : 45_000,
-      });
-      await joinIzaraMeetingInApp(doctor.page, 'JPRE01d-doctor', portals.doctor.browserName);
-      const doctorToken = await doctor.page.evaluate(() => localStorage.getItem('token') || '');
-      await doctor.page.request.post(`${MEETING_URL}/api/meetings/${appointmentId}/host-present`, {
-        headers: { Authorization: `Bearer ${doctorToken}` },
-        timeout: API_TIMEOUT,
-      });
-      await waitForMeetingHostReady(
-        doctor.page.request,
-        MEETING_URL,
-        appointmentId,
-        IS_CLOUD ? 120_000 : 90_000,
-      );
-      await expect(doctor.page.getByTestId('jitsi-meeting-container')).toBeVisible({
-        timeout: IS_CLOUD ? 90_000 : 60_000,
-      });
-    });
-
-    await test.step('JPRE01e — Doctor admits patient; Jitsi bypasses name prompt', async () => {
-      await ensureJitsiMountSpy(patient.page);
+      const doctorToken = await readPageBearerToken(doctor.page);
       await lobbyAdmitAll(doctor.page, appointmentId, DOCTOR_ID);
       await expect(patient.page.getByTestId('host-waiting-screen').or(patient.page.getByTestId('jitsi-meeting-container')).first())
         .toBeVisible({ timeout: 60_000 });
@@ -185,6 +183,7 @@ let meetingKey = '';
         .toBeVisible({ timeout: 60_000 });
 
       await assertJitsiRoleFlagsOnPage(patient.page, 'patient', 'JPRE01e');
+      await assertNoJitsiModeratorGate(patient.page, 'JPRE01e-patient');
 
       const mounts = await readJitsiMountLog(patient.page);
       if (mounts.length > 0) {

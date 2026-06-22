@@ -4,7 +4,7 @@ import path from 'node:path';
 
 const mapPagePath = path.resolve(
   __dirname,
-  '../../../Isara-patient-portal/src/pages/MapPage.tsx',
+  '../../../Isara-patient-portal/frontend/pages/MapPage.tsx',
 );
 
 function facilityCountMatchesMarkers(facilities: { id: string }[], markers: { id: string }[]): boolean {

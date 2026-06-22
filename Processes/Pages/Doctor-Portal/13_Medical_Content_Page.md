@@ -1,7 +1,7 @@
 # 📚 Doctor Portal — Medical Content Page
 
 **Route:** `/medical-content`
-**Component:** `src/pages/MedicalContent.tsx`
+**Component:** `frontend/pages/MedicalContent.tsx`
 **Access:** 🔒 Doctor (create + edit own) / Admin (approve + full CRUD)
 **Thai Title:** เนื้อหาทางการแพทย์ / Medical Content
 

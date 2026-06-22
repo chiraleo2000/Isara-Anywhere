@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { getNotificationTarget } from '../../../Isara-patient-portal/src/utils/notificationRouting';
+import { getNotificationTarget } from '../../../Isara-patient-portal/frontend/utils/notificationRouting';
 
 describe('notification bell routing behavior (P3)', () => {
   it('routes appointment notifications to appointment detail', () => {

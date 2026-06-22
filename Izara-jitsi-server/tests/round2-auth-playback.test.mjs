@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { resolveActorUserId } from '../server/meetingAuth.js';
+import { resolveActorUserId } from '../backend/meetingAuth.js';
 
 describe('Round 2 — playback auth actor id', () => {
   it('R2-A01 — resolveActorUserId accepts userId claim from doctor portal JWT', () => {

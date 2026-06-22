@@ -2,7 +2,7 @@
  * ═══════════════════════════════════════════════════════════════════════
  * MEETING SERVER — Meeting Routes Unit Tests
  * ═══════════════════════════════════════════════════════════════════════
- * Tests: Izara-jitsi-server/server/index.js — routes, config, auth
+ * Tests: Izara-jitsi-server/backend/index.js — routes, config, auth
  */
 import { describe, it, expect } from 'vitest';
 import crypto from 'node:crypto';

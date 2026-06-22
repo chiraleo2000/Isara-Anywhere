@@ -4,12 +4,12 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "dev:server": "tsx watch server/index.ts",
+    "dev:server": "tsx watch backend/index.ts",
     "dev:all": "concurrently \"npm run dev:server\" \"npm run dev\"",
     "build": "vite build",
     "build:typecheck": "tsc && vite build",
     "build:server": "tsc --project tsconfig.server.json",
-    "start:server": "node dist/server/index.js",
+    "start:server": "node dist/backend/index.js",
     "preview": "vite preview",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "type-check": "tsc --noEmit",
@@ -40,7 +40,7 @@
     "react-dom": "^18.2.0",
     "react-router-dom": "^6.30.4",
     "socket.io": "^4.8.3",
-    "socket.io-client": "^4.7.2"
+    "socket.io-client": "^4.8.3"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^6.9.1",
@@ -69,5 +69,8 @@
     "typescript": "^5.2.2",
     "vite": "^7.2.2",
     "vitest": "^4.0.18"
+  },
+  "overrides": {
+    "ws": "^8.21.0"
   }
 }

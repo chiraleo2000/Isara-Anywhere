@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="th">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Izara Anywhere - แพลตฟอร์มสุขภาพดิจิทัล</title>
+    
+    <!-- Tailwind CSS bundled via Vite build (see src/index.css) -->
+    
+    <!-- Sarabun bundled via @fontsource in index.css (no external CDN) -->
+    
+    <style>
+      body {
+        font-family: 'Sarabun', sans-serif;
+      }
+      
+      /* Custom scrollbar */
+      ::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+      }
+      
+      ::-webkit-scrollbar-track {
+        background: #f1f1f1;
+      }
+      
+      ::-webkit-scrollbar-thumb {
+        background: #059669;
+        border-radius: 4px;
+      }
+      
+      ::-webkit-scrollbar-thumb:hover {
+        background: #047857;
+      }
+
+      /* Dark mode scrollbar */
+      .dark ::-webkit-scrollbar-track {
+        background: #374151;
+      }
+      
+      .dark ::-webkit-scrollbar-thumb {
+        background: #10b981;
+      }
+      
+      .dark ::-webkit-scrollbar-thumb:hover {
+        background: #34d399;
+      }
+      
+      /* Smooth transitions */
+      * {
+        transition-property: background-color, border-color, color, fill, stroke;
+        transition-duration: 150ms;
+        transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      
+      /* Loading animation */
+      @keyframes shimmer {
+        0% {
+          background-position: -468px 0;
+        }
+        100% {
+          background-position: 468px 0;
+        }
+      }
+      
+      .loading-shimmer {
+        animation: shimmer 1.2s ease-in-out infinite;
+        background: linear-gradient(to right, #f6f7f8 0%, #edeef1 20%, #f6f7f8 40%, #f6f7f8 100%);
+        background-size: 800px 104px;
+      }
+
+      /* Loading spinner for Google APIs */
+      .google-loading {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        z-index: 9999;
+        background: rgba(255, 255, 255, 0.95);
+        padding: 2rem;
+        border-radius: 1rem;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        display: none;
+      }
+
+      .google-loading.active {
+        display: block;
+      }
+
+      .spinner {
+        border: 3px solid #f3f3f3;
+        border-top: 3px solid #059669;
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        animation: spin 1s linear infinite;
+        margin: 0 auto;
+      }
+
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+
+      /* ============================================ */
+      /* COMPREHENSIVE DARK MODE STYLES              */
+      /* ============================================ */
+      
+      /* Base dark mode backgrounds */
+      .dark body {
+        background: linear-gradient(to bottom, #1a1a2e, #16213e);
+        color: #e5e5e5;
+      }
+      
+      /* Force all white backgrounds to dark */
+      .dark .bg-white {
+        background-color: #1e293b !important;
+        color: #f1f5f9 !important;
+      }
+
+      .dark .bg-gray-50, .dark .bg-gray-100 {
+        background-color: #0f172a !important;
+      }
+
+      /* Text color fixes for dark mode */
+      .dark .text-gray-900 { color: #ffffff !important; }
+      .dark .text-gray-800 { color: #f1f5f9 !important; }
+      .dark .text-gray-700 { color: #e2e8f0 !important; }
+      .dark .text-gray-600 { color: #cbd5e1 !important; }
+      .dark .text-gray-500 { color: #94a3b8 !important; }
+
+      /* Border colors in dark mode */
+      .dark .border-gray-100, .dark .border-gray-200, .dark .border-gray-300 {
+        border-color: #475569 !important;
+      }
+
+      /* Input fields in dark mode */
+      .dark input, .dark textarea, .dark select {
+        background-color: #1e293b !important;
+        border-color: #475569 !important;
+        color: #f1f5f9 !important;
+      }
+
+      .dark input::placeholder, .dark textarea::placeholder {
+        color: #64748b !important;
+      }
+
+      .dark input:focus, .dark textarea:focus, .dark select:focus {
+        border-color: #10b981 !important;
+        box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2);
+      }
+
+      /* Cards and containers */
+      .dark div[class*="rounded-xl"], .dark div[class*="rounded-lg"], .dark div[class*="rounded-2xl"] {
+        border-color: #334155;
+      }
+
+      /* Table styling */
+      .dark table { background-color: #1e293b; }
+      .dark th { background-color: #0f172a !important; color: #f1f5f9 !important; }
+      .dark td { color: #e2e8f0 !important; border-color: #334155 !important; }
+      .dark tr:hover td { background-color: #334155 !important; }
+
+      /* Button fixes */
+      .dark button.bg-gray-100, .dark button.bg-gray-200 {
+        background-color: #334155 !important;
+        color: #e2e8f0 !important;
+      }
+
+      /* Modal backgrounds */
+      .dark [class*="modal"] .bg-white, .dark [role="dialog"] .bg-white {
+        background-color: #1e293b !important;
+      }
+
+      /* Sidebar and navigation */
+      .dark nav, .dark aside, .dark .sidebar {
+        background-color: #0f172a !important;
+        color: #e2e8f0 !important;
+      }
+
+      .dark nav a, .dark .sidebar a {
+        color: #e2e8f0 !important;
+      }
+
+      .dark nav a:hover, .dark .sidebar a:hover {
+        background-color: #1e293b !important;
+      }
+
+      /* Page titles and headers - CRITICAL FIX */
+      .dark h1, .dark h2, .dark h3, .dark h4, .dark h5, .dark h6 {
+        color: #f1f5f9 !important;
+      }
+
+      /* Menu labels visibility fix */
+      .dark .menu-label, .dark .nav-label, .dark [class*="title"] {
+        color: #f1f5f9 !important;
+      }
+
+      /* Dropdown menus */
+      .dark [class*="dropdown"], .dark [class*="menu"] {
+        background-color: #1e293b !important;
+        border-color: #334155 !important;
+      }
+
+      /* Calendar styling */
+      .dark .react-calendar, .dark [class*="calendar"] {
+        background-color: #1e293b !important;
+        border-color: #334155 !important;
+        color: #f1f5f9 !important;
+      }
+
+      /* Shadows in dark mode */
+      .dark .shadow-sm, .dark .shadow, .dark .shadow-md, .dark .shadow-lg, .dark .shadow-xl {
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -1px rgba(0, 0, 0, 0.3) !important;
+      }
+
+      /* Gradient backgrounds in dark mode */
+      .dark .from-emerald-50, .dark .from-teal-50, .dark .from-blue-50 {
+        background: linear-gradient(to bottom right, #1e3a3a, #1e293b) !important;
+      }
+
+      /* Notification and toast */
+      .dark .toast, .dark [class*="notification"] {
+        background-color: #1e293b !important;
+        border-color: #334155 !important;
+        color: #f1f5f9 !important;
+      }
+
+      /* Links */
+      .dark a.text-emerald-600, .dark a.text-teal-600, .dark a.text-blue-600 {
+        color: #34d399 !important;
+      }
+
+      /* ============================================ */
+    </style>
+    
+    <!-- Import Map for React and other dependencies -->
+    <script type="importmap">
+{
+  "imports": {
+    "react": "https://aistudiocdn.com/react@^19.1.1",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.1.1/",
+    "@google/generative-ai": "https://aistudiocdn.com/@google/generative-ai@^1.20.0",
+    "react/": "https://aistudiocdn.com/react@^19.1.1/"
+  }
+}
+</script>
+
+    <!-- 
+      ============================================
+      GOOGLE APIS CONFIGURATION
+      ============================================
+      Load order is important:
+      1. Google Maps API (loaded dynamically via mapsLoader.ts with env vars)
+      2. Google API Client Library (gapi)
+      3. Google Identity Services (GIS)
+    -->
+    
+    <!-- 1. Google Maps API - LOADED DYNAMICALLY VIA mapsLoader.ts -->
+    <!-- API key is injected from VITE_GOOGLE_MAPS_API_KEY environment variable at runtime -->
+    
+    <!-- Google OAuth Configuration Script -->
+    <script>
+      (function loadGoogleApiScripts() {
+        function appendScript(src, flag, label) {
+          if (document.querySelector('script[src="' + src + '"]')) return;
+          var script = document.createElement('script');
+          script.src = src;
+          script.async = true;
+          script.defer = true;
+          script.onload = function () {
+            globalThis[flag] = true;
+            console.log('✅ ' + label + ' loaded');
+          };
+          script.onerror = function () {
+            console.error('❌ Failed to load ' + label);
+          };
+          document.head.appendChild(script);
+        }
+        appendScript('https://apis.google.com/js/api.js', 'gapiLoaded', 'GAPI');
+        appendScript('https://accounts.google.com/gsi/client', 'gisLoaded', 'GIS');
+      })();
+    </script>
+    <script>
+      // Configuration object for Google OAuth
+      globalThis.GOOGLE_CONFIG = {
+        // These will be loaded from environment variables in your app
+        // Don't hardcode credentials here - they should come from .env
+        API_DISCOVERY_DOCS: [
+          'https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest'
+        ],
+        SCOPES: 'https://www.googleapis.com/auth/calendar.events',
+        
+        // Status tracking
+        status: {
+          mapsLoaded: false,
+          gapiLoaded: false,
+          gisLoaded: false,
+          gapiInitialized: false
+        },
+
+        // Check if all APIs are ready
+        isReady: function() {
+          return this.status.mapsLoaded && 
+                 this.status.gapiLoaded && 
+                 this.status.gisLoaded &&
+                 this.status.gapiInitialized;
+        },
+
+        // Log status
+        logStatus: function() {
+          console.log('🔍 Google APIs Status:', {
+            'Google Maps': this.status.mapsLoaded ? '✅' : '⏳',
+            'GAPI': this.status.gapiLoaded ? '✅' : '⏳',
+            'GIS': this.status.gisLoaded ? '✅' : '⏳',
+            'GAPI Initialized': this.status.gapiInitialized ? '✅' : '⏳',
+            'All Ready': this.isReady() ? '✅' : '⏳'
+          });
+        }
+      };
+
+      // Wait for all Google APIs to load
+      globalThis.addEventListener('load', function() {
+        console.log('📱 Page loaded, checking Google APIs...');
+        
+        // Check every 100ms for up to 10 seconds
+        let attempts = 0;
+        const maxAttempts = 100;
+        
+        const checkInterval = setInterval(function() {
+          attempts++;
+          
+          // Update status
+          globalThis.GOOGLE_CONFIG.status.mapsLoaded = !!globalThis.googleMapsLoaded;
+          globalThis.GOOGLE_CONFIG.status.gapiLoaded = !!globalThis.gapiLoaded;
+          globalThis.GOOGLE_CONFIG.status.gisLoaded = !!globalThis.gisLoaded;
+          
+          // Check if all loaded
+          if (globalThis.GOOGLE_CONFIG.status.mapsLoaded && 
+              globalThis.GOOGLE_CONFIG.status.gapiLoaded && 
+              globalThis.GOOGLE_CONFIG.status.gisLoaded) {
+            
+            clearInterval(checkInterval);
+            console.log('✅ All Google APIs loaded successfully!');
+            globalThis.GOOGLE_CONFIG.logStatus();
+            
+            // Hide loading indicator if exists
+            const loadingEl = document.getElementById('google-loading');
+            if (loadingEl) {
+              loadingEl.classList.remove('active');
+            }
+            
+            // Dispatch custom event for React app
+            globalThis.dispatchEvent(new CustomEvent('googleApisReady', {
+              detail: { 
+                status: globalThis.GOOGLE_CONFIG.status,
+                timestamp: new Date().toISOString()
+              }
+            }));
+          }
+          
+          // Timeout after max attempts
+          if (attempts >= maxAttempts) {
+            clearInterval(checkInterval);
+            console.warn('⚠️ Timeout waiting for Google APIs');
+            globalThis.GOOGLE_CONFIG.logStatus();
+            
+            // Hide loading indicator
+            const loadingEl = document.getElementById('google-loading');
+            if (loadingEl) {
+              loadingEl.classList.remove('active');
+            }
+            
+            // Dispatch timeout event
+            globalThis.dispatchEvent(new CustomEvent('googleApisTimeout', {
+              detail: { 
+                status: globalThis.GOOGLE_CONFIG.status,
+                timestamp: new Date().toISOString()
+              }
+            }));
+          }
+        }, 100);
+      });
+
+      // Helper function to check OAuth configuration
+      globalThis.checkGoogleOAuthConfig = function() {
+        const clientId = localStorage.getItem('google_client_id') || 
+                        'NOT_CONFIGURED';
+        const apiKey = localStorage.getItem('google_api_key') || 
+                      'NOT_CONFIGURED';
+        
+        console.log('🔐 Google OAuth Configuration:');
+        console.log('Client ID:', clientId.substring(0, 20) + '...');
+        console.log('API Key:', apiKey.substring(0, 20) + '...');
+        console.log('APIs Status:', globalThis.GOOGLE_CONFIG.status);
+        
+        return {
+          hasClientId: !clientId.includes('NOT_CONFIGURED'),
+          hasApiKey: !apiKey.includes('NOT_CONFIGURED'),
+          apisReady: globalThis.GOOGLE_CONFIG.isReady()
+        };
+      };
+
+      // Console helper for debugging
+      console.log(`
+╔═══════════════════════════════════════════════════════════╗
+║         🏥 Izara Anywhere - Google APIs Loader          ║
+╠═══════════════════════════════════════════════════════════╣
+║                                                           ║
+║  Debug commands:                                          ║
+║  • window.GOOGLE_CONFIG.logStatus()                       ║
+║  • window.checkGoogleOAuthConfig()                        ║
+║                                                           ║
+║  Events:                                                  ║
+║  • googleApisReady - All APIs loaded                      ║
+║  • googleApisTimeout - Loading timeout                    ║
+║                                                           ║
+╚═══════════════════════════════════════════════════════════╝
+      `);
+    </script>
+  </head>
+  
+  <body class="antialiased">
+    <!-- Optional: Loading indicator for Google APIs -->
+    <div id="google-loading" class="google-loading">
+      <div class="spinner"></div>
+      <p style="text-align: center; margin-top: 1rem; color: #059669; font-weight: 600;">
+        กำลังโหลด Google APIs...
+      </p>
+    </div>
+
+    <!-- Main app container -->
+    <div id="root"></div>
+    
+    <!-- Your React app -->
+    <script type="module" src="/index.tsx"></script>
+
+    <!-- Show/hide loading indicator based on readiness -->
+    <script>
+      // Show loading indicator initially if needed
+      // Comment out these lines if you don't want the loading indicator
+      /*
+      const loadingEl = document.getElementById('google-loading');
+      if (loadingEl) {
+        loadingEl.classList.add('active');
+      }
+      */
+    </script>
+  </body>
+</html>

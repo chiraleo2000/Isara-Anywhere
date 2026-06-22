@@ -4,7 +4,7 @@ import {
   assertCanAccessMeetingRecording,
   filterRecordingsForUser,
   buildSecureRecordingUrl,
-} from '../server/recordingAccess.js';
+} from '../backend/recordingAccess.js';
 
 describe('recordingAccess', () => {
   const meeting = { doctor_id: 'doc-1', patient_id: 'pat-1' };

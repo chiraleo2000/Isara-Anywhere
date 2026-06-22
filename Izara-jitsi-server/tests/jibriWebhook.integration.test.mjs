@@ -6,8 +6,8 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
-import { validateJibriWebhookRequest } from '../server/jibriWebhook.js';
-import { createPostMeetingPipeline } from '../server/postMeetingPipeline.js';
+import { validateJibriWebhookRequest } from '../backend/jibriWebhook.js';
+import { createPostMeetingPipeline } from '../backend/services/postMeetingPipeline.js';
 
 describe('Jibri webhook integration', () => {
   const secret = 'test-jibri-webhook-secret';

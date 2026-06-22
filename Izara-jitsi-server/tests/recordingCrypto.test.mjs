@@ -6,7 +6,7 @@ describe('recordingCrypto', () => {
   const prevKey = process.env.RECORDING_ENCRYPTION_KEY;
 
   async function load() {
-    const mod = await import('../server/recordingCrypto.js');
+    const mod = await import('../backend/recordingCrypto.js');
     mod.resetEncryptionKeyCacheForTests();
     return mod;
   }

@@ -1,6 +1,6 @@
 # 📋 Doctor Portal — EMR Editor (Electronic Medical Record)
 
-**Component:** `src/components/CompleteEMREditor.tsx`
+**Component:** `frontend/components/CompleteEMREditor.tsx`
 **Type:** Modal (launched from DoctorPortal)
 **Access:** 🔒 Doctor / Admin
 **Thai Title:** เวชระเบียนอิเล็กทรอนิกส์ / Electronic Medical Record

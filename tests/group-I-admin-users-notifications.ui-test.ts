@@ -17,6 +17,7 @@ import {
   test, expect, assertFullHealth, snap,
   navDoctor, navPatient, waitForContent, assertHasData,
   PATIENT_URL, DOCTOR_URL,
+  refreshPatientSession,
 } from './helpers/multi-portal';
 
 test.describe('Group I — Admin, Users & Notifications', () => {
@@ -209,13 +210,21 @@ test.describe('Group I — Admin, Users & Notifications', () => {
     const { patient, doctor, admin } = portals;
 
     await test.step('I13 — All 3 portals authenticated', async () => {
-      // Patient was idle during I1-I3, refresh to re-establish session
+      await refreshPatientSession(patient.page);
       await patient.page.goto(PATIENT_URL, { waitUntil: 'domcontentloaded', timeout: 30_000 });
-      await patient.page.waitForTimeout(500);
 
-      const pToken = await patient.page.evaluate(() => localStorage.getItem('auth_token'));
-      const dToken = await doctor.page.evaluate(() => localStorage.getItem('token'));
-      const aToken = await admin.page.evaluate(() => localStorage.getItem('token'));
+      const readToken = async (page: typeof patient.page, keys: string[]) =>
+        page.evaluate((k) => k.map((key) => localStorage.getItem(key)).find(Boolean) || null, keys);
+
+      let pToken = await readToken(patient.page, ['auth_token', 'izara_auth_token', 'token']);
+      let dToken = await readToken(doctor.page, ['token', 'izara_auth_token']);
+      let aToken = await readToken(admin.page, ['token', 'izara_auth_token']);
+      if (!pToken || !dToken || !aToken) {
+        await patient.page.waitForTimeout(1_000);
+        pToken = await readToken(patient.page, ['auth_token', 'izara_auth_token', 'token']);
+        dToken = await readToken(doctor.page, ['token', 'izara_auth_token']);
+        aToken = await readToken(admin.page, ['token', 'izara_auth_token']);
+      }
       expect(pToken, 'Patient token').toBeTruthy();
       expect(dToken, 'Doctor token').toBeTruthy();
       expect(aToken, 'Admin token').toBeTruthy();

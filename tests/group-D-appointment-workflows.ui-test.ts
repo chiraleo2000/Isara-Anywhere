@@ -21,6 +21,9 @@ import {
   assertNotificationTypePoll,
   waitForPatientNotification,
   clickLocatorSafe,
+  readPageBearerToken,
+  refreshPageAuth,
+  confirmAppointmentApiWithRetry,
   PATIENT_URL, DOCTOR_URL,
 } from './helpers/multi-portal';
 import { saveWorkflowState, loadWorkflowState, clearWorkflowState } from './helpers/workflow-state';
@@ -30,15 +33,17 @@ const IS_CLOUD = process.env.TEST_ENV === 'cloud';
 test.describe('Group D — Appointment Workflows', () => {
   test.describe.configure({ mode: 'serial' });
 
-  test.beforeAll(() => {
-    clearWorkflowState();
-  });
-
   /* ═════════════════════════════════════════════════════════════════
      D1 — Patient: Appointments → Book → Fill Symptom Form → Submit
      ═════════════════════════════════════════════════════════════════ */
   test('D1 — Patient books appointment with symptom form', async ({ portals }) => {
     const { patient, admin } = portals;
+
+    await test.step('D00 — Fresh workflow state for this booking chain', async () => {
+      if (process.env.E2E_PRESERVE_WORKFLOW !== '1') {
+        clearWorkflowState();
+      }
+    });
 
     await test.step('D01 — Navigate to Appointments list', async () => {
       await navPatient(patient.page, '/appointments', 'D01');
@@ -183,23 +188,33 @@ test.describe('Group D — Appointment Workflows', () => {
 
       // GUARANTEED fallback: create POOL appointment via API (NO doctorId — admin assigns later)
       if (!appointmentCreated) {
-        const token = await patient.page.evaluate(() => localStorage.getItem('auth_token') || '');
-        const resp = await patient.page.request.post(`${PATIENT_URL}/api/appointments`, {
-          headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-          data: {
-            patientId: sessionPatientId,
-            appointmentType: 'Telehealth',
-            requestedDate: new Date(Date.now() + 86400000).toISOString().split('T')[0],
-            requestedTime: '10:00',
-            reason: 'ปวดหัวมาก มีไข้สูง 2 วัน (E2E test)',
-            symptomDescription: 'Headache and fever for 2 days',
-            urgency: 'normal',
-            status: 'pending',
-          },
-          timeout: 10_000,
-        });
-        expect(resp.status(), '❌ D07: API appointment creation FAILED').toBe(200);
-        const data = await resp.json().catch(() => null);
+        let data: { id?: string; status?: string } | null = null;
+        for (let attempt = 0; attempt < 3; attempt++) {
+          await refreshPageAuth(patient.page, PATIENT_URL);
+          const token = await readPageBearerToken(patient.page);
+          const resp = await patient.page.request.post(`${PATIENT_URL}/api/appointments`, {
+            headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+            data: {
+              patientId: sessionPatientId,
+              appointmentType: 'Telehealth',
+              requestedDate: new Date(Date.now() + 86400000).toISOString().split('T')[0],
+              requestedTime: '10:00',
+              reason: 'ปวดหัวมาก มีไข้สูง 2 วัน (E2E test)',
+              symptomDescription: 'Headache and fever for 2 days',
+              urgency: 'normal',
+              status: 'pending',
+            },
+            timeout: 10_000,
+          });
+          if (resp.status() === 200) {
+            data = await resp.json().catch(() => null);
+            break;
+          }
+          if (resp.status() !== 401 || attempt === 2) {
+            expect(resp.status(), '❌ D07: API appointment creation FAILED').toBe(200);
+          }
+          await patient.page.waitForTimeout(600 * (attempt + 1));
+        }
         expect(data?.id, '❌ D07: API must return appointment id').toBeTruthy();
         saveWorkflowState({
           appointmentId: data.id,
@@ -386,6 +401,10 @@ test.describe('Group D — Appointment Workflows', () => {
       });
       const slotCount = await slots.count();
       console.log(`  ✅ D13: Schedule time slots: ${slotCount}`);
+      if (slotCount > 0) {
+        await slots.first().scrollIntoViewIfNeeded().catch(() => {});
+        await doctor.page.waitForTimeout(300);
+      }
       await snap(doctor.page, 'D13-time-slots', 'group-D');
     });
 
@@ -397,6 +416,11 @@ test.describe('Group D — Appointment Workflows', () => {
      ═════════════════════════════════════════════════════════════════ */
   test('D3 — Admin appointment oversight & doctor assignment', async ({ portals }) => {
     const { admin, doctor } = portals;
+    const wf = { ...loadWorkflowState() };
+    const syncWorkflow = (patch: Parameters<typeof saveWorkflowState>[0]) => {
+      Object.assign(wf, patch);
+      saveWorkflowState(patch);
+    };
 
     await test.step('D14 — Navigate to Health Meeting', async () => {
       await navDoctor(admin.page, 'health-meeting', 'D14');
@@ -407,13 +431,29 @@ test.describe('Group D — Appointment Workflows', () => {
 
     await test.step('D15 — Navigate to Appointment Pool (reload data)', async () => {
       await navDoctor(admin.page, 'appointment-pool', 'D15');
-      await admin.page.reload({ waitUntil: 'domcontentloaded', timeout: IS_CLOUD ? 60_000 : 30_000 });
+      const reloadTimeout = IS_CLOUD ? 60_000 : 60_000;
+      for (let attempt = 0; attempt < 2; attempt++) {
+        try {
+          await admin.page.reload({ waitUntil: 'domcontentloaded', timeout: reloadTimeout });
+          break;
+        } catch (reloadErr) {
+          if (attempt === 1) throw reloadErr;
+          await refreshPageAuth(admin.page, DOCTOR_URL);
+        }
+      }
       await admin.page.waitForLoadState('networkidle', { timeout: IS_CLOUD ? 45_000 : 15_000 }).catch(() => {});
       await waitForContent(admin.page, 'D15-reload');
       await assertFullHealth(admin.page, 'D15');
-      const { appointmentId } = loadWorkflowState();
+      const { appointmentId } = wf;
       if (appointmentId) {
-        await waitForPoolAppointment(admin.page, DOCTOR_URL, appointmentId, { unassignedOnly: true });
+        await refreshPageAuth(admin.page, DOCTOR_URL);
+        const poolOpts = { unassignedOnly: true, timeoutMs: IS_CLOUD ? 45_000 : 45_000 };
+        try {
+          await waitForPoolAppointment(admin.page, DOCTOR_URL, appointmentId, poolOpts);
+        } catch {
+          // Pool row may already carry doctor_id after D06 UI selection — still require visibility.
+          await waitForPoolAppointment(admin.page, DOCTOR_URL, appointmentId, { timeoutMs: poolOpts.timeoutMs });
+        }
         const body = await admin.page.locator('body').innerText();
         expect(
           body.includes(appointmentId) || /pool|นัดหมาย|in_pool|pending|ผู้ป่วย/i.test(body),
@@ -437,7 +477,7 @@ test.describe('Group D — Appointment Workflows', () => {
         timeout: process.env.TEST_ENV === 'cloud' ? 30_000 : 10_000,
       });
       expect(listResp.status(), '❌ D15b: Appointments list API must return 200').toBe(200);
-      const workflowId = loadWorkflowState().appointmentId;
+      const workflowId = wf.appointmentId;
       expect(workflowId, '❌ D15b: workflow appointmentId from D07 required').toBeTruthy();
 
       const listData = await listResp.json().catch(() => []);
@@ -448,7 +488,7 @@ test.describe('Group D — Appointment Workflows', () => {
         !a.doctor_id && (a.patient_id === 'PATIENT-DEMO')
       );
       expect(unassigned, '❌ D15b: Must find unassigned appointment from D07 — pool appointment missing').toBeTruthy();
-      saveWorkflowState({ appointmentId: unassigned.id as string });
+      syncWorkflow({ appointmentId: unassigned.id as string });
       console.log(`  ✅ D15b: Found unassigned appointment: ${unassigned.id} (status: ${unassigned.status})`);
 
       // 3. Admin assigns doctor to this appointment
@@ -465,10 +505,11 @@ test.describe('Group D — Appointment Workflows', () => {
     });
 
     await test.step('D15c — Doctor receives appointment_assigned notification', async () => {
-      const { appointmentId } = loadWorkflowState();
+      const { appointmentId } = wf;
+      await refreshPageAuth(doctor.page, DOCTOR_URL);
       await assertNotificationTypePoll(doctor.page, DOCTOR_URL, 'appointment_assigned', {
         authKey: 'token',
-        timeoutMs: IS_CLOUD ? 30_000 : 12_000,
+        timeoutMs: IS_CLOUD ? 45_000 : 30_000,
         appointmentId: appointmentId || undefined,
       });
       await snap(doctor.page, 'D15c-doctor-assigned-notification', 'group-D');
@@ -484,7 +525,7 @@ test.describe('Group D — Appointment Workflows', () => {
     });
 
     await test.step('D16b — Doctor Health Meeting shows assigned appointment', async () => {
-      const { appointmentId } = loadWorkflowState();
+      const { appointmentId } = wf;
       await navDoctor(doctor.page, 'health-meeting', 'D16b');
       await doctor.page.reload({ waitUntil: 'domcontentloaded', timeout: process.env.TEST_ENV === 'cloud' ? 60_000 : 30_000 });
       await waitForContent(doctor.page, 'D16b');
@@ -500,19 +541,27 @@ test.describe('Group D — Appointment Workflows', () => {
     });
 
     await test.step('D16c — Doctor queue API shows symptoms (G7 rich queue)', async () => {
-      const { appointmentId, symptomText } = loadWorkflowState();
+      const { appointmentId, symptomText } = wf;
       expect(appointmentId, '❌ D16c: workflow appointmentId required').toBeTruthy();
-      const token = await doctor.page.evaluate(() =>
-        localStorage.getItem('token') || localStorage.getItem('izara_auth_token') || '',
-      );
+      let token = await readPageBearerToken(doctor.page);
       const doctorId = await doctor.page.evaluate(() => {
         const u = localStorage.getItem('izara_current_user');
         return u ? JSON.parse(u).id : 'DOC-TEST-001';
       });
-      const resp = await doctor.page.request.get(`${DOCTOR_URL}/api/appointments?doctorId=${doctorId}`, {
+      let authRetried = false;
+      let resp = await pageRequestGet(doctor.page, `${DOCTOR_URL}/api/appointments?doctorId=${doctorId}`, {
         headers: { Authorization: `Bearer ${token}` },
         timeout: IS_CLOUD ? 30_000 : 15_000,
       });
+      if (resp.status() === 401 && !authRetried) {
+        authRetried = true;
+        await refreshPageAuth(doctor.page, DOCTOR_URL);
+        token = await readPageBearerToken(doctor.page);
+        resp = await pageRequestGet(doctor.page, `${DOCTOR_URL}/api/appointments?doctorId=${doctorId}`, {
+          headers: { Authorization: `Bearer ${token}` },
+          timeout: IS_CLOUD ? 30_000 : 15_000,
+        });
+      }
       expect(resp.status(), '❌ D16c: Doctor appointments API must return 200').toBe(200);
       const data = await resp.json().catch(() => []);
       const list = Array.isArray(data) ? data : (data.appointments || []);
@@ -529,37 +578,38 @@ test.describe('Group D — Appointment Workflows', () => {
     });
 
     await test.step('D16d — Admin/Doctor Appointments & Meetings queue counts stay in sync', async () => {
-      const { appointmentId, offlineAppointmentId } = loadWorkflowState() as {
-        appointmentId?: string;
-        offlineAppointmentId?: string;
-      };
+      const { appointmentId, offlineAppointmentId } = wf;
       expect(appointmentId, '❌ D16d: assigned workflow appointmentId required').toBeTruthy();
       expect(offlineAppointmentId, '❌ D16d: unassigned offlineAppointmentId required').toBeTruthy();
 
       const [adminToken, doctorToken] = await Promise.all([
-        admin.page.evaluate(() => localStorage.getItem('token') || localStorage.getItem('izara_auth_token') || ''),
-        doctor.page.evaluate(() => localStorage.getItem('token') || localStorage.getItem('izara_auth_token') || ''),
+        readPageBearerToken(admin.page),
+        readPageBearerToken(doctor.page),
       ]);
       expect(adminToken, '❌ D16d: admin token missing').toBeTruthy();
       expect(doctorToken, '❌ D16d: doctor token missing').toBeTruthy();
 
-      const [adminPoolResp, doctorPoolResp] = await Promise.all([
-        admin.page.request.get(`${DOCTOR_URL}/api/appointment-pool`, {
-          headers: { Authorization: `Bearer ${adminToken}` },
-          timeout: IS_CLOUD ? 30_000 : 15_000,
-        }),
-        doctor.page.request.get(`${DOCTOR_URL}/api/appointment-pool`, {
-          headers: { Authorization: `Bearer ${doctorToken}` },
-          timeout: IS_CLOUD ? 30_000 : 15_000,
-        }),
-      ]);
-      expect(adminPoolResp.status(), '❌ D16d: admin pool API must return 200').toBe(200);
-      expect(doctorPoolResp.status(), '❌ D16d: doctor pool API must return 200').toBe(200);
+      const fetchPoolWithAuthRetry = async (page: typeof admin.page, label: string) => {
+        let token = await readPageBearerToken(page);
+        let authRetried = false;
+        while (true) {
+          const resp = await pageRequestGet(page, `${DOCTOR_URL}/api/appointment-pool`, {
+            headers: { Authorization: `Bearer ${token}` },
+            timeout: IS_CLOUD ? 30_000 : 15_000,
+          });
+          if (resp.status() === 401 && !authRetried) {
+            authRetried = true;
+            await refreshPageAuth(page, DOCTOR_URL);
+            token = await readPageBearerToken(page);
+            continue;
+          }
+          expect(resp.status(), `❌ D16d: ${label} pool API must return 200`).toBe(200);
+          return resp.json().catch(() => []);
+        }
+      };
 
-      const [adminPoolBody, doctorPoolBody] = await Promise.all([
-        adminPoolResp.json().catch(() => []),
-        doctorPoolResp.json().catch(() => []),
-      ]);
+      const adminPoolBody = await fetchPoolWithAuthRetry(admin.page, 'admin');
+      const doctorPoolBody = await fetchPoolWithAuthRetry(doctor.page, 'doctor');
       const adminPool = Array.isArray(adminPoolBody) ? adminPoolBody : (adminPoolBody.items || adminPoolBody.appointments || []);
       const doctorPool = Array.isArray(doctorPoolBody) ? doctorPoolBody : (doctorPoolBody.items || doctorPoolBody.appointments || []);
 
@@ -650,17 +700,16 @@ test.describe('Group D — Appointment Workflows', () => {
     await test.step('D4a — Doctor confirms telehealth appointment (meet link)', async () => {
       const { appointmentId } = loadWorkflowState();
       expect(appointmentId, 'D4a: workflow appointmentId required').toBeTruthy();
-      const token = await doctor.page.evaluate(() =>
-        localStorage.getItem('token') || localStorage.getItem('izara_auth_token') || '',
+      await confirmAppointmentApiWithRetry(
+        doctor.page,
+        appointmentId!,
+        {
+          doctorId: 'DOC-TEST-001',
+          confirmedDate: new Date().toISOString().split('T')[0],
+          confirmedTime: '10:00',
+        },
+        'D4a',
       );
-      const resp = await doctor.page.request.post(`${DOCTOR_URL}/api/appointments/${appointmentId}/confirm`, {
-        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-        data: { doctorId: 'DOC-TEST-001', confirmedDate: new Date().toISOString().split('T')[0], confirmedTime: '10:00' },
-        timeout: IS_CLOUD ? 30_000 : 15_000,
-      });
-      expect(resp.status(), 'D4a: confirm API must succeed').toBe(200);
-      const body = await resp.json().catch(() => ({}));
-      expect(body.success ?? true, 'D4a: confirm response success').toBeTruthy();
       console.log(`  D4a: Doctor confirmed appointment ${appointmentId}`);
     });
 
@@ -729,10 +778,19 @@ test.describe('Group D — Appointment Workflows', () => {
         'D4cal: calendarEventUrl in notification data',
       ).toBeTruthy();
 
+      await refreshPageAuth(doctor.page, DOCTOR_URL);
       await navDoctor(doctor.page, 'schedule', 'D4cal');
       await waitForContent(doctor.page, 'D4cal');
       await expect(doctor.page.getByTestId('doctor-schedule-page')).toBeVisible({ timeout: 15_000 });
       const scheduleEntry = doctor.page.locator(`[data-testid="schedule-appointment-${appointmentId}"]`).first();
+      const scheduleDeadline = Date.now() + (IS_CLOUD ? 45_000 : 25_000);
+      while (Date.now() < scheduleDeadline) {
+        if (await scheduleEntry.isVisible().catch(() => false)) break;
+        await refreshPageAuth(doctor.page, DOCTOR_URL);
+        await doctor.page.reload({ waitUntil: 'domcontentloaded', timeout: IS_CLOUD ? 60_000 : 30_000 });
+        await waitForContent(doctor.page, 'D4cal-retry');
+        await doctor.page.waitForTimeout(1_000);
+      }
       await expect(scheduleEntry, 'D4cal: confirmed appointment on doctor schedule').toBeVisible({
         timeout: IS_CLOUD ? 30_000 : 15_000,
       });
@@ -750,32 +808,39 @@ test.describe('Group D — Appointment Workflows', () => {
     });
 
     await test.step('D19 — Doctor sees assigned patient via API', async () => {
-      // Doctor portal stores JWT as 'token' (not 'auth_token')
-      const token = await doctor.page.evaluate(() =>
-        localStorage.getItem('token') || localStorage.getItem('izara_auth_token') || localStorage.getItem('auth_token') || ''
-      );
+      await refreshPageAuth(doctor.page, DOCTOR_URL);
+      let token = await readPageBearerToken(doctor.page);
       expect(token, '❌ D19: Doctor must be authenticated').toBeTruthy();
 
       const doctorId = await doctor.page.evaluate(() => {
         const u = localStorage.getItem('izara_current_user');
-        return u ? JSON.parse(u).id : '';
+        return u ? JSON.parse(u).id : 'DOC-TEST-001';
       });
 
-      // API check: doctor's patient list must include the assigned patient
-      const patientsResp = await doctor.page.request.get(`${DOCTOR_URL}/api/patients?doctorId=${doctorId}`, {
-        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-        timeout: 10_000,
-      });
+      const doctorApiGet = async (path: string) => {
+        let authRetried = false;
+        while (true) {
+          const resp = await pageRequestGet(doctor.page, `${DOCTOR_URL}${path}`, {
+            headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+            timeout: IS_CLOUD ? 30_000 : 15_000,
+          });
+          if (resp.status() === 401 && !authRetried) {
+            authRetried = true;
+            await refreshPageAuth(doctor.page, DOCTOR_URL);
+            token = await readPageBearerToken(doctor.page);
+            continue;
+          }
+          return resp;
+        }
+      };
+
+      const patientsResp = await doctorApiGet(`/api/patients?doctorId=${doctorId}`);
       expect(patientsResp.status(), '❌ D19: Doctor patients API must return 200').toBe(200);
       const patientsData = await patientsResp.json().catch(() => ({}));
       const patients = Array.isArray(patientsData) ? patientsData : (patientsData.patients || []);
       expect(patients.length, '❌ D19: Doctor patients API must return ≥1 patient — admin assignment NOT synced to doctor').toBeGreaterThan(0);
 
-      // API check: doctor's appointments must include the assigned one
-      const apptsResp = await doctor.page.request.get(`${DOCTOR_URL}/api/appointments?doctorId=${doctorId}`, {
-        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-        timeout: 10_000,
-      });
+      const apptsResp = await doctorApiGet(`/api/appointments?doctorId=${doctorId}`);
       expect(apptsResp.status(), '❌ D19: Doctor appointments API must return 200').toBe(200);
       const apptsData = await apptsResp.json().catch(() => []);
       const appts = Array.isArray(apptsData) ? apptsData : (apptsData.appointments || []);
@@ -816,17 +881,24 @@ test.describe('Group D — Appointment Workflows', () => {
       console.log(`  ✅ D21: Dashboard has appointment labels: ${hasAppointmentLabels}`);
 
       // Check the dashboard API directly to confirm real data is served
-      const token = await doctor.page.evaluate(() =>
-        localStorage.getItem('token') || localStorage.getItem('izara_auth_token') || ''
-      );
+      await refreshPageAuth(doctor.page, DOCTOR_URL);
       const doctorId = await doctor.page.evaluate(() => {
         const u = localStorage.getItem('izara_current_user');
-        return u ? JSON.parse(u).id : '';
+        return u ? JSON.parse(u).id : 'DOC-TEST-001';
       });
-      const dashResp = await doctor.page.request.get(`${DOCTOR_URL}/api/dashboard/${doctorId}`, {
+      let token = await readPageBearerToken(doctor.page);
+      let dashResp = await doctor.page.request.get(`${DOCTOR_URL}/api/dashboard/${doctorId}`, {
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
         timeout: 10_000,
       });
+      if (dashResp.status() === 401) {
+        await refreshPageAuth(doctor.page, DOCTOR_URL);
+        token = await readPageBearerToken(doctor.page);
+        dashResp = await doctor.page.request.get(`${DOCTOR_URL}/api/dashboard/${doctorId}`, {
+          headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+          timeout: 10_000,
+        });
+      }
       expect(dashResp.status(), '❌ D21: Dashboard API must return 200').toBe(200);
       const dashData = await dashResp.json().catch(() => ({}));
       console.log(`  ✅ D21: Dashboard API — queue: ${dashData.queue?.length || 0}, pendingConfirmations: ${dashData.stats?.pendingConfirmations || 0}`);

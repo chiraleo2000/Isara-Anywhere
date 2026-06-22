@@ -1,7 +1,7 @@
 # 🔔 Patient Portal — Notification System
 
 **Version:** v1.4.7
-**Component:** `src/components/notifications/NotificationBell.tsx`
+**Component:** `frontend/components/notifications/NotificationBell.tsx`
 **Location:** Header (mobile + desktop)
 **Access:** 🔒 Authenticated patients
 

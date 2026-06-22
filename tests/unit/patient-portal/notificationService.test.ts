@@ -4,7 +4,7 @@
  * ═══════════════════════════════════════════════════════════════════════
  * Tests: notification type validation, urgency labels, channel routing,
  *        notification structure, appointment workflow triggers
- * Source: Isara-patient-portal/server/services/notificationService.ts
+ * Source: Isara-patient-portal/backend/services/notificationService.ts
  * ═══════════════════════════════════════════════════════════════════════
  */
 import { describe, it, expect } from 'vitest';

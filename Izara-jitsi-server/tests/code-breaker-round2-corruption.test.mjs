@@ -10,7 +10,7 @@ import {
   assertJsonObjectBody,
   parseBase64Payload,
   sendValidationError,
-} from '../server/requestValidation.js';
+} from '../backend/requestValidation.js';
 
 function listen(app) {
   return new Promise((resolve) => {

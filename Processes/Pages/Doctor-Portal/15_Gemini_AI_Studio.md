@@ -1,6 +1,6 @@
 # 🤖 Doctor Portal — Gemini AI Studio
 
-**Component:** `src/pages/GeminiAIStudio.tsx`
+**Component:** `frontend/pages/GeminiAIStudio.tsx`
 **Type:** Modal (launched from FAB button on any page)
 **Access:** 🔒 Doctor / Admin
 **Thai Title:** ผู้ช่วยทางการแพทย์ด้วย AI / Gemini AI Studio

@@ -1,7 +1,7 @@
 # 🔒 Patient Portal — PDPA Page (Privacy & Consent Management)
 
 **Route:** `/pdpa`
-**Component:** `src/pages/pdpa/PDPAPage.tsx`
+**Component:** `frontend/pages/pdpa/PDPAPage.tsx`
 **Access:** 🔒 Authenticated patients
 **Thai Title:** การจัดการความเป็นส่วนตัว / Privacy & Consent Management
 

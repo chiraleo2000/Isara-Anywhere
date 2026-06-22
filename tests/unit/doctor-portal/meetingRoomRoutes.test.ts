@@ -5,9 +5,9 @@ import { describe, it, expect } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
 
-const doctorPortal = path.resolve(__dirname, '../../../Isara-doctor-portal/src/pages/DoctorPortal.tsx');
-const meetingRoom = path.resolve(__dirname, '../../../Isara-doctor-portal/src/pages/meetings/MeetingRoom.tsx');
-const meetingResults = path.resolve(__dirname, '../../../Isara-doctor-portal/src/pages/meetings/MeetingResults.tsx');
+const doctorPortal = path.resolve(__dirname, '../../../Isara-doctor-portal/frontend/pages/DoctorPortal.tsx');
+const meetingRoom = path.resolve(__dirname, '../../../Isara-doctor-portal/frontend/pages/meetings/MeetingRoom.tsx');
+const meetingResults = path.resolve(__dirname, '../../../Isara-doctor-portal/frontend/pages/meetings/MeetingResults.tsx');
 
 describe('meeting room routes (MRR)', () => {
   const portalSrc = fs.readFileSync(doctorPortal, 'utf8');
@@ -42,12 +42,19 @@ describe('meeting room routes (MRR)', () => {
   });
 
   it('MRR-07 — health meeting breadcrumb nav', () => {
-    const hm = path.resolve(__dirname, '../../../Isara-doctor-portal/src/pages/meetings/HealthMeeting.tsx');
+    const hm = path.resolve(__dirname, '../../../Isara-doctor-portal/frontend/pages/meetings/HealthMeeting.tsx');
     expect(fs.readFileSync(hm, 'utf8')).toMatch(/health-meeting-breadcrumb/);
   });
 
   it('MRR-08 — meeting server health endpoint referenced in probe', () => {
     const probe = path.resolve(__dirname, '../../../scripts/docker/probe-health.mjs');
     expect(fs.readFileSync(probe, 'utf8')).toMatch(/3020/);
+  });
+
+  it('MRR-09 — doctor BFF meetings.cjs proxies results route', () => {
+    const meetings = path.resolve(__dirname, '../../../Isara-doctor-portal/backend/routes/meetings.cjs');
+    expect(fs.readFileSync(meetings, 'utf8')).toMatch(/\/api\/meetings\/:id\/results/);
+    const main = path.resolve(__dirname, '../../../Isara-doctor-portal/backend/mainApiServer.cjs');
+    expect(fs.readFileSync(main, 'utf8')).toMatch(/registerMeetingProxyRoutes/);
   });
 });

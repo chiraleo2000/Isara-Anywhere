@@ -94,6 +94,14 @@ venv/
 test-results/
 playwright-report/
 test-logs/
+reports/*.log
+reports/local-failures/
+reports/local-unit-gate-*.log
+reports/local-error-ledger/round-*-20*.json
+!reports/local-error-ledger/*-latest.json
+LOCAL_E2E_ERROR_LEDGER_ROUND*.md
+CLOUD_E2E_ERROR_LEDGER_ROUND*.md
+tests/unit/coverage/
 tests/output/screenshots/**/*.png
 !tests/output/screenshots/.gitkeep
 

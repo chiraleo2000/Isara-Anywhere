@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   buildGoogleCalendarUrl,
   buildTelehealthCalendarUrl,
-} from '../../../Isara-doctor-portal/server/calendarEventLinks.cjs';
+} from '../../../Isara-doctor-portal/backend/calendarEventLinks.cjs';
 
 describe('calendarEventLinks', () => {
   it('buildGoogleCalendarUrl returns Google Calendar TEMPLATE link', () => {

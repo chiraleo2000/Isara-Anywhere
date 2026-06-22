@@ -1,7 +1,7 @@
 # ✅ Doctor Portal — Admin Appointment Management
 
 **Route:** `/admin/appointments`
-**Component:** `src/pages/AdminAppointmentManagement.tsx`
+**Component:** `frontend/pages/AdminAppointmentManagement.tsx`
 **Access:** 🔒 Admin only
 **Thai Title:** จัดการนัดหมาย / Appointment Management
 **Version:** v1.4.7

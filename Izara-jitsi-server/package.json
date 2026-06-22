@@ -2,11 +2,11 @@
   "name": "izara-jitsi-server",
   "version": "1.7.33",
   "description": "Izara Jitsi Meeting Server - Video, Transcription (Web Speech API), AI Summary (Gemini)",
-  "main": "server/index.js",
+  "main": "backend/index.js",
   "type": "module",
   "scripts": {
-    "dev": "nodemon server/index.js",
-    "start": "node server/index.js",
+    "dev": "nodemon backend/index.js",
+    "start": "node backend/index.js",
     "build": "echo 'No build step required'",
     "docker:build": "docker build -t izara-jitsi-server .",
     "docker:run": "docker run -p 3020:3020 --env-file .env izara-jitsi-server"
@@ -20,7 +20,7 @@
     "express": "^4.21.2",
     "jsonwebtoken": "^9.0.2",
     "pg": "^8.17.2",
-    "socket.io": "^4.8.1",
+    "socket.io": "^4.8.3",
     "uuid": "^11.1.0"
   },
   "devDependencies": {
@@ -28,6 +28,9 @@
   },
   "engines": {
     "node": ">=20.0.0"
+  },
+  "overrides": {
+    "ws": "^8.21.0"
   },
   "author": "Izara Telemedicine",
   "license": "MIT"

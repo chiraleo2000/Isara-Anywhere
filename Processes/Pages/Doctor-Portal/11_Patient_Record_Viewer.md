@@ -1,6 +1,6 @@
 # 📁 Doctor Portal — Patient Record Viewer (PHR/EMR/EHR)
 
-**Component:** `src/components/PatientRecordViewer.tsx`
+**Component:** `frontend/components/PatientRecordViewer.tsx`
 **Type:** Modal (launched from DoctorPortal)
 **Access:** 🔒 Doctor / Admin (PDPA consent required)
 **Thai Title:** ประวัติผู้ป่วย / Patient Record

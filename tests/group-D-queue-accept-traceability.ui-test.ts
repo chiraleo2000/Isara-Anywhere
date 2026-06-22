@@ -23,6 +23,7 @@ import {
   PATIENT_URL,
   DOCTOR_URL,
 } from './helpers/multi-portal';
+import { saveWorkflowState } from './helpers/workflow-state';
 
 const IS_CLOUD = process.env.TEST_ENV === 'cloud';
 
@@ -170,6 +171,12 @@ test.describe('Queue accept traceability (Defect Q1)', () => {
       const hit = await waitForAcceptedInPool(admin.page, DOCTOR_URL, appointmentId);
       expect(hit.doctor_id || hit.doctorId, 'QAT-E2E-08: doctor_id must remain on row').toBeTruthy();
       console.log('  ✅ QAT-E2E-08: Admin can trace accepted appointment in pool API');
+    });
+
+    saveWorkflowState({
+      appointmentId,
+      patientId: 'PATIENT-DEMO',
+      doctorId: 'DOC-TEST-001',
     });
   });
 });

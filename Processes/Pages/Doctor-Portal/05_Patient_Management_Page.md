@@ -1,7 +1,7 @@
 # 👥 Doctor Portal — Patient Management Page
 
 **Route:** `/patients`, `/patients/:id`
-**Component:** `src/pages/PatientManagement.tsx`
+**Component:** `frontend/pages/PatientManagement.tsx`
 **Access:** 🔒 Doctor / Admin
 **Thai Title:** การจัดการผู้ป่วย / Patient Management
 

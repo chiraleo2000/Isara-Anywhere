@@ -2,7 +2,7 @@
  * Unit tests for canonical lobby key resolution (meeting UUID → appointmentId).
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { createLobbyKeyResolver } from '../../../Izara-jitsi-server/server/lobbyKey.js';
+import { createLobbyKeyResolver } from '../../../Izara-jitsi-server/backend/lobbyKey.js';
 
 function makeCtx(overrides?: Partial<Parameters<typeof createLobbyKeyResolver>[0]>) {
   const meetingLobbies = new Map<string, Map<string, { participantId: string; status: string }>>();

@@ -9,7 +9,7 @@ const root = path.resolve(__dirname, '../../..');
 
 describe('Appointment UX contract (APPT-UX)', () => {
   const apptPages = fs.readFileSync(
-    path.join(root, 'Isara-patient-portal/src/pages/appointments/AppointmentPages.tsx'),
+    path.join(root, 'Isara-patient-portal/frontend/pages/appointments/AppointmentPages.tsx'),
     'utf8',
   );
 
@@ -22,27 +22,27 @@ describe('Appointment UX contract (APPT-UX)', () => {
   });
 
   it('APPT-UX-03 — join meeting CTA on dashboard', () => {
-    expect(fs.readFileSync(path.join(root, 'Isara-patient-portal/src/pages/DashboardPage.tsx'), 'utf8'))
+    expect(fs.readFileSync(path.join(root, 'Isara-patient-portal/frontend/pages/DashboardPage.tsx'), 'utf8'))
       .toMatch(/dashboard-join-meeting/);
   });
 
   it('APPT-UX-04 — confirm spinner guard', () => {
-    expect(fs.readFileSync(path.join(root, 'Isara-doctor-portal/src/pages/meetings/HealthMeeting.tsx'), 'utf8'))
+    expect(fs.readFileSync(path.join(root, 'Isara-doctor-portal/frontend/pages/meetings/HealthMeeting.tsx'), 'utf8'))
       .toMatch(/confirmInProgress|confirming/i);
   });
 
   it('APPT-UX-05 — calendar link on confirm', () => {
-    expect(fs.readFileSync(path.join(root, 'Isara-doctor-portal/src/pages/meetings/HealthMeeting.tsx'), 'utf8'))
+    expect(fs.readFileSync(path.join(root, 'Isara-doctor-portal/frontend/pages/meetings/HealthMeeting.tsx'), 'utf8'))
       .toMatch(/calendar|ics|google/i);
   });
 
   it('APPT-UX-06 — accepted queue list testid', () => {
-    expect(fs.readFileSync(path.join(root, 'Isara-doctor-portal/src/pages/meetings/HealthMeeting.tsx'), 'utf8'))
+    expect(fs.readFileSync(path.join(root, 'Isara-doctor-portal/frontend/pages/meetings/HealthMeeting.tsx'), 'utf8'))
       .toMatch(/accepted-queue-list/);
   });
 
   it('APPT-UX-07 — pool enrollment response.ok', () => {
-    expect(fs.readFileSync(path.join(root, 'Isara-doctor-portal/src/pages/AppointmentPoolManagement.tsx'), 'utf8'))
+    expect(fs.readFileSync(path.join(root, 'Isara-doctor-portal/frontend/pages/AppointmentPoolManagement.tsx'), 'utf8'))
       .toMatch(/response\.ok/);
   });
 

@@ -1,0 +1,37 @@
+{
+  "syncedAt": "2026-06-22T08:58:30.923Z",
+  "group": "group-D",
+  "source": [
+    "tests/output/screenshots",
+    "docs/screenshots"
+  ],
+  "canonicalBrowser": "chromium",
+  "browsers": [
+    "chromium",
+    "firefox",
+    "webkit"
+  ],
+  "workflows": [
+    {
+      "id": "D03",
+      "stage": "booking wizard",
+      "files": [
+        "D03-booking-wizard.png"
+      ]
+    },
+    {
+      "id": "D07",
+      "stage": "appointment submitted",
+      "files": [
+        "D07-submitted.png"
+      ]
+    },
+    {
+      "id": "D09",
+      "stage": "health meeting",
+      "files": [
+        "D09-health-meeting.png"
+      ]
+    }
+  ]
+}

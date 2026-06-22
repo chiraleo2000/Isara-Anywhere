@@ -6,12 +6,12 @@ const ROOT = path.resolve(__dirname, '../../..');
 const CANONICAL_MODEL = 'gemini-3.1-flash-lite';
 
 const KEY_FILES = [
-  'Isara-doctor-portal/src/services/geminiClinicalService.ts',
-  'Isara-doctor-portal/src/services/config.ts',
-  'Isara-doctor-portal/server/mainApiServer.cjs',
-  'Isara-patient-portal/server/routes/ai.ts',
-  'Isara-patient-portal/server/routes/video-meeting.ts',
-  'Izara-jitsi-server/server/index.js',
+  'Isara-doctor-portal/frontend/services/geminiClinicalService.ts',
+  'Isara-doctor-portal/frontend/services/config.ts',
+  'Isara-doctor-portal/backend/mainApiServer.cjs',
+  'Isara-patient-portal/backend/routes/ai.ts',
+  'Isara-patient-portal/backend/routes/video-meeting-proxy.ts',
+  'Izara-jitsi-server/backend/index.js',
   '.env.example',
   'Isara-doctor-portal/.env.example',
   'Isara-patient-portal/.env.example',
@@ -22,11 +22,11 @@ const FORBIDDEN = ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'flash-lite-lite
 describe('Gemini 3.1 model config regression', () => {
   it('uses canonical gemini-3.1-flash-lite default in key services', () => {
     const clinical = fs.readFileSync(
-      path.join(ROOT, 'Isara-doctor-portal/src/services/geminiClinicalService.ts'),
+      path.join(ROOT, 'Isara-doctor-portal/frontend/services/geminiClinicalService.ts'),
       'utf8',
     );
     const mainApi = fs.readFileSync(
-      path.join(ROOT, 'Isara-doctor-portal/server/mainApiServer.cjs'),
+      path.join(ROOT, 'Isara-doctor-portal/backend/mainApiServer.cjs'),
       'utf8',
     );
 
@@ -36,7 +36,7 @@ describe('Gemini 3.1 model config regression', () => {
 
   it('status endpoint documents configured and model fields', () => {
     const mainApi = fs.readFileSync(
-      path.join(ROOT, 'Isara-doctor-portal/server/mainApiServer.cjs'),
+      path.join(ROOT, 'Isara-doctor-portal/backend/mainApiServer.cjs'),
       'utf8',
     );
     expect(mainApi).toMatch(/res\.json\(\{\s*configured,/);

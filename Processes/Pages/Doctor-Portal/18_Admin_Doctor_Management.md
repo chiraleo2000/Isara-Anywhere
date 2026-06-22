@@ -1,7 +1,7 @@
 # 👥 Doctor Portal — Admin Doctor Management
 
 **Route:** `/admin/doctors`
-**Component:** `src/pages/AdminDoctorManagement.tsx`
+**Component:** `frontend/pages/AdminDoctorManagement.tsx`
 **Access:** 🔒 Admin only
 **Thai Title:** จัดการแพทย์ / Doctor Management
 

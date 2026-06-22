@@ -6,8 +6,8 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
-import { createPostMeetingPipeline } from '../server/postMeetingPipeline.js';
-import { isTransientError, withRetry } from '../server/pipelineRetry.js';
+import { createPostMeetingPipeline } from '../backend/services/postMeetingPipeline.js';
+import { isTransientError, withRetry } from '../backend/pipelineRetry.js';
 
 function minimalWebm(size = 2048) {
   const buf = Buffer.alloc(size);
@@ -152,7 +152,7 @@ describe('Round 2 — pipeline chaos', () => {
   });
 
   it('R2-P07 — stale tiny disk file ignored when BYTEA has valid recording', async () => {
-    const { encryptRecordingBuffer } = await import('../server/recordingCrypto.js');
+    const { encryptRecordingBuffer } = await import('../backend/recordingCrypto.js');
     const good = minimalWebm(2048);
     const { buffer: encGood } = encryptRecordingBuffer(good);
     const staleDisk = path.join(tmpDir, 'stale-video.webm');
@@ -179,7 +179,7 @@ describe('Round 2 — pipeline chaos', () => {
   });
 
   it('R2-P06 — BYTEA/disk decrypt round-trip preserves WebM header', async () => {
-    const { encryptRecordingBuffer, decryptRecordingBuffer } = await import('../server/recordingCrypto.js');
+    const { encryptRecordingBuffer, decryptRecordingBuffer } = await import('../backend/recordingCrypto.js');
     const plain = Buffer.alloc(1536);
     plain.writeUInt32BE(0x1a45dfa3, 0);
     plain.write('playback-chaos', 32, 'utf8');

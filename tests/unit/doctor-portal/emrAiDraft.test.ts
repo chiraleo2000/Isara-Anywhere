@@ -7,7 +7,7 @@ import {
   storeEmrAiDraft,
   readEmrAiDraft,
   clearEmrAiDraft,
-} from '../../../Isara-doctor-portal/src/utils/emrAiDraft.ts';
+} from '../../../Isara-doctor-portal/frontend/utils/emrAiDraft.ts';
 
 describe('emrAiDraft — POST_MEETING → EMR apply (EAD)', () => {
   const storage = new Map<string, string>();
@@ -60,7 +60,7 @@ describe('emrAiDraft — POST_MEETING → EMR apply (EAD)', () => {
     const fs = await import('node:fs');
     const path = await import('node:path');
     const src = fs.readFileSync(
-      path.resolve(__dirname, '../../../Isara-doctor-portal/src/components/CompleteEMREditor.tsx'),
+      path.resolve(__dirname, '../../../Isara-doctor-portal/frontend/components/CompleteEMREditor.tsx'),
       'utf8',
     );
     expect(src).toMatch(/readEmrAiDraft/);
@@ -71,7 +71,7 @@ describe('emrAiDraft — POST_MEETING → EMR apply (EAD)', () => {
     const fs = await import('node:fs');
     const path = await import('node:path');
     const src = fs.readFileSync(
-      path.resolve(__dirname, '../../../Isara-doctor-portal/src/pages/meetings/EmrAppointmentPage.tsx'),
+      path.resolve(__dirname, '../../../Isara-doctor-portal/frontend/pages/meetings/EmrAppointmentPage.tsx'),
       'utf8',
     );
     expect(src).toMatch(/CompleteEMREditor/);

@@ -15,13 +15,13 @@
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
     "forceConsistentCasingInFileNames": true,
-    "outDir": "./dist/server",
-    "rootDir": "./server",
+    "outDir": "./dist/backend",
+    "rootDir": "./backend",
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./frontend/*"]
     }
   },
-  "include": ["server/**/*"],
-  "exclude": ["node_modules", "dist", "src"]
+  "include": ["backend/**/*"],
+  "exclude": ["node_modules", "dist", "frontend"]
 }

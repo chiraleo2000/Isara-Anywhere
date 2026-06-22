@@ -1,7 +1,7 @@
 # 📚 Patient Portal — Medical Content Library
 
 **Route:** `/health-library`
-**Component:** `src/pages/health/MedicalContentLibrary.tsx`
+**Component:** `frontend/pages/health/MedicalContentLibrary.tsx`
 **Access:** 🔒 Authenticated patients
 **Thai Title:** คลังความรู้สุขภาพ / Health Knowledge Library
 

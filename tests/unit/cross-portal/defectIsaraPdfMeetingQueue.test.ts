@@ -12,17 +12,17 @@ import {
   matchesPoolFilter,
   splitQueueSections,
   isWithinAcceptedWindow,
-} from '../../../Isara-doctor-portal/server/appointmentPoolQuery.cjs';
-import { buildTelehealthMeetingUrls } from '../../../Isara-doctor-portal/server/jitsiMeetingLinks.cjs';
-import { buildTelehealthCalendarUrl } from '../../../Isara-doctor-portal/server/calendarEventLinks.cjs';
-import { mapAppointmentForClient } from '../../../Isara-doctor-portal/server/appointmentMapper.cjs';
-import { getIzaraDisplayName } from '../../../Isara-patient-portal/src/utils/jitsiDisplayName.ts';
+} from '../../../Isara-doctor-portal/backend/appointmentPoolQuery.cjs';
+import { buildTelehealthMeetingUrls } from '../../../Isara-doctor-portal/backend/jitsiMeetingLinks.cjs';
+import { buildTelehealthCalendarUrl } from '../../../Isara-doctor-portal/backend/calendarEventLinks.cjs';
+import { mapAppointmentForClient } from '../../../Isara-doctor-portal/backend/appointmentMapper.cjs';
+import { getIzaraDisplayName } from '../../../Isara-patient-portal/frontend/utils/jitsiDisplayName.ts';
 import {
   getJitsiExternalApiOptions,
   resolveMountJwt,
   stableRoomNameForAppointment,
-} from '../../../Isara-patient-portal/src/utils/jitsiMeetingConfig.ts';
-import { createJitsiRoleJwt } from '../../../Izara-jitsi-server/server/sessionAuth.js';
+} from '../../../Isara-patient-portal/frontend/utils/jitsiMeetingConfig.ts';
+import { createJitsiRoleJwt } from '../../../Izara-jitsi-server/backend/sessionAuth.js';
 
 const SECRET = 'defect-test-jitsi-secret-minimum-length';
 function patientListFilter(

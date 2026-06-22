@@ -8,7 +8,7 @@
 
 import { describe, it, expect } from 'vitest';
 
-import { getIzaraDisplayName } from '../../../Isara-patient-portal/src/utils/jitsiDisplayName.ts';
+import { getIzaraDisplayName } from '../../../Isara-patient-portal/frontend/utils/jitsiDisplayName.ts';
 
 import {
 
@@ -18,9 +18,9 @@ import {
 
   resolvePatientMeetingDisplayName,
 
-} from '../../../Isara-patient-portal/src/utils/jitsiMeetingConfig.ts';
+} from '../../../Isara-patient-portal/frontend/utils/jitsiMeetingConfig.ts';
 
-import { generateIzaraRoomName } from '../../../Isara-doctor-portal/src/utils/jitsiMeetingConfig.ts';
+import { generateIzaraRoomName } from '../../../Isara-doctor-portal/frontend/utils/jitsiMeetingConfig.ts';
 
 
 

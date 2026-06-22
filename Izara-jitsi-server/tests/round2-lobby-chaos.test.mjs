@@ -4,8 +4,8 @@
  */
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { createLobbyKeyResolver } from '../server/lobbyKey.js';
-import { applyLobbyJoin, applyLobbyLeave, countLobbyByStatus } from '../server/lobbySession.js';
+import { createLobbyKeyResolver } from '../backend/lobbyKey.js';
+import { applyLobbyJoin, applyLobbyLeave, countLobbyByStatus } from '../backend/lobbySession.js';
 
 function createLobbyHarness(appointmentId, meetingUuid) {
   const meetingLobbies = new Map();

@@ -1,7 +1,7 @@
 # URLs & default users (quick reference)
 
-> Synced from [README.md](../../README.md) · Defect track **v1.7.48** · Cloud region `asia-southeast1` · Project `izara-telemedicine`  
-> Verification: unit **2938** PASS (Docker) · cloud full **85/85** headed · Defect-regression **36/36** (v1.7.50)
+> Synced from [README.md](../../README.md) · **v1.7.53** · Cloud region `asia-southeast1` · Project `izara-telemedicine`  
+> Verification: **~3200** Vitest · phase gates `npm run phase:0` … `phase:9` · LAN: [deploy/nginx/LOCAL_DOCKER_DEPLOYMENT.md](../../../deploy/nginx/LOCAL_DOCKER_DEPLOYMENT.md)
 
 ---
 
@@ -21,6 +21,8 @@
 
 ## Local URLs (Docker Compose)
 
+### Mode A — localhost
+
 | Service | URL |
 | ------- | --- |
 | Patient Portal | http://localhost:3005 |
@@ -30,6 +32,19 @@
 | Meeting Server | http://localhost:3020 |
 | PostgreSQL | localhost:5433 |
 | pgAdmin | http://localhost:5050 |
+
+### Mode B — Ubuntu + Nginx (LAN)
+
+Requires `hosts` entry on each client PC pointing to the server IP.
+
+| Service | URL |
+| ------- | --- |
+| Patient login | http://patient.isara.local/login |
+| Doctor / Admin login | http://doctor.isara.local/login |
+| Meeting health | http://meeting.isara.local/health |
+| pgAdmin | http://dbadmin.isara.local |
+
+**Deploy:** `bash deploy/nginx/compose.sh --env-file .env.docker up -d --build` · **Diagnostic:** `bash deploy/nginx/diagnose-502.sh`
 
 ---
 
@@ -49,10 +64,10 @@
 
 ### Where to log in
 
-| Role | Cloud login | Local login |
-| ---- | ----------- | ------------- |
-| Patient | https://izara-patient-portal-dev-testing-724889190329.asia-southeast1.run.app/login | http://localhost:3005/login |
-| Doctor / Admin | https://izara-doctor-portal-dev-testing-724889190329.asia-southeast1.run.app/login | http://localhost:3010/login |
+| Role | Cloud login | Local login | LAN login |
+| ---- | ----------- | ------------- | --------- |
+| Patient | https://izara-patient-portal-dev-testing-724889190329.asia-southeast1.run.app/login | http://localhost:3005/login | http://patient.isara.local/login |
+| Doctor / Admin | https://izara-doctor-portal-dev-testing-724889190329.asia-southeast1.run.app/login | http://localhost:3010/login | http://doctor.isara.local/login |
 
 **Google SSO:** `VITE_GOOGLE_CLIENT_ID` in each portal `.env` — SSO email must match a registered account.
 

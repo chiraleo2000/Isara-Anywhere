@@ -5,7 +5,7 @@ import { describe, it, expect } from 'vitest';
 import { createRequire } from 'node:module';
 
 const require = createRequire(import.meta.url);
-const { sanitizeRequestBody } = require('../../../Isara-doctor-portal/server/security/owasp-middleware.cjs');
+const { sanitizeRequestBody } = require('../../../Isara-doctor-portal/backend/security/owasp-middleware.cjs');
 
 type Req = { body: Record<string, unknown>; path: string };
 type Res = {

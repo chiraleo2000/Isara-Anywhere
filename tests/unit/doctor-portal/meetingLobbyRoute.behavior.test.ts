@@ -4,11 +4,11 @@ import path from 'node:path';
 
 const dashboardPath = path.resolve(
   __dirname,
-  '../../../Isara-doctor-portal/src/pages/DoctorDashboard.tsx',
+  '../../../Isara-doctor-portal/frontend/pages/DoctorDashboard.tsx',
 );
 const meetingRoomPath = path.resolve(
   __dirname,
-  '../../../Isara-doctor-portal/src/pages/meetings/MeetingRoom.tsx',
+  '../../../Isara-doctor-portal/frontend/pages/meetings/MeetingRoom.tsx',
 );
 
 describe('meeting lobby route behavior (M2)', () => {

@@ -4,7 +4,7 @@
  * ═══════════════════════════════════════════════════════════════════════
  * Tests: Password validation, input sanitization, email/phone validation,
  *        role permissions, data masking, login attempt tracking
- * Source: Isara-patient-portal/server/security/owasp-middleware.ts
+ * Source: Isara-patient-portal/backend/security/owasp-middleware.ts
  * ═══════════════════════════════════════════════════════════════════════
  */
 import { describe, it, expect } from 'vitest';
