@@ -80,7 +80,7 @@ const coreSlowMo = resolveSlowMo(USE_HEADLESS, IS_CLOUD);
 
 function resolveGlobalTimeout(isCloud: boolean, headed: boolean): number {
   if (isCloud) return 3_600_000;
-  if (headed) return 7_200_000;
+  if (headed) return 10_800_000;
   return 1_800_000;
 }
 

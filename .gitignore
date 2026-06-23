@@ -22,7 +22,8 @@ Isara-patient-portal/.env
 Isara-doctor-portal/.env
 Izara-jitsi-server/.env
 
-# Keep example/template environment files (placeholders only — never real keys)
+deploy/nginx/*.pem
+deploy/nginx/isara-mkcert-rootCA.pem
 !.env.example
 !.env.docker.example
 !.env.docker.template

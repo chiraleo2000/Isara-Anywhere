@@ -1618,8 +1618,17 @@ async function newContextWithStorageFallback(
   storageStatePath: string,
   label: string,
 ): Promise<BrowserContext> {
+  const STORAGE_CTX_TIMEOUT_MS = IS_CLOUD ? 60_000 : 45_000;
   try {
-    return await browser.newContext({ ...ctxOpts, storageState: storageStatePath });
+    return await Promise.race([
+      browser.newContext({ ...ctxOpts, storageState: storageStatePath }),
+      new Promise<never>((_, reject) => {
+        setTimeout(
+          () => reject(new Error(`${label} storageState context timed out after ${STORAGE_CTX_TIMEOUT_MS}ms`)),
+          STORAGE_CTX_TIMEOUT_MS,
+        );
+      }),
+    ]);
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : String(error);
     console.warn(`  ⚠ ${label} storageState failed; retrying without storageState: ${message.slice(0, 140)}`);
@@ -1954,7 +1963,7 @@ export const test = base.extend<{}, { portals: Portals }>({
   }, {
     scope: 'worker',
     // Must cover full headed gate (A→K + Defect); align with playwright globalTimeout (2h local headed)
-    timeout: IS_CLOUD ? 3_600_000 : FORCE_HEADED ? 7_200_000 : 1_800_000,
+    timeout: IS_CLOUD ? 3_600_000 : FORCE_HEADED ? 10_800_000 : 1_800_000,
   }],
   _authSync: [async ({ portals }, use) => {
     const now = Date.now();

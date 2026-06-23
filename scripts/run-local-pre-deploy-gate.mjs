@@ -17,13 +17,14 @@ const gateEnv = {
   PW_SKIP_LIVE_GEMINI: '1',
   PW_HEADED: '1',
   PW_WORKERS: '1',
-  E2E_LIGHT_FIXTURE: '1',
   PW_SKIP_FIREFOX_JROLE: '1',
   PW_SKIP_DEFECT_DM5: '1',
   PW_SKIP_DEFECT_DM6: '1',
   PATIENT_URL: 'http://127.0.0.1:3005',
   DOCTOR_URL: 'http://127.0.0.1:3010',
   MEETING_URL: 'http://127.0.0.1:3020',
+  VITE_MEETING_SERVER_URL: 'http://127.0.0.1:3020',
+  MEETING_SERVER_URL: 'http://meeting-server:3020',
 };
 delete gateEnv.PW_HEADLESS;
 delete gateEnv.BASELINE_VISUAL;
@@ -113,7 +114,7 @@ let failedProcessDoc = '';
 
 function runStep(step) {
   console.log(`\n═══ [${step.name}] ═══`);
-  const useGateEnv = step.name.startsWith('e2e') || step.name === 'gate0-local';
+  const useGateEnv = step.name.startsWith('e2e') || step.name === 'gate0-local' || step.name === 'docker-compose';
   const r = spawnSync(step.cmd, step.args, {
     cwd: step.cwd,
     stdio: 'inherit',

@@ -1,6 +1,6 @@
 # Full Workflow Hardening — Completion Report
 
-**Date:** 2026-06-22 (local Docker gate v1.7.53 — final)  
+**Date:** 2026-06-23 (local Docker gate v1.7.53 — quality + Sonar path fix)  
 **Plan:** Isara Full Hardening (9 phases) + Teams Post-Meeting  
 **Target:** Local Docker (`127.0.0.1:3005` / `3010` / `3020`)
 
@@ -121,6 +121,16 @@ Run once after Phase 12 with real users/devices. Record pass/fail and date when 
 | `npm run test:screenshots:all` | PASS — group-A,B,D,E,Q,Q2,S distinct |
 | Structure | `backend/` + `frontend/` only (no `src/` or `server/`) |
 | Phase scripts | `npm run phase:0` … `phase:9` |
+
+### Quality scan pass (2026-06-23)
+
+| Step | Result |
+|------|--------|
+| `npm run test:quality:gate` | PASS — deps, unit coverage (3212), security, sonar |
+| Sonar path fix | `eslint.deep-scan.cjs` + `run-quality-gate.mjs` → `frontend/` + `backend/` |
+| Security | `security:scan` 0 errors; CVE-lite + audit:prod clean |
+| E2E fixture | `newContextWithStorageFallback` 45s timeout; pre-deploy gate refreshes auth (no `E2E_LIGHT_FIXTURE`) |
+| Global timeout | Headed local raised to 3h (`10_800_000` ms) for full gate |
 
 **Orchestration:** `npm run test:local:pre-deploy-gate` → `scripts/gates/phase-9-full.mjs`
 
