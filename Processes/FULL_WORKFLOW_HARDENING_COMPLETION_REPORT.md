@@ -131,6 +131,8 @@ Run once after Phase 12 with real users/devices. Record pass/fail and date when 
 | Security | `security:scan` 0 errors; CVE-lite + audit:prod clean |
 | E2E fixture | `newContextWithStorageFallback` 45s timeout; pre-deploy gate refreshes auth (no `E2E_LIGHT_FIXTURE`) |
 | Global timeout | Headed local raised to 3h (`10_800_000` ms) for full gate |
+| CSP fix | Patient portal `connect-src` allows `*.isara.local` for LAN `.env.docker` |
+| Phase 9 (2026-06-23) | **PASS** — `npm run phase:9` exit 0, ledger P0=0, 71 E2E passed |
 
 **Orchestration:** `npm run test:local:pre-deploy-gate` → `scripts/gates/phase-9-full.mjs`
 
