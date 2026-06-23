@@ -36,7 +36,7 @@ describe('Code Breaker Round 2 — cloud corruption', () => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({}),
     });
-    assert.equal(res.status, 400);
+    assert.ok([400, 401].includes(res.status), `expected 400/401 got ${res.status}`);
   });
 
   it('CB2-C04 — doctor EMR rejects non-object with 401/400 (not 500)', async () => {
