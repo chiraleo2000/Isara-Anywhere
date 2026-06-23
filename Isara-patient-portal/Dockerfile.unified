@@ -10,14 +10,15 @@ WORKDIR /app
 # Copy package files
 COPY Isara-patient-portal/package*.json ./
 
-# Install all dependencies (including dev) - merged RUN instructions
-# Remove package-lock to avoid platform-specific rollup issues
-RUN rm -f package-lock.json && \
-    npm install && \
+# Install all dependencies (including dev) inside Linux — never copy host node_modules
+RUN npm ci && \
     npm install bcryptjs @types/bcryptjs tsx --save
 
-# Copy source code
+# Copy source code (node_modules excluded via repo-root .dockerignore)
 COPY Isara-patient-portal/ .
+
+# Reinstall after COPY — wipes any host node_modules that leaked into the build context
+RUN rm -rf node_modules && npm ci && npm install bcryptjs @types/bcryptjs tsx --save
 
 # ============================================================================
 # Build-time environment variables for Vite (from .env)
@@ -167,8 +168,9 @@ ENV VITE_APP_NAME=${VITE_APP_NAME} \
     VITE_PUSH_NOTIFICATIONS_ENABLED=${VITE_PUSH_NOTIFICATIONS_ENABLED} \
     VITE_MEETING_SERVER_URL=${VITE_MEETING_SERVER_URL}
 
-# Build frontend (Vite) only
-RUN npm run build
+# Build frontend (Vite) — node path avoids host node_modules chmod issues in CI/Ubuntu
+RUN chmod -R a+x node_modules/.bin 2>/dev/null || true && \
+    node ./node_modules/vite/bin/vite.js build
 
 # Stage 2: Production image (with embedded PostgreSQL)
 FROM node:22-alpine AS production

@@ -31,10 +31,25 @@ const LAN_DEV_ORIGINS = [
   'http://doctor.isara.local',
   'http://meeting.isara.local',
   'http://dbadmin.isara.local',
+  'https://patient.isara.local',
+  'https://doctor.isara.local',
+  'https://meeting.isara.local',
+  'https://dbadmin.isara.local',
+  'http://patient.local',
+  'http://doctor.local',
+  'http://meeting.local',
+  'http://dbadmin.local',
+  'https://patient.local',
+  'https://doctor.local',
+  'https://meeting.local',
+  'https://dbadmin.local',
 ];
 
-/** Matches http://<subdomain>.isara.local for LAN deploy without listing every host in .env. */
-const LAN_SUBDOMAIN_PATTERN = /^http:\/\/[a-z0-9-]+\.isara\.local$/;
+/** Matches http(s)://<subdomain>.isara.local for LAN deploy without listing every host in .env. */
+const LAN_SUBDOMAIN_PATTERN = /^https?:\/\/[a-z0-9-]+\.isara\.local$/;
+
+/** Matches http(s)://patient.local, doctor.local, etc. (short LAN hostnames). */
+const LAN_DOT_LOCAL_PATTERN = /^https?:\/\/(patient|doctor|meeting|dbadmin)\.local$/;
 
 const PRODUCTION_ORIGINS = [
   'https://doctor.izara.com',
@@ -79,6 +94,7 @@ function isIzaraOriginAllowed(origin, policy) {
   if (!origin) return true;
   if (policy.literals.has(origin)) return true;
   if (LAN_SUBDOMAIN_PATTERN.test(origin)) return true;
+  if (LAN_DOT_LOCAL_PATTERN.test(origin)) return true;
   if (policy.cloudRunPattern?.test(origin)) return true;
   return policy.patterns.some((re) => re.test(origin));
 }
@@ -115,5 +131,6 @@ module.exports = {
   LOCAL_DEV_ORIGINS,
   LAN_DEV_ORIGINS,
   LAN_SUBDOMAIN_PATTERN,
+  LAN_DOT_LOCAL_PATTERN,
   PRODUCTION_ORIGINS,
 };

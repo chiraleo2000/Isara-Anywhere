@@ -18,11 +18,16 @@ out/
 .env.*.local
 .env.docker
 .env.test
+Isara-patient-portal/.env
+Isara-doctor-portal/.env
+Izara-jitsi-server/.env
 
 # Keep example/template environment files (placeholders only — never real keys)
 !.env.example
 !.env.docker.example
 !.env.docker.template
+!.env.docker.lan.example
+!.env.docker.lan.https.example
 
 # Logs
 logs/

@@ -12,7 +12,7 @@
     "backend:auth": "node backend/authServer.cjs",
     "backend:gcs": "node backend/gcsApiServer.cjs",
     "frontend": "vite --port 3010 --host 0.0.0.0",
-    "build": "vite build",
+    "build": "node ./node_modules/vite/bin/vite.js build",
     "build:typecheck": "tsc && vite build",
     "create:buckets": "node scripts/createBuckets.js",
     "docker:build": "docker build -f Dockerfile.unified -t izara-doctor-portal:latest .",

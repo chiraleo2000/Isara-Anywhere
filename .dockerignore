@@ -1,0 +1,57 @@
+# Repo-root build context (docker-compose context: .)
+# Prevents host node_modules (Windows) from breaking Linux vite/npm binaries.
+
+**/node_modules
+**/.npm
+**/.pnpm-store
+
+# Build outputs
+**/dist
+**/dist-ssr
+**/.vite
+**/build
+**/coverage
+
+# Tests & reports (not needed in images)
+test-results
+playwright-report
+tests/e2e/test-results
+tests/e2e/playwright-report
+tests/e2e/.auth-states
+tests/e2e/.auth-cache.json
+reports
+
+# Git & IDE
+.git
+.gitignore
+.github
+.idea
+.vscode
+**/*.swp
+**/*.swo
+.DS_Store
+Thumbs.db
+
+# Env secrets (injected via compose env_file / build-args)
+.env
+.env.*
+!.env.example
+!.env.docker.example
+!.env.docker.lan.example
+!.env.docker.template
+
+# Docs & screenshots (large, not for runtime images)
+Documents
+Processes
+docs
+specs
+*.md
+!Isara-patient-portal/README.md
+!Isara-doctor-portal/README.md
+!Izara-jitsi-server/README.md
+
+# Misc caches
+**/.cache
+**/*.log
+**/tmp
+**/temp

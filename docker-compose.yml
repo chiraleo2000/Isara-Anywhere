@@ -109,7 +109,6 @@ services:
     restart: unless-stopped
     env_file:
       - .env.docker
-      - ./Isara-patient-portal/.env
     environment:
       # Server Configuration
       NODE_ENV: production
@@ -193,7 +192,6 @@ services:
     restart: unless-stopped
     env_file:
       - .env.docker
-      - ./Isara-doctor-portal/.env
     environment:
       # Server Configuration
       NODE_ENV: production
@@ -261,7 +259,6 @@ services:
     restart: unless-stopped
     env_file:
       - .env.docker
-      - ./Izara-jitsi-server/.env
     environment:
       # Server Configuration
       NODE_ENV: production

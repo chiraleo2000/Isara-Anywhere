@@ -11,6 +11,7 @@ WORKDIR /app
 COPY Isara-doctor-portal/package*.json ./
 RUN npm ci && npm cache clean --force
 COPY Isara-doctor-portal/ .
+RUN rm -rf node_modules && npm ci && npm cache clean --force
 
 # ============================================================================
 # Build-time environment variables for Vite (from .env)
@@ -128,7 +129,8 @@ ENV VITE_APP_NAME=${VITE_APP_NAME} \
     VITE_JITSI_DOMAIN=${VITE_JITSI_DOMAIN} \
     VITE_JITSI_APP_ID=${VITE_JITSI_APP_ID}
 
-RUN npm run build
+RUN chmod -R a+x node_modules/.bin 2>/dev/null || true && \
+    node ./node_modules/vite/bin/vite.js build
 
 # =============================================================================
 # STAGE 2: Production Runtime (with embedded PostgreSQL)

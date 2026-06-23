@@ -44,7 +44,7 @@ Region: `asia-southeast1` · Project: `izara-telemedicine`. Health: `npm run clo
 
 ### Local (Docker Compose)
 
-Full guide: **[deploy/nginx/LOCAL_DOCKER_DEPLOYMENT.md](deploy/nginx/LOCAL_DOCKER_DEPLOYMENT.md)** — Mode A (localhost) **or** Mode B (Ubuntu + Nginx LAN).
+Full guide: **[deploy/nginx/LOCAL_DOCKER_DEPLOYMENT.md](deploy/nginx/LOCAL_DOCKER_DEPLOYMENT.md)** — Mode A (localhost), Mode B (LAN HTTP), or **[HTTPS](deploy/nginx/UBUNTU_HTTPS_DEPLOYMENT.md)** (Mode C).
 
 | Mode | Patient | Doctor | Meeting |
 | ---- | ------- | ------ | ------- |
@@ -311,6 +311,7 @@ Isara-Anywhere/
 | [APPOINTMENT_USER_GUIDE.md](Documents/docs/markdown/operations/APPOINTMENT_USER_GUIDE.md) | Appointment flows |
 | [FULL_WORKFLOW_HARDENING_COMPLETION_REPORT.md](Processes/FULL_WORKFLOW_HARDENING_COMPLETION_REPORT.md) | Phase gates 0–12, LAN, CI, cloud ladder |
 | [LOCAL_DOCKER_DEPLOYMENT.md](deploy/nginx/LOCAL_DOCKER_DEPLOYMENT.md) | Docker + Nginx Mode A/B |
+| [UBUNTU_HTTPS_DEPLOYMENT.md](deploy/nginx/UBUNTU_HTTPS_DEPLOYMENT.md) | Ubuntu LAN **HTTPS** (Mode C) |
 | [FULL_WORKFLOW_CONTRACT.md](Processes/FULL_WORKFLOW_CONTRACT.md) | End-to-end contracts |
 | [VIDEO_MEETING_JITSI_GEMINI.md](Processes/VIDEO_MEETING_JITSI_GEMINI.md) | Video + AI pipeline |
 | [MARKDOWN_GUIDE.md](Documents/docs/markdown/operations/MARKDOWN_GUIDE.md) | Doc linting & auto-fix |

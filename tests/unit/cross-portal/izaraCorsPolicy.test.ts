@@ -66,4 +66,19 @@ describe('izaraCorsPolicy', () => {
     expect(isIzaraOriginAllowed('http://meeting.isara.local', policy)).toBe(true);
     expect(isIzaraOriginAllowed('http://custom.isara.local', policy)).toBe(true);
   });
+
+  it('ICP06 — allows Mode B LAN HTTPS subdomains (*.isara.local)', () => {
+    const policy = buildIzaraCorsPolicy();
+    expect(isIzaraOriginAllowed('https://doctor.isara.local', policy)).toBe(true);
+    expect(isIzaraOriginAllowed('https://patient.isara.local', policy)).toBe(true);
+    expect(isIzaraOriginAllowed('https://meeting.isara.local', policy)).toBe(true);
+  });
+
+  it('ICP07 — allows short LAN hostnames (patient.local / doctor.local)', () => {
+    const policy = buildIzaraCorsPolicy();
+    expect(isIzaraOriginAllowed('https://patient.local', policy)).toBe(true);
+    expect(isIzaraOriginAllowed('https://doctor.local', policy)).toBe(true);
+    expect(isIzaraOriginAllowed('http://meeting.local', policy)).toBe(true);
+    expect(isIzaraOriginAllowed('https://evil.local', policy)).toBe(false);
+  });
 });
