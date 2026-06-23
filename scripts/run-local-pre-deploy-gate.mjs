@@ -29,6 +29,12 @@ const dockerBuildEnv = {
   ...gateEnv,
   MEETING_SERVER_URL: 'http://meeting-server:3020',
 };
+const hostMeetingEnv = {
+  ...process.env,
+  MEETING_URL: 'http://127.0.0.1:3020',
+  MEETING_SERVER_URL: 'http://127.0.0.1:3020',
+  PW_SKIP_LIVE_GEMINI: '1',
+};
 delete gateEnv.PW_HEADLESS;
 delete gateEnv.BASELINE_VISUAL;
 delete gateEnv.PW_ALLOW_RECORDING_SEED;
@@ -119,11 +125,18 @@ function runStep(step) {
   console.log(`\n═══ [${step.name}] ═══`);
   const useGateEnv = step.name.startsWith('e2e') || step.name === 'gate0-local';
   const useDockerEnv = step.name === 'docker-compose';
+  const useHostMeetingEnv = step.name === 'meeting-contract' || step.name === 'post-meeting-pipeline';
   const r = spawnSync(step.cmd, step.args, {
     cwd: step.cwd,
     stdio: 'inherit',
     shell: isWin,
-    env: useDockerEnv ? dockerBuildEnv : useGateEnv ? gateEnv : { ...process.env, PW_SKIP_LIVE_GEMINI: '1' },
+    env: useDockerEnv
+      ? dockerBuildEnv
+      : useGateEnv
+        ? gateEnv
+        : useHostMeetingEnv
+          ? hostMeetingEnv
+          : { ...process.env, PW_SKIP_LIVE_GEMINI: '1' },
   });
   const ok = r.status === 0;
   results.push({
