@@ -478,7 +478,7 @@ Admin:    admin.test@izara.com    / YOUR_TEST_ADMIN_PASSWORD
 ### 13.1 Notification Service (Patient Portal)
 
 ```text
-File: Isara-patient-portal/server/services/notificationService.ts
+File: Isara-patient-portal/backend/services/notificationService.ts
 Port: 3004 (API Server)
 
 Key Methods:
@@ -496,7 +496,7 @@ Key Methods:
 ### 13.2 Doctor Notification Endpoints (GCS Server)
 
 ```text
-File: Isara-doctor-portal/server/gcsApiServer.cjs
+File: Isara-doctor-portal/backend/gcsApiServer.cjs
 Port: 3012 (GCS API Server)
 
 Endpoints:
@@ -514,13 +514,13 @@ Endpoints:
 
 ```text
 Patient Portal:
-├── src/components/notifications/NotificationBell.tsx
+├── frontend/components/notifications/NotificationBell.tsx
 │   - Shows unread count badge
 │   - Dropdown list of notifications
 │   - Click to navigate to context
 
 Doctor Portal:
-├── src/components/notifications/DoctorNotificationBell.tsx
+├── frontend/components/notifications/DoctorNotificationBell.tsx
 │   - Same functionality for doctors
 │   - Uses GCS API (port 3012)
 │   - NO mock data fallback (fixed Jan 2025)
@@ -529,7 +529,7 @@ Doctor Portal:
 ### 13.4 Jitsi Meeting Integration
 
 ```text
-File: Isara-patient-portal/server/routes/video-meeting.ts
+File: Isara-patient-portal/backend/routes/video-meeting-proxy.ts
 Provider: Jitsi Meet (FREE)
 
 Configuration:

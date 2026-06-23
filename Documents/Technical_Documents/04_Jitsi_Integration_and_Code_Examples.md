@@ -162,9 +162,9 @@ Client join room ตาม `lobbyKey` / `meetingId` / `appointmentId` (มี al
 
 ไฟล์หลัก:
 
-- `Isara-doctor-portal/src/utils/jitsiMeetingConfig.ts` (patient portal มี copy คล้ายกัน)
-- `Isara-doctor-portal/src/pages/meetings/MeetingRoom.tsx`
-- `Isara-doctor-portal/src/features/meeting/components/JitsiMeetingShell.tsx`
+- `Isara-doctor-portal/frontend/utils/jitsiMeetingConfig.ts` (patient portal มี copy คล้ายกัน)
+- `Isara-doctor-portal/frontend/pages/meetings/MeetingRoom.tsx`
+- `Isara-doctor-portal/frontend/features/meeting/components/JitsiMeetingShell.tsx`
 
 ### 7.1 ดึง Join Config พร้อม Bearer Token
 
@@ -284,9 +284,9 @@ export function loadJitsiExternalApiScript(domain = resolveJitsiDomain()): Promi
 ### 7.6 Mount helpers — doctor host vs patient participant
 
 ```typescript
-// Isara-doctor-portal/src/utils/jitsiMeetingConfig.ts
+// Isara-doctor-portal/frontend/utils/jitsiMeetingConfig.ts
 // buildDoctorJitsiMountOptions — moderator: true, layout-first mount (prepareLayoutThenMount)
-// Isara-patient-portal/src/utils/jitsiMeetingConfig.ts
+// Isara-patient-portal/frontend/utils/jitsiMeetingConfig.ts
 // buildPatientJitsiMountOptions — resolvePatientMeetingDisplayName, prejoinPageEnabled: false
 ```
 
@@ -682,8 +682,8 @@ flowchart TB
 | `Processes/Pages/Meeting-Server/00_Meeting_Server_Overview.md` | API รวม Meeting Server |
 | `Izara-jitsi-server/server/index.js` | API + lobby + create |
 | `Izara-jitsi-server/server/jitsiConfig.js` | URL และ External API config |
-| `Isara-doctor-portal/src/utils/jitsiMeetingConfig.ts` | Frontend utilities |
-| `Isara-doctor-portal/src/pages/meetings/MeetingRoom.tsx` | UI ประชุมหลัก |
+| `Isara-doctor-portal/frontend/utils/jitsiMeetingConfig.ts` | Frontend utilities |
+| `Isara-doctor-portal/frontend/pages/meetings/MeetingRoom.tsx` | UI ประชุมหลัก |
 
 ---
 

@@ -68,6 +68,7 @@ debug.log
 
 # Optional eslint cache
 .eslintcache
+.eslint.deep.*.cjs
 
 # Optional REPL history
 .node_repl_history

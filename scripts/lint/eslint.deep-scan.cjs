@@ -35,13 +35,13 @@ const config = {
   },
 };
 
-const configPath = path.join(root, 'scripts', 'lint', `.eslint.deep.${portal}.cjs`);
+const configPath = path.join(cwd, `.eslint.deep.${portal}.cjs`);
 require('node:fs').writeFileSync(
   configPath,
   `module.exports = ${JSON.stringify(config, null, 2)};\n`,
 );
 
-const globs = ['src/**/*.{ts,tsx}', 'server/**/*.{ts,js,cjs}'];
+const globs = ['frontend/**/*.{ts,tsx}', 'backend/**/*.{ts,js,cjs}'];
 const result = spawnSync(
   'npx',
   ['eslint', '-c', configPath, ...globs, '--max-warnings', '99999'],

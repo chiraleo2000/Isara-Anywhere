@@ -59,7 +59,7 @@ for (const portal of ['doctor', 'patient']) {
 const jitsiOut = path.join(root, 'reports', 'eslint-deep-jitsi.txt');
 const jitsiEslint = spawnSync(
   'npx',
-  ['eslint', 'server/**/*.js', '--max-warnings', '99999'],
+  ['eslint', 'backend/**/*.js', '--max-warnings', '99999'],
   { cwd: path.join(root, 'Izara-jitsi-server'), shell: true, encoding: 'utf8' },
 );
 fs.writeFileSync(jitsiOut, `exit=${jitsiEslint.status ?? 1}\n`);

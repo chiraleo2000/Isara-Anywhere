@@ -1,7 +1,7 @@
 # SonarLint / SonarQube IDE Summary
 
 **Project:** izara-telemedicine · **Version:** 1.7.40  
-**Config:** [`sonar-project.properties`](../../sonar-project.properties) (includes `server/` paths)
+**Config:** [`sonar-project.properties`](../../sonar-project.properties) (sources: `frontend/` + `backend/` per portal)
 
 ## IDE setup
 

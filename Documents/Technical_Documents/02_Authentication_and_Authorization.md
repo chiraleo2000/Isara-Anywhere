@@ -28,10 +28,10 @@
 
 | พอร์ทัล | วิธียืนยันตัวตน | ตารางหลัก | ไฟล์หลัก |
 |---------|----------------|-----------|----------|
-| **Patient** | Session token (opaque string) | `sessions` | `Isara-patient-portal/server/routes/auth.ts` |
-| **Doctor / Admin** | JWT HS256 + refresh token | `sessions`, `refresh_tokens` | `Isara-doctor-portal/server/authServer.cjs` |
-| **Meeting API** | JWT เดียวกับ Doctor (`JWT_SECRET`) | — | `Izara-jitsi-server/server/jwtPolicy.js` |
-| **GCS API (ถ้าเปิด)** | JWT | — | `Isara-doctor-portal/server/gcsApiServer.cjs` |
+| **Patient** | Session token (opaque string) | `sessions` | `Isara-patient-portal/backend/routes/auth.ts` |
+| **Doctor / Admin** | JWT HS256 + refresh token | `sessions`, `refresh_tokens` | `Isara-doctor-portal/backend/authServer.cjs` |
+| **Meeting API** | JWT เดียวกับ Doctor (`JWT_SECRET`) | — | `Izara-jitsi-server/backend/sessionAuth.js` |
+| **GCS API (ถ้าเปิด)** | JWT | — | `Isara-doctor-portal/backend/gcsApiServer.cjs` |
 
 **Authorization** ใช้ร่วมกัน: บทบาทจาก `users.role`, middleware ตรวจ token, OWASP `ROLE_PERMISSIONS`, และ PDPA `patient_consents` สำหรับข้อมูลผู้ป่วย
 
@@ -74,7 +74,7 @@
 
 ### 3.2 สิทธิ์ OWASP — Patient Portal
 
-จาก `Isara-patient-portal/server/middleware/owasp-middleware.ts`:
+จาก `Isara-patient-portal/backend/middleware/owasp-middleware.ts`:
 
 | บทบาท | สิทธิ์ (`ROLE_PERMISSIONS`) |
 |--------|------------------------------|
@@ -86,7 +86,7 @@
 
 ### 3.3 สิทธิ์ OWASP — Doctor Portal
 
-จาก `Isara-doctor-portal/server/security/owasp-middleware.cjs` (ชุดสิทธิ์กว้างกว่า):
+จาก `Isara-doctor-portal/backend/security/owasp-middleware.cjs` (ชุดสิทธิ์กว้างกว่า):
 
 | บทบาท | สิทธิ์ |
 |--------|--------|
@@ -471,12 +471,12 @@ stateDiagram-v2
 
 | ไฟล์ | เนื้อหา |
 |------|---------|
-| `Isara-doctor-portal/server/authServer.cjs` | Login, JWT, Google SSO, admin, refresh |
-| `Isara-doctor-portal/server/mainApiServer.cjs` | API JWT, PDPA guard |
-| `Isara-doctor-portal/server/security/owasp-middleware.cjs` | RBAC doctor |
-| `Isara-patient-portal/server/routes/auth.ts` | Patient auth + Google |
-| `Isara-patient-portal/server/middleware/auth.ts` | Session middleware |
-| `Izara-jitsi-server/server/jwtPolicy.js` | Meeting API auth |
+| `Isara-doctor-portal/backend/authServer.cjs` | Login, JWT, Google SSO, admin, refresh |
+| `Isara-doctor-portal/backend/mainApiServer.cjs` | API JWT, PDPA guard |
+| `Isara-doctor-portal/backend/security/owasp-middleware.cjs` | RBAC doctor |
+| `Isara-patient-portal/backend/routes/auth.ts` | Patient auth + Google |
+| `Isara-patient-portal/backend/middleware/auth.ts` | Session middleware |
+| `Izara-jitsi-server/backend/sessionAuth.js` | Meeting API auth |
 | `Processes/User_management_Workflows.md` | สเปก workflow ผู้ใช้ |
 | `Processes/FULL_WORKFLOW_CONTRACT.md` §1 Auth | regression must-pass |
 

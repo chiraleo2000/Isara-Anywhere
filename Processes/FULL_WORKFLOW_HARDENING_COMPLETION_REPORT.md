@@ -93,7 +93,7 @@ Run once after Phase 12 with real users/devices. Record pass/fail and date when 
 | BFF-01 | **`/api/meetings/recording-stream` registered before `/:id`** — Express was matching `recording-stream` as meeting id and proxying to nonexistent upstream path (404) | `Isara-doctor-portal/backend/routes/meetings.cjs` |
 | BFF-02 | `fetchMeetingApi` adds `credentials: 'include'`; no cross-origin fallback for `recording-stream` | `MeetingResults.tsx` |
 | NET-01 | Playwright/E2E use `127.0.0.1` not `localhost` (IPv6 `::1` vs Docker bind) | `multi-portal.ts`, `playwright.config.ts`, `global-setup.ts` |
-| CSP-01 | Patient portal CSP allows `127.0.0.1:*` WebSocket for Socket.IO | `owasp-middleware.ts`, `nginx.conf` |
+| CSP-01 | Patient portal CSP allows `127.0.0.1:*` WebSocket for Socket.IO | `backend/middleware/owasp-middleware.ts`, `nginx.conf` |
 | E2E-01 | `pollRecordingUrl` polls meeting-server + doctor BFF; workflow state fsync | `meeting-lifecycle-fixture.ts`, `workflow-state.ts` |
 | E2E-02 | Q2 BFF retry chain + `credentials:include` on save-recording | `MeetingRoom.tsx`, `group-Q2-post-meeting-doctor.ui-test.ts` |
 | E2E-03 | E2E project order: D→Q pipeline before B/C; `E2E_PRESERVE_WORKFLOW=1` in gate | `package.json`, `run-local-pre-deploy-gate.mjs` |
