@@ -24,6 +24,9 @@ const gateEnv = {
   DOCTOR_URL: 'http://127.0.0.1:3010',
   MEETING_URL: 'http://127.0.0.1:3020',
   VITE_MEETING_SERVER_URL: 'http://127.0.0.1:3020',
+};
+const dockerBuildEnv = {
+  ...gateEnv,
   MEETING_SERVER_URL: 'http://meeting-server:3020',
 };
 delete gateEnv.PW_HEADLESS;
@@ -114,12 +117,13 @@ let failedProcessDoc = '';
 
 function runStep(step) {
   console.log(`\n═══ [${step.name}] ═══`);
-  const useGateEnv = step.name.startsWith('e2e') || step.name === 'gate0-local' || step.name === 'docker-compose';
+  const useGateEnv = step.name.startsWith('e2e') || step.name === 'gate0-local';
+  const useDockerEnv = step.name === 'docker-compose';
   const r = spawnSync(step.cmd, step.args, {
     cwd: step.cwd,
     stdio: 'inherit',
     shell: isWin,
-    env: useGateEnv ? gateEnv : { ...process.env, PW_SKIP_LIVE_GEMINI: '1' },
+    env: useDockerEnv ? dockerBuildEnv : useGateEnv ? gateEnv : { ...process.env, PW_SKIP_LIVE_GEMINI: '1' },
   });
   const ok = r.status === 0;
   results.push({

@@ -1,7 +1,7 @@
 /**
  * @process Processes/ENV_AND_STACK_CHECK.md, Processes/VIDEO_MEETING_JITSI_GEMINI.md
  */
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -59,6 +59,9 @@ describe('resolveMeetingServerUrl — runtime behavior', () => {
   });
 
   it('ENV-MEET-04 — localhost browser defaults to :3020', async () => {
+    delete process.env.MEETING_SERVER_URL;
+    delete process.env.VITE_MEETING_SERVER_URL;
+    vi.resetModules();
     Object.defineProperty(globalThis, 'location', {
       value: { hostname: 'localhost', protocol: 'http:' },
       configurable: true,
