@@ -1,0 +1,186 @@
+================================================================================
+  Izara Anywhere — Ubuntu LAN (Mode B) manual redeploy
+  One file · no scripts · no docker prune · keeps database volumes
+  Server: Ubuntu + Nginx + Docker on same machine
+  Updated: 2026-06-22 · v1.7.53
+================================================================================
+
+Copy-paste each block in order on the Ubuntu server (SSH). Wait for long
+commands (docker build) to finish before the next block.
+
+--------------------------------------------------------------------------------
+BLOCK 1 — Go to repo
+--------------------------------------------------------------------------------
+
+cd ~/Isara-Anywhere
+
+--------------------------------------------------------------------------------
+BLOCK 2 — Latest code (fixes vite Permission denied + .dockerignore)
+--------------------------------------------------------------------------------
+
+git pull
+
+# VERIFY fix is present (must print a matching line — if empty, code not updated yet):
+grep -n "rm -rf node_modules" Isara-patient-portal/Dockerfile.unified
+grep -n "vite/bin/vite.js" Isara-patient-portal/Dockerfile.unified
+
+# Only if you see: $'\r': command not found
+sed -i 's/\r$//' deploy/nginx/compose.sh deploy/nginx/diagnose-502.sh
+
+--------------------------------------------------------------------------------
+BLOCK 3 — Free disk WITHOUT docker prune (nginx showed "no space left")
+--------------------------------------------------------------------------------
+
+df -h /
+
+sudo truncate -s 0 /var/log/nginx/access.log
+sudo truncate -s 0 /var/log/nginx/error.log
+sudo journalctl --vacuum-size=200M
+
+df -h /
+
+# Need at least ~3–5 GiB free on / before docker build. If still full, remove
+# other large files you control (old downloads, apt cache: sudo apt clean).
+
+--------------------------------------------------------------------------------
+BLOCK 4 — Environment file (.env.docker)
+--------------------------------------------------------------------------------
+
+ls -la .env.docker
+
+# First time LAN only:
+# cp .env.docker.lan.example .env.docker
+# nano .env.docker
+
+# Required in .env.docker:
+#   POSTGRES_PASSWORD=...
+#   JWT_SECRET=...                    (32+ characters)
+#   CORS_ORIGINS=...                  must include:
+#       http://patient.isara.local
+#       http://doctor.isara.local
+#       http://meeting.isara.local
+#   VITE_MEETING_SERVER_URL=http://meeting.isara.local
+
+--------------------------------------------------------------------------------
+BLOCK 5 — Stop stack (pick ONE compose command for your server)
+--------------------------------------------------------------------------------
+
+sudo docker-compose --env-file .env.docker down
+
+# If "docker-compose" not found, use instead:
+# docker-compose --env-file .env.docker down
+
+# Do NOT use: sudo docker-compose (unless you have no docker group access)
+
+--------------------------------------------------------------------------------
+BLOCK 6 — Rebuild and start full stack (10–20+ minutes)
+--------------------------------------------------------------------------------
+
+# Use --no-cache if build still shows Step 60 "RUN npm run build" + vite Permission denied
+
+sudo docker-compose --env-file .env.docker build --no-cache patient-portal
+sudo docker-compose --env-file .env.docker up -d --build
+
+# Build must NOT end with: sh: vite: Permission denied
+# If it does: BLOCK 2 grep failed → get latest code, then repeat BLOCK 5–6 with --no-cache
+
+--------------------------------------------------------------------------------
+BLOCK 7 — Containers running
+--------------------------------------------------------------------------------
+
+sudo docker-compose --env-file .env.docker ps
+
+# All should show "Up": izara-patient-portal, izara-doctor-portal,
+# izara-meeting-server, izara-postgres, (pgadmin).
+
+# If patient-portal failed:
+# docker-compose --env-file .env.docker logs patient-portal --tail 80
+
+--------------------------------------------------------------------------------
+BLOCK 8 — Health checks (repeat until all return 200)
+--------------------------------------------------------------------------------
+
+curl -s -o /dev/null -w "Patient %{http_code}\n" http://127.0.0.1:3005/health
+curl -s -o /dev/null -w "Doctor  %{http_code}\n" http://127.0.0.1:3010/health
+curl -s -o /dev/null -w "Meeting %{http_code}\n" http://127.0.0.1:3020/health
+
+ss -tlnp | grep -E '3005|3010|3020|5050'
+
+--------------------------------------------------------------------------------
+BLOCK 9 — Nginx (LAN hostnames)
+--------------------------------------------------------------------------------
+
+sudo cp deploy/nginx/isara-system.conf /etc/nginx/sites-available/isara-system
+sudo ln -sf /etc/nginx/sites-available/isara-system /etc/nginx/sites-enabled/isara-system
+sudo nginx -t
+sudo systemctl reload nginx
+
+--------------------------------------------------------------------------------
+BLOCK 10 — Login smoke with Origin (CORS — same as browser through Nginx)
+--------------------------------------------------------------------------------
+
+ 
+
+# Expect HTTP 200 for both. If 500: fix CORS_ORIGINS in .env.docker → BLOCK 5–6.
+
+--------------------------------------------------------------------------------
+BLOCK 11 — Client PCs (hosts file on each laptop/desktop on LAN)
+--------------------------------------------------------------------------------
+
+# Replace 192.168.x.x with your Ubuntu server LAN IP:
+#
+#   192.168.x.x   patient.isara.local
+#   192.168.x.x   doctor.isara.local
+#   192.168.x.x   meeting.isara.local
+#   192.168.x.x   dbadmin.isara.local
+#
+# Windows: C:\Windows\System32\drivers\etc\hosts (as Administrator)
+# Linux/Mac: /etc/hosts
+
+--------------------------------------------------------------------------------
+BLOCK 12 — Browser test
+--------------------------------------------------------------------------------
+
+# http://patient.isara.local/login
+#   demo.test@gmail.com / P@ssw0rd
+#
+# http://doctor.isara.local/login
+#   admin.test@izara.com / IzaraAdmin@2024
+#   doctor.test@izara.com / IzaraDoctor@2024
+
+--------------------------------------------------------------------------------
+TROUBLESHOOTING (no prune)
+--------------------------------------------------------------------------------
+
+502 Bad Gateway in browser, health curl returns 000:
+  → Docker not listening. Repeat BLOCK 5–8. Nginx is OK; fix containers first.
+
+vite: Permission denied during build (Step 60 RUN npm run build):
+  → Server has OLD Dockerfile. BLOCK 2: grep must show rm -rf node_modules + vite.js
+  → git pull from machine that has the fix committed
+  → docker compose --env-file .env.docker build --no-cache patient-portal
+  → then up -d --build (BLOCK 6)
+
+No space left on device:
+  → BLOCK 3 again. Do not docker prune if policy forbids it.
+
+docker-compose: command not found:
+  → sudo apt install docker-compose-plugin
+  → or: sudo apt install docker-compose
+  → then use docker-compose (hyphen) in BLOCK 5–7.
+
+Connection refused on login with Origin 200 on curl but browser fails:
+  → Check client hosts file (BLOCK 11). Ping patient.isara.local → server IP.
+
+Optional read-only diagnostic (does not prune):
+  bash deploy/nginx/diagnose-502.sh
+
+================================================================================
+END (HTTP Mode B)
+================================================================================
+
+For HTTPS (Mode C) see: deploy/nginx/UBUNTU_HTTPS_DEPLOYMENT.md
+  cp .env.docker.lan.https.example .env.docker
+  mkcert + isara-system-https.conf on Ubuntu
+  https://patient.isara.local/login
+  https://doctor.isara.local/login

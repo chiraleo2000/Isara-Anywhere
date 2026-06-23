@@ -11,17 +11,21 @@ This guide covers **two access modes**:
 | Mode | Best for | How you open portals |
 | ---- | -------- | -------------------- |
 | **A — Direct (localhost)** | Dev on one PC (Windows/Mac/Linux) | `http://localhost:3005` |
-| **B — Ubuntu + Nginx (LAN)** | Server on network; many PCs connect | `http://patient.isara.local` |
+| **B — Ubuntu + Nginx (LAN HTTP)** | Server on network; many PCs connect | `http://patient.isara.local` |
+| **C — Ubuntu + Nginx (LAN HTTPS)** | LAN + camera/mic / OAuth / no mixed content | `https://patient.isara.local` |
 
 **Files in this folder**
 
 | File | Purpose |
 | ---- | ------- |
-| [LOCAL_DOCKER_DEPLOYMENT.md](LOCAL_DOCKER_DEPLOYMENT.md) | This guide |
-| [isara-system.conf](isara-system.conf) | Nginx reverse-proxy config (Mode B) |
+| [LOCAL_DOCKER_DEPLOYMENT.md](LOCAL_DOCKER_DEPLOYMENT.md) | This guide (Modes A & B) |
+| [UBUNTU_HTTPS_DEPLOYMENT.md](UBUNTU_HTTPS_DEPLOYMENT.md) | **Mode C — TLS on Ubuntu** |
+| [UBUNTU_MANUAL_REDEPLOY.txt](UBUNTU_MANUAL_REDEPLOY.txt) | Copy-paste redeploy (HTTP) |
+| [isara-system.conf](isara-system.conf) | Nginx HTTP reverse-proxy (Mode B) |
+| [isara-system-https.conf](isara-system-https.conf) | Nginx HTTPS reverse-proxy (Mode C) |
 | [diagnose-502.sh](diagnose-502.sh) | 502 troubleshooting script (Mode B) |
 
-**See also:** [README.md](../../README.md) · [URLs & demo users](../../Documents/docs/markdown/operations/URLS_AND_DEFAULT_USERS.md) · [.env.docker.lan.example](../../.env.docker.lan.example)
+**See also:** [README.md](../../README.md) · [URLs & demo users](../../Documents/docs/markdown/operations/URLS_AND_DEFAULT_USERS.md) · [.env.docker.lan.example](../../.env.docker.lan.example) · [.env.docker.lan.https.example](../../.env.docker.lan.https.example)
 
 ---
 
@@ -532,10 +536,44 @@ sudo tail -20 /var/log/nginx/error.log
 
 | Cause | Fix |
 | ----- | --- |
-| Docker not started | `docker compose up -d --build` |
-| Missing `.env.docker` / bad `JWT_SECRET` | Fix `.env.docker`, then `docker compose down && docker compose up -d --build` |
+| Docker not started | `bash deploy/nginx/compose.sh --env-file .env.docker up -d --build` |
+| **Build failed** (`vite: Permission denied`) | `git pull` (root `.dockerignore` + Dockerfile fix), then rebuild — see below |
+| **Disk full** (`No space left on device`) | Free disk first — see below |
+| Missing `.env.docker` / bad `JWT_SECRET` | Fix `.env.docker`, then rebuild |
 | Docker on Windows, Nginx on Ubuntu | Run Docker on the **same** machine as Nginx |
 | First build still running | Wait; `docker compose logs -f patient-portal` |
+
+## Docker build: `vite: Permission denied` (exit 126)
+
+**Cause:** Host `node_modules` (from Windows) was copied into the image because the repo-root `.dockerignore` was missing. Linux cannot execute `node_modules/.bin/vite`.
+
+**Fix (on Ubuntu):**
+
+```bash
+cd ~/Isara-Anywhere
+git pull
+sed -i 's/\r$//' deploy/nginx/*.sh
+bash deploy/nginx/redeploy-full.sh --prune-docker --pull
+```
+
+## Disk full (`No space left on device`)
+
+Nginx and Docker builds fail when `/` is full. On the Ubuntu server:
+
+```bash
+df -h /
+docker system df
+docker system prune -af
+docker builder prune -af
+sudo truncate -s 0 /var/log/nginx/access.log /var/log/nginx/error.log
+sudo journalctl --vacuum-size=200M
+```
+
+Then redeploy:
+
+```bash
+bash deploy/nginx/redeploy-full.sh --prune-docker --pull
+```
 
 ## Other issues
 
@@ -598,19 +636,30 @@ After code or env changes on the Ubuntu server, redeploy without wiping data:
 
 ```bash
 cd ~/Isara-Anywhere
+sed -i 's/\r$//' deploy/nginx/*.sh   # once, if scripts came from Windows (CRLF)
+bash deploy/nginx/redeploy-full.sh --background --pull
+# tail -f reports/redeploy-YYYYMMDD-HHMMSS.log   # path printed by script
+```
+
+Or step by step:
+
+```bash
+cd ~/Isara-Anywhere
 git pull
 
 # LAN env (browser URLs via Nginx subdomains)
 cp -n .env.docker.lan.example .env.docker   # first time only
 # Edit .env.docker: JWT_SECRET, CORS_ORIGINS, VITE_MEETING_SERVER_URL=http://meeting.isara.local
 
-docker compose --env-file .env.docker up -d --build patient-portal doctor-portal meeting-server
+bash deploy/nginx/compose.sh --env-file .env.docker down
+bash deploy/nginx/compose.sh --env-file .env.docker up -d --build
+curl -s http://127.0.0.1:3010/health
 
-# Patient portal runtime ENV — no image rebuild needed for URL-only changes:
-# restart container after editing VITE_MEETING_SERVER_URL in .env.docker
-docker compose --env-file .env.docker restart patient-portal doctor-portal
+sudo cp deploy/nginx/isara-system.conf /etc/nginx/sites-available/isara-system
+sudo ln -sf /etc/nginx/sites-available/isara-system /etc/nginx/sites-enabled/isara-system
+sudo nginx -t && sudo systemctl reload nginx
 
-bash deploy/nginx/diagnose-502.sh
+bash deploy/nginx/diagnose-502.sh   # NOT sudo bash
 ```
 
 **Runtime ENV (patient + doctor):** both portals inject `env-config.js` at container start via `envsubst`. Change `VITE_MEETING_SERVER_URL` / `VITE_API_URL` in `.env.docker`, then `docker compose restart` — no `docker compose build` required for URL-only LAN moves.

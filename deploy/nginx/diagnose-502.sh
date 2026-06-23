@@ -11,6 +11,19 @@ source "${SCRIPT_DIR}/compose.sh"
 echo "=== Izara 502 diagnostic ==="
 echo ""
 
+echo "--- 0. Disk space (build fails if full) ---"
+df -h / 2>/dev/null || true
+_avail="$(df -Pk / 2>/dev/null | awk 'NR==2 {print $4}' || echo 0)"
+if [[ "${_avail}" -lt 3145728 ]]; then
+  echo "FAIL less than 3 GiB free on / — fix before docker build:"
+  echo "  docker system prune -af && docker builder prune -af"
+  echo "  sudo truncate -s 0 /var/log/nginx/access.log /var/log/nginx/error.log"
+fi
+if command -v docker >/dev/null 2>&1; then
+  docker system df 2>/dev/null || true
+fi
+echo ""
+
 echo "--- 1. Nginx ---"
 systemctl is-active nginx 2>/dev/null || echo "nginx not active"
 nginx -t 2>&1 || true
