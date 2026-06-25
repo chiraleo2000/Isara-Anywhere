@@ -1,0 +1,82 @@
+"id","title_thai","title_english","content_thai","content_english","category","tags","author_id","status","published_at","view_count","image_url","created_at","updated_at"
+"MC-001","การดูแลสุขภาพหัวใจ","Heart Health Care","## 🫀 หัวใจแข็งแรง ชีวิตยืนยาว
+
+หัวใจเป็นอวัยวะสำคัญที่สูบฉีดเลือดไปเลี้ยงร่างกาย การดูแลหัวใจให้แข็งแรงทำได้โดย:
+
+- ออกกำลังกายสม่ำเสมอ 150 นาที/สัปดาห์
+- รับประทานอาหารสุขภาพ ลดเค็ม ลดมัน
+- หลีกเลี่ยงบุหรี่และแอลกอฮอล์
+- ตรวจสุขภาพประจำปี","The heart is vital. Keep it healthy with exercise, diet, and regular checkups.","general-health","[""heart"",""health"",""exercise""]","DOC-SOMCHAI-001","published",,"150","https://images.unsplash.com/photo-1559757175-5700dde675bc?w=800","""2026-06-18T09:37:36.691Z""","""2026-06-18T09:37:36.691Z"""
+"MC-002","การจัดการโรคเบาหวาน","Diabetes Management","## 🩸 การดูแลตนเองสำหรับผู้ป่วยเบาหวาน
+
+โรคเบาหวานเป็นโรคเรื้อรังที่ต้องดูแลอย่างต่อเนื่อง
+
+**เป้าหมาย:** HbA1c < 7%
+
+**การดูแลตนเอง:**
+- รับประทานยาตามแพทย์สั่ง
+- ควบคุมอาหาร ลดแป้ง น้ำตาล
+- ออกกำลังกาย 30 นาที/วัน
+- ตรวจน้ำตาลเป็นประจำ","Diabetes requires ongoing management with medication, diet, and exercise.","chronic-disease","[""diabetes"",""blood sugar"",""medication""]","DOC-SIRIPORN-001","published",,"200","https://images.unsplash.com/photo-1579684385127-1ef15d508118?w=800","""2026-06-18T09:37:36.691Z""","""2026-06-18T09:37:36.691Z"""
+"MC-003","การนอนหลับที่ดี","Good Sleep Habits","## 😴 การนอนหลับที่มีคุณภาพ
+
+การนอนหลับที่มีคุณภาพ 7-9 ชั่วโมงต่อคืนช่วยให้ร่างกายฟื้นฟู
+
+**ประโยชน์:**
+- เสริมสร้างภูมิคุ้มกัน
+- ช่วยความจำและสมาธิ
+- ลดความเครียด","Quality sleep of 7-9 hours helps the body recover and boosts immunity.","general-health","[""sleep"",""wellness"",""health""]","DOC-TEST-001","published",,"120","https://images.unsplash.com/photo-1541781774459-bb2af2f05b55?w=800","""2026-06-18T09:37:36.691Z""","""2026-06-18T09:37:36.691Z"""
+"MC-004","การออกกำลังกายสำหรับผู้สูงอายุ","Exercise for Seniors","## 🚶 การออกกำลังกายสำหรับผู้สูงวัย
+
+ผู้สูงอายุควรออกกำลังกายเบาๆ อย่างน้อย 150 นาทีต่อสัปดาห์
+
+**กิจกรรมที่เหมาะสม:**
+- เดินเร็ว
+- ว่ายน้ำ
+- รำไทเก๊ก","Seniors should do light exercises like walking, swimming, or yoga.","exercise","[""seniors"",""exercise"",""health""]","DOC-TEST-001","published",,"80","https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=800","""2026-06-18T09:37:36.691Z""","""2026-06-18T09:37:36.691Z"""
+"MC-005","สุขภาพจิตในยุคดิจิทัล","Mental Health in Digital Age","## 🧠 สุขภาพจิตในโลกออนไลน์
+
+การใช้เทคโนโลยีมากเกินไปอาจส่งผลต่อสุขภาพจิต
+
+**วิธีรักษาสมดุล:**
+- จำกัดเวลาหน้าจอ 2-3 ชม./วัน
+- พักสายตาทุก 20 นาที","Excessive technology use can affect mental health. Take breaks and maintain relationships.","mental-health","[""mental health"",""technology"",""wellness""]","DOC-TEST-001","published",,"95","https://images.unsplash.com/photo-1499209974431-9dddcece7f88?w=800","""2026-06-18T09:37:36.691Z""","""2026-06-18T09:37:36.691Z"""
+"MC-006","การป้องกันโรคติดเชื้อทางเดินหายใจ","Respiratory Infection Prevention","## 🫁 ป้องกันโรคทางเดินหายใจ
+
+**วิธีป้องกัน:**
+- ล้างมือบ่อยๆ ด้วยสบู่หรือเจลแอลกอฮอล์
+- สวมหน้ากากในที่ชุมชน
+- อยู่ในที่อากาศถ่ายเท","Prevent respiratory infections by washing hands, wearing masks, and getting vaccinated.","preventive-care","[""respiratory"",""prevention"",""vaccination""]","DOC-SOMCHAI-001","published",,"180","https://images.unsplash.com/photo-1584634428023-64f0f18c7a53?w=800","""2026-06-18T09:37:36.691Z""","""2026-06-18T09:37:36.691Z"""
+"MC-007","โภชนาการสำหรับผู้ป่วยหัวใจ","Nutrition for Heart Patients","## 🥗 โภชนาการเพื่อสุขภาพหัวใจ
+
+การเลือกอาหารที่เหมาะสมช่วยป้องกันโรคหัวใจ:
+
+**อาหารที่ควรทาน:**
+- ผักผลไม้หลากสี
+- ปลาทะเล
+- ธัญพืชไม่ขัดสี
+
+**อาหารที่ควรหลีกเลี่ยง:**
+- อาหารไขมันสูง
+- อาหารเค็มจัด
+- อาหารหวานจัด","Heart-healthy nutrition guide focusing on vegetables, fish, and whole grains.","nutrition","[""nutrition"",""heart"",""diet""]","DOC-SOMCHAI-001","published",,"130","https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=800","""2026-06-18T09:37:36.691Z""","""2026-06-18T09:37:36.691Z"""
+"MC-008","การใช้ยาอย่างปลอดภัย","Safe Medication Use","## 💊 คู่มือการใช้ยาอย่างปลอดภัย
+
+**หลักการใช้ยา:**
+- รับประทานยาตามแพทย์สั่ง
+- ไม่หยุดยาเอง
+- เก็บยาให้พ้นมือเด็ก
+
+**อาการข้างเคียง:**
+หากมีอาการแพ้ยา เช่น ผื่นคัน หายใจลำบาก ให้หยุดยาและพบแพทย์ทันที","Guide for safe medication use including storage and side effects awareness.","medications","[""medications"",""safety"",""drugs""]","DOC-SIRIPORN-001","published",,"175","https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=800","""2026-06-18T09:37:36.691Z""","""2026-06-18T09:37:36.691Z"""
+"MC-009","ปฐมพยาบาลเบื้องต้น","Basic First Aid","## 🩹 ปฐมพยาบาลเบื้องต้น
+
+**การปฐมพยาบาลบาดแผล:**
+1. ล้างแผลด้วยน้ำสะอาด
+2. ใส่ยาฆ่าเชื้อ
+3. ปิดแผลด้วยผ้าก๊อซ
+
+**การปฐมพยาบาลไฟไหม้:**
+1. ล้างด้วยน้ำเย็น 20 นาที
+2. ห้ามใช้น้ำแข็ง
+3. พบแพทย์หากแผลรุนแรง","Basic first aid guide for wounds and burns.","first-aid","[""first-aid"",""emergency"",""wounds""]","DOC-TEST-001","published",,"210","https://images.unsplash.com/photo-1603398938378-e54eab446dde?w=800","""2026-06-18T09:37:36.691Z""","""2026-06-18T09:37:36.691Z"""

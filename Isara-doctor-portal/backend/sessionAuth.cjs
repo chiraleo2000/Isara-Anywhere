@@ -14,6 +14,44 @@ const SESSION_VALIDATE_SQL = `
     AND s.logged_out_at IS NULL
 `;
 
+const SESSION_COOKIE_NAMES = ['auth_token', 'izara_session', 'session', 'izara_auth_token', 'token'];
+
+function parseCookieHeader(cookieHeader) {
+  const out = {};
+  if (!cookieHeader) return out;
+  for (const part of String(cookieHeader).split(';')) {
+    const trimmed = part.trim();
+    if (!trimmed) continue;
+    const eq = trimmed.indexOf('=');
+    if (eq <= 0) continue;
+    const key = trimmed.slice(0, eq).trim();
+    const value = trimmed.slice(eq + 1);
+    try {
+      out[key] = decodeURIComponent(value);
+    } catch {
+      out[key] = value;
+    }
+  }
+  return out;
+}
+
+/** Resolve opaque session token from Authorization header or session cookies. */
+function resolveSessionTokenFromRequest(req) {
+  const authHeader = req.headers['authorization'];
+  if (authHeader) {
+    const bearer = authHeader.startsWith('Bearer ')
+      ? authHeader.slice(7).trim()
+      : authHeader.split(' ')[1]?.trim();
+    if (bearer) return bearer;
+  }
+  const cookies = parseCookieHeader(req.headers.cookie);
+  for (const name of SESSION_COOKIE_NAMES) {
+    const value = cookies[name]?.trim();
+    if (value) return value;
+  }
+  return null;
+}
+
 /** Map session+user row to req.user shape used across Izara services. */
 function sessionRowToReqUser(row) {
   if (!row) return null;
@@ -45,8 +83,7 @@ async function validateSessionToken(pool, token) {
 
 function createAuthenticateSession(pool) {
   return async function authenticateSession(req, res, next) {
-    const authHeader = req.headers['authorization'];
-    const token = authHeader?.split(' ')[1];
+    const token = resolveSessionTokenFromRequest(req);
     if (!token) {
       return res.status(401).json({ error: 'Authentication required' });
     }
@@ -62,8 +99,7 @@ function createAuthenticateSession(pool) {
 
 function createOptionalSessionAuth(pool) {
   return async function optionalSessionAuth(req, res, next) {
-    const authHeader = req.headers['authorization'];
-    const token = authHeader?.split(' ')[1];
+    const token = resolveSessionTokenFromRequest(req);
     if (token) {
       const row = await validateSessionToken(pool, token);
       if (row) {
@@ -95,6 +131,9 @@ function generateOpaqueToken() {
 
 module.exports = {
   SESSION_VALIDATE_SQL,
+  SESSION_COOKIE_NAMES,
+  parseCookieHeader,
+  resolveSessionTokenFromRequest,
   sessionRowToReqUser,
   validateSessionToken,
   createAuthenticateSession,

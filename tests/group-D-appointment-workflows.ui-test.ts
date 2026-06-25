@@ -18,14 +18,17 @@ import {
   test, expect, assertFullHealth, snap,
   navPatient, navDoctor, waitForContent, waitForPoolAppointment, waitForAcceptedInPool, isAcceptedPoolRow,
   pageRequestGet, pageRequestPatch,
+  pageRequestGetWithAuthRetry, pageRequestPatchWithAuthRetry,
   assertNotificationTypePoll,
   waitForPatientNotification,
   clickLocatorSafe,
   readPageBearerToken,
   refreshPageAuth,
+  ensureDoctorPortalAuthenticated,
   confirmAppointmentApiWithRetry,
   PATIENT_URL, DOCTOR_URL,
 } from './helpers/multi-portal';
+import { refreshAuthStorageStates, reinjectAuthFromStorageFile } from './helpers/auth-refresh';
 import { saveWorkflowState, loadWorkflowState, clearWorkflowState } from './helpers/workflow-state';
 
 const IS_CLOUD = process.env.TEST_ENV === 'cloud';
@@ -266,8 +269,8 @@ test.describe('Group D — Appointment Workflows', () => {
     });
 
     await test.step('D07d — Patient creates offline (in_person) queue request', async () => {
-      const token = await patient.page.evaluate(() => localStorage.getItem('auth_token') || '');
-      const patientId = await patient.page.evaluate(() => {
+      const { patientId: workflowPatientId } = loadWorkflowState();
+      const sessionPatientId = workflowPatientId || await patient.page.evaluate(() => {
         try {
           const raw =
             localStorage.getItem('izara_current_user')
@@ -280,21 +283,32 @@ test.describe('Group D — Appointment Workflows', () => {
           return 'PATIENT-DEMO';
         }
       });
-      const resp = await patient.page.request.post(`${PATIENT_URL}/api/appointments`, {
-        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-        data: {
-          patientId,
-          appointmentType: 'in_person',
-          requestedDate: new Date(Date.now() + 172800000).toISOString().split('T')[0],
-          requestedTime: '15:00',
-          reason: 'Offline follow-up queue test',
-          symptomDescription: 'In-person queue validation',
-          urgency: 'normal',
-        },
-        timeout: IS_CLOUD ? 30_000 : 15_000,
-      });
-      expect(resp.status(), '❌ D07d: Offline queue appointment creation failed').toBe(200);
-      const body = await resp.json().catch(() => ({}));
+      let body: { id?: string } = {};
+      for (let attempt = 0; attempt < 3; attempt++) {
+        await refreshPageAuth(patient.page, PATIENT_URL);
+        const token = await readPageBearerToken(patient.page);
+        const resp = await patient.page.request.post(`${PATIENT_URL}/api/appointments`, {
+          headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+          data: {
+            patientId: sessionPatientId,
+            appointmentType: 'in_person',
+            requestedDate: new Date(Date.now() + 172800000).toISOString().split('T')[0],
+            requestedTime: '15:00',
+            reason: 'Offline follow-up queue test',
+            symptomDescription: 'In-person queue validation',
+            urgency: 'normal',
+          },
+          timeout: IS_CLOUD ? 30_000 : 15_000,
+        });
+        if (resp.status() === 200) {
+          body = await resp.json().catch(() => ({}));
+          break;
+        }
+        if (resp.status() !== 401 || attempt === 2) {
+          expect(resp.status(), '❌ D07d: Offline queue appointment creation failed').toBe(200);
+        }
+        await patient.page.waitForTimeout(600 * (attempt + 1));
+      }
       expect(body.id, '❌ D07d: Offline queue appointment id required').toBeTruthy();
       saveWorkflowState({ offlineAppointmentId: body.id });
       await waitForPoolAppointment(admin.page, DOCTOR_URL, body.id, { unassignedOnly: true });
@@ -416,6 +430,11 @@ test.describe('Group D — Appointment Workflows', () => {
      ═════════════════════════════════════════════════════════════════ */
   test('D3 — Admin appointment oversight & doctor assignment', async ({ portals }) => {
     const { admin, doctor } = portals;
+    await refreshAuthStorageStates();
+    await reinjectAuthFromStorageFile(admin.page, 'admin');
+    await reinjectAuthFromStorageFile(doctor.page, 'doctor');
+    await refreshPageAuth(admin.page, DOCTOR_URL);
+    await refreshPageAuth(doctor.page, DOCTOR_URL);
     const wf = { ...loadWorkflowState() };
     const syncWorkflow = (patch: Parameters<typeof saveWorkflowState>[0]) => {
       Object.assign(wf, patch);
@@ -423,26 +442,30 @@ test.describe('Group D — Appointment Workflows', () => {
     };
 
     await test.step('D14 — Navigate to Health Meeting', async () => {
+      await refreshPageAuth(admin.page, DOCTOR_URL);
       await navDoctor(admin.page, 'health-meeting', 'D14');
+      await waitForContent(admin.page, 'D14', IS_CLOUD ? 45_000 : 15_000, 'admin');
       await assertFullHealth(admin.page, 'D14');
       await snap(admin.page, 'D14-admin-meeting', 'group-D');
       console.log('  ✅ D14: Admin → Health Meeting');
     });
 
     await test.step('D15 — Navigate to Appointment Pool (reload data)', async () => {
+      await refreshPageAuth(admin.page, DOCTOR_URL);
       await navDoctor(admin.page, 'appointment-pool', 'D15');
-      const reloadTimeout = IS_CLOUD ? 60_000 : 60_000;
-      for (let attempt = 0; attempt < 2; attempt++) {
+      const reloadTimeout = IS_CLOUD ? 60_000 : 30_000;
+      for (let attempt = 0; attempt < 3; attempt++) {
         try {
           await admin.page.reload({ waitUntil: 'domcontentloaded', timeout: reloadTimeout });
           break;
         } catch (reloadErr) {
-          if (attempt === 1) throw reloadErr;
+          if (attempt === 2) throw reloadErr;
           await refreshPageAuth(admin.page, DOCTOR_URL);
         }
       }
+      await ensureDoctorPortalAuthenticated(admin.page, 'D15', 'appointment-pool');
       await admin.page.waitForLoadState('networkidle', { timeout: IS_CLOUD ? 45_000 : 15_000 }).catch(() => {});
-      await waitForContent(admin.page, 'D15-reload');
+      await waitForContent(admin.page, 'D15-reload', IS_CLOUD ? 45_000 : 15_000, 'admin');
       await assertFullHealth(admin.page, 'D15');
       const { appointmentId } = wf;
       if (appointmentId) {
@@ -465,17 +488,18 @@ test.describe('Group D — Appointment Workflows', () => {
     });
 
     await test.step('D15b — Admin assigns unassigned appointment to doctor via API', async () => {
-      // 1. Get admin JWT token from localStorage
-      const adminToken = await admin.page.evaluate(() =>
-        localStorage.getItem('token') || localStorage.getItem('izara_auth_token') || ''
-      );
-      expect(adminToken, '❌ D15b: Admin must be authenticated').toBeTruthy();
+      await refreshPageAuth(admin.page, DOCTOR_URL);
+      expect(await readPageBearerToken(admin.page), '❌ D15b: Admin must be authenticated').toBeTruthy();
 
-      // 2. Find the unassigned appointment (doctor_id IS NULL)
-      const listResp = await pageRequestGet(admin.page, `${DOCTOR_URL}/api/appointments`, {
-        headers: { Authorization: `Bearer ${adminToken}`, 'Content-Type': 'application/json' },
-        timeout: process.env.TEST_ENV === 'cloud' ? 30_000 : 10_000,
-      });
+      const listResp = await pageRequestGetWithAuthRetry(
+        admin.page,
+        `${DOCTOR_URL}/api/appointments`,
+        DOCTOR_URL,
+        {
+          headers: { 'Content-Type': 'application/json' },
+          timeout: IS_CLOUD ? 30_000 : 10_000,
+        },
+      );
       expect(listResp.status(), '❌ D15b: Appointments list API must return 200').toBe(200);
       const workflowId = wf.appointmentId;
       expect(workflowId, '❌ D15b: workflow appointmentId from D07 required').toBeTruthy();
@@ -491,12 +515,16 @@ test.describe('Group D — Appointment Workflows', () => {
       syncWorkflow({ appointmentId: unassigned.id as string });
       console.log(`  ✅ D15b: Found unassigned appointment: ${unassigned.id} (status: ${unassigned.status})`);
 
-      // 3. Admin assigns doctor to this appointment
-      const assignResp = await pageRequestPatch(admin.page, `${DOCTOR_URL}/api/appointments/${unassigned.id}/assign`, {
-        headers: { Authorization: `Bearer ${adminToken}`, 'Content-Type': 'application/json' },
-        data: { doctor_id: 'DOC-TEST-001' },
-        timeout: process.env.TEST_ENV === 'cloud' ? 30_000 : 10_000,
-      });
+      const assignResp = await pageRequestPatchWithAuthRetry(
+        admin.page,
+        `${DOCTOR_URL}/api/appointments/${unassigned.id}/assign`,
+        DOCTOR_URL,
+        {
+          headers: { 'Content-Type': 'application/json' },
+          data: { doctor_id: 'DOC-TEST-001' },
+          timeout: IS_CLOUD ? 30_000 : 10_000,
+        },
+      );
       expect(assignResp.status(), '❌ D15b: Admin assign-doctor API must return 200').toBe(200);
       const assignData = await assignResp.json().catch(() => ({}));
       expect(assignData.success, '❌ D15b: Admin assign must succeed — doctor assignment FAILED').toBeTruthy();
@@ -696,6 +724,8 @@ test.describe('Group D — Appointment Workflows', () => {
      ═════════════════════════════════════════════════════════════════ */
   test('D4 — Cross-portal appointment sync', async ({ portals }) => {
     const { patient, doctor } = portals;
+    await refreshPageAuth(doctor.page, DOCTOR_URL);
+    await refreshPageAuth(patient.page, PATIENT_URL);
 
     await test.step('D4a — Doctor confirms telehealth appointment (meet link)', async () => {
       const { appointmentId } = loadWorkflowState();

@@ -2,7 +2,7 @@
 
 All deliverables under `Documents/docs/` — guides, diagrams, operations markdown, and UI evidence.
 
-**Related:** [Documents hub](../README.md) · [Thai technical As-is](../Technical_Documents/) · [Presentations](../Presentations/README.md) · [LAN deploy](../../deploy/nginx/LOCAL_DOCKER_DEPLOYMENT.md) · [Hardening report](../../Processes/FULL_WORKFLOW_HARDENING_COMPLETION_REPORT.md)
+**Related:** [Documents hub](../README.md) · [Thai technical As-is](../Technical_Documents/) · [Presentations](../Presentations/README.md) · [LAN deploy](../../deploy/nginx/DEPLOYMENT.md) · [Workflow contract](../../Processes/FULL_WORKFLOW_CONTRACT.md)
 
 ---
 
@@ -88,6 +88,6 @@ Build: `npm run guides:technical`
 |------|---------|
 | Prune caches & gate logs | `npm run cleanup:project` |
 | Regenerate process appendix | `python scripts/build-appendix-process-steps.py` |
-| LAN diagnostic (Ubuntu) | `bash deploy/nginx/diagnose-502.sh` |
+| LAN diagnostic (Ubuntu) | `bash deploy/nginx/diagnose.sh` |
 
 Removes: `test-results/`, `playwright-report/`, `reports/*.log`, timestamped ledgers, root `*_ERROR_LEDGER_ROUND*.md`

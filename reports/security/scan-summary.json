@@ -1,29 +1,29 @@
 {
-  "generatedAt": "2026-06-23T02:33:55.779Z",
+  "generatedAt": "2026-06-24T04:37:07.345Z",
   "passed": true,
   "steps": [
     {
       "name": "app-security-scan",
       "ok": true,
-      "durationMs": 376,
+      "durationMs": 1497,
       "exitCode": 0
     },
     {
       "name": "cve-lite",
       "ok": true,
-      "durationMs": 8196,
+      "durationMs": 8277,
       "exitCode": 0
     },
     {
       "name": "audit-prod",
       "ok": true,
-      "durationMs": 2594,
+      "durationMs": 2874,
       "exitCode": 0
     },
     {
       "name": "security-hardening",
       "ok": true,
-      "durationMs": 1896,
+      "durationMs": 1477,
       "exitCode": 0
     }
   ]

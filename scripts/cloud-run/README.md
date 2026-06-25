@@ -12,7 +12,7 @@ scripts/cloud-run/
 ├── Dockerfile.postgres         # PostgreSQL container config
 ├── servers.json                # pgAdmin server connections
 └── init-scripts/
-    └── 00-schema.sql           # ⚠️ Deprecated - references main file
+    └── 01-init.sql             # Copy of master schema (optional)
 ```
 
 
@@ -46,8 +46,8 @@ docker exec -i izara-postgres psql -U postgres -d izara_phase1 < scripts/databas
 ## 📝 Notes
 
 
-- The `init-scripts/00-schema.sql` is kept for backward compatibility
+- Schema source of truth: `scripts/database/izara-database.sql`
 
 - All new changes should be made to `scripts/database/izara-database.sql`
 
-- See `scripts/database/README.md` for complete documentation
+- See `scripts/database/README.md` and `Processes/DATABASE_TABLES_REFERENCE.md` for complete documentation

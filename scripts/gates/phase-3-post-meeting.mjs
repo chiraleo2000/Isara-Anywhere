@@ -43,12 +43,8 @@ const vitest = spawnSync(
 if (vitest.status !== 0) bailWithArchive(ROUND, 'vitest-post-meeting');
 
 resetDatabaseBaseline();
-if (!runHeadedE2e(['Q-meeting-lifecycle'], 'e2e-Q-lifecycle')) {
-  bailWithArchive(ROUND, 'e2e-Q-lifecycle');
-}
-resetDatabaseBaseline();
-if (!runHeadedE2e(['Q2-post-meeting-doctor'], 'e2e-Q2-post-meeting')) {
-  bailWithArchive(ROUND, 'e2e-Q2-post-meeting');
+if (!runHeadedE2e(['Q-meeting-lifecycle', 'Q2-post-meeting-doctor'], 'e2e-Q-post-meeting')) {
+  bailWithArchive(ROUND, 'e2e-Q-post-meeting');
 }
 if (!runScreenshotGate('group-Q2', 'screenshots-group-Q2')) bailWithArchive(ROUND, 'screenshots-group-Q2');
 if (!runLedgerRound(ROUND)) bailWithArchive(ROUND, 'ledger-round');

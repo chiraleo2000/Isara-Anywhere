@@ -17,7 +17,10 @@ import {
   PATIENT_URL,
   DOCTOR_URL,
   MEETING_URL,
+  readPageBearerToken,
+  refreshPageAuth,
 } from './helpers/multi-portal';
+import { refreshAuthStorageStates, reinjectAuthFromStorageFile } from './helpers/auth-refresh';
 import { loadWorkflowState, saveWorkflowState } from './helpers/workflow-state';
 import {
   MEETING_HOLD_MS,
@@ -123,7 +126,7 @@ async function startRecordingViaUi(
   if (!(await recBtn.isVisible({ timeout: 5_000 }).catch(() => false))) {
     console.warn('Q01 WARN: recording-indicator not visible — production REC UX gap');
     if (process.env.PW_ALLOW_RECORDING_SEED === '1') {
-      const token = await doctorPage.evaluate(() => localStorage.getItem('token') || '');
+      const token = await readPageBearerToken(doctorPage);
       const resp = await doctorPage.request.post(`${MEETING_URL}/api/meetings/${meetingKey}/auto-record`, {
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
         data: { doctorName: 'Dr. Test', autoTranscribe: true },
@@ -157,7 +160,8 @@ test.describe('Group Q - Meeting Lifecycle (3-party)', () => {
   test('Q01 - Doctor HOST, patient lobby (+ optional guest), admit, 10s media, end', async ({ portals }) => {
     const { doctor, patient } = portals;
     const includeGuest = isMeetingGuestE2EEnabled();
-    const token = await doctor.page.evaluate(() => localStorage.getItem('token') || '');
+    await refreshPageAuth(doctor.page, DOCTOR_URL);
+    const token = await readPageBearerToken(doctor.page);
     let wf: ReturnType<typeof loadMeetingWorkflow>;
     try {
       wf = loadMeetingWorkflow();
@@ -168,7 +172,7 @@ test.describe('Group Q - Meeting Lifecycle (3-party)', () => {
     appointmentId = wf.appointmentId;
 
     await test.step('Q01a - Create meeting (doctor JWT, no social login)', async () => {
-      const token = await doctor.page.evaluate(() => localStorage.getItem('token') || '');
+      const token = await readPageBearerToken(doctor.page);
       expect(token.length, 'doctor uses internal JWT only').toBeGreaterThan(10);
       const resp = await doctor.page.request.post(`${MEETING_URL}/api/meetings/create`, {
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
@@ -248,7 +252,7 @@ test.describe('Group Q - Meeting Lifecycle (3-party)', () => {
       await expect(waiting.or(hostWait).first()).toBeVisible({ timeout: IS_CLOUD ? 90_000 : 45_000 });
       await assertNoActiveJitsi(patient.page, 'Q01c-patient');
 
-      const doctorToken = await doctor.page.evaluate(() => localStorage.getItem('token') || '');
+      const doctorToken = await readPageBearerToken(doctor.page);
       const { userId: patientUserId } = await requirePatientAuth(patient.page, 'Q01c');
       let lobbySnap = await lobbyGetSnapshot(doctor.page, lobbyKey, doctorToken);
       if (!participantIdByRole(lobbySnap, 'patient')) {
@@ -297,7 +301,7 @@ test.describe('Group Q - Meeting Lifecycle (3-party)', () => {
         console.log('  Q01d: skipped (PW_INCLUDE_GUEST not set — doctor+patient only)');
         return;
       }
-      const doctorTokenQ01d = await doctor.page.evaluate(() => localStorage.getItem('token') || '');
+      const doctorTokenQ01d = await readPageBearerToken(doctor.page);
       const inviteResp = await doctor.page.request.post(`${MEETING_URL}/api/meetings/${meetingKey}/guest-invite`, {
         headers: { Authorization: `Bearer ${doctorTokenQ01d}`, 'Content-Type': 'application/json' },
         data: { guestName: GUEST_NAME, guestEmail: 'guest@test.com', guestType: 'family' },
@@ -435,7 +439,7 @@ test.describe('Group Q - Meeting Lifecycle (3-party)', () => {
         timeout: IS_CLOUD ? 120_000 : 60_000,
       });
 
-      const doctorToken = await doctor.page.evaluate(() => localStorage.getItem('token') || '');
+      const doctorToken = await readPageBearerToken(doctor.page);
       if (includeGuest) {
         expect(guestPage, 'Q01f guest browser required for 3-party').toBeTruthy();
         const guestJoin = guestPage!.getByTestId('guest-join-btn');
@@ -459,7 +463,7 @@ test.describe('Group Q - Meeting Lifecycle (3-party)', () => {
         await assertTwoPartyInMeeting({
           doctorPage: doctor.page,
           patientPage: patient.page,
-          meetingKey: appointmentId,
+          meetingKey,
           doctorToken,
           meetingUrl: MEETING_URL,
           apiTimeout: API_TIMEOUT,
@@ -491,19 +495,19 @@ test.describe('Group Q - Meeting Lifecycle (3-party)', () => {
     });
 
     await test.step('Q01g - Doctor ends meeting via UI (saves recording)', async () => {
+      await refreshPageAuth(doctor.page, DOCTOR_URL);
       const endBtn = doctor.page.getByTestId('end-meeting-btn');
       await expect(endBtn, 'end-meeting-btn must be visible for HOST').toBeVisible({
         timeout: IS_CLOUD ? 30_000 : 15_000,
       });
-      const saveRecPromise = doctor.page
-        .waitForResponse(
+      const saveRecPromise = doctor.page.waitForResponse(
           (r) => r.url().includes('/save-recording') && r.request().method() === 'POST',
           { timeout: IS_CLOUD ? 90_000 : 45_000 },
-        )
-        .catch(() => null);
+        );
       await endBtn.click();
-      await saveRecPromise;
-      const token = await doctor.page.evaluate(() => localStorage.getItem('token') || '');
+      const saveRecResp = await saveRecPromise;
+      expect(saveRecResp.ok(), `save-recording must succeed (HTTP ${saveRecResp.status()})`).toBeTruthy();
+      const token = await readPageBearerToken(doctor.page);
       await waitMeetingEnded(doctor.page.request, MEETING_URL, meetingKey, token, IS_CLOUD ? 120_000 : 60_000);
       if (IS_CLOUD) {
         await doctor.page.waitForTimeout(5_000);
@@ -515,16 +519,35 @@ test.describe('Group Q - Meeting Lifecycle (3-party)', () => {
   test('Q02 - Recording on disk/DB, dashboard playback, Gemini summary UI', async ({ portals }) => {
     const { doctor } = portals;
     const wf = loadMeetingWorkflow();
-    const meetingKey = meetingKeyFromContext({ ...wf, meetingId, appointmentId });
-    const token = await doctor.page.evaluate(() => localStorage.getItem('token') || '');
+    // Prefer workflow disk state — module-level meetingId/appointmentId are empty when Q01 is skipped by grep
+    const resolvedAppointmentId = wf.appointmentId || appointmentId;
+    const resolvedMeetingId = wf.meetingId || meetingId;
+    const meetingKey = meetingKeyFromContext({
+      appointmentId: resolvedAppointmentId,
+      meetingId: resolvedMeetingId,
+      roomName: wf.roomName || roomName,
+    });
+    await refreshAuthStorageStates();
+    await reinjectAuthFromStorageFile(doctor.page, 'doctor');
+    await refreshPageAuth(doctor.page, DOCTOR_URL);
+    const token = await readPageBearerToken(doctor.page);
 
     await test.step('Q02a - recordingUrl from real UI end flow (no seed unless PW_ALLOW_RECORDING_SEED=1)', async () => {
+      const pollKeys = [...new Set([resolvedMeetingId, resolvedAppointmentId, meetingKey].filter(Boolean))];
       const recordingUrl = await pollRecordingUrlCloud(
         doctor.page.request,
         MEETING_URL,
         meetingKey,
         token,
         DOCTOR_ID,
+        {
+          bffUrl: DOCTOR_URL,
+          meetingKeys: pollKeys,
+          onAuthFailure: async () => {
+            await refreshPageAuth(doctor.page, DOCTOR_URL);
+            return readPageBearerToken(doctor.page);
+          },
+        },
       );
       expect(recordingUrl, 'recordingUrl present').toBeTruthy();
       saveWorkflowState({ recordingUrl });
@@ -553,7 +576,7 @@ test.describe('Group Q - Meeting Lifecycle (3-party)', () => {
     });
 
     await test.step('Q02c - Doctor health-meeting / results shows recording-player', async () => {
-      const resultKeys = [...new Set([meetingKey, meetingId, wf.appointmentId].filter(Boolean))] as string[];
+      const resultKeys = [...new Set([meetingKey, resolvedMeetingId, resolvedAppointmentId].filter(Boolean))] as string[];
       if (IS_CLOUD) {
         await ensureMeetingResultsForE2E(
           doctor.page.request,
@@ -575,7 +598,7 @@ test.describe('Group Q - Meeting Lifecycle (3-party)', () => {
         (r) => r.url().includes('/results') && r.request().method() === 'GET' && r.status() === 200,
         { timeout: IS_CLOUD ? 90_000 : 45_000 },
       );
-      await doctor.page.goto(`${DOCTOR_URL}/doctor/${DOCTOR_ID}/meeting/${appointmentId}/results`, {
+      await doctor.page.goto(`${DOCTOR_URL}/doctor/${DOCTOR_ID}/meeting/${resolvedAppointmentId}/results`, {
         waitUntil: 'domcontentloaded',
         timeout: IS_CLOUD ? 90_000 : 45_000,
       });
@@ -604,7 +627,7 @@ test.describe('Group Q - Meeting Lifecycle (3-party)', () => {
 
     await test.step('Q02d - generate-summary via UI (Gemini-lite when PW_SKIP_LIVE_GEMINI=1)', async () => {
       const skipLiveGemini = process.env.PW_SKIP_LIVE_GEMINI === '1' || process.env.PW_SKIP_LIVE_GEMINI === 'true';
-      const aptId = appointmentId || wf.appointmentId;
+      const aptId = resolvedAppointmentId;
       expect(aptId, 'Q02d appointmentId from Q01 workflow').toBeTruthy();
       await doctor.page.goto(`${DOCTOR_URL}/doctor/${DOCTOR_ID}/meeting/${aptId}/results`, {
         waitUntil: 'domcontentloaded',
@@ -628,7 +651,7 @@ test.describe('Group Q - Meeting Lifecycle (3-party)', () => {
           await summaryBtn.click();
           await doctor.page.waitForTimeout(IS_CLOUD ? 4_000 : 2_500);
         } else {
-          const authToken = await doctor.page.evaluate(() => localStorage.getItem('token') || '');
+          const authToken = await readPageBearerToken(doctor.page);
           await doctor.page.request.post(`${DOCTOR_URL}/api/meetings/${aptId}/generate-summary`, {
             headers: { Authorization: `Bearer ${authToken}`, 'Content-Type': 'application/json' },
             data: {},

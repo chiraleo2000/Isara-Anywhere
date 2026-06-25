@@ -2,7 +2,7 @@
  * GROUP D (HOST) — G8/G9: Doctor confirms and is Jitsi HOST (not patient/admin).
  * Requires workflow state from Group D serial run (appointmentId).
  */
-import { test, expect, DOCTOR_URL, MEETING_URL } from './helpers/multi-portal';
+import { test, expect, DOCTOR_URL, MEETING_URL, refreshPageAuth } from './helpers/multi-portal';
 import { loadWorkflowState, reloadWorkflowStateFromDisk } from './helpers/workflow-state';
 import { resolveWorkflowAppointmentId } from './helpers/meeting-lifecycle-fixture';
 
@@ -13,6 +13,7 @@ test.describe('Group D — Doctor HOST workflow (G8–G9)', () => {
 
   test('G8–G9 — Doctor confirm creates meeting with moderator for doctor', async ({ portals }) => {
     const page = portals.doctor.page;
+    await refreshPageAuth(page, DOCTOR_URL);
     const token = await page.evaluate(() =>
       localStorage.getItem('token') || localStorage.getItem('izara_auth_token') || '',
     );

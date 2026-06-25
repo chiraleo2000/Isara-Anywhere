@@ -25,7 +25,7 @@ const LOCAL_DEV_ORIGINS = [
   'http://host.docker.internal:3020',
 ];
 
-/** Mode B Nginx LAN subdomains (see deploy/nginx/isara-system.conf). */
+/** Mode B Nginx LAN subdomains (see deploy/nginx/isara-nginx.conf). */
 const LAN_DEV_ORIGINS = [
   'http://patient.isara.local',
   'http://doctor.isara.local',

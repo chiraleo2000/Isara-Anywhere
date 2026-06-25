@@ -20,6 +20,8 @@ describe('Meeting BFF proxy contracts', () => {
   it('BFF-01 — doctor portal proxies results and post-meeting AI routes', () => {
     expect(doctorProxy).toMatch(/MEETING_SERVER_URL|VITE_MEETING_SERVER_URL/);
     expect(doctorProxy).toMatch(/sessionToken/);
+    expect(doctorProxy).toMatch(/resolveSessionTokenFromRequest/);
+    expect(doctorProxy).toMatch(/headers\.Cookie|headers\[['"]Cookie['"]\]/);
     const recordingIdx = doctorProxy.indexOf("'/api/meetings/recording-stream'");
     const idIdx = doctorProxy.indexOf("'/api/meetings/:id'");
     expect(recordingIdx, 'recording-stream before :id').toBeGreaterThan(-1);

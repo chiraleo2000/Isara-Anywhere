@@ -1,10 +1,10 @@
 # 🗄️ PostgreSQL Database Architecture & Schema
 
-**Version:** 1.6.0
-**Last Updated:** April 1, 2026
+**Version:** 2.0.0
+**Last Updated:** June 25, 2026
 **Database:** PostgreSQL 18 + pgvector
 **Schema:** `izara_phase1`
-**Status:** ✅ Phase 1 Complete — 37+ Tables
+**Status:** ✅ Production schema — 53+ tables (see [DATABASE_TABLES_REFERENCE.md](DATABASE_TABLES_REFERENCE.md))
 
 ---
 
@@ -38,7 +38,7 @@ Izara Telemedicine uses a **single PostgreSQL 18 database** (`izara_phase1`) as 
 | Database Name | `izara_phase1` |
 | PostgreSQL Version | 18 |
 | Extensions | pgvector, uuid-ossp, pgcrypto |
-| Total Tables | 37+ |
+| Total Tables | 53+ |
 | Master Schema | `scripts/database/izara-database.sql` (v5.1.0) |
 | Seed Data | `scripts/database/seed-dev-data.sql` |
 | DB Tool | `scripts/database/db-tool.cjs` |
@@ -51,11 +51,15 @@ Izara Telemedicine uses a **single PostgreSQL 18 database** (`izara_phase1`) as 
 | User Management | users, sessions, password_resets, device_tokens, biometric_credentials, refresh_tokens | 6 |
 | Patient Data | patient_profiles, phr, vital_signs, living_wills, living_will_versions, patient_consents, push_subscriptions | 7 |
 | Doctor Management | doctor_profiles, doctors, doctor_schedules, doctor_reviews, consultants | 5 |
-| Appointments & Meetings | appointments, meeting_records, meeting_transcripts, ai_chat_history | 4 |
-| Clinical Data | emr, prescriptions, lab_orders, transcriptions_embeddings, ai_chat_memory | 5 |
+| Appointments & Meetings | appointments, meeting_records, meeting_transcripts, meeting_chats, meeting_invites, recording_share_tokens, appointment_ai_suggestions | 7 |
+| Clinical Data | emr, emr_records, prescriptions, lab_orders, imaging_orders, patient_instructions, health_timeline | 7 |
 | Content & Knowledge | medical_content, clinical_resources, icd10_codes, drugs, knowledge_base, ai_document_analysis | 6 |
-| AI & Decision Support | cds_logs, ai_validations, notifications | 3 |
-| Audit | audit_logs | 1 |
+| AI & Decision Support | ai_chat_history, ai_chat_memory, transcript_embeddings, cds_logs, ai_validations, notifications | 6 |
+| Mobile & Sync | notification_preferences, user_settings, sync_queue, user_api_connections, api_connection_audit | 5 |
+| Extended Clinical | ctm_assessments, geriatric_screenings, sos_alerts, follow_ups, nursing_tasks, predictive_analytics | 6 |
+| Audit & Admin | audit_logs, access_audit, admin_actions | 3 |
+
+> **Quick reference with workflow mapping:** [DATABASE_TABLES_REFERENCE.md](DATABASE_TABLES_REFERENCE.md)
 
 ---
 
@@ -819,6 +823,65 @@ CREATE TABLE emr (
 | ip_address | VARCHAR(45) | Client IP |
 | user_agent | TEXT | Browser info |
 | performed_by | VARCHAR(50) | Actor reference |
+
+---
+
+
+### 4.9 Mobile, Sync & Preferences (5 Tables)
+
+> Created by `migrations/v2.0.0-phase2-tables.sql`. See [DATABASE_TABLES_REFERENCE.md](DATABASE_TABLES_REFERENCE.md) §9.
+
+| Table | Purpose |
+| ----- | ------- |
+| `notification_preferences` | Per-user channel/category notification toggles |
+| `user_settings` | Theme, language, biometric, sync preferences |
+| `sync_queue` | Offline sync queue with conflict resolution |
+| `user_api_connections` | Encrypted third-party API tokens (Google Fit, LINE, etc.) |
+| `api_connection_audit` | Audit trail for API connection changes |
+
+---
+
+
+### 4.10 Extended Clinical Modules (6 Tables)
+
+> Created by `migrations/v2.1.0-phase2-ai-his.sql`. Schema deployed; UI partial.
+
+| Table | Purpose |
+| ----- | ------- |
+| `ctm_assessments` | Thai Traditional Medicine — dhatu, symptoms, herbal prescription |
+| `geriatric_screenings` | Elderly screening scores and risk level |
+| `sos_alerts` | Patient emergency SOS with geolocation |
+| `follow_ups` | Post-visit follow-up scheduling and reminders |
+| `nursing_tasks` | Nursing dashboard task workflow |
+| `predictive_analytics` | AI risk scoring per patient |
+| `emr_records` | Simplified visit record (parallel to full SOAP `emr`) |
+
+---
+
+
+### 4.11 Meeting Server Runtime Tables (3 Tables)
+
+> Created at Meeting Server startup if missing (`Izara-jitsi-server/backend/index.js`).
+
+| Table | Purpose |
+| ----- | ------- |
+| `meeting_chats` | In-meeting chat messages (XSS-sanitized) |
+| `meeting_invites` | Guest invite tokens with expiry |
+| `recording_share_tokens` | Time-limited recording share links |
+
+---
+
+
+### 4.12 Additional Tables (Runtime / Migration)
+
+| Table | Source | Purpose |
+| ----- | ------ | ------- |
+| `imaging_orders` | Doctor portal runtime | Imaging orders and result documents |
+| `patient_instructions` | db-tool / post-meeting | Thai patient instruction sheets |
+| `health_timeline` | db-tool legacy | Chronological patient event log |
+| `access_audit` | PDPA migration | Doctor access consent audit |
+| `appointment_ai_suggestions` | v2.2.0 migration | AI specialty matching for pool |
+| `admin_actions` | v2.2.0 migration | Admin action log |
 
 ---
 

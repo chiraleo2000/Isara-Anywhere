@@ -1,0 +1,224 @@
+{
+  "exportedAt": "2026-06-24T09:14:27.306Z",
+  "source": {
+    "host": "localhost",
+    "port": 5433,
+    "database": "izara_phase1"
+  },
+  "tableCount": 53,
+  "totalRows": 277,
+  "tables": [
+    {
+      "table": "ai_chat_history",
+      "rows": 0
+    },
+    {
+      "table": "ai_chat_memory",
+      "rows": 0
+    },
+    {
+      "table": "ai_document_analysis",
+      "rows": 0
+    },
+    {
+      "table": "ai_validations",
+      "rows": 0
+    },
+    {
+      "table": "api_connection_audit",
+      "rows": 0
+    },
+    {
+      "table": "appointments",
+      "rows": 6
+    },
+    {
+      "table": "audit_logs",
+      "rows": 48
+    },
+    {
+      "table": "biometric_credentials",
+      "rows": 0
+    },
+    {
+      "table": "cds_logs",
+      "rows": 0
+    },
+    {
+      "table": "clinical_resources",
+      "rows": 6
+    },
+    {
+      "table": "consultants",
+      "rows": 3
+    },
+    {
+      "table": "ctm_assessments",
+      "rows": 0
+    },
+    {
+      "table": "device_tokens",
+      "rows": 0
+    },
+    {
+      "table": "doctor_profiles",
+      "rows": 0
+    },
+    {
+      "table": "doctor_reviews",
+      "rows": 0
+    },
+    {
+      "table": "doctor_schedules",
+      "rows": 5
+    },
+    {
+      "table": "doctors",
+      "rows": 3
+    },
+    {
+      "table": "drugs",
+      "rows": 0
+    },
+    {
+      "table": "emr",
+      "rows": 0
+    },
+    {
+      "table": "emr_records",
+      "rows": 0
+    },
+    {
+      "table": "follow_ups",
+      "rows": 0
+    },
+    {
+      "table": "geriatric_screenings",
+      "rows": 0
+    },
+    {
+      "table": "icd10_codes",
+      "rows": 0
+    },
+    {
+      "table": "imaging_orders",
+      "rows": 0
+    },
+    {
+      "table": "knowledge_base",
+      "rows": 6
+    },
+    {
+      "table": "lab_orders",
+      "rows": 1
+    },
+    {
+      "table": "living_will_versions",
+      "rows": 0
+    },
+    {
+      "table": "living_wills",
+      "rows": 0
+    },
+    {
+      "table": "medical_content",
+      "rows": 9
+    },
+    {
+      "table": "meeting_chats",
+      "rows": 0
+    },
+    {
+      "table": "meeting_invites",
+      "rows": 0
+    },
+    {
+      "table": "meeting_records",
+      "rows": 1
+    },
+    {
+      "table": "meeting_transcripts",
+      "rows": 0
+    },
+    {
+      "table": "notification_preferences",
+      "rows": 0
+    },
+    {
+      "table": "notifications",
+      "rows": 18
+    },
+    {
+      "table": "nursing_tasks",
+      "rows": 0
+    },
+    {
+      "table": "password_resets",
+      "rows": 0
+    },
+    {
+      "table": "patient_consents",
+      "rows": 0
+    },
+    {
+      "table": "patient_profiles",
+      "rows": 3
+    },
+    {
+      "table": "phr",
+      "rows": 3
+    },
+    {
+      "table": "predictive_analytics",
+      "rows": 0
+    },
+    {
+      "table": "prescriptions",
+      "rows": 0
+    },
+    {
+      "table": "push_subscriptions",
+      "rows": 0
+    },
+    {
+      "table": "recording_share_tokens",
+      "rows": 0
+    },
+    {
+      "table": "refresh_tokens",
+      "rows": 59
+    },
+    {
+      "table": "sessions",
+      "rows": 90
+    },
+    {
+      "table": "sos_alerts",
+      "rows": 0
+    },
+    {
+      "table": "sync_queue",
+      "rows": 0
+    },
+    {
+      "table": "transcript_embeddings",
+      "rows": 0
+    },
+    {
+      "table": "user_api_connections",
+      "rows": 0
+    },
+    {
+      "table": "user_settings",
+      "rows": 0
+    },
+    {
+      "table": "users",
+      "rows": 13
+    },
+    {
+      "table": "vital_signs",
+      "rows": 3
+    }
+  ]
+}

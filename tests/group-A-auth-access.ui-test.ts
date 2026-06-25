@@ -18,6 +18,8 @@ import {
   ROLE_BROWSER_MATRIX, getRoleBrowserSpec,
   refreshPatientSession, waitForContent,
   gotoCloudWithRetry,
+  readPageBearerToken,
+  refreshPageAuth,
 } from './helpers/multi-portal';
 import { resetScreenshotSession } from './helpers/screenshot-distinct';
 
@@ -49,7 +51,7 @@ test.describe('Group A — Auth & Access Verification', () => {
     });
 
     await test.step('Admin dashboard is healthy', async () => {
-      await waitForContent(admin.page, 'A01-admin', IS_CLOUD ? 30_000 : 20_000);
+      await waitForContent(admin.page, 'A01-admin', IS_CLOUD ? 90_000 : 20_000, 'admin');
       await assertFullHealth(admin.page, 'A01-admin');
       await assertTailwindCssHealthy(admin.page, 'A01-admin-css');
       await snap(admin.page, 'A01-admin-dashboard', 'group-A');
@@ -202,13 +204,23 @@ test.describe('Group A — Auth & Access Verification', () => {
   /* ── A08 — API data endpoints return 200 with actual data ───────── */
   test('A08 — API data endpoints return 200 with data', async ({ portals }) => {
     const { patient, doctor } = portals;
+    const apiTimeout = IS_CLOUD ? 30_000 : 10_000;
 
     await test.step('Patient appointments API returns 200', async () => {
-      const token = await patient.page.evaluate(() => localStorage.getItem('auth_token') || '');
-      const resp = await patient.page.request.get(`${PATIENT_URL}/api/appointments`, {
+      await refreshPatientSession(patient.page);
+      let token = await readPageBearerToken(patient.page);
+      let resp = await patient.page.request.get(`${PATIENT_URL}/api/appointments`, {
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-        timeout: 10_000,
+        timeout: apiTimeout,
       }).catch(() => null);
+      if (resp?.status() === 401) {
+        await refreshPageAuth(patient.page, PATIENT_URL);
+        token = await readPageBearerToken(patient.page);
+        resp = await patient.page.request.get(`${PATIENT_URL}/api/appointments`, {
+          headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+          timeout: apiTimeout,
+        }).catch(() => null);
+      }
       expect(resp, 'Appointments API reachable').toBeTruthy();
       if (resp) {
         expect(resp.status(), 'Appointments must return 200').toBe(200);
@@ -217,11 +229,20 @@ test.describe('Group A — Auth & Access Verification', () => {
     });
 
     await test.step('Patient profile API returns 200', async () => {
-      const token = await patient.page.evaluate(() => localStorage.getItem('auth_token') || '');
-      const resp = await patient.page.request.get(`${PATIENT_URL}/api/auth/me`, {
+      await refreshPatientSession(patient.page);
+      let token = await readPageBearerToken(patient.page);
+      let resp = await patient.page.request.get(`${PATIENT_URL}/api/auth/me`, {
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-        timeout: 10_000,
+        timeout: apiTimeout,
       }).catch(() => null);
+      if (resp?.status() === 401) {
+        await refreshPageAuth(patient.page, PATIENT_URL);
+        token = await readPageBearerToken(patient.page);
+        resp = await patient.page.request.get(`${PATIENT_URL}/api/auth/me`, {
+          headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+          timeout: apiTimeout,
+        }).catch(() => null);
+      }
       expect(resp, 'Profile API reachable').toBeTruthy();
       if (resp) {
         expect(resp.status(), 'Profile must return 200').toBe(200);
@@ -230,11 +251,19 @@ test.describe('Group A — Auth & Access Verification', () => {
     });
 
     await test.step('Doctor patients API returns 200', async () => {
-      const token = await doctor.page.evaluate(() => localStorage.getItem('token') || '');
-      const resp = await doctor.page.request.get(`${DOCTOR_URL}/api/patients`, {
+      let token = await readPageBearerToken(doctor.page);
+      let resp = await doctor.page.request.get(`${DOCTOR_URL}/api/patients`, {
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-        timeout: 10_000,
+        timeout: apiTimeout,
       }).catch(() => null);
+      if (resp?.status() === 401) {
+        await refreshPageAuth(doctor.page, DOCTOR_URL);
+        token = await readPageBearerToken(doctor.page);
+        resp = await doctor.page.request.get(`${DOCTOR_URL}/api/patients`, {
+          headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+          timeout: apiTimeout,
+        }).catch(() => null);
+      }
       if (resp) {
         expect(resp.status(), 'Doctor patients API').toBeLessThan(400);
         console.log(`  ✅ A08: Doctor patients — ${resp.status()}`);
@@ -256,6 +285,21 @@ test.describe('Group A — Auth & Access Verification', () => {
     });
 
     await test.step('Doctor dashboard has distinct KPI vs full page', async () => {
+      if (IS_CLOUD) {
+        await refreshPageAuth(doctor.page, DOCTOR_URL);
+      }
+      await gotoCloudWithRetry(
+        doctor.page,
+        `${DOCTOR_URL}/doctor/DOC-TEST-001/dashboard`,
+        'A09-doctor-dashboard',
+        IS_CLOUD ? 90_000 : 45_000,
+      );
+      await waitForContent(doctor.page, 'A09-doctor', IS_CLOUD ? 90_000 : 30_000, 'doctor');
+      await expect(doctor.page).toHaveURL(/\/doctor\/DOC-TEST-001\/dashboard/, {
+        timeout: IS_CLOUD ? 60_000 : 30_000,
+      });
+      const kpi = doctor.page.getByTestId('doctor-dashboard-kpi');
+      await expect(kpi).toBeVisible({ timeout: IS_CLOUD ? 120_000 : 60_000 });
       const body = await doctor.page.locator('body').innerText();
       const hasData = /\d+/.test(body) && body.length > 200;
       expect(hasData, 'Doctor dashboard should have stats').toBeTruthy();
@@ -322,6 +366,8 @@ test.describe('Group A — Auth & Access Verification', () => {
       await expect(page.locator('#register-email')).toBeVisible({ timeout: 10_000 });
 
       await gotoCloudWithRetry(page, `${PATIENT_URL}/reset-password`, 'A2b/reset-password');
+      await page.waitForLoadState('domcontentloaded');
+      await page.locator('#root').waitFor({ state: 'attached', timeout: 15_000 }).catch(() => {});
       await assertFullHealth(page, 'A2b/reset-password');
       await expect(
         page.getByText(/โทเค็น|รีเซ็ตรหัสผ่าน|reset password/i).first(),

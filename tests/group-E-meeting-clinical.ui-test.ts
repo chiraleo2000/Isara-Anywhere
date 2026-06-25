@@ -17,6 +17,8 @@ import {
   probeRenderHealth, formatDiagnosticReport,
   clickLocatorSafe,
   PATIENT_URL, DOCTOR_URL, MEETING_URL,
+  readPageBearerToken,
+  refreshPageAuth,
 } from './helpers/multi-portal';
 import { loadWorkflowState, reloadWorkflowStateFromDisk, saveWorkflowState } from './helpers/workflow-state';
 import {
@@ -497,12 +499,8 @@ test.describe('Group E - Meeting Server & Clinical Workflow', () => {
       expect(docs?.length, 'Stored lab report documents').toBeGreaterThanOrEqual(1);
       expect(docs[0].name).toBe('lab-panel.png');
 
-      const patientToken = await patient.page.evaluate(() =>
-        localStorage.getItem('auth_token')
-        || localStorage.getItem('izara_auth_token')
-        || localStorage.getItem('token')
-        || '',
-      );
+      await refreshPageAuth(patient.page, PATIENT_URL);
+      let patientToken = await readPageBearerToken(patient.page);
       let orderVisible = false;
       const waitUntil = Date.now() + (IS_CLOUD ? 45_000 : 20_000);
       while (Date.now() < waitUntil) {
@@ -510,6 +508,11 @@ test.describe('Group E - Meeting Server & Clinical Workflow', () => {
           headers: { Authorization: `Bearer ${patientToken}` },
           timeout: API_TIMEOUT,
         });
+        if (patientList.status() === 401) {
+          await refreshPageAuth(patient.page, PATIENT_URL);
+          patientToken = await readPageBearerToken(patient.page);
+          continue;
+        }
         if (!patientList.ok()) {
           await patient.page.waitForTimeout(2_000);
           continue;
@@ -526,11 +529,19 @@ test.describe('Group E - Meeting Server & Clinical Workflow', () => {
         console.warn('  E2a: Lab order list propagation delayed; verifying direct detail endpoint');
       }
 
-      const patientDetail = await patient.page.request.get(
+      let patientDetail = await patient.page.request.get(
         `${PATIENT_URL}/api/phr/lab-orders/${labOrderId}`,
         { headers: { Authorization: `Bearer ${patientToken}` }, timeout: API_TIMEOUT },
       );
-      expect(patientDetail.ok(), 'Patient lab order detail').toBeTruthy();
+      if (patientDetail.status() === 401) {
+        await refreshPageAuth(patient.page, PATIENT_URL);
+        patientToken = await readPageBearerToken(patient.page);
+        patientDetail = await patient.page.request.get(
+          `${PATIENT_URL}/api/phr/lab-orders/${labOrderId}`,
+          { headers: { Authorization: `Bearer ${patientToken}` }, timeout: API_TIMEOUT },
+        );
+      }
+      expect(patientDetail.ok(), `Patient lab order detail (HTTP ${patientDetail.status()})`).toBeTruthy();
       const detailBody = await patientDetail.json();
       const detailDocs =
         detailBody.labOrder?.results?.documents || detailBody.results?.documents || [];

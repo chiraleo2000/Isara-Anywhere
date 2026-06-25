@@ -1,7 +1,8 @@
 # Scripts — Izara Anywhere
 
-Essential automation for **test**, **cloud gate**, **deploy**, **database**, and **Thai user guides**.  
-Legacy one-off scripts live under [`archive/deprecated/`](archive/deprecated/) (not referenced by `package.json`).
+Essential automation for **test**, **cloud gate**, **deploy**, **database**, and **Thai user guides**.
+
+Prune caches and stale artifacts: `npm run cleanup:project` (dry-run: `npm run cleanup:project:dry`).
 
 ## Essential scripts (active)
 
@@ -46,6 +47,9 @@ npm run cleanup:cloud-test-only
 
 Removes cloud demo accounts; does not change `scripts/startup_data/` (repo seeds only).
 
-## Archived (deprecated)
+## Project cleanup
 
-Moved to `scripts/archive/deprecated/` — diagnostic loops, old migrate helpers, duplicate guide generators, and one-off test PS1 files. Do not use unless you are replaying a historical run.
+```powershell
+npm run cleanup:project:dry   # preview
+npm run cleanup:project       # remove test caches, stale reports, deprecated scripts/archive, Presentations/media junk
+```

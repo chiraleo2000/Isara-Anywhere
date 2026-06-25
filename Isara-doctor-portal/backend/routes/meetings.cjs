@@ -2,14 +2,14 @@
  * Meeting-server proxy routes for doctor portal (same-origin BFF).
  * Uses req.sessionToken from authenticateToken — never stale client-only tokens.
  */
+const { resolveSessionTokenFromRequest } = require('../sessionAuth.cjs');
+
 function getMeetingServerBase() {
   return (process.env.MEETING_SERVER_URL || process.env.VITE_MEETING_SERVER_URL || '').replace(/\/$/, '');
 }
 
 function resolveUpstreamAuth(req) {
-  const header = req.headers.authorization || '';
-  const bearer = header.startsWith('Bearer ') ? header.slice(7) : '';
-  return req.sessionToken || bearer;
+  return req.sessionToken || resolveSessionTokenFromRequest(req);
 }
 
 async function proxyMeetingServerRequest(req, res, method, pathSuffix) {
@@ -31,6 +31,9 @@ async function proxyMeetingServerRequest(req, res, method, pathSuffix) {
         'Content-Type': 'application/json',
       },
     };
+    if (req.headers.cookie) {
+      init.headers.Cookie = String(req.headers.cookie);
+    }
     if (method !== 'GET' && method !== 'HEAD' && req.body && Object.keys(req.body).length > 0) {
       init.body = JSON.stringify(req.body);
     }

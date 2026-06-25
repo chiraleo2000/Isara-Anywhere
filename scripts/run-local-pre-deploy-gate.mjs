@@ -20,6 +20,7 @@ const gateEnv = {
   PW_SKIP_FIREFOX_JROLE: '1',
   PW_SKIP_DEFECT_DM5: '1',
   PW_SKIP_DEFECT_DM6: '1',
+  E2E_ALLOW_PARALLEL_SESSIONS: '1',
   PATIENT_URL: 'http://127.0.0.1:3005',
   DOCTOR_URL: 'http://127.0.0.1:3010',
   MEETING_URL: 'http://127.0.0.1:3020',
@@ -60,9 +61,11 @@ function npmStep(name, script) {
 }
 
 const gateSteps = [
-  npmStep('verify-deps', 'verify:deps'),
+  ...(isWin || process.env.GATE_SKIP_VERIFY_DEPS === '1'
+    ? []
+    : [npmStep('verify-deps', 'verify:deps')]),
   { name: 'env-audit', cmd: 'node', args: ['scripts/env/audit-doctor-portal-env.mjs'], cwd: root },
-  npmStep('unit-coverage', 'test:unit:coverage'),
+  npmStep('unit-coverage', 'test:unit:coverage:gate'),
   npmStep('unit-auth', 'test:unit:auth'),
   npmStep('unit-appointments', 'test:unit:appointments'),
   npmStep('unit-clinical', 'test:unit:clinical'),

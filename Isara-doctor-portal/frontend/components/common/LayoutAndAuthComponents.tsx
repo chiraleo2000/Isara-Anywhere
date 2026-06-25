@@ -60,9 +60,9 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
 
       } else {
         // ========================================
-        // REGISTRATION FLOW
+        // REGISTRATION FLOW — pending admin approval, no auto-login
         // ========================================
-        const result = await authService.register({
+        await authService.register({
           email: formData.email,
           password: formData.password,
           confirmPassword: formData.confirmPassword,
@@ -72,14 +72,10 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
           medicalLicenseNumber: formData.medicalLicenseNumber,
         });
 
-        setSuccess(`Account created! Welcome, Dr. ${result.user.name}!`);
-        setLoading(false); // CRITICAL: Clear loading state
-
-        // Small delay to show success message
-        await new Promise(resolve => setTimeout(resolve, 300));
-
-        // Trigger parent component to check auth
-        onLogin();
+        setSuccess('Registration submitted! Please wait for admin approval before signing in.');
+        setIsLogin(true);
+        setFormData({ ...formData, password: '', confirmPassword: '' });
+        setLoading(false);
       }
 
     } catch (err: any) {

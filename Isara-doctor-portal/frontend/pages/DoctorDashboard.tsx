@@ -1872,14 +1872,6 @@ export const DoctorDashboard: React.FC<DoctorDashboardProps> = ({
     );
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-96">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600"></div>
-      </div>
-    );
-  }
-
   return (
     <div className={`min-h-full flex flex-col overflow-y-auto overflow-x-hidden min-w-0 max-w-full ${tc('bg-gray-900', 'bg-gray-50')}`}>
       {/* ============================================================================ */}

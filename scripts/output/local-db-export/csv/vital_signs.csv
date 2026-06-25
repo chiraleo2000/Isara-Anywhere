@@ -1,0 +1,4 @@
+"id","patient_id","blood_pressure_systolic","blood_pressure_diastolic","heart_rate","temperature","respiratory_rate","oxygen_saturation","blood_glucose","blood_glucose_type","weight","height","bmi","measured_at","source","notes"
+"94867710-6cf4-44d1-b4de-5cca64176766","PATIENT-SOMCHAI","130","85","75","36.5",,"98",,,"78.0","175.0",,"""2026-06-24T04:57:58.618Z""","clinic_measurement",
+"0efd95e2-2e1c-4f05-9f72-1edbe4247ec0","PATIENT-ANAN","145","90","80","36.8",,"97","145","fasting","75.0","168.0",,"""2026-06-24T04:57:58.618Z""","clinic_measurement",
+"76245c34-9891-41b1-8a0d-b95c69ebd228","PATIENT-DEMO","120","80","72","36.6",,"99",,,"70.0","170.0",,"""2026-06-24T04:57:58.618Z""","patient_input",

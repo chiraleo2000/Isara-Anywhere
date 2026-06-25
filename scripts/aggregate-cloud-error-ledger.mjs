@@ -93,10 +93,12 @@ function collectSpecFailures(spec, suiteTitle, project, file) {
   const failures = [];
   for (const r of spec.tests || []) {
     const projectName = r.projectName || project;
-    for (const res of r.results || []) {
-      if (res.status === 'passed' || res.status === 'skipped') continue;
-      failures.push(buildFailureEntry({ res, err: res.error || {}, title, projectName, file }));
-    }
+    const results = r.results || [];
+    if (results.length === 0) continue;
+    // Only the final attempt counts — flaky tests may fail once then pass on retry.
+    const last = results[results.length - 1];
+    if (last.status === 'passed' || last.status === 'skipped') continue;
+    failures.push(buildFailureEntry({ res: last, err: last.error || {}, title, projectName, file }));
   }
   return failures;
 }

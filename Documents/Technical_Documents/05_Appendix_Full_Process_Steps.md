@@ -7556,9 +7556,9 @@ const { t, language } = useSettings();
 
 ---
 
-### FULL_WORKFLOW_HARDENING_COMPLETION_REPORT.md
+### FULL_WORKFLOW_CONTRACT.md
 
-**ต้นฉบับ:** [`Processes/FULL_WORKFLOW_HARDENING_COMPLETION_REPORT.md`](../../Processes/FULL_WORKFLOW_HARDENING_COMPLETION_REPORT.md)
+**ต้นฉบับ:** [`Processes/FULL_WORKFLOW_CONTRACT.md`](../../Processes/FULL_WORKFLOW_CONTRACT.md)
 
 #### Residual notes
 

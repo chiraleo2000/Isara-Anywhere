@@ -1049,7 +1049,7 @@ MEETING_SERVER_URL=<http://localhost:3020>
 | Step | Actor | Action | Assertion / `data-testid` |
 |------|--------|--------|---------------------------|
 | Q01a | Doctor | `POST /api/meetings/create` with session JWT | Meeting record + Jitsi room; doctor is HOST |
-| Q01b | Doctor | Mount Jitsi in `VirtualMeeting.tsx` / `MeetingRoom.tsx` | Doctor iframe loaded; `configOverwrite.moderator: true` |
+| Q01b | Doctor | Mount Jitsi in `MeetingRoom.tsx` (`/meeting/:id`) | Doctor iframe loaded; `configOverwrite.moderator: true` |
 | Q01c | Patient | `joinMeetingToLobby` → Izara lobby | `lobby-waiting-screen` visible; **not** in Jitsi yet |
 | Q01d | Guest | Open `guest_meeting_url` + token | `guest-name-input` → submit → `guest-lobby-waiting` |
 | Q01e | Doctor | Click `admit-all-btn` | Lobby API status `admitted` for patient + guest |
@@ -1657,7 +1657,7 @@ npm run test:e2e:meeting-lifecycle
 | Patient display name auto-filled | `getIzaraDisplayName`, `prejoinPageEnabled=false`, `requireDisplayName=false` | `jitsiDisplayName.behavior`, `defectIsaraPdfMeetingQueue` DPDF-N* |
 | No JWT on public `meet.jit.si` | `resolveMountJwt` / `pickJitsiJwt` | `meetingWorkflowHardening` MWH01–08 |
 | Doctor joins first (host on public Jitsi) | `notifyHostPresent`, `waitForHostReady`, `host-ready` gate | `hostReadyGate`, DPDF-M* |
-| Doctor layout-first mount | `prepareLayoutThenMount` in `MeetingRoom.tsx`, `VirtualMeeting.tsx` | `virtualMeetingLayoutFirst` |
+| Doctor layout-first mount | `prepareLayoutThenMount` in `MeetingRoom.tsx` | `virtualMeetingLayoutFirst` |
 
 **Local Docker gate:** `npm run test:unit:docker:deploy` — **2817** Vitest + **78** meeting-server contracts PASS.
 

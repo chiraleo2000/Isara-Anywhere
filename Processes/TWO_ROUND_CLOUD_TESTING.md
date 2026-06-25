@@ -1,7 +1,45 @@
 # Two-Round Cloud Testing & Screenshot Documentation
 
 **Release tag:** `v1.7.53`  
-**Last updated:** June 13, 2026
+**Last updated:** June 24, 2026 (W9 follow-up — D15 auth fix + gate green)
+
+## Round 5 signoff (2026-06-24) — W9 cloud deploy + docs (full_gate_fix)
+
+| Check | Result | Notes |
+|-------|--------|-------|
+| Local pre-deploy gate (W7) | **PASS** | `test:local:pre-deploy-gate` exit 0; ledger round 9 **P0=0** |
+| Cloud deploy | **PASS** | `cloud:deploy` tag `v1.7.12`; Cloud Build `6f819e99-8f4e-424a-8981-69aa2a31d6ed` (SUCCESS 5m3s); fixed `cloudbuild.yaml` repo-root Docker context |
+| Cloud smoke + gate0 + meeting-ai | **PASS** | smoke 3/3 + G1–G5 + `verify:cloud-meeting-ai` (sttAvailable=true) |
+| Cloud deploy gate E2E (A+D+Q) | **PASS** exit **0** | **21/21** headed — D15 admin pool auth fix (per-role `refresh-e2e-auth`, `ensureDoctorPortalAuthenticated`, API retry); Q01 host-present + participants defer |
+| Cloud doc screenshots | **PASS** | `test:cloud:doc-screenshots` **79/79** (9.3m) |
+| `docs:sync-screenshots` | **PASS** | 153 PNG references synced; **315** PNGs under `docs/screenshots/` |
+| `guides:pdf` | **PARTIAL** | Hung on `USER_GUIDE_PATIENT_WORD_TH.docx` export — close Word lock and re-run |
+| Process audit | **PASS** | `test:audit:process` **0 gaps** |
+
+**W9 D15 fix (test helpers):** `refreshAuthStorageStateForRole` avoids cross-portal session invalidation on cloud; D3 reinjects admin+doctor before pool; D15 uses `waitForContent(..., 'admin')`, `ensureDoctorPortalAuthenticated`, `pageRequestGetWithAuthRetry` / `pageRequestPatchWithAuthRetry` against `DOCTOR_URL`.
+
+**Cloud Run revisions (dev-testing) — Round 5:**
+
+| Service | Revision |
+|---------|----------|
+| Doctor portal | `izara-doctor-portal-dev-testing-00156-87g` |
+| Patient portal | `izara-patient-portal-dev-testing-00124-rr8` |
+| Meeting server | `izara-meeting-server-dev-testing-00224-6rw` |
+
+**Blockers:** Close `USER_GUIDE_PATIENT_WORD_TH.docx` and re-run `guides:pdf`; Ubuntu LAN deferred (W8).
+
+## Round 4 signoff (2026-06-24) — full_gate_fix COORD (local green, cloud pending deploy)
+
+| Check | Result | Notes |
+|-------|--------|-------|
+| Local pre-deploy gate | **PASS** | `test:local:pre-deploy-gate` / `phase:9-full` exit 0; e2e-full-headed 102 passed (retry 4); screenshots-all PASS; ledger round 9 **P0=0** |
+| Per-phase gates W2–W6 | **PASS** | phase:3–8 exit 0 individually; A09 KPI fix (DoctorDashboard loading gate removed) |
+| Cloud smoke + gate0 | **PASS** | smoke 3/3 + G1–G5 + verify:cloud-meeting-ai |
+| Cloud deploy gate E2E | **FAIL** | A09 on cloud (undeployed DoctorDashboard KPI fix) — requires `cloud:deploy` after local commit |
+| Cloud doc screenshots | **PENDING** | Blocked until cloud deploy + A09 fix on Cloud Run |
+| Guides rebuild | **PASS** | `guides:all` Word/PPT/PDF rebuilt 2026-06-24 |
+
+**Blockers:** Cloud Run deploy of local auth + dashboard fixes; Ubuntu LAN (`isara.local` not resolvable from dev PC).
 
 ## Round 3 signoff (2026-06-13) — BMS telemed parity (real Jitsi only, JWT removed, Gemini key renewed)
 

@@ -244,6 +244,154 @@ export function waitForPostgresReady(timeoutMs = 180_000) {
 
 
 
+const E2E_AUTH_USERS = {
+  patient1: {
+    email: process.env.TEST_PATIENT1_EMAIL || 'demo.test@gmail.com',
+    password: process.env.TEST_PATIENT_PASSWORD || 'P@ssw0rd',
+    id: 'PATIENT-DEMO',
+    name: 'Demo Test Patient',
+    role: 'patient1',
+  },
+  doctor: {
+    email: process.env.TEST_DOCTOR_EMAIL || 'doctor.test@izara.com',
+    password: process.env.TEST_DOCTOR_PASSWORD || 'IzaraDoctor@2024',
+    id: 'DOC-TEST-001',
+    name: 'Dr. Test Good',
+    role: 'doctor',
+  },
+  admin: {
+    email: process.env.TEST_ADMIN_EMAIL || 'admin.test@izara.com',
+    password: process.env.TEST_ADMIN_PASSWORD || 'IzaraAdmin@2024',
+    id: 'ADMIN-TEST-001',
+    name: 'Dr. Admin Kind',
+    role: 'admin',
+  },
+};
+
+function e2ePortalUrls() {
+  const isCloud = process.env.TEST_ENV === 'cloud';
+  return {
+    patientUrl: isCloud
+      ? (process.env.CLOUD_PATIENT_URL || 'https://izara-patient-portal-dev-testing-724889190329.asia-southeast1.run.app')
+      : (process.env.LOCAL_PATIENT_URL || process.env.PATIENT_URL || 'http://127.0.0.1:3005'),
+    doctorUrl: isCloud
+      ? (process.env.CLOUD_DOCTOR_URL || 'https://izara-doctor-portal-dev-testing-724889190329.asia-southeast1.run.app')
+      : (process.env.LOCAL_DOCTOR_URL || process.env.DOCTOR_URL || 'http://127.0.0.1:3010'),
+  };
+}
+
+async function apiLoginFetch(baseUrl, creds) {
+  const attempts = process.env.TEST_ENV === 'cloud' ? 4 : 6;
+  for (let attempt = 0; attempt < attempts; attempt++) {
+    for (const loginPath of ['/api/auth/login', '/auth/login']) {
+      try {
+        const res = await fetch(`${baseUrl}${loginPath}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: creds.email, password: creds.password }),
+          signal: AbortSignal.timeout(process.env.TEST_ENV === 'cloud' ? 30_000 : 15_000),
+        });
+        if (res.status === 200) {
+          const data = await res.json();
+          const token = data.token || data.accessToken || data.data?.token || '';
+          if (token) return token;
+        }
+      } catch {
+        /* retry */
+      }
+    }
+    if (attempt < attempts - 1) {
+      await new Promise((r) => setTimeout(r, 2000 * (attempt + 1)));
+    }
+  }
+  return '';
+}
+
+function buildE2eStorageState(role, token, u, origin) {
+  const now = Date.now();
+  const localStorageEntries = [];
+  const isDoctorPortal = role === 'doctor' || role === 'admin';
+  if (isDoctorPortal) {
+    localStorageEntries.push(
+      { name: 'token', value: token },
+      {
+        name: 'izara_current_user',
+        value: JSON.stringify({
+          id: u.id,
+          email: u.email,
+          name: u.name,
+          displayName: u.name,
+          role: u.role,
+          doctorId: u.id,
+          medicalLicenseNumber: 'TEST-LIC-001',
+          isActive: true,
+          emailVerified: true,
+          isAdmin: role === 'admin',
+          adminPrivileges: role === 'admin'
+            ? {
+                manageDoctors: true,
+                manageAppointments: true,
+                viewAllRecords: true,
+                manageContent: true,
+                systemSettings: true,
+              }
+            : undefined,
+          preferences: { theme: 'light', language: 'th', notifications: { email: true, push: true, sms: false } },
+        }),
+      },
+      { name: 'izara_session_expiry', value: (now + 7_200_000).toString() },
+      { name: 'izara_last_activity', value: now.toString() },
+    );
+  } else {
+    localStorageEntries.push(
+      { name: 'auth_token', value: token },
+      { name: 'izara_user', value: JSON.stringify({ id: u.id, email: u.email, name: u.name, role: 'patient' }) },
+      { name: 'izara_patient_last_activity', value: now.toString() },
+    );
+  }
+  localStorageEntries.push(
+    { name: 'izara_auth_token', value: token },
+    { name: 'user', value: JSON.stringify({ email: u.email, name: u.name, id: u.id, role: u.role, token }) },
+  );
+  return { cookies: [], origins: [{ origin, localStorage: localStorageEntries }] };
+}
+
+/** Re-login E2E users after DB reset (DELETE FROM sessions invalidates cached tokens). */
+export async function refreshE2eAuthAfterDbReset() {
+  const { patientUrl, doctorUrl } = e2ePortalUrls();
+  const authCachePath = path.join(repoRoot, 'tests', 'e2e', '.auth-cache.json');
+  const storageDir = path.join(repoRoot, 'tests', 'e2e', '.auth-states');
+  if (!fs.existsSync(storageDir)) fs.mkdirSync(storageDir, { recursive: true });
+
+  const [p1, doc, adm] = await Promise.all([
+    apiLoginFetch(patientUrl, E2E_AUTH_USERS.patient1),
+    apiLoginFetch(doctorUrl, E2E_AUTH_USERS.doctor),
+    apiLoginFetch(doctorUrl, E2E_AUTH_USERS.admin),
+  ]);
+
+  const cache = {
+    timestamp: Date.now(),
+    users: {
+      patient1: { role: 'patient1', id: E2E_AUTH_USERS.patient1.id, token: p1, email: E2E_AUTH_USERS.patient1.email, name: E2E_AUTH_USERS.patient1.name, portalUrl: patientUrl },
+      doctor: { role: 'doctor', id: E2E_AUTH_USERS.doctor.id, token: doc, email: E2E_AUTH_USERS.doctor.email, name: E2E_AUTH_USERS.doctor.name, portalUrl: doctorUrl },
+      admin: { role: 'admin', id: E2E_AUTH_USERS.admin.id, token: adm, email: E2E_AUTH_USERS.admin.email, name: E2E_AUTH_USERS.admin.name, portalUrl: doctorUrl },
+    },
+  };
+  fs.writeFileSync(authCachePath, JSON.stringify(cache, null, 2));
+
+  for (const [role, token] of [['patient1', p1], ['doctor', doc], ['admin', adm]]) {
+    if (!token) {
+      console.warn(`[e2e-docker] auth refresh: ${role} login returned empty token`);
+      continue;
+    }
+    const u = E2E_AUTH_USERS[role];
+    const origin = role === 'patient1' ? patientUrl : doctorUrl;
+    const state = buildE2eStorageState(role, token, u, origin);
+    fs.writeFileSync(path.join(storageDir, `${role}.json`), JSON.stringify(state, null, 2));
+  }
+  console.log('[e2e-docker] E2E auth storage refreshed after DB reset.');
+}
+
 export function resetDatabaseBaseline() {
 
   console.log('\n[e2e-docker] Resetting database to clean baseline…');
@@ -262,8 +410,9 @@ export function resetDatabaseBaseline() {
   const cleanupSql = path.join(repoRoot, 'scripts', 'database', 'cleanup-test-data.sql');
 
   const seedSql = path.join(repoRoot, 'scripts', 'database', 'seed-dev-data.sql');
+  const ssoSeedSql = path.join(repoRoot, 'scripts', 'database', 'seed-sso-test-users.sql');
 
-  for (const sqlFile of [cleanupSql, seedSql]) {
+  for (const sqlFile of [cleanupSql, seedSql, ssoSeedSql]) {
 
     const result = spawnSync(
 
@@ -286,6 +435,15 @@ export function resetDatabaseBaseline() {
   }
 
   console.log('[e2e-docker] Database baseline restored (cleanup + seed).');
+
+  const refreshResult = spawnSync(
+    process.execPath,
+    [path.join(__dirname, 'refresh-e2e-auth.mjs')],
+    { cwd: repoRoot, stdio: 'inherit', env: process.env },
+  );
+  if (refreshResult.status !== 0) {
+    console.warn('[e2e-docker] Auth refresh after DB reset failed (exit', refreshResult.status, ')');
+  }
 
 }
 

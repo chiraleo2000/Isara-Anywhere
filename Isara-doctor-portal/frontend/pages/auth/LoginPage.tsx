@@ -6,6 +6,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../components/common/AuthProvider';
 import GoogleSignInButton from '../../components/GoogleSignInButton';
+import { validateDoctorPassword, DOCTOR_PASSWORD_HINT } from '../../utils/passwordPolicy';
 
 // Email service for password reset and notifications
 const sendEmail = async (to: string, subject: string, body: string): Promise<boolean> => {
@@ -48,7 +49,7 @@ const LoginPage: React.FC = () => {
   };
 
   const validatePassword = (password: string): boolean => {
-    return password.length >= 8;
+    return validateDoctorPassword(password).valid;
   };
 
   const resetForm = () => {
@@ -74,7 +75,8 @@ const LoginPage: React.FC = () => {
       throw new Error('Please enter a valid email address');
     }
     if (!validatePassword(formData.password)) {
-      throw new Error('Password must be at least 8 characters');
+      const { errors } = validateDoctorPassword(formData.password);
+      throw new Error(errors.join('. '));
     }
     if (formData.password !== formData.confirmPassword) {
       throw new Error('Passwords do not match');
@@ -169,7 +171,14 @@ const LoginPage: React.FC = () => {
         await handleForgotPasswordSubmit();
       }
     } catch (err: any) {
-      setError(err.message || 'Authentication failed. Please check your credentials.');
+      const code = (err.code || '').toUpperCase();
+      if (code === 'PENDING_APPROVAL' || err.message === 'pending_approval') {
+        setError('');
+        setSuccess('Your account is awaiting admin approval. You can log in once approved.');
+        setViewMode('pending-approval');
+      } else {
+        setError(err.message || 'Authentication failed. Please check your credentials.');
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -403,7 +412,7 @@ const LoginPage: React.FC = () => {
                 </h4>
                 <ul className="text-sm text-blue-800 space-y-1 ml-7">
                   <li>• Valid email address</li>
-                  <li>• Password: minimum 8 characters</li>
+                  <li>• Password: {DOCTOR_PASSWORD_HINT.toLowerCase()}</li>
                   <li>• Full name (e.g., Dr. John Smith)</li>
                   <li>• Valid Medical License Number</li>
                   <li>• Admin approval required before access</li>
@@ -585,7 +594,7 @@ const LoginPage: React.FC = () => {
                       </button>
                     </div>
                     {viewMode === 'register' && (
-                      <p className="text-xs text-gray-600 mt-2">Minimum 8 characters required</p>
+                      <p className="text-xs text-gray-600 mt-2">{DOCTOR_PASSWORD_HINT}</p>
                     )}
                   </div>
                 )}

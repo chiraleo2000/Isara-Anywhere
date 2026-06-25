@@ -1,7 +1,7 @@
 # 📄 Izara Telemedicine — Comprehensive Workflows, Processes & Architecture
 
-**Version:** 1.7.51
-**Last Updated:** June 8, 2026
+**Version:** 1.7.52
+**Last Updated:** June 25, 2026
 **Focus:** Web Application Only (Patient Portal + Doctor Portal + Meeting Server)
 **Status:** ✅ Phase 1 Complete — Calendar sync on confirm, 3-party meeting lifecycle, zero-skip local Docker gate (2982 unit + 35 E2E core)
 
@@ -296,7 +296,9 @@ The database is initialized via Docker entrypoint scripts (local) or manual migr
 ```
 
 
-### 3.3 Database Tables — Complete Catalog (40+ Tables)
+### 3.3 Database Tables — Complete Catalog (53+ Tables)
+
+> **Quick reference:** [DATABASE_TABLES_REFERENCE.md](DATABASE_TABLES_REFERENCE.md) — all tables with descriptions and workflow mapping.
 
 
 #### 3.3.1 Core User & Authentication Tables
@@ -366,34 +368,29 @@ The database is initialized via Docker entrypoint scripts (local) or manual migr
 | `cds_logs` | Clinical Decision Support logs | patient_id, doctor_id, alert_type, alert_content, action_taken |
 
 
-#### 3.3.7 Phase 2 — AI-HIS Tables (Deployed)
+#### 3.3.7 Extended Clinical Module Tables (schema deployed)
 
 | Table | Purpose | Key Fields |
 | ------- | ---------| ----------- |
-| `fhir_observations` | FHIR-compliant vital signs | patient_id, loinc_code, value, unit, effective_datetime |
-| `clinical_impressions` | AI history taking summaries | patient_id, doctor_id, summary_thai, findings (JSONB) |
-| `ctm_assessments` | Thai Traditional Medicine | patient_id, doctor_id, dhatu (ธาตุดิน), symptoms (JSONB), diagnosis, herbal_prescription (JSONB) |
-| `herbal_prescriptions` | Herbal treatments | patient_id, herb_name, preparation_method (ต้ม/บด/ชง/ทา), dosage |
-| `investigation_reports` | Radiology, lab, pathology reports | patient_id, report_type, findings, ai_analysis (JSONB) |
-| `referral_records` | Patient referrals | patient_id, from_doctor, to_doctor, reason, pdpa_consent_token |
-| `emergency_logs` | SOS alerts | patient_id, alert_type, latitude, longitude, status (active/acknowledged/resolved) |
-| `patient_queue` | Real-time queue | patient_id, doctor_id, queue_number, ai_triage_score, status |
-| `nursing_tasks` | Nursing workflow | nurse_id, patient_id, task_type, priority (1-5), status, due_at |
+| `ctm_assessments` | Thai Traditional Medicine assessments | patient_id, doctor_id, dhatu (ธาตุ), symptoms (JSONB), herbal_prescription (JSONB), diagnosis |
+| `geriatric_screenings` | Elderly screening battery | patient_id, scores (JSONB), risk_level, recommendations (JSONB) |
+| `sos_alerts` | Emergency SOS alerts | patient_id, alert_type, latitude, longitude, status (active/acknowledged/resolved) |
+| `follow_ups` | Follow-up tracking | patient_id, doctor_id, appointment_id, follow_up_date, status |
+| `nursing_tasks` | Nursing workflow tasks | nurse_id, patient_id, task_type, priority (1-5), due_at, status |
 | `predictive_analytics` | AI risk predictions | patient_id, analysis_type, risk_scores (JSONB), model_version |
-| `follow_ups` | Follow-up tracking | patient_id, doctor_id, appointment_id, follow_up_date, status (active/completed/overdue) |
-| `geriatric_screenings` | Elderly assessments | patient_id, screener_id, scores (JSONB), risk_level, recommendations (JSONB) |
+| `emr_records` | Simplified visit records | patient_id, chief_complaint, diagnosis, treatment, visit_date |
 
 
-#### 3.3.8 Mobile & Integration Tables (Phase 2 — Deployed)
+#### 3.3.8 Mobile, Sync & Integration Tables (schema deployed)
 
 | Table | Purpose | Key Fields |
 | ------- | ---------| ----------- |
 | `device_tokens` | Push notification registration | user_id, device_token, platform (ios/android/web), device_name, app_version |
 | `biometric_credentials` | Fingerprint/face auth | user_id, credential_type (fingerprint/face_id/iris), public_key, device_id |
 | `refresh_tokens` | JWT token rotation | user_id, token_hash, device_id, expires_at, is_revoked, replaced_by |
-| `push_subscriptions` | Notification preferences | user_id, appointment_reminders, medication_reminders, health_tips, lab_results, quiet_hours |
-| `sync_queue` | Offline sync for mobile | user_id, entity_type, entity_id, operation (create/update/delete), payload (JSONB), sync_status (pending/synced/conflict), retry_count |
-| `user_api_connections` | Third-party APIs | user_id, service_type (google_fit/apple_health/pharmacy_api/lab_api/hospital_his/line_notify/thai_id), access_token_encrypted, connection_status |
+| `push_subscriptions` | Notification channel toggles | user_id, appointment_reminders, medication_reminders, health_tips, lab_results, quiet_hours |
+| `sync_queue` | Offline sync for mobile | user_id, entity_type, entity_id, operation, payload (JSONB), sync_status, retry_count |
+| `user_api_connections` | Third-party APIs | user_id, service_type, access_token_encrypted, connection_status |
 | `api_connection_audit` | API audit trail | connection_id, user_id, action, service_type, ip_address |
 
 
@@ -638,8 +635,8 @@ Handles all user lifecycle operations across both portals with role-based access
 | Role-Based Access | patient / doctor / admin | ✅ |
 | Account Locking | After failed login attempts | ✅ |
 | Admin Doctor Approval | Admin reviews, approves/rejects doctor registration | ✅ |
-| Biometric Auth | Fingerprint/face ID (Phase 2 tables deployed) | 📋 |
-| JWT Token Rotation | Refresh tokens with device tracking (Phase 2) | 📋 |
+| Biometric Auth | Fingerprint/face ID (schema ready) | 📋 |
+| JWT Token Rotation | Refresh tokens with device tracking (schema ready) | 📋 |
 
 
 #### Scenarios
@@ -1206,7 +1203,7 @@ Ensures consistent data across the three independent services via PostgreSQL as 
 | --------- | -----------| --------- |
 | **Real-Time** | PostgreSQL NOTIFY → pgNotifyListener → Socket.IO | <100ms |
 | **Polling Fallback** | Frontend polls API every 30 seconds | 30s max |
-| **Offline Sync** (Phase 2) | `sync_queue` table with conflict resolution | On reconnect |
+| **Offline Sync** | `sync_queue` table with conflict resolution | On reconnect |
 
 
 ## Cross-Portal Data Flow Examples
@@ -1314,7 +1311,7 @@ Ensures consistent data across the three independent services via PostgreSQL as 
 | --- | ------| ------- | -----------| ------------- |
 | 5 | [Patient Management](Pages/Doctor-Portal/05_Patient_Management_Page.md) | `/patients`, `/patients/:id` | `PatientManagement.tsx` | Patient list with search, filter by status/condition. Patient detail: demographics, appointment history, PHR summary, EMR history. Quick actions: create EMR, prescribe, order labs, start consultation. |
 | 6 | [Health Meeting](Pages/Doctor-Portal/06_Health_Meeting_Page.md) | `/health-meeting` | `HealthMeeting.tsx` | **Primary workflow page.** Patient queue with status tabs (waiting/in-progress/completed). For each appointment: patient info, AI pre-consultation summary button, "Start Meeting" button (creates Jitsi room), view meeting results. Post-meeting: AI summary review, man-in-the-loop validation, create EMR button. Admin view: all appointments across doctors, assign from pool. |
-| 7 | [Virtual Meeting](Pages/Doctor-Portal/07_Virtual_Meeting.md) | Modal | `VirtualMeeting.tsx` | Full-screen Jitsi video consultation modal. **HOST controls**: camera/mic toggle, recording consent + start/stop, live transcript controls (start/pause/resume/stop), lobby management (admit/reject participants). **Sidebar panels**: participant list, chat (always available), transcript viewer (real-time with speaker labels and interim text highlighting). AI Clinical Copilot: queries during consultation. Post-meeting: auto-trigger AI SOAP summary pipeline. Duration tracking. |
+| 7 | ~~Virtual Meeting~~ [Meeting Room](Pages/Doctor-Portal/07_Virtual_Meeting.md) | `/meeting/:id` | `MeetingRoom.tsx` | **REMOVED v1.7.53:** `VirtualMeeting.tsx` deleted. Full-screen Jitsi via `/meeting/:id` from Health Meeting. **HOST controls**: camera/mic, recording, live transcript, lobby admit/reject. Sidebar: participants, chat, transcript. AI Clinical Copilot during consult. Post-meeting AI SOAP pipeline. |
 | 8 | [EMR Editor](Pages/Doctor-Portal/08_EMR_Editor.md) | Modal | `CompleteEMREditor.tsx` | Thai Ministry of Public Health OPD Card format. **5 tabs**: ประวัติ (S—Subjective), ตรวจร่างกาย (O—Objective), วินิจฉัย (A—Assessment with ICD-10 search), แผนการรักษา (P—Plan), สรุป AI (AI Summary for patient). Features: AI pre-fill from meeting transcript, voice dictation (Web Speech API), auto-save, encounter type selection, linked prescriptions/labs/imaging. Digital signature to finalize. |
 | 9 | [E-Prescribing](Pages/Doctor-Portal/09_Prescribing.md) | Modal | `CompletePrescribing.tsx` | Real-time drug search from database. Auto-fill dosage forms. **Safety checks**: allergy cross-reference, drug-drug interaction, dose adjustment for renal/hepatic impairment. Prescription list with dosage, frequency, duration, quantity, instructions (Thai). Digital signature. Print/export capability. CDS alerts inline. |
 | 10 | [Lab & Imaging Orders](Pages/Doctor-Portal/10_Lab_Orders.md) | Modal | `CompleteLabOrders.tsx` | **Lab Orders**: Categorized test menu, clinical indication field, urgency level. **Imaging Orders**: Modality selection (X-ray, CT, MRI, Ultrasound), clinical question, body part. **Results Entry**: Numeric values with normal ranges, automatic flag calculation (normal/high/low/critical). Result history with trend visualization. |
@@ -1761,7 +1758,14 @@ Ensures consistent data across the three independent services via PostgreSQL as 
 ## 12. Document Index
 
 
-### Core Workflow Documents (9)
+### Database Documents (2)
+
+| Document | Description |
+| ---------- | ------------- |
+| [PostgreSQL_Database_Architecture.md](PostgreSQL_Database_Architecture.md) | Full schema, ER diagram, NOTIFY triggers, migrations, access matrix |
+| [DATABASE_TABLES_REFERENCE.md](DATABASE_TABLES_REFERENCE.md) | All 53+ tables with descriptions and workflow mapping |
+
+### Core Workflow Documents (10)
 
 | Document | Description | Key Scenarios |
 | ---------- | -------------| --------------- |
@@ -1799,7 +1803,7 @@ Ensures consistent data across the three independent services via PostgreSQL as 
 | -------- | -------| ------------- |
 | [Pages/Patient-Portal/](Pages/Patient-Portal/) | 15 pages | Login, Register, Reset Password, Dashboard, Appointments, PHR, AI Doctor, Medical Library, Map, PDPA, Living Will, Profile, Settings, Timeline, Notifications |
 | [Pages/Doctor-Portal/](Pages/Doctor-Portal/) | 21 pages | Login, Reset Password, Dashboard, Schedule, Patient Mgmt, Health Meeting, Virtual Meeting, EMR Editor, Prescribing, Lab Orders, Patient Record Viewer, Consultants, Medical Content, Clinical Resources, AI Studio, Profile, Admin Appointments, Admin Doctors, Doctors Mgmt, Appointment Pool, Queue Mgmt |
-| [Pages/Meeting-Server/](Pages/Meeting-Server/) | 1 page | Meeting Server architecture, API endpoints, Socket.IO events, AI pipeline |
+| [Pages/Meeting-Server/](Pages/Meeting-Server/) | 4 pages | Meeting Server architecture, Meeting Room, Meeting Results, EMR page |
 
 
 ### Thai Translations (7)
@@ -1814,7 +1818,13 @@ Ensures consistent data across the three independent services via PostgreSQL as 
 ## 🆕 Version History
 
 
-### v1.7.51 (June 8, 2026) — Current
+### v1.7.52 (June 25, 2026) — Current
+
+- Database tables reference: [DATABASE_TABLES_REFERENCE.md](DATABASE_TABLES_REFERENCE.md) — 53+ tables with workflow mapping
+- Removed unimplemented Phase 2 planning docs; schema tables documented against actual migrations
+- Project cleanup: old reports, redirect stubs, deprecated scripts
+
+### v1.7.51 (June 8, 2026)
 
 - Calendar sync on doctor confirm: `calendarEventUrl`, doctor `/schedule`, patient MiniCalendar + detail link
 - 3-party meeting E2E Q01f (10s A/V hold); L1 unskip via doctor login JWT

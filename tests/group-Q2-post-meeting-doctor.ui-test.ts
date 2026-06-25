@@ -9,13 +9,14 @@ import {
   DOCTOR_URL,
   MEETING_URL,
   refreshPageAuth,
+  readPageBearerToken,
 } from './helpers/multi-portal';
-import { loadWorkflowState, reloadWorkflowStateFromDisk } from './helpers/workflow-state';
+import { reloadWorkflowStateFromDisk } from './helpers/workflow-state';
 import {
-  loadMeetingWorkflow,
   meetingKeyFromContext,
   waitForMeetingResultsReady,
   pollRecordingUrl,
+  reloadMeetingWorkflowWithRetry,
 } from './helpers/meeting-lifecycle-fixture';
 
 const IS_CLOUD = process.env.TEST_ENV === 'cloud';
@@ -26,12 +27,12 @@ test.describe('Group Q2 - Post-meeting doctor visibility', () => {
 
   test('Q2 - Results route, BFF playback, transcript, summary, dashboard', async ({ portals }) => {
     const { doctor } = portals;
-    const wf = loadMeetingWorkflow();
-    const ws = loadWorkflowState();
-    const appointmentId = ws.appointmentId || wf.appointmentId;
-    const meetingId = ws.meetingId || wf.meetingId || appointmentId;
+    const wf = await reloadMeetingWorkflowWithRetry({ requireMeetingId: true });
+    const ws = wf;
+    const appointmentId = wf.appointmentId;
+    const meetingId = wf.meetingId || appointmentId;
     const meetingKey = meetingKeyFromContext({ ...wf, meetingId, appointmentId });
-    const token = await doctor.page.evaluate(() => localStorage.getItem('token') || '');
+    const token = await readPageBearerToken(doctor.page);
 
     await test.step('Q2-01 — Doctor lands on Results route after Q lifecycle', async () => {
       expect(appointmentId, 'appointmentId from Q01 workflow').toBeTruthy();
@@ -52,23 +53,26 @@ test.describe('Group Q2 - Post-meeting doctor visibility', () => {
     });
 
     await test.step('Q2-02 — recording-player loads via same-origin BFF', async () => {
-      const resultsKey = appointmentId || meetingKey;
+      const pollKeys = [meetingKey, meetingId, appointmentId].filter(
+        (k, i, arr) => Boolean(k) && arr.indexOf(k) === i,
+      ) as string[];
       await waitForMeetingResultsReady(
         doctor.page.request,
         MEETING_URL,
-        resultsKey,
+        meetingKey,
         token,
-        IS_CLOUD ? 120_000 : 60_000,
+        IS_CLOUD ? 120_000 : 90_000,
+        pollKeys,
       );
       await refreshPageAuth(doctor.page, DOCTOR_URL);
-      const freshToken = await doctor.page.evaluate(() => localStorage.getItem('token') || '');
+      const freshToken = await readPageBearerToken(doctor.page);
       const wsFresh = reloadWorkflowStateFromDisk();
-      const pollKeys = [appointmentId, meetingKey, wsFresh.meetingId, meetingId].filter(
+      const recordingPollKeys = [appointmentId, meetingKey, wsFresh.meetingId, meetingId].filter(
         (k, i, arr) => Boolean(k) && arr.indexOf(k) === i,
       ) as string[];
       let recordingUrl = wsFresh.recordingUrl || ws.recordingUrl || '';
       if (!recordingUrl) {
-        for (const key of pollKeys) {
+        for (const key of recordingPollKeys) {
           try {
             recordingUrl = await pollRecordingUrl(
               doctor.page.request,
@@ -76,7 +80,14 @@ test.describe('Group Q2 - Post-meeting doctor visibility', () => {
               key,
               freshToken,
               IS_CLOUD ? 60_000 : 45_000,
-              { bffUrl: DOCTOR_URL },
+              {
+                bffUrl: DOCTOR_URL,
+                meetingKeys: recordingPollKeys,
+                onAuthFailure: async () => {
+                  await refreshPageAuth(doctor.page, DOCTOR_URL);
+                  return readPageBearerToken(doctor.page);
+                },
+              },
             );
             if (recordingUrl) break;
           } catch {
@@ -102,7 +113,7 @@ test.describe('Group Q2 - Post-meeting doctor visibility', () => {
             break;
           }
           if (lastBffStatus === 404 || lastBffStatus === 502) {
-            for (const key of pollKeys) {
+            for (const key of recordingPollKeys) {
               try {
                 recordingUrl = await pollRecordingUrl(
                   doctor.page.request,
@@ -161,7 +172,28 @@ test.describe('Group Q2 - Post-meeting doctor visibility', () => {
     });
 
     await test.step('Q2-03 — Transcript tab has segments', async () => {
-      await doctor.page.getByRole('button', { name: /บทสนทนา|transcript/i }).click();
+      await refreshPageAuth(doctor.page, DOCTOR_URL);
+      const resultsKeys = [meetingId, meetingKey, appointmentId].filter(
+        (k, i, arr) => Boolean(k) && arr.indexOf(k) === i,
+      ) as string[];
+      await waitForMeetingResultsReady(
+        doctor.page.request,
+        MEETING_URL,
+        meetingKey,
+        await readPageBearerToken(doctor.page),
+        IS_CLOUD ? 120_000 : 60_000,
+        resultsKeys,
+      );
+      await doctor.page.goto(`${DOCTOR_URL}/doctor/${DOCTOR_ID}/meeting/${appointmentId}/results`, {
+        waitUntil: 'domcontentloaded',
+        timeout: IS_CLOUD ? 90_000 : 45_000,
+      });
+      await expect(doctor.page.getByTestId('meeting-results')).toBeVisible({
+        timeout: IS_CLOUD ? 60_000 : 30_000,
+      });
+      const transcriptTab = doctor.page.getByTestId('results-tab-transcript');
+      await expect(transcriptTab).toBeVisible({ timeout: IS_CLOUD ? 30_000 : 15_000 });
+      await transcriptTab.click();
       const panel = doctor.page.getByTestId('transcript-panel');
       await expect(panel).toBeVisible({ timeout: 15_000 });
       const text = await panel.innerText();
@@ -170,7 +202,7 @@ test.describe('Group Q2 - Post-meeting doctor visibility', () => {
     });
 
     await test.step('Q2-04 — Summary tab has SOAP or degraded badge', async () => {
-      await doctor.page.getByRole('button', { name: /สรุป AI|SOAP|summary/i }).first().click();
+      await doctor.page.getByTestId('results-tab-summary').click();
       const structured = doctor.page.getByTestId('summary-structured');
       const degraded = doctor.page.getByTestId('summary-degraded-badge');
       await expect(structured.or(degraded).first()).toBeVisible({ timeout: IS_CLOUD ? 60_000 : 30_000 });

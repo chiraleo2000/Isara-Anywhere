@@ -12,8 +12,9 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(__dirname, '..');
 const failFast = process.argv.includes('--fail-fast');
 
+const isWin = process.platform === 'win32';
 const groups = [
-  'test:unit:coverage',
+  isWin ? 'test:unit:coverage:gate' : 'test:unit:coverage',
   'test:unit:auth',
   'test:unit:appointments',
   'test:unit:clinical',

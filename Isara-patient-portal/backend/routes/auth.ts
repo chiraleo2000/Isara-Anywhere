@@ -234,27 +234,11 @@ router.post('/register', authLimiter, async (req: Request, res: Response) => {
       ]
     );
 
-    // Create session
-    const sessionToken = generateSessionToken();
-    const expiresAt = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000); // 7 days
-
-    await pool.query(
-      `INSERT INTO sessions (id, user_id, token, ip_address, user_agent, expires_at, created_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-      [
-        `session_${Date.now()}`,
-        userId,
-        sessionToken,
-        req.ip || 'unknown',
-        req.headers['user-agent'] || 'unknown',
-        expiresAt,
-        now
-      ]
-    );
-
     console.log(`[AUTH] User registered successfully: ${emailLower}, patientId: ${patientId}`);
 
     res.json({
+      success: true,
+      message: 'Registration successful. Please log in with your credentials.',
       user: {
         id: userId,
         patientId,
@@ -267,7 +251,6 @@ router.post('/register', authLimiter, async (req: Request, res: Response) => {
         createdAt: now.toISOString(),
         updatedAt: now.toISOString(),
       },
-      token: sessionToken,
     });
   } catch (error: unknown) {
     console.error('[AUTH] Registration error:', error);

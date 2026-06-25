@@ -101,7 +101,7 @@ export default function RegisterPage() {
         height: form.height ? Number.parseFloat(form.height) : undefined,
         weight: form.weight ? Number.parseFloat(form.weight) : undefined,
       } as any);
-      navigate('/');
+      navigate('/login?registered=1');
     } catch (err: any) {
       setError(err.message || 'สมัครสมาชิกไม่สำเร็จ');
     } finally {

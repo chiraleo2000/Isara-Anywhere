@@ -38,10 +38,38 @@ export async function validateSessionToken(pool, token) {
   }
 }
 
+/** Resolve opaque session token from Authorization header or session cookies. */
+export function resolveSessionTokenFromRequest(req) {
+  const authHeader = req.headers['authorization'];
+  if (authHeader) {
+    const bearer = authHeader.startsWith('Bearer ')
+      ? authHeader.slice(7).trim()
+      : authHeader.split(' ')[1]?.trim();
+    if (bearer) return bearer;
+  }
+  const cookieHeader = req.headers.cookie;
+  if (!cookieHeader) return null;
+  for (const part of String(cookieHeader).split(';')) {
+    const trimmed = part.trim();
+    if (!trimmed) continue;
+    const eq = trimmed.indexOf('=');
+    if (eq <= 0) continue;
+    const key = trimmed.slice(0, eq).trim();
+    if (!['auth_token', 'izara_session', 'session', 'izara_auth_token', 'token'].includes(key)) continue;
+    const value = trimmed.slice(eq + 1);
+    try {
+      const decoded = decodeURIComponent(value).trim();
+      if (decoded) return decoded;
+    } catch {
+      if (value.trim()) return value.trim();
+    }
+  }
+  return null;
+}
+
 export function createAuthenticateSession(pool) {
   return async function authenticateSession(req, res, next) {
-    const authHeader = req.headers['authorization'];
-    const token = authHeader?.split(' ')[1];
+    const token = resolveSessionTokenFromRequest(req);
     if (!token) {
       return res.status(401).json({ error: 'Authentication required' });
     }

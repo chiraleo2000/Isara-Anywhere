@@ -18,11 +18,14 @@ if (!runPrePhaseSmoke()) bailWithArchive(ROUND, 'pre-phase-smoke');
 const { pass: unitPass } = runSteps([npmStep('unit-clinical', 'test:unit:clinical', root)], { failFast: true });
 if (!unitPass) bailWithArchive(ROUND, 'unit-clinical');
 
-for (const project of ['E-meeting-clinical', 'F-phr-health-records', 'L-lab-ordering']) {
-  resetDatabaseBaseline();
-  if (!runHeadedE2e([project], `e2e-${project}`)) {
-    bailWithArchive(ROUND, `e2e-${project}`);
-  }
+resetDatabaseBaseline();
+if (
+  !runHeadedE2e(
+    ['E-meeting-clinical', 'F-phr-health-records', 'L-lab-ordering'],
+    'e2e-clinical-pipeline',
+  )
+) {
+  bailWithArchive(ROUND, 'e2e-clinical-pipeline');
 }
 
 if (!runScreenshotGate('group-E', 'screenshots-group-E')) bailWithArchive(ROUND, 'screenshots-group-E');

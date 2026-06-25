@@ -35,12 +35,12 @@ A **Living Will** (พินัยกรรมชีวิต) is a legal docume
 
 | Task | File | Status |
 | ---- | ---- | ------ |
-| TypeScript Types | `Isara-patient-portal/src/types/sharedPHRTypes.ts` | ✅ Done |
+| TypeScript Types | `Isara-patient-portal/frontend/types/sharedPHRTypes.ts` | ✅ Done |
 | Patient API Routes | `Isara-patient-portal/server/routes/phr.ts` | ✅ Done |
-| Doctor Portal Types | `Isara-doctor-portal/src/services/patientRecordService.ts` | ✅ Done |
-| Doctor GCS Service | `Isara-doctor-portal/src/services/gcsDataService.ts` | ✅ Done |
+| Doctor Portal Types | `Isara-doctor-portal/frontend/services/patientRecordService.ts` | ✅ Done |
+| Doctor GCS Service | `Isara-doctor-portal/frontend/services/gcsDataService.ts` | ✅ Done |
 | Doctor API Endpoint | `Isara-doctor-portal/server/mainApiServer.cjs` | ✅ Done |
-| Living Will UI Card | `Isara-doctor-portal/src/components/PatientRecordViewer.tsx` | ✅ Done |
+| Living Will UI Card | `Isara-doctor-portal/frontend/components/PatientRecordViewer.tsx` | ✅ Done |
 
 ---
 
@@ -173,7 +173,7 @@ A **Living Will** (พินัยกรรมชีวิต) is a legal docume
 
 ### 3.2. TypeScript Interfaces
 
-**File:** `Isara-patient-portal/src/types/sharedPHRTypes.ts`
+**File:** `Isara-patient-portal/frontend/types/sharedPHRTypes.ts`
 
 ```typescript
 // ============================================================================
@@ -271,13 +271,13 @@ export interface LivingWillForDoctor {
 ### 4.1. Page & Navigation
 
 
-- **Page:** `src/pages/health/PHRPage.tsx`
+- **Page:** `frontend/pages/health/PHRPage.tsx`
 
 
 - **Tab:** "Living Will" / "พินัยกรรมชีวิต"
 
 
-- **Component:** `src/components/health/LivingWillForm.tsx`
+- **Component:** `frontend/components/health/LivingWillForm.tsx`
 
 
 ### 4.2. Step-by-Step Process
@@ -376,7 +376,7 @@ export interface LivingWillForDoctor {
 ### 5.1. Page & Navigation
 
 
-- **Page:** `src/components/PatientRecordViewer.tsx`
+- **Page:** `frontend/components/PatientRecordViewer.tsx`
 
 
 - **Tab:** "Personal Health Record (PHR)"
@@ -571,12 +571,12 @@ If the patient has not shared their Living Will:
 
 | Task | File | Priority |
 | ------ | ------ | ---------- |
-| Add Living Will types | `src/types/sharedPHRTypes.ts` | P0 |
-| Create LivingWillForm component | `src/components/health/LivingWillForm.tsx` | P0 |
-| Add Living Will tab to PHR page | `src/pages/health/PHRPage.tsx` | P0 |
+| Add Living Will types | `frontend/types/sharedPHRTypes.ts` | P0 |
+| Create LivingWillForm component | `frontend/components/health/LivingWillForm.tsx` | P0 |
+| Add Living Will tab to PHR page | `frontend/pages/health/PHRPage.tsx` | P0 |
 | Create Living Will API routes | `server/routes/phr.ts` | P0 |
-| Add PDPA sharing controls | `src/components/health/LivingWillShareSettings.tsx` | P0 |
-| Digital signature component | `src/components/ui/SignatureCanvas.tsx` | P1 |
+| Add PDPA sharing controls | `frontend/components/health/LivingWillShareSettings.tsx` | P0 |
+| Digital signature component | `frontend/components/ui/SignatureCanvas.tsx` | P1 |
 | Audit logging | `server/routes/phr.ts` | P1 |
 
 
@@ -584,11 +584,11 @@ If the patient has not shared their Living Will:
 
 | Task | File | Priority |
 | ------ | ------ | ---------- |
-| Add Living Will types | `src/types/index.ts` | P0 |
-| Update PHRData interface | `src/services/patientRecordService.ts` | P0 |
-| Add Living Will section to PHRView | `src/components/PatientRecordViewer.tsx` | P0 |
-| Create LivingWillCard component | `src/components/LivingWillCard.tsx` | P0 |
-| Add access control check | `src/services/patientRecordService.ts` | P0 |
+| Add Living Will types | `frontend/types/index.ts` | P0 |
+| Update PHRData interface | `frontend/services/patientRecordService.ts` | P0 |
+| Add Living Will section to PHRView | `frontend/components/PatientRecordViewer.tsx` | P0 |
+| Create LivingWillCard component | `frontend/components/LivingWillCard.tsx` | P0 |
+| Add access control check | `frontend/services/patientRecordService.ts` | P0 |
 | API endpoint for fetching | `server/mainApiServer.cjs` | P0 |
 | Audit logging for doctor access | `server/mainApiServer.cjs` | P1 |
 
@@ -665,7 +665,7 @@ If the patient has not shared their Living Will:
 
 ### 11.1. Patient Portal Components
 
-**`Isara-patient-portal/src/components/health/LivingWillForm.tsx`** — Key sections:
+**`Isara-patient-portal/frontend/components/health/LivingWillForm.tsx`** — Key sections:
 1. Statement of wishes (textarea)
 2. Treatment preferences (checkboxes with notes)
 3. Representative information (form fields)
@@ -673,7 +673,7 @@ If the patient has not shared their Living Will:
 5. Digital signature canvas
 6. Save/Cancel buttons
 
-**`Isara-patient-portal/src/components/health/LivingWillView.tsx`** — Display existing Living Will with:
+**`Isara-patient-portal/frontend/components/health/LivingWillView.tsx`** — Display existing Living Will with:
 
 
 - Status badge (Active/Revoked)
@@ -693,7 +693,7 @@ If the patient has not shared their Living Will:
 
 - Edit/Revoke buttons
 
-**`Isara-patient-portal/src/pages/health/PHRPage.tsx`** — Tab integration:
+**`Isara-patient-portal/frontend/pages/health/PHRPage.tsx`** — Tab integration:
 
 ```tsx
 <Tab id="living-will" label="พินัยกรรมชีวิต">
@@ -716,14 +716,14 @@ If the patient has not shared their Living Will:
 
 ### 11.2. Doctor Portal Components
 
-**`Isara-doctor-portal/src/services/patientRecordService.ts`** — Service methods:
+**`Isara-doctor-portal/frontend/services/patientRecordService.ts`** — Service methods:
 
 ```typescript
 async getLivingWill(patientId: string): Promise<LivingWillForDoctor>
 async checkLivingWillAccess(patientId: string, doctorId: string): Promise<boolean>
 ```
 
-**`Isara-doctor-portal/src/components/PatientRecordViewer.tsx`** — Living Will at top of PHR tab:
+**`Isara-doctor-portal/frontend/components/PatientRecordViewer.tsx`** — Living Will at top of PHR tab:
 
 ```tsx
 const PHRView = ({ phrData, patient }) => {

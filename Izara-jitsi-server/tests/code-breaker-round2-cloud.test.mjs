@@ -4,9 +4,18 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
-const MEETING =
-  process.env.MEETING_SERVER_URL ||
-  'https://izara-meeting-server-dev-testing-724889190329.asia-southeast1.run.app';
+/** Host-side contract tests: docker DNS `meeting-server` is not resolvable outside compose network. */
+function resolveMeetingBaseUrl() {
+  const raw =
+    process.env.MEETING_SERVER_URL ||
+    'https://izara-meeting-server-dev-testing-724889190329.asia-southeast1.run.app';
+  if (/meeting-server(?::\d+)?/i.test(raw) && !process.env.TEST_ENV?.includes('cloud')) {
+    return 'http://127.0.0.1:3020';
+  }
+  return raw.replace(/\/$/, '');
+}
+
+const MEETING = resolveMeetingBaseUrl();
 const DOCTOR =
   process.env.DOCTOR_PORTAL_URL ||
   'https://izara-doctor-portal-dev-testing-724889190329.asia-southeast1.run.app';

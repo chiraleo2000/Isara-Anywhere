@@ -217,8 +217,7 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
       const err = await res.json();
       throw new Error(err.error || 'Registration failed');
     }
-    const data = await res.json();
-    saveAuth(data.user, data.token);
+    // Do not auto-login — user must sign in on the login page after registration
   };
 
   const logout = async () => {

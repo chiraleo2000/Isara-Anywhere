@@ -718,7 +718,7 @@ Per-page operational specs (Thai reporting structure) live under `Processes/Page
 | Meeting server | `Processes/Pages/Meeting-Server/00_Meeting_Server_Overview.md` |
 | Video / AI master spec | `Processes/VIDEO_MEETING_JITSI_GEMINI.md` |
 | Cloud test protocol | `Processes/TWO_ROUND_CLOUD_TESTING.md` |
-| Hardening report | `Processes/FULL_WORKFLOW_HARDENING_COMPLETION_REPORT.md` |
+| Workflow contract | `Processes/FULL_WORKFLOW_CONTRACT.md` |
 
 Each page includes: **คำอธิบายและบริบท (รายงานภาษาไทย)** → **ขั้นตอนการใช้งาน (ละเอียด)** → **ผลลัพธ์ที่คาดหวัง** → **มาตรฐานเอกสาร** (Sarabun / FC Iconic).
 
@@ -912,7 +912,6 @@ Setup: [DOCKER_MULTIBROWSER_E2E.md](../testing/DOCKER_MULTIBROWSER_E2E.md) · Us
 
 - `Documents/docs/guides/doctor/USER_GUIDE_DOCTOR_WORD_TH.docx` / `Documents/docs/guides/doctor/USER_GUIDE_DOCTOR_PPT_TH.pptx` (Sarabun 16 pt / FC Iconic)
 - `Documents/docs/guides/patient/USER_GUIDE_PATIENT_WORD_TH.docx` / `Documents/docs/guides/patient/USER_GUIDE_PATIENT_PPT_TH.pptx`
-- `Phase2/PRODUCTION_READINESS_SIGNOFF.md`
 - `cloudbuild.yaml`
 
 ---

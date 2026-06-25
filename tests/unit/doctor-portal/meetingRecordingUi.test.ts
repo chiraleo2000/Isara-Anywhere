@@ -36,5 +36,7 @@ describe('meetingRecordingUi — host recording UX', () => {
   it('MRI-04 — save-recording on stop recording path (same-origin BFF)', () => {
     expect(src).toMatch(/save-recording/);
     expect(src).toMatch(/\/api\/meetings\/\$\{/);
+    expect(src).toMatch(/authFetch|meetingFetch/);
+    expect(src).toMatch(/ensureMeetingSessionFresh/);
   });
 });

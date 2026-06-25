@@ -10,7 +10,7 @@
 
 Full-stack telemedicine for Thailand: video consultations (Jitsi), PHR/EMR, e-prescribing, AI clinical tools, appointment pool, and PDPA-aware data handling.
 
-**Quick links:** [Local Docker deployment](deploy/nginx/LOCAL_DOCKER_DEPLOYMENT.md) · [Documents hub](Documents/README.md) · [Thai technical 01–05](Documents/Technical_Documents/01_System_Architecture_and_Workflow.md) · [Docs index](Documents/docs/README.md) · [Diagram report — Word](Documents/docs/technical/word/TECHNICAL_DIAGRAM_REPORT_TH.docx) · [Diagram report — PPT](Documents/docs/technical/ppt/TECHNICAL_DIAGRAM_REPORT_PPT_TH.pptx) · [URLs & demo users](Documents/docs/markdown/operations/URLS_AND_DEFAULT_USERS.md) · [Technical diagrams (draw.io)](Documents/docs/diagrams/diagrams.drawio) · [Architecture slides (Sarabun 16pt)](Documents/docs/technical/slides/TECHNICAL_ARCHITECTURE_SLIDES.html) · [Architecture Word TH](Documents/docs/technical/word/TECHNICAL_ARCHITECTURE_WORD_TH.docx) · [Architecture PPT TH (FC Iconic)](Documents/docs/technical/ppt/TECHNICAL_ARCHITECTURE_PPT_TH.pptx) · [Patient Word (TH)](Documents/docs/guides/patient/USER_GUIDE_PATIENT_WORD_TH.docx) · [Doctor Word (TH)](Documents/docs/guides/doctor/USER_GUIDE_DOCTOR_WORD_TH.docx) · [Patient PPT (TH)](Documents/docs/guides/patient/USER_GUIDE_PATIENT_PPT_TH.pptx) · [Doctor PPT (TH)](Documents/docs/guides/doctor/USER_GUIDE_DOCTOR_PPT_TH.pptx) · [Cloud access (TH)](Documents/docs/markdown/operations/CLOUD_ACCESS_TH.md) · [Process pages](Processes/Pages/README.md) · [Markdown guide](Documents/docs/markdown/operations/MARKDOWN_GUIDE.md)
+**Quick links:** [Docker + Nginx deployment](deploy/nginx/DEPLOYMENT.md) · [Documents hub](Documents/README.md) · [Thai technical 01–05](Documents/Technical_Documents/01_System_Architecture_and_Workflow.md) · [Docs index](Documents/docs/README.md) · [Diagram report — Word](Documents/docs/technical/word/TECHNICAL_DIAGRAM_REPORT_TH.docx) · [Diagram report — PPT](Documents/docs/technical/ppt/TECHNICAL_DIAGRAM_REPORT_PPT_TH.pptx) · [URLs & demo users](Documents/docs/markdown/operations/URLS_AND_DEFAULT_USERS.md) · [Technical diagrams (draw.io)](Documents/docs/diagrams/diagrams.drawio) · [Architecture slides (Sarabun 16pt)](Documents/docs/technical/slides/TECHNICAL_ARCHITECTURE_SLIDES.html) · [Architecture Word TH](Documents/docs/technical/word/TECHNICAL_ARCHITECTURE_WORD_TH.docx) · [Architecture PPT TH (FC Iconic)](Documents/docs/technical/ppt/TECHNICAL_ARCHITECTURE_PPT_TH.pptx) · [Patient Word (TH)](Documents/docs/guides/patient/USER_GUIDE_PATIENT_WORD_TH.docx) · [Doctor Word (TH)](Documents/docs/guides/doctor/USER_GUIDE_DOCTOR_WORD_TH.docx) · [Patient PPT (TH)](Documents/docs/guides/patient/USER_GUIDE_PATIENT_PPT_TH.pptx) · [Doctor PPT (TH)](Documents/docs/guides/doctor/USER_GUIDE_DOCTOR_PPT_TH.pptx) · [Cloud access (TH)](Documents/docs/markdown/operations/CLOUD_ACCESS_TH.md) · [Process pages](Processes/Pages/README.md) · [Markdown guide](Documents/docs/markdown/operations/MARKDOWN_GUIDE.md)
 
 ---
 
@@ -44,7 +44,7 @@ Region: `asia-southeast1` · Project: `izara-telemedicine`. Health: `npm run clo
 
 ### Local (Docker Compose)
 
-Full guide: **[deploy/nginx/LOCAL_DOCKER_DEPLOYMENT.md](deploy/nginx/LOCAL_DOCKER_DEPLOYMENT.md)** — Mode A (localhost), Mode B (LAN HTTP), or **[HTTPS](deploy/nginx/UBUNTU_HTTPS_DEPLOYMENT.md)** (Mode C).
+Full guide: **[deploy/nginx/DEPLOYMENT.md](deploy/nginx/DEPLOYMENT.md)** — localhost, LAN HTTP, LAN HTTPS.
 
 | Mode | Patient | Doctor | Meeting |
 | ---- | ------- | ------ | ------- |
@@ -115,6 +115,15 @@ Open patient portal at http://localhost:3005 and doctor portal at http://localho
 
 Copy `.env.example` → `.env` (or use `.env.test` for Vitest). Required keys are validated at boot via `scripts/env/schema.js` (`JWT_SECRET` ≥ 32 chars, `GEMINI_API_KEY` including placeholder `xxxxx`).
 
+**Sync all portal `.env` from `.env.docker`:**
+
+```bash
+cp .env.docker.example .env.docker   # once
+npm run env:sync                     # writes patient/doctor/meeting/.env + root .env
+```
+
+See [docs/ENV_SETUP.md](docs/ENV_SETUP.md) · [docs/SPLIT_REPOS.md](docs/SPLIT_REPOS.md) for npm-only dev and splitting into separate Git repos.
+
 ### Required environment keys (`.env.docker`)
 
 | Variable | Purpose |
@@ -130,7 +139,8 @@ Copy `.env.example` → `.env` (or use `.env.test` for Vitest). Required keys ar
 bash deploy/nginx/compose.sh logs -f    # follow logs
 bash deploy/nginx/compose.sh down       # stop
 bash deploy/nginx/compose.sh down -v && bash deploy/nginx/compose.sh up -d --build   # full DB reset
-bash deploy/nginx/diagnose-502.sh       # LAN health + login smoke (Ubuntu)
+bash deploy/nginx/deploy.sh                 # full LAN HTTPS deploy (Ubuntu)
+bash deploy/nginx/diagnose.sh               # LAN health + login smoke (Ubuntu)
 npm run cleanup:project                 # prune logs, caches, stale ledgers
 ```
 
@@ -201,7 +211,7 @@ Details: [Processes/GATE0_IMPLEMENTATION_STATUS.md](Processes/GATE0_IMPLEMENTATI
 
 **Local release gate:** `npm run test:local:pre-deploy-gate` (alias `npm run phase:9`)
 
-Canonical contract: [Processes/FULL_WORKFLOW_CONTRACT.md](Processes/FULL_WORKFLOW_CONTRACT.md) · completion: [Processes/FULL_WORKFLOW_HARDENING_COMPLETION_REPORT.md](Processes/FULL_WORKFLOW_HARDENING_COMPLETION_REPORT.md)
+Canonical contract: [Processes/FULL_WORKFLOW_CONTRACT.md](Processes/FULL_WORKFLOW_CONTRACT.md) · test gates: [Processes/PROCESS_TO_TEST_GATE.md](Processes/PROCESS_TO_TEST_GATE.md)
 
 ### Local Docker (recommended for full suite)
 
@@ -309,12 +319,12 @@ Isara-Anywhere/
 | [Doctor PPT guide](Documents/docs/guides/doctor/USER_GUIDE_DOCTOR_PPT_TH.pptx) | Doctor/Admin — slides (**FC Iconic**) |
 | [CLOUD_ACCESS_TH.md](Documents/docs/markdown/operations/CLOUD_ACCESS_TH.md) | Cloud URLs & health checks |
 | [APPOINTMENT_USER_GUIDE.md](Documents/docs/markdown/operations/APPOINTMENT_USER_GUIDE.md) | Appointment flows |
-| [FULL_WORKFLOW_HARDENING_COMPLETION_REPORT.md](Processes/FULL_WORKFLOW_HARDENING_COMPLETION_REPORT.md) | Phase gates 0–12, LAN, CI, cloud ladder |
-| [LOCAL_DOCKER_DEPLOYMENT.md](deploy/nginx/LOCAL_DOCKER_DEPLOYMENT.md) | Docker + Nginx Mode A/B |
-| [UBUNTU_HTTPS_DEPLOYMENT.md](deploy/nginx/UBUNTU_HTTPS_DEPLOYMENT.md) | Ubuntu LAN **HTTPS** (Mode C) |
+| [PROCESS_TO_TEST_GATE.md](Processes/PROCESS_TO_TEST_GATE.md) | Process doc → test command mapping |
+| [DEPLOYMENT.md](deploy/nginx/DEPLOYMENT.md) | Docker + Nginx (localhost / LAN HTTP / HTTPS) |
+| [DATABASE_TABLES_REFERENCE.md](Processes/DATABASE_TABLES_REFERENCE.md) | All 53+ PostgreSQL tables with workflow mapping |
 | [FULL_WORKFLOW_CONTRACT.md](Processes/FULL_WORKFLOW_CONTRACT.md) | End-to-end contracts |
-| [VIDEO_MEETING_JITSI_GEMINI.md](Processes/VIDEO_MEETING_JITSI_GEMINI.md) | Video + AI pipeline |
 | [MARKDOWN_GUIDE.md](Documents/docs/markdown/operations/MARKDOWN_GUIDE.md) | Doc linting & auto-fix |
+| [VIDEO_MEETING_JITSI_GEMINI.md](Processes/VIDEO_MEETING_JITSI_GEMINI.md) | Video + AI pipeline |
 | [SPEC_KIT.md](specs/SPEC_KIT.md) | Full specification |
 
 Regenerate Word/PPT from passing UI screenshots:

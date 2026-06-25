@@ -156,7 +156,9 @@ let meetingKey = '';
       const displayNameEl = patient.page.locator(
         '[data-testid="patient-display-name"], [data-testid="pre-join-screen"] .font-medium',
       ).first();
-      await expect(displayNameEl, 'JPRE01d: patient display name on pre-join').toBeVisible();
+      await expect(displayNameEl, 'JPRE01d: patient display name on pre-join').toBeVisible({
+        timeout: IS_CLOUD ? 45_000 : 30_000,
+      });
       const displayName = (await displayNameEl.innerText()).trim();
       expect(displayName.length, 'JPRE01d: auth display name must not be empty').toBeGreaterThan(0);
       expect(displayName, 'JPRE01d: fallback Patient when auth empty').not.toBe('');
@@ -166,21 +168,37 @@ let meetingKey = '';
 
     await test.step('JPRE01e — Patient joins lobby; doctor admits; Jitsi bypasses name prompt', async () => {
       await ensureJitsiMountSpy(patient.page);
-      await patient.page.getByTestId('join-meeting-btn').click();
-      await expect(
-        patient.page.getByTestId('lobby-waiting-screen').or(patient.page.getByTestId('host-waiting-screen')).first(),
-      ).toBeVisible({ timeout: 45_000 });
+      const postJoinVisible = patient.page
+        .getByTestId('lobby-waiting-screen')
+        .or(patient.page.getByTestId('host-waiting-screen'))
+        .or(patient.page.getByTestId('jitsi-meeting-container'))
+        .first();
+
+      const clickJoinAndWaitLobby = async () => {
+        await expect(patient.page.getByTestId('join-meeting-btn')).toBeVisible({ timeout: 20_000 });
+        await patient.page.getByTestId('join-meeting-btn').click();
+        await expect(postJoinVisible).toBeVisible({ timeout: IS_CLOUD ? 60_000 : 45_000 });
+      };
+
+      try {
+        await clickJoinAndWaitLobby();
+      } catch {
+        // Lobby join API can fail transiently — UI reverts to agreement; retry once.
+        const onAgreement = await patient.page.getByTestId('meeting-agreement').isVisible({ timeout: 8_000 }).catch(() => false);
+        if (!onAgreement) throw new Error('JPRE01e: join did not reach lobby and agreement screen not shown');
+        await patient.page.getByTestId('agree-continue-btn').click();
+        await expect(patient.page.getByTestId('pre-join-screen')).toBeVisible({ timeout: 20_000 });
+        await clickJoinAndWaitLobby();
+      }
 
       const doctorToken = await readPageBearerToken(doctor.page);
       await lobbyAdmitAll(doctor.page, appointmentId, DOCTOR_ID);
-      await expect(patient.page.getByTestId('host-waiting-screen').or(patient.page.getByTestId('jitsi-meeting-container')).first())
-        .toBeVisible({ timeout: 60_000 });
+      await joinIzaraMeetingInApp(patient.page, 'JPRE01e-patient', portals.patient.browserName);
 
       await expect(patient.page.getByTestId('jitsi-meeting-container')).toBeVisible({
         timeout: IS_CLOUD ? 120_000 : 90_000,
       });
-      await expect(patient.page.locator('[data-testid="jitsi-meeting-container"] iframe').first())
-        .toBeVisible({ timeout: 60_000 });
+      await assertJitsiMediaActive(patient.page, 'JPRE01e-patient-jitsi');
 
       await assertJitsiRoleFlagsOnPage(patient.page, 'patient', 'JPRE01e');
       await assertNoJitsiModeratorGate(patient.page, 'JPRE01e-patient');

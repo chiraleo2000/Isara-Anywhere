@@ -8,7 +8,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:ui": "vitest --ui",
-    "test:coverage": "vitest run --coverage --pool=forks --poolOptions.forks.singleFork=true",
+    "test:coverage": "node scripts/ensure-coverage-tmp.mjs && vitest run --coverage --pool=forks --poolOptions.forks.singleFork=true --maxWorkers=1 --no-file-parallelism --coverage.clean=false",
 
     "test:auth": "cross-env TEST_GROUP=auth vitest run",
     "test:appointments": "cross-env TEST_GROUP=appointments vitest run",

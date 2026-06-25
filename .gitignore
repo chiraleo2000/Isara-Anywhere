@@ -30,6 +30,10 @@ deploy/nginx/isara-mkcert-rootCA.pem
 !.env.docker.lan.example
 !.env.docker.lan.https.example
 
+# Local Docker bind mounts (Postgres data, etc.)
+data/postgres/*
+!data/postgres/.gitkeep
+
 # Logs
 logs/
 *.log

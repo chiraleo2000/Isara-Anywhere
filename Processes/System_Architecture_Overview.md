@@ -152,7 +152,7 @@ Izara Telemedicine is a **three-portal telemedicine platform** built for Thai he
 | `/schedule` | SchedulePage | Doctor/Admin | Appointment calendar |
 | `/patients` | PatientManagement | Doctor/Admin | Patient list & search |
 | `/health-meeting` | HealthMeetingPage | Doctor/Admin | Video consultation control |
-| (modal) | VirtualMeeting | Doctor/Admin | Jitsi meeting room |
+| `/meeting/:id` | MeetingRoom | Doctor/Admin | Full-screen Jitsi meeting room (replaces removed VirtualMeeting) |
 | (modal) | EMREditor | Doctor/Admin | SOAP EMR documentation |
 | (modal) | CompletePrescribing | Doctor/Admin | E-Prescribing |
 | (modal) | CompleteLabOrders | Doctor/Admin | Lab & imaging orders |

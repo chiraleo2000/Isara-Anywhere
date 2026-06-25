@@ -115,7 +115,7 @@ Isara Anywhere นำแนวคิดด้านฟังก์ชันจ�
 | Prescribing | CompletePrescribing | E-Prescribing with drug safety |
 | Lab Orders | CompleteLabOrders | Lab & imaging test orders |
 | AI Studio | GeminiAIStudio | AI chat + medical calculators |
-| Virtual Meeting | VirtualMeeting | Jitsi video consultation |
+| Meeting Room | MeetingRoom | Full-screen Jitsi at `/meeting/:id` (replaces removed VirtualMeeting) |
 | Patient Record | PatientRecordViewer | PHR/EMR/EHR viewer |
 
 ---
@@ -187,7 +187,7 @@ The DoctorPortal includes inline side panels:
 | Create EMR | Opens CompleteEMREditor modal |
 | Prescribe | Opens CompletePrescribing modal |
 | Order Lab | Opens CompleteLabOrders modal |
-| Start Consult | Opens VirtualMeeting modal |
+| Start Consult | Navigates to `/meeting/:id` (MeetingRoom full-screen Jitsi) |
 
 
 ### Results Panel (tabbed)

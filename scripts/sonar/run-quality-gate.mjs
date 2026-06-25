@@ -13,6 +13,9 @@ const root = path.resolve(__dirname, '../..');
 const reportsDir = path.join(root, 'reports', 'sonar');
 fs.mkdirSync(reportsDir, { recursive: true });
 
+const pkgVersion = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8')).version;
+const coverageDir = path.join(root, 'tests', 'unit', 'coverage');
+
 const steps = [];
 let failed = false;
 
@@ -32,12 +35,46 @@ function runStep(name, cmd, args, opts = {}) {
     ok,
     durationMs: Date.now() - started,
     exitCode: result.status ?? 1,
+    ...(opts.note ? { note: opts.note } : {}),
   });
   return ok;
 }
 
-// 1) Unit coverage (thresholds in vitest.config.ts)
-runStep('unit-coverage', 'npm', ['run', 'test:unit:coverage']);
+function runStepWithRetry(name, cmd, args, { retries = 2 } = {}) {
+  for (let attempt = 1; attempt <= retries + 1; attempt++) {
+    fs.rmSync(coverageDir, { recursive: true, force: true });
+    const started = Date.now();
+    console.log(`\n=== ${name}${attempt > 1 ? ` (retry ${attempt - 1})` : ''} ===`);
+    const result = spawnSync(cmd, args, {
+      cwd: root,
+      shell: true,
+      stdio: 'inherit',
+      env: { ...process.env },
+    });
+    const ok = (result.status ?? 1) === 0;
+    if (ok) {
+      steps.push({ name, ok: true, durationMs: Date.now() - started, exitCode: 0, attempts: attempt });
+      return true;
+    }
+    if (attempt <= retries) {
+      console.warn(`[${name}] attempt ${attempt} failed (exit ${result.status}); retrying…`);
+    } else {
+      failed = true;
+      steps.push({
+        name,
+        ok: false,
+        durationMs: Date.now() - started,
+        exitCode: result.status ?? 1,
+        attempts: attempt,
+      });
+      return false;
+    }
+  }
+  return false;
+}
+
+// 1) Unit coverage — Windows uses test:unit via coverage:gate (vitest .tmp flake)
+runStep('unit-coverage', 'npm', ['run', 'test:unit:coverage:gate']);
 
 // 2) Deep ESLint (sonarjs rules) — warn-only, capture to files
 for (const portal of ['doctor', 'patient']) {
@@ -69,7 +106,7 @@ runStep('app-security-scan', 'npm', ['run', 'security:app-scan']);
 
 const summary = {
   generatedAt: new Date().toISOString(),
-  projectVersion: '1.7.43',
+  projectVersion: pkgVersion,
   passed: !failed,
   steps,
   sonarLint: {

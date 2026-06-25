@@ -1096,15 +1096,15 @@ const getPatientVisibleContent = async (): Promise<MedicalContentArticle[]> => {
 
 ```text
 Doctor Portal:
-├── src/pages/MedicalContent.tsx          # Medical content management
-├── src/pages/ClinicalResources.tsx       # Clinical resources with approval
-├── src/types/contentTypes.ts             # Type definitions
-└── src/services/contentService.ts        # API service layer
+├── frontend/pages/MedicalContent.tsx          # Medical content management
+├── frontend/pages/ClinicalResources.tsx       # Clinical resources with approval
+├── frontend/types/contentTypes.ts             # Type definitions
+└── frontend/services/contentService.ts        # API service layer
 
 Patient Portal:
-├── src/pages/health/MedicalContentLibrary.tsx  # Read-only library
-├── src/components/health/MedicalContent.tsx    # Content display component
-└── src/lib/services.ts                         # API calls
+├── frontend/pages/health/MedicalContentLibrary.tsx  # Read-only library
+├── frontend/components/health/MedicalContent.tsx    # Content display component
+└── frontend/lib/services.ts                         # API calls
 
 Backend:
 └── server/gcsApiServer.cjs               # GCS API handling

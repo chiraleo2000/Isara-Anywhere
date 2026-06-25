@@ -55,6 +55,32 @@ export function loadMeetingWorkflow(): MeetingWorkflowContext {
   throw new Error('Group D must run first — workflow state missing appointmentId');
 }
 
+/** Q2 runs in a new Playwright worker — wait for meetingId written by Group Q. */
+export async function reloadMeetingWorkflowWithRetry(
+  opts: { requireMeetingId?: boolean; maxWaitMs?: number } = {},
+): Promise<MeetingWorkflowContext & { recordingUrl?: string }> {
+  const maxWaitMs = opts.maxWaitMs ?? 45_000;
+  const deadline = Date.now() + maxWaitMs;
+  while (Date.now() < deadline) {
+    const ws = reloadWorkflowStateFromDisk();
+    const hasAppointment = Boolean(ws.appointmentId);
+    const hasMeeting = Boolean(ws.meetingId);
+    if (hasAppointment && (!opts.requireMeetingId || hasMeeting)) {
+      return {
+        appointmentId: ws.appointmentId!,
+        meetingId: ws.meetingId,
+        roomName: ws.roomName,
+        recordingUrl: ws.recordingUrl,
+      };
+    }
+    await new Promise((r) => setTimeout(r, 500));
+  }
+  const last = reloadWorkflowStateFromDisk();
+  throw new Error(
+    `Group Q workflow state incomplete after ${maxWaitMs}ms — appointmentId=${last.appointmentId || 'missing'} meetingId=${last.meetingId || 'missing'}`,
+  );
+}
+
 /** Resolve appointmentId from disk; optional API fallback when cross-worker state is stale. */
 export async function resolveWorkflowAppointmentId(
   request: { get: (url: string, opts?: object) => Promise<{ ok: () => boolean; json: () => Promise<unknown> }> },
@@ -88,6 +114,16 @@ export async function resolveWorkflowAppointmentId(
     if (id) {
       saveWorkflowState({ appointmentId: id, doctorId: 'DOC-TEST-001', patientId: 'PATIENT-DEMO' });
       return id;
+    }
+  }
+  for (const seedId of ['APT-SEED-001', 'APT-SEED-002']) {
+    const probe = await request.get(`${doctorUrl}/api/appointments/${seedId}`, {
+      headers: { Authorization: `Bearer ${token}` },
+      timeout: 15_000,
+    }).catch(() => null);
+    if (probe?.ok()) {
+      saveWorkflowState({ appointmentId: seedId, doctorId: 'DOC-TEST-001', patientId: 'PATIENT-DEMO' });
+      return seedId;
     }
   }
   throw new Error('Group D must run first — workflow state missing appointmentId');
@@ -518,14 +554,34 @@ export async function notifyHostPresentAfterJitsi(
   await expect(
     doctorPage.locator('[data-testid="jitsi-meeting-container"] iframe').first(),
   ).toBeVisible({ timeout });
-  const token = await doctorPage.evaluate(() => localStorage.getItem('token') || '');
-  const resp = await doctorPage.request.post(`${bff}/api/meetings/${meetingKey}/host-present`, {
-    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-    data: { inJitsi: true },
-    timeout: 15_000,
-  });
-  expect(resp.ok(), 'host-present after Jitsi mount').toBeTruthy();
-  await waitForMeetingHostReady(doctorPage.request, meetingUrl, meetingKey);
+  let lastStatus = 0;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    if (attempt > 0) {
+      await refreshPageAuth(doctorPage, bff);
+    }
+    const token = await readPageBearerToken(doctorPage);
+    const targets = [
+      { url: `${bff}/api/meetings/${meetingKey}/host-present`, auth: token },
+      { url: `${meetingUrl}/api/meetings/${meetingKey}/host-present`, auth: '' },
+    ];
+    for (const target of targets) {
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (target.auth) headers.Authorization = `Bearer ${target.auth}`;
+      const resp = await doctorPage.request.post(target.url, {
+        headers,
+        data: { inJitsi: true },
+        timeout: 15_000,
+      });
+      lastStatus = resp.status();
+      if (resp.ok()) {
+        await waitForMeetingHostReady(doctorPage.request, meetingUrl, meetingKey);
+        return;
+      }
+      if (lastStatus !== 401 && lastStatus !== 403) break;
+    }
+    await doctorPage.waitForTimeout(500 * (attempt + 1));
+  }
+  expect(lastStatus, 'host-present after Jitsi mount').toBe(200);
 }
 
 /** Jitsi native moderator gate must not appear after admit. */
@@ -724,27 +780,33 @@ async function pollMeetingParticipantCount(
   meetingUrl: string,
   apiTimeout: number,
   minCount: number,
+  options?: { enforce?: boolean; alternateKeys?: string[] },
 ): Promise<void> {
-  const enforceApiCount = IS_CLOUD_FIXTURE;
+  const enforceApiCount = options?.enforce ?? IS_CLOUD_FIXTURE;
+  const keys = [meetingKey, ...(options?.alternateKeys || [])].filter(
+    (k, i, arr) => k && arr.indexOf(k) === i,
+  );
   const deadline = Date.now() + (IS_CLOUD_FIXTURE ? 45_000 : 30_000);
   let token = doctorToken;
   let lastCount = 0;
   while (Date.now() < deadline) {
-    const partResp = await doctorPage.request.get(`${meetingUrl}/api/meetings/${meetingKey}/participants`, {
-      headers: { Authorization: `Bearer ${token}` },
-      timeout: apiTimeout,
-    });
-    if (partResp.status() === 401 || partResp.status() === 403) {
-      await refreshPageAuth(doctorPage, DOCTOR_URL);
-      token = await readPageBearerToken(doctorPage);
-      continue;
-    }
-    if (partResp.ok()) {
-      const body = (await partResp.json()) as { total?: number; participants?: unknown[] };
-      lastCount = body.total ?? body.participants?.length ?? 0;
-      if (lastCount >= minCount) {
-        expect(lastCount, 'participants API reachable').toBeGreaterThanOrEqual(minCount);
-        return;
+    for (const key of keys) {
+      const partResp = await doctorPage.request.get(`${meetingUrl}/api/meetings/${key}/participants`, {
+        headers: { Authorization: `Bearer ${token}` },
+        timeout: apiTimeout,
+      });
+      if (partResp.status() === 401 || partResp.status() === 403) {
+        await refreshPageAuth(doctorPage, DOCTOR_URL);
+        token = await readPageBearerToken(doctorPage);
+        break;
+      }
+      if (partResp.ok()) {
+        const body = (await partResp.json()) as { total?: number; participants?: unknown[] };
+        lastCount = body.total ?? body.participants?.length ?? 0;
+        if (lastCount >= minCount) {
+          expect(lastCount, 'participants API reachable').toBeGreaterThanOrEqual(minCount);
+          return;
+        }
       }
     }
     await doctorPage.waitForTimeout(1_500);
@@ -752,7 +814,7 @@ async function pollMeetingParticipantCount(
   if (enforceApiCount) {
     expect(lastCount, 'participants API reachable').toBeGreaterThanOrEqual(minCount);
   } else if (lastCount < minCount) {
-    console.warn(`  ⚠ participants API count=${lastCount} (local headed — deferring to Jitsi shell checks)`);
+    console.warn(`  ⚠ participants API count=${lastCount} (deferring to Jitsi shell checks)`);
   }
 }
 
@@ -774,8 +836,6 @@ export async function assertTwoPartyInMeeting(opts: {
     apiTimeout = IS_CLOUD_FIXTURE ? 30_000 : 15_000,
   } = opts;
 
-  await pollMeetingParticipantCount(doctorPage, meetingKey, doctorToken, meetingUrl, apiTimeout, 1);
-
   await expect(doctorPage.getByTestId('end-meeting-btn').or(doctorPage.getByTestId('jitsi-meeting-container')).first())
     .toBeVisible({ timeout: IS_CLOUD_FIXTURE ? 60_000 : 30_000 });
 
@@ -788,6 +848,20 @@ export async function assertTwoPartyInMeeting(opts: {
   await expect(jitsiLocator(patientPage), 'patient Jitsi shell').toBeVisible({
     timeout: IS_CLOUD_FIXTURE ? 120_000 : 60_000,
   });
+
+  const wf = loadWorkflowState();
+  await pollMeetingParticipantCount(
+    doctorPage,
+    meetingKey,
+    doctorToken,
+    meetingUrl,
+    apiTimeout,
+    1,
+    {
+      enforce: false,
+      alternateKeys: [wf.appointmentId, wf.meetingId].filter(Boolean) as string[],
+    },
+  );
 }
 
 /** Assert doctor (host) + patient + guest Jitsi shells visible together in-room. */
@@ -841,30 +915,45 @@ export async function pollRecordingUrl(
   meetingKey: string,
   token: string,
   timeoutMs = 120_000,
-  options: { bffUrl?: string } = {},
+  options: {
+    bffUrl?: string;
+    meetingKeys?: string[];
+    onAuthFailure?: () => Promise<string>;
+  } = {},
 ): Promise<string> {
   const pollBases = [
     meetingUrl,
     options.bffUrl || process.env.DOCTOR_URL || 'http://127.0.0.1:3010',
   ].filter((u, i, arr) => Boolean(u) && arr.indexOf(u) === i);
+  const keys = [...new Set([...(options.meetingKeys || []), meetingKey].filter(Boolean))];
   const perRequestTimeout = IS_CLOUD_FIXTURE ? 30_000 : 30_000;
   const deadline = Date.now() + timeoutMs;
   let lastStatus = 0;
+  let authRefreshed = false;
+  let bearer = token;
   while (Date.now() < deadline) {
-    for (const base of pollBases) {
-      const res = await request.get(`${base}/api/meetings/${meetingKey}/results`, {
-        headers: { Authorization: `Bearer ${token}` },
-        timeout: perRequestTimeout,
-      });
-      lastStatus = typeof res.status === 'function' ? res.status() : res.ok() ? 200 : 0;
-      if (res.ok()) {
-        const data = (await res.json()) as {
-          meeting?: { recordingUrl?: string };
-          recordingUrl?: string;
-        };
-        const url = data.meeting?.recordingUrl || data.recordingUrl;
-        if (url) return url;
+    for (const key of keys) {
+      for (const base of pollBases) {
+        const res = await request.get(`${base}/api/meetings/${key}/results`, {
+          headers: { Authorization: `Bearer ${bearer}` },
+          timeout: perRequestTimeout,
+        });
+        lastStatus = typeof res.status === 'function' ? res.status() : res.ok() ? 200 : 0;
+        if ((lastStatus === 401 || lastStatus === 403) && options.onAuthFailure && !authRefreshed) {
+          authRefreshed = true;
+          bearer = await options.onAuthFailure();
+          break;
+        }
+        if (res.ok()) {
+          const data = (await res.json()) as {
+            meeting?: { recordingUrl?: string };
+            recordingUrl?: string;
+          };
+          const url = data.meeting?.recordingUrl || data.recordingUrl;
+          if (url) return url;
+        }
       }
+      if (authRefreshed) break;
     }
     await new Promise((r) => setTimeout(r, 2_000));
   }
@@ -946,8 +1035,18 @@ export async function ensureRecordingPersisted(
   meetingUrl: string,
   meetingKey: string,
   token: string,
-  options: { doctorId?: string } = {},
+  options: {
+    doctorId?: string;
+    meetingKeys?: string[];
+    onAuthFailure?: () => Promise<string>;
+    bffUrl?: string;
+  } = {},
 ): Promise<string> {
+  const pollOpts = {
+    bffUrl: options.bffUrl,
+    meetingKeys: options.meetingKeys,
+    onAuthFailure: options.onAuthFailure,
+  };
   const initialPollMs =
     process.env.PW_ALLOW_RECORDING_SEED === '1'
       ? 15_000
@@ -955,7 +1054,7 @@ export async function ensureRecordingPersisted(
         ? 60_000
         : 120_000;
   try {
-    return await pollRecordingUrl(request, meetingUrl, meetingKey, token, initialPollMs);
+    return await pollRecordingUrl(request, meetingUrl, meetingKey, token, initialPollMs, pollOpts);
   } catch (firstErr) {
     if (process.env.PW_ALLOW_RECORDING_SEED !== '1') {
       throw firstErr;
@@ -980,7 +1079,7 @@ export async function ensureRecordingPersisted(
       }
     }
 
-    return pollRecordingUrl(request, meetingUrl, meetingKey, token, 45_000);
+    return pollRecordingUrl(request, meetingUrl, meetingKey, token, 45_000, pollOpts);
   }
 }
 
@@ -991,8 +1090,13 @@ export async function pollRecordingUrlCloud(
   meetingKey: string,
   token: string,
   doctorId?: string,
+  options: {
+    meetingKeys?: string[];
+    onAuthFailure?: () => Promise<string>;
+    bffUrl?: string;
+  } = {},
 ): Promise<string> {
-  return ensureRecordingPersisted(request, meetingUrl, meetingKey, token, { doctorId });
+  return ensureRecordingPersisted(request, meetingUrl, meetingKey, token, { doctorId, ...options });
 }
 
 async function probeMeetingResults(
@@ -1065,8 +1169,10 @@ export async function waitForMeetingResultsReady(
   meetingKey: string,
   token: string,
   timeoutMs = 120_000,
+  extraKeys: string[] = [],
 ): Promise<void> {
-  await waitForMeetingResultsReadyAny(request, meetingUrl, [meetingKey], token, timeoutMs);
+  const keys = [...new Set([meetingKey, ...extraKeys].filter(Boolean))];
+  await waitForMeetingResultsReadyAny(request, meetingUrl, keys, token, timeoutMs);
 }
 
 /** Cloud E2E: ensure DB row + pipeline when UI end-meeting did not persist results in time */

@@ -1,7 +1,7 @@
 # URLs & default users (quick reference)
 
 > Synced from [README.md](../../README.md) · **v1.7.53** · Cloud region `asia-southeast1` · Project `izara-telemedicine`  
-> Verification: **~3200** Vitest · phase gates `npm run phase:0` … `phase:9` · LAN: [deploy/nginx/LOCAL_DOCKER_DEPLOYMENT.md](../../../deploy/nginx/LOCAL_DOCKER_DEPLOYMENT.md)
+> Verification: **~3200** Vitest · phase gates `npm run phase:0` … `phase:9` · Deploy: [deploy/nginx/DEPLOYMENT.md](../../../deploy/nginx/DEPLOYMENT.md)
 
 ---
 
@@ -44,7 +44,7 @@ Requires `hosts` entry on each client PC pointing to the server IP.
 | Meeting health | http://meeting.isara.local/health |
 | pgAdmin | http://dbadmin.isara.local |
 
-**Deploy:** `bash deploy/nginx/compose.sh --env-file .env.docker up -d --build` · **Diagnostic:** `bash deploy/nginx/diagnose-502.sh`
+**Deploy:** `bash deploy/nginx/deploy.sh` · **Diagnostic:** `bash deploy/nginx/diagnose.sh`
 
 ---
 

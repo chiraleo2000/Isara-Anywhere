@@ -23,7 +23,7 @@
 #   - Doctor Portal:  http://localhost:3010
 #   - Meeting Server: http://localhost:3020
 #   - pgAdmin:        http://localhost:5050
-# LAN via Nginx subdomains: see deploy/nginx/LOCAL_DOCKER_DEPLOYMENT.md (Mode B)
+# LAN via Nginx: see deploy/nginx/DEPLOYMENT.md
 #   patient.isara.local | doctor.isara.local | meeting.isara.local | dbadmin.isara.local
 # ============================================================================
 
@@ -43,9 +43,13 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:?POSTGRES_DB is required}
       POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=C"
     ports:
-      - "127.0.0.1:5433:5432"
+      # Default 127.0.0.1:5433 (localhost only). For pgAdmin 4 desktop from another PC on LAN set:
+      #   POSTGRES_PUBLISH=5433   in .env.docker  →  listens on 0.0.0.0:5433
+      - "${POSTGRES_PUBLISH:-127.0.0.1:5433}:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql
+      # Bind mount: set POSTGRES_DATA_DIR in .env.docker (e.g. ./data/postgres or /var/lib/izara/postgres).
+      # Omit POSTGRES_DATA_DIR to keep the named volume postgres_data below.
+      - ${POSTGRES_DATA_DIR:-postgres_data}:/var/lib/postgresql
       - ./scripts/database/izara-database.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
       - ./scripts/database/migrations/v2.0.0-phase2-tables.sql:/docker-entrypoint-initdb.d/02-phase2.sql:ro
       - ./scripts/database/migrations/v2.1.0-phase2-ai-his.sql:/docker-entrypoint-initdb.d/03-phase2-ai-his.sql:ro

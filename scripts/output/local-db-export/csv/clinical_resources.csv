@@ -1,0 +1,39 @@
+"id","title_thai","title_english","content_thai","content_english","category","specialty","guideline_year","source","tags","status","image_url","author_id","author_name","approved_by","approved_at","created_at","updated_at"
+"CR-001","แนวทางการรักษาความดันโลหิตสูง 2024","Hypertension Treatment Guidelines 2024","## แนวทางการรักษาความดันโลหิตสูง
+
+**เป้าหมาย:**
+- ผู้ใหญ่ทั่วไป: < 140/90 mmHg
+- ผู้ป่วยเบาหวาน: < 130/80 mmHg
+
+**ยาเริ่มต้น:**
+- ACEI หรือ ARB
+- CCB
+- Thiazide diuretics","Guidelines for hypertension treatment according to WHO 2024 standards.","cardiovascular","Cardiology","2024","Thai Hypertension Society",,"approved","https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=800","DOC-SOMCHAI-001","นพ.สมชาย ประเสริฐ",,,"""2026-06-18T09:37:36.694Z""","""2026-06-18T09:37:36.694Z"""
+"CR-002","การใช้ยาปฏิชีวนะอย่างสมเหตุผล","Rational Antibiotic Use","## หลักการใช้ยาปฏิชีวนะ
+
+**ข้อบ่งใช้:**
+- การติดเชื้อแบคทีเรียที่ยืนยันได้
+- การติดเชื้อรุนแรงที่สงสัยแบคทีเรีย","Guidelines for appropriate antibiotic prescribing to reduce antimicrobial resistance.","infectious","Infectious Disease","2024","Thai FDA",,"approved","https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=800","DOC-TEST-001","นพ. ทดสอบ แพทย์ดี",,,"""2026-06-18T09:37:36.694Z""","""2026-06-18T09:37:36.694Z"""
+"CR-003","การดูแลผู้ป่วยเบาหวานแบบองค์รวม KDIGO 2024","Holistic Diabetes Care KDIGO 2024","## แนวทาง KDIGO 2024
+
+**การปรับยาในผู้ป่วยโรคไต:**
+- Metformin: ลดขนาดเมื่อ eGFR < 45
+- หยุดใช้เมื่อ eGFR < 30","Comprehensive diabetes care including dose adjustments for CKD per KDIGO 2024.","endocrinology","Endocrinology","2024","KDIGO",,"approved","https://images.unsplash.com/photo-1576669801943-7a8a2c1e3b7e?w=800","DOC-SIRIPORN-001","พญ.ศิริพร ทองชัย",,,"""2026-06-18T09:37:36.694Z""","""2026-06-18T09:37:36.694Z"""
+"CR-004","แบบประเมินสุขภาพจิต PHQ-9","PHQ-9 Mental Health Assessment","## แบบประเมิน PHQ-9
+
+**การให้คะแนน:**
+- 0-4: ปกติ
+- 5-9: ซึมเศร้าเล็กน้อย
+- 10-14: ซึมเศร้าปานกลาง","PHQ-9 Depression screening tool in Thai for patient assessment.","psychiatry","Psychiatry","2024","Thai Psychiatric Association",,"approved","https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=800","DOC-TEST-001","นพ. ทดสอบ แพทย์ดี",,,"""2026-06-18T09:37:36.694Z""","""2026-06-18T09:37:36.694Z"""
+"CR-005","การดูแลผู้สูงอายุในชุมชน","Elderly Care in Community","## คู่มือการดูแลผู้สูงอายุ
+
+**การประเมิน:**
+- ADL (กิจวัตรประจำวัน)
+- IADL (กิจกรรมเครื่องมือ)","Community elderly care handbook for healthcare workers and caregivers.","geriatrics","Geriatrics","2024","Department of Health Thailand",,"approved","https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=800","DOC-TEST-001","นพ. ทดสอบ แพทย์ดี",,,"""2026-06-18T09:37:36.694Z""","""2026-06-18T09:37:36.694Z"""
+"CR-006","เครื่องคำนวณ BMI และความเสี่ยงโรคเรื้อรัง","BMI and Chronic Disease Risk Calculator","## การคำนวณ BMI
+
+**สูตร:** น้ำหนัก(kg) / ส่วนสูง(m)²
+
+**การแปลผล (เกณฑ์เอเชีย):**
+- < 18.5: น้ำหนักต่ำกว่าเกณฑ์
+- 18.5-22.9: ปกติ","BMI calculator tool with chronic disease risk assessment for Asian population.","general","General Medicine","2024","Thai Medical Association",,"approved","https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=800","DOC-SOMCHAI-001","นพ.สมชาย ประเสริฐ",,,"""2026-06-18T09:37:36.694Z""","""2026-06-18T09:37:36.694Z"""

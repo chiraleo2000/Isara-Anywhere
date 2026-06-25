@@ -18,7 +18,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../components/common/AuthProvider';
-import { getToken, refreshSession } from '../../services/authServices';
+import { getToken, authFetch, ensureMeetingSessionFresh } from '../../services/authServices';
 import { getIzaraDisplayName } from '../../utils/jitsiDisplayName';
 import {
   buildDoctorJitsiMountOptions,
@@ -35,7 +35,22 @@ import {
 import { resolveMeetingServerUrl } from '../../utils/resolveMeetingServerUrl';
 import { JitsiMeetingShell } from '../../features/meeting/components/JitsiMeetingShell';
 
-// Helper: get auth headers for meeting API calls (same-origin BFF on doctor portal)
+// Helper: authenticated fetch for same-origin meeting BFF (refresh + retry on SESSION_INVALID)
+async function meetingFetch(
+  path: string,
+  init: RequestInit & { json?: unknown } = {},
+): Promise<Response> {
+  await ensureMeetingSessionFresh();
+  const { json, ...rest } = init;
+  const method = rest.method || (json !== undefined ? 'POST' : 'GET');
+  return authFetch(path, {
+    ...rest,
+    method,
+    credentials: 'include',
+    body: json !== undefined ? JSON.stringify(json) : rest.body,
+  });
+}
+
 function getAuthHeaders(): Record<string, string> {
   const token = getToken();
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
@@ -52,10 +67,6 @@ function meetingFetchInit(body?: unknown): RequestInit {
     init.body = JSON.stringify(body);
   }
   return init;
-}
-
-async function ensureMeetingSessionFresh(): Promise<void> {
-  refreshSession();
 }
 
 function errorMessageFromUnknown(err: unknown): string {
@@ -79,16 +90,15 @@ async function postRecordingBase64(
   base64: string,
   duration: number,
 ): Promise<void> {
-  await ensureMeetingSessionFresh();
-  const res = await fetch(`/api/meetings/${appointmentId}/save-recording`, {
+  const res = await meetingFetch(`/api/meetings/${appointmentId}/save-recording`, {
     method: 'POST',
-    ...meetingFetchInit({
+    json: {
       audioBase64: base64,
       mimeType: 'audio/webm',
       durationMs: duration,
       triggerTranscription: true,
       triggerPostMeetingPipeline: true,
-    }),
+    },
   });
   if (!res.ok) {
     const errBody = await res.text().catch(() => '');
@@ -176,15 +186,13 @@ async function finalizeEndedMeeting(
   setShowPanel: React.Dispatch<React.SetStateAction<'transcript' | 'summary' | 'chat' | null>>,
 ): Promise<void> {
   try {
-    const res = await fetch(`/api/meetings/${appointmentId}/end`, {
+    const res = await meetingFetch(`/api/meetings/${appointmentId}/end`, {
       method: 'POST',
-      ...meetingFetchInit({ endedBy: doctorId || 'doctor', generateSummary: true }),
+      json: { endedBy: doctorId || 'doctor', generateSummary: true },
     });
     if (res.ok) {
-      fetch(`/api/meetings/${appointmentId}/process-embeddings`, {
-        method: 'POST',
-        ...meetingFetchInit(),
-      }).catch((err) => console.warn('[MeetingEnd] Process embeddings failed:', err.message));
+      meetingFetch(`/api/meetings/${appointmentId}/process-embeddings`, { method: 'POST' })
+        .catch((err) => console.warn('[MeetingEnd] Process embeddings failed:', err.message));
 
       if (doctorId && appointmentId) {
         navigate(`/doctor/${doctorId}/meeting/${appointmentId}/results`);
@@ -196,10 +204,7 @@ async function finalizeEndedMeeting(
       setAiSummary(data.summary);
       setShowPanel('summary');
     } else if (res.ok) {
-      fetch(`/api/meetings/${appointmentId}/generate-summary`, {
-        method: 'POST',
-        ...meetingFetchInit(),
-      })
+      meetingFetch(`/api/meetings/${appointmentId}/generate-summary`, { method: 'POST' })
         .then((r) => r.json())
         .then((d) => {
           if (d.summary) {

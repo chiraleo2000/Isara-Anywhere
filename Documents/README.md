@@ -1,7 +1,7 @@
 # Documents — Izara Anywhere documentation hub
 
 > **Layout version:** June 2026 · **App release:** v1.7.53  
-> **Gates:** `npm run phase:0` … `phase:9` · LAN Mode B: [deploy/nginx/LOCAL_DOCKER_DEPLOYMENT.md](../deploy/nginx/LOCAL_DOCKER_DEPLOYMENT.md)
+> **Gates:** `npm run phase:0` … `phase:9` · LAN: [deploy/nginx/DEPLOYMENT.md](../deploy/nginx/DEPLOYMENT.md)
 
 รวมเอกสารทั้งหมดของโปรเจกต์ภายใต้โฟลเดอร์เดียว `Documents/`
 
@@ -81,7 +81,7 @@ python scripts/build-appendix-process-steps.py
 | `bash deploy/nginx/compose.sh` | Docker Compose wrapper (V2 หรือ `docker-compose` V1) |
 | `npm run cleanup:project` | ลบ log/cache/regenerable artifacts |
 
-คู่มือ LAN: [deploy/nginx/LOCAL_DOCKER_DEPLOYMENT.md](../deploy/nginx/LOCAL_DOCKER_DEPLOYMENT.md) · รายงาน gate: [Processes/FULL_WORKFLOW_HARDENING_COMPLETION_REPORT.md](../Processes/FULL_WORKFLOW_HARDENING_COMPLETION_REPORT.md)
+คู่มือ LAN: [deploy/nginx/DEPLOYMENT.md](../deploy/nginx/DEPLOYMENT.md) · สัญญา workflow: [Processes/FULL_WORKFLOW_CONTRACT.md](../Processes/FULL_WORKFLOW_CONTRACT.md)
 
 **Registry:** `tests/unit/cross-portal/processWorkflowRegistry.ts` · matrix: [tests/PROCESS_COVERAGE_MATRIX.md](../tests/PROCESS_COVERAGE_MATRIX.md)
 

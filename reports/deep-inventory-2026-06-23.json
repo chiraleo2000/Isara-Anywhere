@@ -1,0 +1,45 @@
+{
+  "timestamp": "2026-06-23T16:10:00+07:00",
+  "branch": "v1.7.52-test-hardening",
+  "packageVersion": "1.7.53",
+  "phase": 0,
+  "summary": "Deep inventory complete — 0 process gaps, static guards pass, prod audit clean",
+  "checks": {
+    "audit-process-coverage": { "status": "PASS", "gaps": 0 },
+    "test:unit:process-contracts": { "status": "PASS", "tests": 140, "files": 7 },
+    "test:guards:static": { "status": "PASS", "violations": 0 },
+    "env:audit": { "status": "PASS", "requiredKeys": 8, "forbiddenKeys": 0 },
+    "verify:deps": { "status": "PASS", "note": "Patient portal node_modules EBUSY on first run; clean reinstall succeeded" },
+    "audit:prod": { "status": "PASS", "highPlusCve": 0, "portals": ["patient", "doctor", "jitsi"] }
+  },
+  "orphanScan": {
+    "VirtualMeeting": {
+      "codeRemoved": true,
+      "docRefs": "Processes/Pages/Doctor-Portal/07_Virtual_Meeting.md struck; legacy refs in docs/guides only",
+      "action": "Phase 2D — strike remaining doc narrative"
+    },
+    "meet.jit.si": {
+      "status": "expected-fallback",
+      "note": "Default domain constant + CSP allowlist; local gate uses 127.0.0.1:3020 via VITE_MEETING_SERVER_URL",
+      "violations": 0
+    },
+    "legacySrcImports": { "status": "PASS", "violations": 0 },
+    "duplicateBackendFiles": { "status": "none-found", "canonical": "Isara-doctor-portal/backend/mainApiServer.cjs" }
+  },
+  "openItems": {
+    "P0": [],
+    "P1": [
+      { "domain": "docs", "item": "VirtualMeeting references in Processes/README.md and Technical_Documents — strike in Phase 2D/6" },
+      { "domain": "deps", "item": "tests/unit dev deps have 11 audit findings (dev-only, not prod)" }
+    ]
+  },
+  "domains": {
+    "appointments": { "p0": 0, "unitPack": "test:unit:appointments" },
+    "meeting": { "p0": 0, "unitPack": "test:unit:meeting-acceptance" },
+    "postMeeting": { "p0": 0, "unitPack": "postMeetingWorkflow.integration" },
+    "auth": { "p0": 0 },
+    "clinical": { "p0": 0 },
+    "security": { "p0": 0 },
+    "infra": { "p0": 0 }
+  }
+}

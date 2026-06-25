@@ -39,7 +39,7 @@ SYSTEM_DOCS = [
     "GATE0_IMPLEMENTATION_STATUS.md",
     "ENV_AND_STACK_CHECK.md",
     "UI_Pages_Workflows.md",
-    "FULL_WORKFLOW_HARDENING_COMPLETION_REPORT.md",
+    "FULL_WORKFLOW_CONTRACT.md",
     "TWO_ROUND_CLOUD_TESTING.md",
     "Living_Will_Implementation_Plan.md",
 ]

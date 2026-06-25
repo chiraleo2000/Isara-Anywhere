@@ -741,7 +741,7 @@ sequenceDiagram
 | `Processes/PHASE1_REQUIREMENTS.md` | ข้อกำหนด Phase 1 | §2 |
 | `Processes/GATE0_IMPLEMENTATION_STATUS.md` | pool/HOST/sync | §9 |
 | `Processes/ENV_AND_STACK_CHECK.md` | env ทั้ง 3 แอป | §7 |
-| `Processes/FULL_WORKFLOW_HARDENING_COMPLETION_REPORT.md` | รายงาน hardening | §11 |
+| `Processes/FULL_WORKFLOW_CONTRACT.md` | สัญญา workflow / gate | §11 |
 | `Processes/TWO_ROUND_CLOUD_TESTING.md` | ทดสอบ cloud 2 รอบ | (อ้างอิง QA) |
 | `docker-compose.yml` | บริการ local | §7.1 |
 | `Documents/docs/markdown/operations/CLOUD_ACCESS_TH.md` | URL cloud จริง | §7.2 |

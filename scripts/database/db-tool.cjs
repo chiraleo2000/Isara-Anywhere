@@ -73,7 +73,7 @@ const TARGET = getTarget();
 const DB_CONFIGS = {
     local: {
         host: process.env.DB_HOST || 'localhost',
-        port: Number.parseInt(process.env.DB_PORT || '5432'),
+        port: Number.parseInt(process.env.DB_PORT || '5433', 10),
         user: process.env.DB_USER || 'postgres',
         password: process.env.DB_PASSWORD || process.env.POSTGRES_PASSWORD || '',
         database: process.env.DB_NAME || 'izara_phase1',
@@ -751,6 +751,120 @@ async function exportProdData() {
     }
 }
 
+async function exportAllTables(target = 'local') {
+    const config = DB_CONFIGS[target];
+    if (!config) {
+        console.error(`❌ Unknown target: ${target}`);
+        process.exit(1);
+    }
+    console.log(`\n📦 EXPORTING ALL TABLES (${target})\n`);
+    console.log(`   Source: ${config.host}:${config.port}/${config.database}\n`);
+
+    const pool = new Pool(config);
+    const client = await pool.connect();
+    const exportedData = {};
+    const manifest = [];
+
+    try {
+        const tablesRes = await client.query(
+            "SELECT tablename FROM pg_tables WHERE schemaname = 'public' ORDER BY tablename"
+        );
+        const tableNames = tablesRes.rows.map((r) => r.tablename);
+        console.log(`   Found ${tableNames.length} tables\n`);
+
+        const sqlLines = [
+            '-- IZARA TELEMEDICINE — FULL DATABASE DATA EXPORT',
+            `-- Exported: ${new Date().toISOString()}`,
+            `-- Source: ${config.host}:${config.port}/${config.database}`,
+            `-- Tables: ${tableNames.length}`,
+            '',
+            'BEGIN;',
+            '',
+        ];
+
+        const exportDir = path.join(OUTPUT_DIR, 'local-db-export');
+        const csvDir = path.join(exportDir, 'csv');
+        if (!fs.existsSync(csvDir)) fs.mkdirSync(csvDir, { recursive: true });
+
+        for (const tableName of tableNames) {
+            try {
+                const result = await client.query(`SELECT * FROM "${tableName}"`);
+                const rows = result.rows;
+                exportedData[tableName] = rows;
+                sqlLines.push(generateInsertSQL(tableName, rows));
+                manifest.push({ table: tableName, rows: rows.length });
+
+                if (rows.length > 0) {
+                    const columns = Object.keys(rows[0]);
+                    const csvHeader = columns.map((c) => `"${c}"`).join(',');
+                    const csvBody = rows
+                        .map((row) =>
+                            columns
+                                .map((col) => {
+                                    const v = row[col];
+                                    if (v === null || v === undefined) return '';
+                                    if (typeof v === 'object') return `"${JSON.stringify(v).replaceAll('"', '""')}"`;
+                                    return `"${String(v).replaceAll('"', '""')}"`;
+                                })
+                                .join(',')
+                        )
+                        .join('\n');
+                    fs.writeFileSync(
+                        path.join(csvDir, `${tableName}.csv`),
+                        `${csvHeader}\n${csvBody}\n`,
+                        'utf8'
+                    );
+                } else {
+                    fs.writeFileSync(path.join(csvDir, `${tableName}.csv`), '', 'utf8');
+                }
+
+                console.log(`   ✅ ${tableName}: ${rows.length} rows`);
+            } catch (e) {
+                manifest.push({ table: tableName, rows: -1, error: e.message });
+                sqlLines.push(`-- ${tableName}: ERROR - ${e.message}\n`);
+                console.log(`   ⚠️  ${tableName}: ${e.message}`);
+            }
+        }
+
+        sqlLines.push('COMMIT;', '');
+
+        fs.writeFileSync(path.join(exportDir, 'all-tables-data.sql'), sqlLines.join('\n'), 'utf8');
+        fs.writeFileSync(
+            path.join(exportDir, 'all-tables-data.json'),
+            JSON.stringify(exportedData, null, 2),
+            'utf8'
+        );
+        fs.writeFileSync(
+            path.join(exportDir, 'manifest.json'),
+            JSON.stringify(
+                {
+                    exportedAt: new Date().toISOString(),
+                    source: { host: config.host, port: config.port, database: config.database },
+                    tableCount: tableNames.length,
+                    totalRows: manifest.reduce((sum, m) => sum + (m.rows > 0 ? m.rows : 0), 0),
+                    tables: manifest,
+                },
+                null,
+                2
+            ),
+            'utf8'
+        );
+
+        console.log(`\n   📄 SQL:  ${path.join(exportDir, 'all-tables-data.sql')}`);
+        console.log(`   📄 JSON: ${path.join(exportDir, 'all-tables-data.json')}`);
+        console.log(`   📁 CSV:  ${csvDir} (${tableNames.length} files)`);
+        console.log(`   📋 Manifest: ${path.join(exportDir, 'manifest.json')}`);
+        console.log('\n✅ Full export complete!');
+        return exportedData;
+    } catch (err) {
+        console.error('❌ Error:', err.message);
+        throw err;
+    } finally {
+        client.release();
+        await pool.end();
+    }
+}
+
 async function updateStartupData(data) {
     const startupDir = STARTUP_DATA_LEGACY;
     if (data.users && data.users.length > 0) {
@@ -925,6 +1039,7 @@ async function main() {
         console.log('Production Data:');
         console.log('  --query            Query production DB and display summary');
         console.log('  --export           Export production data to SQL + JSON');
+        console.log('  --export-all       Export every public table (default target: local)');
         console.log('  --import-local     Import exported data into local Docker DB');
         console.log('  --import-dev       Import exported data into dev cloud DB');
         console.log('  --full             Full migration (export + import local + import dev)\n');
@@ -942,12 +1057,19 @@ async function main() {
         console.log('  node scripts/database/db-tool.cjs --migrate-phase2');
         console.log('  node scripts/database/db-tool.cjs --migrate-ai --target dev-cloud');
         console.log('  $env:DB_PASSWORD="pwd"; node scripts/database/db-tool.cjs --export');
+        console.log('  node scripts/database/db-tool.cjs --target local --export-all');
         console.log('  $env:DB_PASSWORD="pwd"; node scripts/database/db-tool.cjs --full');
         return;
     }
 
     // Handle production data commands (use their own pool)
     if (args.has('--query')) { await queryProdData(); return; }
+
+    if (args.has('--export-all')) {
+        await exportAllTables(TARGET);
+        console.log('\n🎉 Done!\n');
+        return;
+    }
 
     let exportedData = null;
     if (args.has('--export') || args.has('--full')) {

@@ -230,6 +230,8 @@ export default defineConfig({
     include: getIncludePatterns(),
     exclude: ['**/node_modules/**'],
     testTimeout: 30_000,
+    fileParallelism: false,
+    maxWorkers: process.env.VITEST_COVERAGE === '1' ? 1 : undefined,
     pool: 'threads',
     poolOptions: {
       threads: {
@@ -242,6 +244,8 @@ export default defineConfig({
       allowExternal: true,
       reporter: ['text', 'text-summary', 'json-summary', 'html', 'lcov'],
       reportsDirectory: './coverage',
+      tempDirectory: './coverage/.tmp',
+      clean: false,
       include: [
         '../../Isara-doctor-portal/backend/**',
         '../../Isara-doctor-portal/frontend/services/**',

@@ -133,6 +133,63 @@ function buildStorageState(
 }
 
 let refreshInFlight: Promise<void> | null = null;
+const roleRefreshInFlight: Partial<Record<RoleKey, Promise<void>>> = {};
+
+function resolveTokenFromCache(role: RoleKey): string {
+  if (!fs.existsSync(AUTH_CACHE_PATH)) return '';
+  try {
+    const cache = JSON.parse(fs.readFileSync(AUTH_CACHE_PATH, 'utf-8')) as {
+      users?: Record<string, { token?: string }>;
+    };
+    return cache.users?.[role]?.token || '';
+  } catch {
+    return '';
+  }
+}
+
+function writeStorageStateFile(role: RoleKey, token: string): void {
+  if (!fs.existsSync(AUTH_STORAGE_DIR)) {
+    fs.mkdirSync(AUTH_STORAGE_DIR, { recursive: true });
+  }
+  const state = buildStorageState(role, token, USERS[role]);
+  const target = path.join(AUTH_STORAGE_DIR, `${role}.json`);
+  const payload = JSON.stringify(state, null, 2);
+  const fd = fs.openSync(target, 'w');
+  try {
+    fs.writeFileSync(fd, payload);
+    fs.fsyncSync(fd);
+  } finally {
+    fs.closeSync(fd);
+  }
+}
+
+async function refreshAuthStorageStateForRoleImpl(role: RoleKey): Promise<void> {
+  const ctx = await playwrightRequest.newContext();
+  try {
+    const baseUrl = role === 'patient1' ? PATIENT_URL : DOCTOR_URL;
+    let resolved = await apiLogin(ctx, baseUrl, USERS[role]);
+    if (!resolved) {
+      resolved = resolveTokenFromCache(role);
+    }
+    if (!resolved) {
+      console.warn(`  ⚠️ auth-refresh: ${role} login returned empty token`);
+      return;
+    }
+    writeStorageStateFile(role, resolved);
+  } finally {
+    await ctx.dispose();
+  }
+}
+
+/** Re-login a single E2E role — avoids invalidating other portal sessions on cloud. */
+export async function refreshAuthStorageStateForRole(role: RoleKey): Promise<void> {
+  if (!roleRefreshInFlight[role]) {
+    roleRefreshInFlight[role] = refreshAuthStorageStateForRoleImpl(role).finally(() => {
+      delete roleRefreshInFlight[role];
+    });
+  }
+  return roleRefreshInFlight[role];
+}
 
 async function refreshAuthStorageStatesImpl(): Promise<void> {
   if (!fs.existsSync(AUTH_STORAGE_DIR)) {
@@ -154,31 +211,12 @@ async function refreshAuthStorageStatesImpl(): Promise<void> {
     ];
 
     for (const [role, token] of writes) {
-      let resolved = token;
-      if (!resolved && fs.existsSync(AUTH_CACHE_PATH)) {
-        try {
-          const cache = JSON.parse(fs.readFileSync(AUTH_CACHE_PATH, 'utf-8')) as {
-            users?: Record<string, { token?: string }>;
-          };
-          resolved = cache.users?.[role]?.token || '';
-        } catch {
-          /* use empty */
-        }
-      }
+      let resolved = token || resolveTokenFromCache(role);
       if (!resolved) {
         console.warn(`  ⚠️ auth-refresh: ${role} login returned empty token`);
         continue;
       }
-      const state = buildStorageState(role, resolved, USERS[role]);
-      const target = path.join(AUTH_STORAGE_DIR, `${role}.json`);
-      const payload = JSON.stringify(state, null, 2);
-      const fd = fs.openSync(target, 'w');
-      try {
-        fs.writeFileSync(fd, payload);
-        fs.fsyncSync(fd);
-      } finally {
-        fs.closeSync(fd);
-      }
+      writeStorageStateFile(role, resolved);
     }
   } finally {
     await ctx.dispose();
@@ -215,7 +253,7 @@ export async function reinjectAuthFromStorageFile(
 
   let state = readState();
   if (!state) {
-    await refreshAuthStorageStates();
+    await refreshAuthStorageStateForRole(role);
     state = readState();
   }
   if (!state) return;

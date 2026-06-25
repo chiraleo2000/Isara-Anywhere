@@ -1,5 +1,5 @@
-import { useState, FormEvent } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useState, FormEvent, useEffect } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useSettings } from '../../contexts/SettingsContext';
 import { Eye, EyeOff, Mail, Lock, ArrowLeft, CheckCircle, AlertCircle, Loader2, Sun, Moon, Globe } from 'lucide-react';
@@ -244,6 +244,7 @@ const viewModeSubtitles: Record<ViewMode, (t: (k: string) => string) => string> 
 
 export default function LoginPage() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { login } = useAuth();
   const { theme, language, toggleTheme, toggleLanguage, t } = useSettings();
 
@@ -259,6 +260,15 @@ export default function LoginPage() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (searchParams.get('registered') === '1') {
+      setSuccess('สมัครสมาชิกสำเร็จ กรุณาเข้าสู่ระบบด้วยอีเมลและรหัสผ่านของคุณ');
+      setViewMode('login');
+      searchParams.delete('registered');
+      setSearchParams(searchParams, { replace: true });
+    }
+  }, [searchParams, setSearchParams]);
 
   // Email validation
   const validateEmail = (email: string): boolean => {

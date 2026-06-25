@@ -33,7 +33,11 @@ import {
   probeRenderHealth,
 } from './portal-diagnostics';
 import { registerScreenshotHash } from './screenshot-distinct';
-import { refreshAuthStorageStates, reinjectAuthFromStorageFile } from './auth-refresh';
+import {
+  refreshAuthStorageStates,
+  refreshAuthStorageStateForRole,
+  reinjectAuthFromStorageFile,
+} from './auth-refresh';
 import {
   chromiumLaunchArgs,
   CHROMIUM_MEDIA_PERMISSIONS,
@@ -190,19 +194,53 @@ const IS_CLOUD = process.env.TEST_ENV === 'cloud';
 
 /** Resolve bearer token from page storage (doctor/patient portals use different keys). */
 export async function readPageBearerToken(page: Page): Promise<string> {
-  return page.evaluate(() =>
-    localStorage.getItem('token')
-    || localStorage.getItem('auth_token')
-    || localStorage.getItem('izara_auth_token')
-    || '',
-  );
+  return page.evaluate(() => {
+    // PostgreSQL session tokens are opaque hex — do not prefer legacy JWT shape.
+    const doctorToken = localStorage.getItem('token');
+    if (doctorToken) return doctorToken;
+    const patientToken = localStorage.getItem('auth_token');
+    if (patientToken) return patientToken;
+    return localStorage.getItem('izara_auth_token') || '';
+  });
 }
 
 /** Re-login via API and reinject storageState when bearer auth is stale (401). */
+function isPatientPortalBaseUrl(baseUrl: string): boolean {
+  return baseUrl.includes('3005') || /patient-portal/i.test(baseUrl);
+}
+
+function isDoctorPortalBaseUrl(baseUrl: string): boolean {
+  return baseUrl.includes('3010') || /doctor-portal/i.test(baseUrl);
+}
+
+async function resolveDoctorPortalAuthRole(page: Page): Promise<'admin' | 'doctor'> {
+  return page.evaluate(() => {
+    try {
+      const u = JSON.parse(localStorage.getItem('izara_current_user') || '{}') as {
+        isAdmin?: boolean;
+        role?: string;
+        id?: string;
+      };
+      if (u.isAdmin || u.role === 'admin' || u.id?.startsWith('ADMIN-')) return 'admin';
+    } catch {
+      /* fall through */
+    }
+    const path = window.location.pathname || '';
+    if (/ADMIN-TEST|\/admin\b/i.test(path)) return 'admin';
+    return 'doctor';
+  });
+}
+
 export async function refreshPageAuth(page: Page, baseUrl: string): Promise<void> {
-  if (baseUrl.includes('3005')) {
-    await refreshAuthStorageStates();
+  if (isPatientPortalBaseUrl(baseUrl)) {
+    await refreshAuthStorageStateForRole('patient1');
     await reinjectAuthFromStorageFile(page, 'patient1');
+    return;
+  }
+  if (isDoctorPortalBaseUrl(baseUrl)) {
+    const role = await resolveDoctorPortalAuthRole(page);
+    await refreshAuthStorageStateForRole(role);
+    await reinjectAuthFromStorageFile(page, role);
     return;
   }
   const isAdmin = await page.evaluate(() => {
@@ -213,8 +251,87 @@ export async function refreshPageAuth(page: Page, baseUrl: string): Promise<void
       return false;
     }
   });
-  await refreshAuthStorageStates();
-  await reinjectAuthFromStorageFile(page, isAdmin ? 'admin' : 'doctor');
+  const role = isAdmin ? 'admin' : 'doctor';
+  await refreshAuthStorageStateForRole(role);
+  await reinjectAuthFromStorageFile(page, role);
+}
+
+/** Recover admin/doctor portal page when reload redirected to session_expired login. */
+export async function ensureDoctorPortalAuthenticated(
+  page: Page,
+  label: string,
+  routeSegment = 'dashboard',
+): Promise<void> {
+  const contentTimeout = IS_CLOUD ? 45_000 : 15_000;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const url = page.url();
+    if (!url.includes('/login') && !url.includes('/register')) {
+      assertNotLogin(page, label);
+      return;
+    }
+    await refreshPageAuth(page, DOCTOR_URL);
+    const portalRole = await resolveDoctorPortalAuthRole(page);
+    const userId = await page.evaluate(() => {
+      try {
+        const u = JSON.parse(localStorage.getItem('izara_current_user') || '{}') as { id?: string };
+        return u.id || 'DOC-TEST-001';
+      } catch {
+        return 'DOC-TEST-001';
+      }
+    });
+    const dest = `${DOCTOR_URL}/doctor/${userId}/${routeSegment}`;
+    await page.goto(dest, { waitUntil: 'domcontentloaded', timeout: IS_CLOUD ? 90_000 : 30_000 });
+    await waitForContent(page, `${label}-auth-recovery`, contentTimeout, portalRole);
+  }
+  assertNotLogin(page, label);
+}
+
+/** GET with bearer auth + single refresh retry (cloud session invalidation). */
+export async function pageRequestGetWithAuthRetry(
+  page: Page,
+  url: string,
+  baseUrl: string,
+  options?: Parameters<Page['request']['get']>[1],
+): Promise<Awaited<ReturnType<Page['request']['get']>>> {
+  let token = await readPageBearerToken(page);
+  let authRetried = false;
+  while (true) {
+    const resp = await pageRequestGet(page, url, {
+      ...options,
+      headers: { ...options?.headers, Authorization: `Bearer ${token}` },
+    });
+    if ((resp.status() === 401 || resp.status() === 403) && !authRetried) {
+      authRetried = true;
+      await refreshPageAuth(page, baseUrl);
+      token = await readPageBearerToken(page);
+      continue;
+    }
+    return resp;
+  }
+}
+
+/** PATCH with bearer auth + single refresh retry. */
+export async function pageRequestPatchWithAuthRetry(
+  page: Page,
+  url: string,
+  baseUrl: string,
+  options?: Parameters<Page['request']['patch']>[1],
+): Promise<Awaited<ReturnType<Page['request']['patch']>>> {
+  let token = await readPageBearerToken(page);
+  let authRetried = false;
+  while (true) {
+    const resp = await pageRequestPatch(page, url, {
+      ...options,
+      headers: { ...options?.headers, Authorization: `Bearer ${token}` },
+    });
+    if ((resp.status() === 401 || resp.status() === 403) && !authRetried) {
+      authRetried = true;
+      await refreshPageAuth(page, baseUrl);
+      token = await readPageBearerToken(page);
+      continue;
+    }
+    return resp;
+  }
 }
 
 /** POST /api/appointments/:id/confirm with auth refresh retries (session invalidation). */
@@ -564,18 +681,19 @@ export async function waitForAcceptedInPool(
   opts?: { timeoutMs?: number },
 ): Promise<Record<string, unknown>> {
   const timeoutMs = opts?.timeoutMs ?? (IS_CLOUD ? 45_000 : 25_000);
-  const token = await page.evaluate(() =>
-    localStorage.getItem('token')
-    || localStorage.getItem('izara_auth_token')
-    || localStorage.getItem('auth_token')
-    || '',
-  );
   const deadline = Date.now() + timeoutMs;
+  let authRetried = false;
   while (Date.now() < deadline) {
+    const token = await readPageBearerToken(page);
     const poolResp = await pageRequestGet(page, `${baseUrl}/api/appointment-pool?includeAccepted=true`, {
       headers: { Authorization: `Bearer ${token}` },
       timeout: 15_000,
     });
+    if ((poolResp.status() === 401 || poolResp.status() === 403) && !authRetried) {
+      authRetried = true;
+      await refreshPageAuth(page, baseUrl);
+      continue;
+    }
     if (poolResp.ok()) {
       const rows = await poolResp.json().catch(() => []);
       const list = Array.isArray(rows) ? rows : [];
@@ -1151,8 +1269,15 @@ export async function seedPatientAppointmentNotification(
 }
 
 // ── Wait for SPA content to render (2s min + content poll) ──────────
-export async function waitForContent(page: Page, label: string, timeoutMs = 8_000) {
+export async function waitForContent(
+  page: Page,
+  label: string,
+  timeoutMs = 8_000,
+  authRole: 'patient1' | 'doctor' | 'admin' = 'patient1',
+) {
   await page.waitForTimeout(WAIT_AFTER_NAV);
+  const reloadTimeout = IS_CLOUD ? 30_000 : 10_000;
+  const stateFile = authRole === 'admin' ? 'admin.json' : authRole === 'doctor' ? 'doctor.json' : 'patient1.json';
   const deadline = Date.now() + timeoutMs;
   while (Date.now() < deadline) {
     let len = 0;
@@ -1165,17 +1290,8 @@ export async function waitForContent(page: Page, label: string, timeoutMs = 8_00
     if (len > 50) {
       const url = page.url();
       if (url.includes('/login') || url.includes('/register')) {
-        // Re-inject auth tokens before reloading
-        const patientState = path.join(AUTH_DIR, 'patient1.json');
-        if (fs.existsSync(patientState)) {
-          const state = JSON.parse(fs.readFileSync(patientState, 'utf-8'));
-          const items = state.origins?.[0]?.localStorage || [];
-          await page.evaluate((entries: { name: string; value: string }[]) => {
-            for (const e of entries) localStorage.setItem(e.name, e.value);
-            localStorage.setItem('izara_patient_last_activity', Date.now().toString());
-          }, items);
-        }
-        await page.reload({ waitUntil: 'domcontentloaded', timeout: 10_000 });
+        await reinjectAuthFromStorage(page, path.join(AUTH_DIR, stateFile));
+        await page.reload({ waitUntil: 'domcontentloaded', timeout: reloadTimeout });
         await page.waitForTimeout(WAIT_AFTER_NAV);
         continue;
       }
@@ -1921,11 +2037,17 @@ export const test = base.extend<{}, { portals: Portals }>({
 
     console.log(`✅ FIXTURE SETUP complete in ${((Date.now() - setupStart) / 1000).toFixed(1)}s\n`);
 
-    // Keep patient session alive every 60s to prevent 15-min inactivity logout
+    // Keep patient + doctor/admin sessions alive (prevent inactivity logout during long D runs)
     const keepAlive = setInterval(async () => {
       try {
         await patientPage.evaluate(() =>
           localStorage.setItem('izara_patient_last_activity', Date.now().toString())
+        );
+        await doctorPage.evaluate(() =>
+          localStorage.setItem('izara_last_activity', Date.now().toString())
+        );
+        await adminPage.evaluate(() =>
+          localStorage.setItem('izara_last_activity', Date.now().toString())
         );
       } catch { /* page may be navigating */ }
     }, 60_000);

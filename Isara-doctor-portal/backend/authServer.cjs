@@ -30,6 +30,7 @@ const {
   sessionRowToReqUser,
   validateSessionToken,
   createAuthenticateSession,
+  resolveSessionTokenFromRequest,
 } = require('./sessionAuth.cjs');
 process.stdout.write('[AUTH-SERVER] Loading crypto...\n');
 const crypto = require('node:crypto');
@@ -83,8 +84,7 @@ const isProduction = process.env.NODE_ENV === 'production';
 const REFRESH_TOKEN_EXPIRES_DAYS = 30;
 
 async function authenticateToken(req, res, next) {
-  const authHeader = req.headers['authorization'];
-  const token = authHeader?.split(' ')[1];
+  const token = resolveSessionTokenFromRequest(req);
   if (!token) {
     return res.status(401).json({ error: 'Authentication required' });
   }
@@ -97,6 +97,7 @@ async function authenticateToken(req, res, next) {
       return res.status(403).json({ error: 'Session expired or invalid', code: 'SESSION_INVALID' });
     }
     req.user = sessionRowToReqUser(row);
+    req.sessionToken = token;
     next();
   } catch (error) {
     console.warn('[AUTH] Session verification failed:', error.message);
@@ -620,6 +621,56 @@ async function verifyGCSConnection(maxRetries = 10, retryDelay = 3000) {
 }
 
 // ============================================================================
+// DOCTOR APPROVAL HELPERS
+// ============================================================================
+
+/** Returns false if response was sent (login must abort). */
+function checkDoctorApprovalForLogin(user, res) {
+  if (user.role !== 'doctor') return true;
+
+  const approvalStatus = user.approval_status || user.approvalStatus;
+  if (approvalStatus === 'pending') {
+    res.status(403).json({
+      error: 'pending_approval',
+      code: 'PENDING_APPROVAL',
+      message: 'Doctor account is awaiting admin approval',
+      userId: user.id,
+    });
+    return false;
+  }
+  if (approvalStatus === 'rejected') {
+    res.status(403).json({
+      error: 'Account has been rejected',
+      code: 'ACCOUNT_REJECTED',
+    });
+    return false;
+  }
+  if (user.is_approved === false || user.isApproved === false) {
+    res.status(403).json({
+      error: 'pending_approval',
+      code: 'PENDING_APPROVAL',
+      message: 'Doctor account is awaiting admin approval',
+      userId: user.id,
+    });
+    return false;
+  }
+  return true;
+}
+
+async function approveDoctorRecord(userId, adminId) {
+  await pgPool.query(
+    `UPDATE users SET is_active = true, is_approved = true, approval_status = 'approved',
+     approved_at = NOW(), approved_by = $1, updated_at = NOW()
+     WHERE id = $2`,
+    [adminId || 'admin', userId]
+  );
+  await pgPool.query(
+    `UPDATE doctors SET is_available = true, updated_at = NOW() WHERE id = $1`,
+    [userId]
+  );
+}
+
+// ============================================================================
 // AUTHENTICATION ROUTES
 // ============================================================================
 
@@ -854,6 +905,10 @@ app.post('/auth/login',
           ip: getClientIP(req)
         });
         return res.status(401).json({ error: 'Invalid credentials', code: 'INVALID_CREDENTIALS' });
+      }
+
+      if (!checkDoctorApprovalForLogin(user, res)) {
+        return;
       }
       
       // Check if account is active
@@ -1771,13 +1826,7 @@ app.post('/auth/admin/approve-doctor', authenticateToken, requireAdmin, async (r
 
     const user = userResult.rows[0];
 
-    // Update user approval status
-    await pgPool.query(
-      `UPDATE users SET is_active = true, is_approved = true, approval_status = 'approved',
-       approved_at = NOW(), approved_by = $1, updated_at = NOW()
-       WHERE id = $2`,
-      [adminId || 'admin', userId]
-    );
+    await approveDoctorRecord(userId, adminId);
 
     // Send approval email notification
     try {
@@ -2140,13 +2189,7 @@ app.post('/auth/approve-doctor', authenticateToken, requireAdmin, async (req, re
 
     const user = userResult.rows[0];
 
-    // Update user approval status
-    await pgPool.query(
-      `UPDATE users SET is_active = true, is_approved = true, approval_status = 'approved',
-       approved_at = NOW(), approved_by = $1, updated_at = NOW()
-       WHERE id = $2`,
-      [adminId || 'admin', userId]
-    );
+    await approveDoctorRecord(userId, adminId);
 
     // Log approval notification
     console.log(`\n✅ DOCTOR APPROVED`);
@@ -2268,13 +2311,7 @@ app.post('/admin/approve-doctor', authenticateToken, requireAdmin, async (req, r
 
     const user = userResult.rows[0];
 
-    // Update user approval status
-    await pgPool.query(
-      `UPDATE users SET is_active = true, is_approved = true, approval_status = 'approved',
-       approved_at = NOW(), approved_by = $1, updated_at = NOW()
-       WHERE id = $2`,
-      [adminId || 'admin', userId]
-    );
+    await approveDoctorRecord(userId, adminId);
 
     console.log(`✅ [Admin] Doctor approved: ${user.email} - PostgreSQL`);
 

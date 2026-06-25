@@ -1,91 +1,91 @@
 {
-  "checkedAt": "2026-06-22T09:08:30.876Z",
-  "logPath": "reports\\local-unit-gate-2026-06-22T09-06-39.log",
+  "checkedAt": "2026-06-23T11:14:46.374Z",
+  "logPath": "reports\\local-unit-gate-2026-06-23T11-11-45.log",
   "results": [
     {
-      "script": "test:unit:coverage",
+      "script": "test:unit:coverage:gate",
       "ok": true,
-      "durationMs": 84612
+      "durationMs": 2715
     },
     {
       "script": "test:unit:auth",
       "ok": true,
-      "durationMs": 2146
+      "durationMs": 3477
     },
     {
       "script": "test:unit:appointments",
       "ok": true,
-      "durationMs": 1501
+      "durationMs": 10260
     },
     {
       "script": "test:unit:clinical",
       "ok": true,
-      "durationMs": 1656
+      "durationMs": 10463
     },
     {
       "script": "test:unit:meeting",
       "ok": true,
-      "durationMs": 2337
+      "durationMs": 104537
     },
     {
       "script": "test:unit:meeting-acceptance",
       "ok": true,
-      "durationMs": 1387
+      "durationMs": 2940
     },
     {
       "script": "test:unit:ai",
       "ok": true,
-      "durationMs": 1192
+      "durationMs": 3032
     },
     {
       "script": "test:unit:api",
       "ok": true,
-      "durationMs": 1266
+      "durationMs": 4659
     },
     {
       "script": "test:unit:database",
       "ok": true,
-      "durationMs": 1262
+      "durationMs": 4157
     },
     {
       "script": "test:unit:workflows",
       "ok": true,
-      "durationMs": 1686
+      "durationMs": 2642
     },
     {
       "script": "test:unit:security",
       "ok": true,
-      "durationMs": 3379
+      "durationMs": 16403
     },
     {
       "script": "test:unit:notifications",
       "ok": true,
-      "durationMs": 1210
+      "durationMs": 2106
     },
     {
       "script": "test:unit:process-contracts",
       "ok": true,
-      "durationMs": 1408
+      "durationMs": 2615
     },
     {
       "script": "test:unit:v5-contracts",
       "ok": true,
-      "durationMs": 1573
+      "durationMs": 3546
     },
     {
       "script": "test:meeting-server:contract",
       "ok": true,
-      "durationMs": 2596
+      "durationMs": 2776
     },
     {
       "script": "test:post-meeting-pipeline",
       "ok": true,
-      "durationMs": 518
+      "durationMs": 1773
     },
     {
       "script": "test:security-hardening",
       "ok": true,
-      "durationMs": 1381
+      "durationMs": 2548
     }
   ],
   "pass": true

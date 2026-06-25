@@ -71,6 +71,9 @@
 
 - [T. Map & Facility Finder](#t-map--facility-finder)
 
+
+- [U. Database Tables Reference](#u-database-tables-reference)
+
 ---
 
 
@@ -340,7 +343,7 @@ pending ──→ in_pool ──→ ai_matched ──→ doctor_claimed ──�
 
 ### C1. Doctor Opens Meeting Room
 
-**Pages:** `HealthMeetingPage.tsx`, `VirtualMeeting.tsx` (modal)
+**Pages:** `HealthMeeting.tsx`, `MeetingRoom.tsx` (`/meeting/:id` — VirtualMeeting removed v1.7.53)
 **API:** `POST /api/meetings/create`
 **Tables:** `meeting_records`
 
@@ -1252,4 +1255,25 @@ Process:
 
 ---
 
-Separated workflows document for Izara Telemedicine Platform v1.6.0
+
+## U. Database Tables Reference
+
+All PostgreSQL tables (53+) are documented with descriptions, key fields, and workflow cross-links in:
+
+**[DATABASE_TABLES_REFERENCE.md](DATABASE_TABLES_REFERENCE.md)**
+
+| Domain | Primary tables |
+| ------ | -------------- |
+| Auth | `users`, `sessions`, `password_resets`, `refresh_tokens` |
+| Appointments | `appointments`, `doctor_schedules`, `appointment_ai_suggestions` |
+| Meetings | `meeting_records`, `meeting_transcripts`, `meeting_chats`, `ai_validations` |
+| Clinical | `emr`, `prescriptions`, `lab_orders`, `imaging_orders`, `phr` |
+| Post-meeting | `patient_instructions`, `health_timeline`, `follow_ups` |
+| Content | `medical_content`, `clinical_resources`, `knowledge_base` |
+| Sync | `sync_queue`, `user_api_connections`, NOTIFY triggers on 8 tables |
+
+Full ER diagram and migration order: [PostgreSQL_Database_Architecture.md](PostgreSQL_Database_Architecture.md).
+
+---
+
+Separated workflows document for Izara Telemedicine Platform v1.7.52

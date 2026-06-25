@@ -2,7 +2,7 @@
 
 คู่มือนี้สำหรับกรณีที่ **Docker รันบน Ubuntu server** (เช่น `192.168.10.107`) และคุณเปิด pgAdmin จาก **PC Windows อื่นในเครือข่าย LAN** ผ่าน Nginx
 
-**See also:** [LOCAL_DOCKER_DEPLOYMENT.md](LOCAL_DOCKER_DEPLOYMENT.md) · [isara-system.conf](isara-system.conf)
+**See also:** [DEPLOYMENT.md](DEPLOYMENT.md) · [isara-nginx.conf](isara-nginx.conf)
 
 ---
 
@@ -11,7 +11,7 @@
 | รายการ | สถานะที่ต้องเป็น |
 |--------|------------------|
 | Docker Compose บน Ubuntu | `docker compose ps` — `izara-postgres` และ `izara-pgadmin` เป็น **Up** |
-| Nginx บน Ubuntu | ติดตั้ง config `deploy/nginx/isara-system.conf` แล้ว |
+| Nginx บน Ubuntu | ติดตั้ง config `deploy/nginx/isara-nginx.conf` แล้ว |
 | ไฟล์ `.env.docker` บน Ubuntu | มี `POSTGRES_PASSWORD`, `PGADMIN_DEFAULT_EMAIL`, `PGADMIN_DEFAULT_PASSWORD` |
 | PC Windows | แก้ไฟล์ `hosts` แล้ว |
 

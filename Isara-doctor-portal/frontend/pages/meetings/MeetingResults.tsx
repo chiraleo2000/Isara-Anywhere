@@ -7,7 +7,7 @@
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { getToken } from '../../services/authServices';
+import { authFetch } from '../../services/authServices';
 import { storeEmrAiDraft } from '../../utils/emrAiDraft';
 import { resolveMeetingServerUrl } from '../../utils/resolveMeetingServerUrl';
 
@@ -91,26 +91,18 @@ type ValidationAction = 'approve' | 'edit' | 'reject';
 
 const meetingServerBase = () => resolveMeetingServerUrl();
 
-const buildHeaders = (token: string | null) =>
-  ({ 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) });
-
 /** Same-origin proxy on doctor portal; fallback to meeting server for local dev */
 async function fetchMeetingApi(path: string, init: RequestInit = {}): Promise<Response> {
-  const token = getToken();
-  const headers = {
-    ...buildHeaders(token),
-    ...(init.headers as Record<string, string> | undefined),
-  };
-  const opts: RequestInit = { ...init, headers, credentials: 'include' };
   const isRecordingStream = path.startsWith('/api/meetings/recording-stream');
+  const opts: RequestInit = { ...init, credentials: 'include' };
   try {
-    const res = await fetch(path, opts);
+    const res = await authFetch(path, opts);
     if (res.ok || isRecordingStream) return res;
     if (res.status !== 404 && res.status !== 502 && res.status !== 503) return res;
   } catch {
     if (isRecordingStream) throw new Error('Recording stream unavailable');
   }
-  return fetch(`${meetingServerBase()}${path}`, opts);
+  return authFetch(`${meetingServerBase()}${path}`, opts);
 }
 
 const PIPELINE_POLL_MS = 3_000;
@@ -815,6 +807,8 @@ const MeetingResults: React.FC<MeetingResultsProps> = ({ meetingId, appointmentI
           ]).map(tab => (
             <button
               key={tab.key}
+              type="button"
+              data-testid={`results-tab-${tab.key}`}
               onClick={() => setActiveTab(tab.key)}
               className={`flex-1 px-4 py-3 text-sm font-medium transition-colors
                 ${activeTab === tab.key

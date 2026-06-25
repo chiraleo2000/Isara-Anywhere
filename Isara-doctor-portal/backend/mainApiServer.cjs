@@ -656,14 +656,14 @@ const {
   sessionRowToReqUser,
   validateSessionToken,
   createAuthenticateSession,
+  resolveSessionTokenFromRequest,
 } = require('./sessionAuth.cjs');
 
 async function authenticateToken(req, res, next) {
-  const authHeader = req.headers['authorization'];
-  const token = authHeader?.split(' ')[1];
+  const token = resolveSessionTokenFromRequest(req);
 
   if (!token) {
-    return res.status(401).json({ error: 'No token provided' });
+    return res.status(401).json({ error: 'No token provided', code: 'SESSION_INVALID' });
   }
 
   if (!PostgresDataService?.pool) {

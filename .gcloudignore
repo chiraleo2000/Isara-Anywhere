@@ -33,7 +33,6 @@ docker-compose.yml
 docs/
 Presentations/
 Processes/
-Phase2/
 *.md
 !README.md
 

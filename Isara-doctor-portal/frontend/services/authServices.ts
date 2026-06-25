@@ -15,6 +15,7 @@
 import { User, UserCredential, UserIndexEntry, RegisterData, LoginData, UserPreferences } from '../types';
 import { writeToGCS, fetchFromGCS } from './gcsDataService';
 import config from './config';
+import { validateDoctorPassword } from '../utils/passwordPolicy';
 
 // ============================================================================
 // CONSTANTS
@@ -277,20 +278,20 @@ export class AuthService {
   }
 
   /**
-   * Register a new doctor account
-   * All data goes to GCS - no local storage
+   * Register a new doctor account via auth server (PostgreSQL).
+   * Does not create a session — admin approval is required before login.
    */
-  async register(data: RegisterData): Promise<{ user: User; token: string }> {
+  async register(data: RegisterData): Promise<{ user: User; token: string; pendingApproval: true }> {
     console.log('\n========================================');
-    console.log('📝 REGISTRATION - GCS Cloud Storage');
+    console.log('📝 REGISTRATION - Auth Server');
     console.log('========================================');
 
-    // Validation
     if (!data.email?.trim()) {
       throw new Error('Email is required');
     }
-    if (!data.password || data.password.length < 8) {
-      throw new Error('Password must be at least 8 characters');
+    const passwordCheck = validateDoctorPassword(data.password || '');
+    if (!passwordCheck.valid) {
+      throw new Error(passwordCheck.errors.join('. '));
     }
     if (data.password !== data.confirmPassword) {
       throw new Error('Passwords do not match');
@@ -305,72 +306,64 @@ export class AuthService {
     const emailKey = data.email.toLowerCase().trim();
     console.log(`📧 Registering: ${emailKey}`);
 
-    // Check if user exists in GCS
-    const existingUser = await fetchUserByEmail(emailKey);
-    if (existingUser) {
-      throw new Error('This email is already registered. Please login instead.');
+    const response = await fetch('/auth/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: emailKey,
+        password: data.password,
+        name: data.name.trim(),
+        phone: data.phone?.trim(),
+        dateOfBirth: data.dateOfBirth,
+        medicalLicenseNumber: data.medicalLicenseNumber.trim(),
+        specialty: data.specialty?.trim() || 'General Practice',
+        status: 'pending_approval',
+      }),
+    });
+
+    const responseText = await response.text();
+    let result: Record<string, unknown> = {};
+    try {
+      result = responseText ? JSON.parse(responseText) : {};
+    } catch {
+      throw new Error('Server response was not valid. Please try again.');
     }
 
-    // Generate IDs
-    const userId = generateDoctorId();
-    const passwordHash = await hashPassword(data.password);
+    if (!response.ok) {
+      throw new Error(
+        (typeof result.error === 'string' && result.error) || 'Registration failed',
+      );
+    }
 
-    // Default preferences
-    const defaultPreferences: UserPreferences = {
-      theme: 'light',
-      language: 'en',
-      notifications: {
-        email: true,
-        push: true,
-        sms: false,
-      },
-    };
-
-    // Create user credential record
-    const userCredential: UserCredential = {
-      id: userId,
-      email: emailKey,
-      passwordHash: passwordHash,
+    const authUser = (result.user || {}) as Record<string, unknown>;
+    const user: User = {
+      displayName: String(authUser.name || data.name),
+      id: String(authUser.id || ''),
+      email: String(authUser.email || emailKey),
+      name: String(authUser.name || data.name),
       role: 'doctor',
-      doctorId: userId,
+      doctorId: String(authUser.doctorId || authUser.id || ''),
       medicalLicenseNumber: data.medicalLicenseNumber.trim(),
-      isAdmin: false, // New users are not admins by default
-      isActive: true,
-      emailVerified: true, // Auto-verify for demo
-      createdAt: new Date().toISOString(),
-      lastLogin: new Date().toISOString(),
-      loginAttempts: 0,
-      lockedUntil: null,
-      preferences: defaultPreferences,
-      name: data.name.trim(),
-      phone: data.phone?.trim(),
-      dateOfBirth: data.dateOfBirth,
+      isActive: false,
+      emailVerified: true,
       avatarUrl: `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(data.name)}`,
-      specialty: data.specialty?.trim(),
+      dateOfBirth: data.dateOfBirth,
+      phone: data.phone?.trim(),
+      specialty: data.specialty?.trim() || 'General Practice',
+      preferences: {
+        theme: 'light',
+        language: 'en',
+        notifications: { email: true, push: true, sms: false },
+      },
+      isAdmin: false,
     };
-
-    // Save to GCS
-    const saved = await saveUser(userCredential);
-    if (!saved) {
-      throw new Error('Failed to save user to cloud storage. Please ensure the GCS API server is running.');
-    }
-
-    // Create session (stored locally for client)
-    const user = this.credentialToUser(userCredential);
-    const token = this.generateToken(user.id);
-    this.saveLocalSession(user, token);
-
-    // Log registration
-    await this.logLoginAttempt(userId, true, emailKey, 'registration');
 
     console.log('========================================');
-    console.log('✅ REGISTRATION SUCCESSFUL');
-    console.log(`🆔 ID: ${user.id}`);
+    console.log('✅ REGISTRATION SUBMITTED (pending admin approval)');
     console.log(`📧 Email: ${user.email}`);
-    console.log('☁️  Stored in: izara-users-credentials');
     console.log('========================================\n');
 
-    return { user, token };
+    return { user, token: '', pendingApproval: true };
   }
 
   /**
@@ -448,7 +441,11 @@ export class AuthService {
           (typeof result.code === 'string' ? `Login failed (${result.code})` : '') ||
           'Invalid email or password';
         console.error('❌ Auth server login failed:', errMsg);
-        throw new Error(errMsg);
+        const loginError = new Error(
+          typeof result.message === 'string' && result.message ? result.message : errMsg,
+        ) as Error & { code?: string };
+        loginError.code = typeof result.code === 'string' ? result.code : undefined;
+        throw loginError;
       }
 
       console.log('✅ Auth server returned success');
@@ -769,19 +766,23 @@ export class AuthService {
   private refreshTimerId: ReturnType<typeof setTimeout> | null = null;
 
   /**
-   * Start (or restart) the auto-refresh timer based on the JWT `exp` claim.
-   * Fires at 80% of the remaining lifetime so the user never sees an expired token.
+   * Start (or restart) the auto-refresh timer based on JWT exp or local session expiry.
+   * Opaque PG session tokens (64-char hex) use izara_session_expiry from localStorage.
    */
-  startTokenRefreshTimer(jwtToken: string): void {
+  startTokenRefreshTimer(sessionToken: string): void {
     this.stopTokenRefreshTimer();
 
-    const payload = decodeJwtPayload(jwtToken);
-    if (!payload?.exp) return;
+    const payload = decodeJwtPayload(sessionToken);
+    let expiresAtMs: number | null = payload?.exp ? payload.exp * 1000 : null;
+    if (!expiresAtMs) {
+      const expiryStr = localStorage.getItem(STORAGE_KEYS.SESSION_EXPIRY);
+      if (expiryStr) {
+        expiresAtMs = Number.parseInt(expiryStr, 10);
+      }
+    }
+    if (!expiresAtMs || expiresAtMs <= Date.now()) return;
 
-    const expiresAtMs = payload.exp * 1000;
     const remainingMs = expiresAtMs - Date.now();
-    if (remainingMs <= 0) return;
-
     const delayMs = Math.max(remainingMs * TOKEN_REFRESH_RATIO, 5000); // at least 5 s
     console.log(`⏱️ Token refresh scheduled in ${Math.round(delayMs / 1000)}s`);
 
@@ -956,6 +957,14 @@ export const getAuthHeaders = () => authService.getAuthHeaders();
 export const refreshSession = () => authService.refreshSession();
 export const checkInactivityTimeout = () => authService.checkInactivityTimeout();
 export const trySilentRefresh = () => authService.trySilentRefresh();
+
+/** Proactive refresh before meeting lifecycle calls (save-recording, /end). */
+export async function ensureMeetingSessionFresh(): Promise<boolean> {
+  const refreshed = await authService.trySilentRefresh();
+  if (refreshed) return true;
+  authService.refreshSession();
+  return authService.getToken() !== null;
+}
 
 function resolveBearerToken(): string {
   return (
