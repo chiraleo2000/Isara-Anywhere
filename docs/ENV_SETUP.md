@@ -63,7 +63,17 @@ Browser URLs use `*.isara.local`; npm dev on a laptop still uses `npm run env:sy
 npm run env:sync
 ```
 
-Dry-run:
+## Before push (clean local artifacts)
+
+Removes `node_modules`, test caches, and live files under `data/postgres/` (keeps `.gitkeep`).  
+These paths are gitignored — this only frees disk and avoids accidental copies into release zips.
+
+```powershell
+npm run prepush:clean          # same as cleanup:project
+npm run cleanup:project:dry    # preview only
+```
+
+Dry-run env sync:
 
 ```powershell
 npm run env:sync:dry

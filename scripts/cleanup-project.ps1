@@ -219,7 +219,27 @@ Remove-FilesSafe @(
     (Join-Path $root "reports\eslint-deep-jitsi.txt")
 )
 
+# --- node_modules (gitignored — safe to delete; reinstall with npm install) ---
+Write-Host "--- node_modules ---" -ForegroundColor Cyan
+Get-ChildItem -Path $root -Recurse -Directory -Filter "node_modules" -Force -ErrorAction SilentlyContinue |
+    Sort-Object { $_.FullName.Length } -Descending |
+    ForEach-Object {
+        $label = $_.FullName.Substring($root.Length).TrimStart('\')
+        Remove-PathSafe -Path $_.FullName -Label $label
+    }
+
+# --- Live Postgres bind-mount data (gitignored; keeps data/postgres/.gitkeep) ---
+Write-Host "--- data/postgres ---" -ForegroundColor Cyan
+$pgData = Join-Path $root "data\postgres"
+if (Test-Path $pgData) {
+    Get-ChildItem -LiteralPath $pgData -Force -ErrorAction SilentlyContinue |
+        Where-Object { $_.Name -ne '.gitkeep' } |
+        ForEach-Object {
+            Remove-PathSafe -Path $_.FullName -Label "data\postgres\$($_.Name)"
+        }
+}
+
 Write-Host ""
 Write-Host "Kept: Documents/docs/, Processes/, docs/screenshots/, reports/defect-fix/, *-latest.json ledgers, scripts/output/startup-data, scripts/output/local-db-export" -ForegroundColor Green
-Write-Host "Regenerate Playwright cache: npm run test:e2e" -ForegroundColor DarkGray
+Write-Host "Reinstall deps: npm install (root + each portal + tests/unit)" -ForegroundColor DarkGray
 if (-not $DryRun) { Write-Host "Done." -ForegroundColor Green }

@@ -118,6 +118,8 @@
     "cleanup:cloud-test-only": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/cleanup-cloud-test-data.ps1",
     "cleanup:project": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/cleanup-project.ps1",
     "cleanup:project:dry": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/cleanup-project.ps1 -DryRun",
+    "prepush:clean": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/cleanup-project.ps1",
+    "release:zip": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/create-release-zip.ps1",
     "guides:cleanup-old": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/cleanup-old-user-guides.ps1",
     "guides:enrich": "python scripts/enrich-process-pages.py --force-steps",
     "guides:build": "python scripts/build-portal-user-guides.py",
