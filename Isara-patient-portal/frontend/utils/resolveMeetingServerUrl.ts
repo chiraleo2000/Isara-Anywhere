@@ -17,7 +17,7 @@ export function resolveMeetingServerUrl(): string {
     }
   }
 
-  const configured = resolveEnv('MEETING_SERVER_URL');
+  const configured = resolveEnv('MEETING_PUBLIC_URL') || resolveEnv('MEETING_SERVER_URL');
 
   const rewriteForBrowser = (url: string): string => {
     try {

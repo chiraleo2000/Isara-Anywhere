@@ -6,7 +6,7 @@ interface ImportMetaEnv {
   readonly VITE_API_URL: string
   readonly VITE_GOOGLE_MAPS_API_KEY: string
   readonly VITE_GEMINI_API_KEY: string
-  readonly VITE_GOOGLE_CLIENT_ID: string
+  readonly GOOGLE_CLIENT_ID: string
   readonly VITE_GOOGLE_API_KEY: string
   readonly VITE_STORAGE_BUCKET_MEDICAL: string
   readonly VITE_STORAGE_BUCKET_PRESCRIPTIONS: string
@@ -27,7 +27,7 @@ declare global {
       VITE_API_URL?: string
       VITE_GOOGLE_MAPS_API_KEY?: string
       VITE_GEMINI_API_KEY?: string
-      VITE_GOOGLE_CLIENT_ID?: string
+      GOOGLE_CLIENT_ID?: string
       VITE_GOOGLE_API_KEY?: string
       VITE_STORAGE_BUCKET_MEDICAL?: string
       VITE_STORAGE_BUCKET_PRESCRIPTIONS?: string

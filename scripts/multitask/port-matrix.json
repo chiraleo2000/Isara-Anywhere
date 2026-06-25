@@ -1,0 +1,41 @@
+{
+  "version": "1.0.0",
+  "description": "Isolated ports for parallel standalone stacks (Part B multitask)",
+  "streams": {
+    "patient": {
+      "appUrl": "http://localhost:3005",
+      "appPort": 3005,
+      "postgresHostPort": 5434,
+      "postgresContainer": "patient-pg-standalone",
+      "composeProjectName": "isara-patient-standalone",
+      "dataVolume": "./data/postgres-patient",
+      "envExample": "Isara-patient-portal/.env.standalone.example"
+    },
+    "doctor": {
+      "appUrl": "http://localhost:3010",
+      "appPort": 3010,
+      "postgresHostPort": 5435,
+      "postgresContainer": "doctor-pg-standalone",
+      "composeProjectName": "isara-doctor-standalone",
+      "dataVolume": "./data/postgres-doctor",
+      "envExample": "Isara-doctor-portal/.env.standalone.example"
+    },
+    "meeting": {
+      "appUrl": "http://localhost:3020",
+      "appPort": 3020,
+      "postgresHostPort": 5436,
+      "postgresContainer": "meeting-pg-standalone",
+      "composeProjectName": "isara-meeting-standalone",
+      "dataVolume": "./data/postgres-meeting",
+      "envExample": "Izara-jitsi-server/.env.standalone.example"
+    },
+    "platform": {
+      "appPorts": [3005, 3010, 3020],
+      "postgresHostPort": 5433,
+      "postgresContainer": "izara-postgres",
+      "composeProjectName": "isara-anywhere",
+      "dataVolume": "./data/postgres"
+    }
+  },
+  "reservedPorts": [3005, 3010, 3020, 5050, 5433, 5434, 5435, 5436]
+}

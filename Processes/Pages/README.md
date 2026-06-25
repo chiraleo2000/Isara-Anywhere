@@ -1,7 +1,7 @@
 # 📄 Izara Telemedicine — Page-by-Page Documentation
 
-**Version:** 1.7.33
-**Last Updated:** 27 May 2026 (v1.7.33 — ENRICH-7: TH Sarabun New 16 pt / FC Iconic / โครงสร้างเทคนิค)
+**Version:** 1.7.54
+**Last Updated:** June 25, 2026
 **Status:** ✅ Phase 1 Complete — Web Platform Documentation + Full DB Schema
 
 ---
@@ -62,8 +62,8 @@ APPOINTMENT BOOKING → MEETING → AI PROCESSING → EMR → PATIENT DELIVERY
               │                                │
               ▼                                ▼
 ┌─────────────────────────────┐    ┌─────────────────────────────┐
-│05_Appointments → Join mtg  │    │07_Virtual_Meeting → HOST   │
-│  + invite relatives       │    │  + transcript streaming   │
+│05_Appointments → Join mtg  │    │06_Health_Meeting → Start   │
+│  + invite relatives       │    │  → /meeting/:id (HOST)      │
 │  + lobby → doctor admits  │    │  + chat + recording       │
 └─────────────┬───────────────┘    └─────────────┬───────────────┘
               │                                │
@@ -141,7 +141,10 @@ Pages/
 │   └── 21_Queue_Management.md                   ← Real-time patient queue
 │
 └── Meeting-Server/                              ← Jitsi Meeting Server
-    └── 00_Meeting_Server_Overview.md            ← Server architecture & all features
+    ├── 00_Meeting_Server_Overview.md            ← Server architecture & API
+    ├── 01_Meeting_Room.md                       ← Canonical meeting UI (HOST/lobby)
+    ├── 02_Meeting_Results.md                    ← Post-meeting validation
+    └── 03_Emr_Appointment_Page.md               ← EMR from appointment context
 ```
 
 ---
@@ -217,11 +220,11 @@ All page documentation now includes a **PostgreSQL Database Integration** sectio
 | 3 | Patient invites relatives/friends | Patient/05_Appointments |
 | 4 | Doctor invites other doctors/admin | Doctor/06_Health_Meeting |
 | 5 | AI pre-consultation summary | Doctor/15_Gemini_AI_Studio, Doctor/03_Dashboard |
-| 6 | Doctor starts meeting (HOST) | Doctor/07_Virtual_Meeting |
-| 7 | Patient + Guests enter LOBBY | Patient/05_Appointments, Meeting-Server/00 |
-| 8 | Doctor starts transcript streaming | Doctor/07_Virtual_Meeting |
-| 9 | Video + Audio + Chat | Doctor/07_Virtual_Meeting, Meeting-Server/00 |
-| 10 | Doctor ends meeting | Doctor/07_Virtual_Meeting |
+| 6 | Doctor starts meeting (HOST) | Meeting-Server/01, Doctor/06_Health_Meeting |
+| 7 | Patient + Guests enter LOBBY | Patient/05, Meeting-Server/01 |
+| 8 | Doctor starts transcript streaming | Meeting-Server/01 |
+| 9 | Video + Audio + Chat | Meeting-Server/01 |
+| 10 | Doctor ends meeting | Meeting-Server/01, Meeting-Server/02 |
 | 11 | AI processes transcript + chat | Meeting-Server/00, Doctor/15_Gemini_AI_Studio |
 | 12 | Doctor reviews AI summary | Doctor/06_Health_Meeting |
 | 13 | Doctor creates EMR (AI-prefilled) | Doctor/08_EMR_Editor |

@@ -6,11 +6,11 @@ WORKDIR /app
 RUN apk add --no-cache wget
 
 # Install dependencies
-COPY Izara-jitsi-server/package*.json ./
+COPY package*.json ./
 RUN npm ci --omit=dev && npm cache clean --force
 
 # Copy application
-COPY Izara-jitsi-server/ .
+COPY . .
 COPY shared/corsPolicy.cjs ./shared/corsPolicy.cjs
 COPY shared/corsPolicy.cjs /shared/corsPolicy.cjs
 RUN test -f ./shared/corsPolicy.cjs || (echo "FATAL: shared/corsPolicy.cjs missing in image" && exit 1)

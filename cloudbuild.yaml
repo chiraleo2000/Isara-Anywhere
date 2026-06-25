@@ -9,7 +9,7 @@
 # Required Secret Manager secrets (run setup-cloud-build.ps1 first):
 #   jwt-secret, db-password, database-url, gemini-api-key, google-maps-api-key,
 #   google-client-id (Google OAuth Client ID for SSO — same value baked into
-#   the Vite bundle as VITE_GOOGLE_CLIENT_ID at build time and passed to the
+#   the Vite bundle as GOOGLE_CLIENT_ID at build time and passed to the
 #   backends as GOOGLE_CLIENT_ID at runtime).
 #
 # Build flow:
@@ -76,7 +76,7 @@ steps:
       - --build-arg
       - VITE_USE_GCS=false
       - --build-arg
-      - VITE_GOOGLE_CLIENT_ID=${_GOOGLE_CLIENT_ID}
+      - GOOGLE_CLIENT_ID=${_GOOGLE_CLIENT_ID}
       - .
     waitFor: ["-"]
 
@@ -101,7 +101,7 @@ steps:
       - --build-arg
       - VITE_USE_GCS=false
       - --build-arg
-      - VITE_GOOGLE_CLIENT_ID=${_GOOGLE_CLIENT_ID}
+      - GOOGLE_CLIENT_ID=${_GOOGLE_CLIENT_ID}
       - .
     waitFor: ["-"]
 

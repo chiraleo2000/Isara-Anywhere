@@ -37,7 +37,7 @@ steps:
       - --build-arg
       - VITE_USE_GCS=false
       - --build-arg
-      - VITE_GOOGLE_CLIENT_ID=${_GOOGLE_CLIENT_ID}
+      - GOOGLE_CLIENT_ID=${_GOOGLE_CLIENT_ID}
       - --build-arg
       - VITE_MEETING_SERVER_URL=${_MEETING_URL}
       - .

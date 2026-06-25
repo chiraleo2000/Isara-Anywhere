@@ -11,7 +11,7 @@ interface Props {
 }
 
 /**
- * Renders the Google Sign-In button. Hidden gracefully if VITE_GOOGLE_CLIENT_ID
+ * Renders the Google Sign-In button. Hidden gracefully if GOOGLE_CLIENT_ID
  * is not configured.
  */
 export default function GoogleSignInButton({ onSuccess, onError, onNotRegistered, onPasswordNotSet }: Props) {

@@ -11,7 +11,7 @@ export interface GoogleClientIdState {
  * (Cloud Run injects GOOGLE_CLIENT_ID as a secret at runtime, not always in the Vite bundle).
  */
 export function useGoogleClientId(configPath = '/api/auth/public-config'): GoogleClientIdState {
-  const builtIn = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
+  const builtIn = import.meta.env.GOOGLE_CLIENT_ID || '';
   const [clientId, setClientId] = useState(builtIn);
   const [resolved, setResolved] = useState(!!builtIn);
 

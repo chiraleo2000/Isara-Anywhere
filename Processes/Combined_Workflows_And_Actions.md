@@ -1,8 +1,10 @@
 # 🔄 Izara Telemedicine — Combined Workflows, Processes & Actions
 
-**Version:** 1.6.0
-**Last Updated:** April 1, 2026
+**Version:** 1.7.54
+**Last Updated:** June 25, 2026
 **Status:** ✅ Phase 1 Complete
+
+> **Start here for diagrams:** [WORKFLOW_CONNECTIONS.md](WORKFLOW_CONNECTIONS.md) — platform topology, pipeline, feature matrix.
 
 ---
 

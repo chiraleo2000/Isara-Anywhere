@@ -1,10 +1,10 @@
 # 📑 Izara Telemedicine — Separated Workflows, Processes, Features & Functions
 
-**Version:** 1.6.0
-**Last Updated:** April 1, 2026
+**Version:** 1.7.54
+**Last Updated:** June 25, 2026
 **Status:** ✅ Phase 1 Complete
 
-> This document breaks down every workflow, process, feature, and function into isolated, atomic sections grouped by domain. Each section can be referenced independently.
+> **Connection diagrams:** [WORKFLOW_CONNECTIONS.md](WORKFLOW_CONNECTIONS.md)
 
 ---
 

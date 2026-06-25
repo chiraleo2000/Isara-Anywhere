@@ -1052,7 +1052,7 @@ app.post('/auth/login',
 // GOOGLE SSO — verify ID token, enforce pending_approval, issue JWT
 // =====================================================
 const { OAuth2Client: GoogleOAuth2Client } = require('google-auth-library');
-const GOOGLE_CLIENT_ID = (process.env.GOOGLE_CLIENT_ID || process.env.VITE_GOOGLE_CLIENT_ID || '').replace(/\r?\n/g, '').trim();
+const GOOGLE_CLIENT_ID = (process.env.GOOGLE_CLIENT_ID || process.env.GOOGLE_CLIENT_ID || '').replace(/\r?\n/g, '').trim();
 const googleClient = GOOGLE_CLIENT_ID ? new GoogleOAuth2Client(GOOGLE_CLIENT_ID) : null;
 if (!GOOGLE_CLIENT_ID) {
   console.warn('[AUTH] GOOGLE_CLIENT_ID not set — /auth/google-auth will return 503');

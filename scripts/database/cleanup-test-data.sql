@@ -12,7 +12,6 @@ DELETE FROM refresh_tokens;
 
 -- 2. Clear meeting children FIRST (FK dependencies)
 DELETE FROM meeting_transcripts;
-DELETE FROM meeting_chats;
 DELETE FROM ai_validations;
 DELETE FROM meeting_records;
 

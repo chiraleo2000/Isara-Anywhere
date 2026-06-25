@@ -69,7 +69,7 @@ Requires `hosts` entry on each client PC pointing to the server IP.
 | Patient | https://izara-patient-portal-dev-testing-724889190329.asia-southeast1.run.app/login | http://localhost:3005/login | http://patient.isara.local/login |
 | Doctor / Admin | https://izara-doctor-portal-dev-testing-724889190329.asia-southeast1.run.app/login | http://localhost:3010/login | http://doctor.isara.local/login |
 
-**Google SSO:** `VITE_GOOGLE_CLIENT_ID` in each portal `.env` — SSO email must match a registered account.
+**Google SSO:** `GOOGLE_CLIENT_ID` in each portal `.env` — SSO email must match a registered account.
 
 **Do not use demo passwords in production.**
 

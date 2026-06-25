@@ -12,8 +12,8 @@ const envPath = path.join(root, 'Isara-doctor-portal', '.env');
 
 const REQUIRED = [
   'MEETING_SERVER_URL',
-  'VITE_MEETING_SERVER_URL',
-  'VITE_GOOGLE_API_KEY',
+  'MEETING_PUBLIC_URL',
+  'GOOGLE_MAPS_API_KEY',
   'JITSI_APP_ID',
   'CORS_ORIGINS',
   'JWT_SECRET',
@@ -23,6 +23,7 @@ const REQUIRED = [
 
 const FORBIDDEN = [
   'VITE_GOOGLE_CLIENT_SECRET',
+  'GOOGLE_CLIENT_SECRET',
   'VITE_ENABLE_RAG',
   'VITE_RAG_CHUNK_SIZE',
   'CLOUD_RUN_DOCTOR_URL',
@@ -47,10 +48,12 @@ if (!fs.existsSync(envPath)) {
 const keys = parseEnv(fs.readFileSync(envPath, 'utf8'));
 const missing = REQUIRED.filter((k) => !keys.has(k));
 const forbidden = FORBIDDEN.filter((k) => keys.has(k));
+const anyVite = [...keys].filter((k) => k.startsWith('VITE_'));
 
-if (missing.length || forbidden.length) {
+if (missing.length || forbidden.length || anyVite.length) {
   if (missing.length) console.error('ENV-AUDIT missing:', missing.join(', '));
   if (forbidden.length) console.error('ENV-AUDIT forbidden:', forbidden.join(', '));
+  if (anyVite.length) console.error('ENV-AUDIT remove VITE_* keys:', anyVite.join(', '));
   process.exit(1);
 }
 

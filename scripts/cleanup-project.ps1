@@ -229,13 +229,23 @@ Get-ChildItem -Path $root -Recurse -Directory -Filter "node_modules" -Force -Err
     }
 
 # --- Live Postgres bind-mount data (gitignored; keeps data/postgres/.gitkeep) ---
-Write-Host "--- data/postgres ---" -ForegroundColor Cyan
-$pgData = Join-Path $root "data\postgres"
-if (Test-Path $pgData) {
+Write-Host "--- data/postgres (platform + standalone) ---" -ForegroundColor Cyan
+$pgDataRoots = @(
+    "data\postgres",
+    "data\postgres-patient",
+    "data\postgres-doctor",
+    "data\postgres-meeting",
+    "Isara-patient-portal\data\postgres-patient",
+    "Isara-doctor-portal\data\postgres-doctor",
+    "Izara-jitsi-server\data\postgres-meeting"
+)
+foreach ($pgRel in $pgDataRoots) {
+    $pgData = Join-Path $root $pgRel
+    if (-not (Test-Path $pgData)) { continue }
     Get-ChildItem -LiteralPath $pgData -Force -ErrorAction SilentlyContinue |
         Where-Object { $_.Name -ne '.gitkeep' } |
         ForEach-Object {
-            Remove-PathSafe -Path $_.FullName -Label "data\postgres\$($_.Name)"
+            Remove-PathSafe -Path $_.FullName -Label "$pgRel\$($_.Name)"
         }
 }
 

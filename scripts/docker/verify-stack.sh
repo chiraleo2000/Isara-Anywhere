@@ -34,12 +34,13 @@ check_page() {
   fi
 }
 
-DOCTOR_ORIGIN="https://doctor.isara.local"
-PATIENT_ORIGIN="https://patient.isara.local"
+LAN_DOMAIN="${LAN_DOMAIN:-demotoday.net}"
+DOCTOR_ORIGIN="https://doctor.${LAN_DOMAIN}"
+PATIENT_ORIGIN="https://patient.${LAN_DOMAIN}"
 NGINX_SCHEME="https"
 if [[ "$MODE" == "http" ]]; then
-  DOCTOR_ORIGIN="http://doctor.isara.local"
-  PATIENT_ORIGIN="http://patient.isara.local"
+  DOCTOR_ORIGIN="http://doctor.${LAN_DOMAIN}"
+  PATIENT_ORIGIN="http://patient.${LAN_DOMAIN}"
   NGINX_SCHEME="http"
 fi
 
@@ -66,16 +67,16 @@ echo "patient_login_direct=${code}"
 if [[ "$MODE" != "direct" ]] && command -v nginx >/dev/null 2>&1; then
   CURL_NG=()
   [[ "$NGINX_SCHEME" == "https" ]] && CURL_NG=(-sk)
-  check_page patient_nginx patient.isara.local "$NGINX_SCHEME" Patient
-  check_page doctor_nginx  doctor.isara.local  "$NGINX_SCHEME" "Izara Anywhere"
+  check_page patient_nginx "patient.${LAN_DOMAIN}" "$NGINX_SCHEME" Patient
+  check_page doctor_nginx  "doctor.${LAN_DOMAIN}"  "$NGINX_SCHEME" "Izara Anywhere"
   dcode="$(curl "${CURL_NG[@]}" -o /dev/null -w '%{http_code}' --connect-timeout 10 \
-    -X POST "${NGINX_SCHEME}://doctor.isara.local/auth/login" \
+    -X POST "${NGINX_SCHEME}://doctor.${LAN_DOMAIN}/auth/login" \
     -H "Content-Type: application/json" -H "Origin: ${DOCTOR_ORIGIN}" \
     -d '{"email":"admin.test@izara.com","password":"IzaraAdmin@2024","deviceId":"v1"}' 2>/dev/null || echo 000)"
   echo "doctor_login_nginx=${dcode}"
   [[ "$dcode" == "200" ]] || fail=1
   pcode="$(curl "${CURL_NG[@]}" -o /dev/null -w '%{http_code}' --connect-timeout 10 \
-    -X POST "${NGINX_SCHEME}://patient.isara.local/api/auth/login" \
+    -X POST "${NGINX_SCHEME}://patient.${LAN_DOMAIN}/api/auth/login" \
     -H "Content-Type: application/json" -H "Origin: ${PATIENT_ORIGIN}" \
     -d '{"email":"demo.test@gmail.com","password":"P@ssw0rd","deviceId":"v1"}' 2>/dev/null || echo 000)"
   echo "patient_login_nginx=${pcode}"

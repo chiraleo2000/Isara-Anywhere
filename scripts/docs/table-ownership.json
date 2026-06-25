@@ -1,0 +1,76 @@
+{
+  "schemaVersion": "5.1.0",
+  "database": "izara_phase1",
+  "ssot": "scripts/database/izara-database.sql",
+  "source": "Processes/DATABASE_TABLES_REFERENCE.md",
+  "tableCount": 53,
+  "notifyListeners": {
+    "patient": ["sync_queue"],
+    "doctor": ["appointments", "notifications"],
+    "meeting": ["meeting_records"]
+  },
+  "tables": {
+    "users": { "owner": "shared", "category": "auth", "readBy": ["patient", "doctor", "meeting"] },
+    "sessions": { "owner": "shared", "category": "auth", "readBy": ["patient", "doctor", "meeting"] },
+    "password_resets": { "owner": "shared", "category": "auth", "readBy": ["patient", "doctor"] },
+    "device_tokens": { "owner": "shared", "category": "auth", "readBy": ["patient", "doctor", "meeting"] },
+    "biometric_credentials": { "owner": "shared", "category": "auth", "readBy": ["patient", "doctor"] },
+    "refresh_tokens": { "owner": "shared", "category": "auth", "readBy": ["patient", "doctor"] },
+
+    "patient_profiles": { "owner": "patient", "category": "patient", "readBy": ["patient", "doctor"] },
+    "phr": { "owner": "patient", "category": "patient", "readBy": ["patient", "doctor"] },
+    "vital_signs": { "owner": "patient", "category": "patient", "readBy": ["patient", "doctor"] },
+    "living_wills": { "owner": "patient", "category": "patient", "readBy": ["patient", "doctor"] },
+    "living_will_versions": { "owner": "patient", "category": "patient", "readBy": ["patient", "doctor"] },
+    "patient_consents": { "owner": "patient", "category": "patient", "readBy": ["patient", "doctor"] },
+    "push_subscriptions": { "owner": "patient", "category": "patient", "readBy": ["patient"] },
+
+    "doctor_profiles": { "owner": "doctor", "category": "doctor", "readBy": ["patient", "doctor"] },
+    "doctors": { "owner": "doctor", "category": "doctor", "readBy": ["patient", "doctor"] },
+    "doctor_schedules": { "owner": "doctor", "category": "doctor", "readBy": ["patient", "doctor"] },
+    "doctor_reviews": { "owner": "shared", "category": "doctor", "readBy": ["patient", "doctor"], "primaryWriter": "patient" },
+    "consultants": { "owner": "doctor", "category": "doctor", "readBy": ["doctor"] },
+
+    "appointments": { "owner": "shared", "category": "appointments", "readBy": ["patient", "doctor", "meeting"], "primaryWriter": "patient" },
+    "meeting_records": { "owner": "meeting", "category": "meeting", "readBy": ["patient", "doctor", "meeting"] },
+    "meeting_transcripts": { "owner": "meeting", "category": "meeting", "readBy": ["patient", "doctor", "meeting"] },
+    "meeting_chats": { "owner": "meeting", "category": "meeting", "readBy": ["patient", "doctor", "meeting"] },
+    "meeting_invites": { "owner": "meeting", "category": "meeting", "readBy": ["patient", "doctor", "meeting"] },
+    "recording_share_tokens": { "owner": "meeting", "category": "meeting", "readBy": ["patient", "doctor", "meeting"] },
+
+    "emr": { "owner": "doctor", "category": "clinical", "readBy": ["patient", "doctor", "meeting"] },
+    "emr_records": { "owner": "doctor", "category": "clinical", "readBy": ["patient", "doctor"] },
+    "prescriptions": { "owner": "doctor", "category": "clinical", "readBy": ["patient", "doctor"] },
+    "lab_orders": { "owner": "doctor", "category": "clinical", "readBy": ["patient", "doctor"] },
+    "imaging_orders": { "owner": "doctor", "category": "clinical", "readBy": ["patient", "doctor"] },
+
+    "medical_content": { "owner": "shared", "category": "content", "readBy": ["patient", "doctor"], "primaryWriter": "doctor" },
+    "clinical_resources": { "owner": "doctor", "category": "content", "readBy": ["doctor"] },
+    "icd10_codes": { "owner": "shared", "category": "reference", "readBy": ["patient", "doctor", "meeting"] },
+    "drugs": { "owner": "shared", "category": "reference", "readBy": ["patient", "doctor"] },
+
+    "notifications": { "owner": "shared", "category": "notifications", "readBy": ["patient", "doctor", "meeting"], "primaryWriter": "doctor" },
+    "knowledge_base": { "owner": "doctor", "category": "ai", "readBy": ["doctor"] },
+    "ai_chat_history": { "owner": "shared", "category": "ai", "readBy": ["patient", "doctor", "meeting"] },
+    "ai_chat_memory": { "owner": "shared", "category": "ai", "readBy": ["patient", "doctor"] },
+    "transcript_embeddings": { "owner": "meeting", "category": "ai", "readBy": ["doctor", "meeting"] },
+    "ai_document_analysis": { "owner": "doctor", "category": "ai", "readBy": ["doctor"] },
+    "cds_logs": { "owner": "doctor", "category": "ai", "readBy": ["doctor"] },
+    "ai_validations": { "owner": "doctor", "category": "ai", "readBy": ["patient", "doctor", "meeting"] },
+
+    "notification_preferences": { "owner": "patient", "category": "preferences", "readBy": ["patient"] },
+    "user_settings": { "owner": "shared", "category": "preferences", "readBy": ["patient", "doctor"] },
+    "sync_queue": { "owner": "patient", "category": "sync", "readBy": ["patient"] },
+    "user_api_connections": { "owner": "shared", "category": "sync", "readBy": ["patient", "doctor"] },
+    "api_connection_audit": { "owner": "shared", "category": "sync", "readBy": ["patient", "doctor"] },
+
+    "ctm_assessments": { "owner": "doctor", "category": "extended", "readBy": ["doctor"] },
+    "geriatric_screenings": { "owner": "doctor", "category": "extended", "readBy": ["doctor"] },
+    "sos_alerts": { "owner": "patient", "category": "extended", "readBy": ["patient", "doctor"] },
+    "follow_ups": { "owner": "doctor", "category": "extended", "readBy": ["patient", "doctor"] },
+    "nursing_tasks": { "owner": "doctor", "category": "extended", "readBy": ["doctor"] },
+    "predictive_analytics": { "owner": "doctor", "category": "extended", "readBy": ["doctor"] },
+
+    "audit_logs": { "owner": "shared", "category": "audit", "readBy": ["patient", "doctor", "meeting"] }
+  }
+}

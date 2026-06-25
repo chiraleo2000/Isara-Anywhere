@@ -1,0 +1,65 @@
+# Standalone Patient Portal + PostgreSQL (PG host port 5434)
+# Run: docker compose -f docker-compose.standalone.yml up -d --build
+# COMPOSE_PROJECT_NAME=isara-patient-standalone
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg18
+    container_name: patient-pg-standalone
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: izara_phase1
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=C"
+    ports:
+      - "127.0.0.1:5434:5432"
+    volumes:
+      - ./data/postgres-patient:/var/lib/postgresql
+      - ./scripts/database/izara-database.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+      - ./scripts/database/migrations/v2.0.0-phase2-tables.sql:/docker-entrypoint-initdb.d/02-phase2.sql:ro
+      - ./scripts/database/migrations/v2.1.0-phase2-ai-his.sql:/docker-entrypoint-initdb.d/03-phase2-ai-his.sql:ro
+      - ./scripts/database/v2.2.0-notify-triggers.sql:/docker-entrypoint-initdb.d/04-notify-triggers.sql:ro
+      - ./scripts/database/seed-dev-data.sql:/docker-entrypoint-initdb.d/05-seed-dev.sql:ro
+      - ./scripts/database/migrations/2025-add-google-sub.sql:/docker-entrypoint-initdb.d/06-google-sub.sql:ro
+      - ./scripts/database/migrations/2025-ensure-appointment-columns.sql:/docker-entrypoint-initdb.d/07-appointment-columns.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d izara_phase1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  patient-portal:
+    build:
+      context: .
+      dockerfile: Dockerfile.unified
+    container_name: patient-portal-standalone
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 3005
+      USE_POSTGRESQL: "true"
+      USE_EMBEDDED_PG: "false"
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: izara_phase1
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/izara_phase1
+      JWT_SECRET: standalone-dev-jwt-secret-change-in-prod
+      MEETING_SERVER_URL: http://host.docker.internal:3020
+      CORS_ORIGINS: http://localhost:3005,http://localhost:3010,http://localhost:3020
+      IZARA_DEV_TESTING: "1"
+      GOOGLE_TOKEN_VERIFIER_FIXTURE: "1"
+    ports:
+      - "127.0.0.1:3005:3005"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3005/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s

@@ -41,7 +41,7 @@ export const config = {
   oauth: {
     clientId: resolveEnv('GOOGLE_CLIENT_ID'),
     clientSecret: '',
-    redirectUri: import.meta.env.VITE_OAUTH_REDIRECT_URI || (typeof globalThis !== 'undefined' && globalThis.location ? `${globalThis.location.origin}/auth/callback` : 'http://localhost:3010/auth/callback'),
+    redirectUri: import.meta.env.OAUTH_REDIRECT_URI || (typeof globalThis !== 'undefined' && globalThis.location ? `${globalThis.location.origin}/auth/callback` : 'http://localhost:3010/auth/callback'),
   },
 
   // Google Cloud Storage Buckets - All 5 Izara buckets
@@ -62,8 +62,8 @@ export const config = {
 
   // Google APIs
   google: {
-    calendarApiKey: import.meta.env.VITE_GOOGLE_CALENDAR_API_KEY || '',
-    meetApiKey: import.meta.env.VITE_GOOGLE_MEET_API_KEY || '',
+    calendarApiKey: import.meta.env.GOOGLE_CALENDAR_API_KEY || '',
+    meetApiKey: import.meta.env.GOOGLE_MEET_API_KEY || '',
     mapsApiKey: resolveEnv('GOOGLE_MAPS_API_KEY'),
   },
 

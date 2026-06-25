@@ -89,8 +89,8 @@ const gateSteps = [
     name: 'docker-compose',
     cmd: 'docker',
     args: process.env.GATE_SKIP_DOCKER_BUILD === '1'
-      ? ['compose', '--env-file', '.env.docker', 'up', '-d']
-      : ['compose', '--env-file', '.env.docker', 'up', '-d', '--build'],
+      ? ['compose', '--env-file', '.env.docker', '--profile', 'full', 'up', '-d']
+      : ['compose', '--env-file', '.env.docker', '--profile', 'full', 'up', '-d', '--build'],
     cwd: root,
   },
   npmStep('docker-probe', 'docker:probe-health'),

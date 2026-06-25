@@ -980,7 +980,7 @@ POST /api/video-meeting/:appointmentId/summarize
 # Jitsi Meet Configuration (FREE)
 JITSI_DOMAIN=meet.jit.si
 VITE_JITSI_DOMAIN=meet.jit.si
-VITE_JITSI_APP_ID=izara-telemedicine
+JITSI_APP_ID=izara-telemedicine
 
 
 
@@ -1094,7 +1094,7 @@ See [TWO_ROUND_CLOUD_TESTING.md](TWO_ROUND_CLOUD_TESTING.md), [POST_MEETING_WORK
 # Jitsi Meet Video Conferencing (FREE)
 ARG JITSI_DOMAIN=meet.jit.si
 ARG VITE_JITSI_DOMAIN=meet.jit.si
-ARG VITE_JITSI_APP_ID=izara-telemedicine
+ARG JITSI_APP_ID=izara-telemedicine
 ```
 
 
@@ -1107,7 +1107,7 @@ services:
       args:
         JITSI_DOMAIN: "meet.jit.si"
         VITE_JITSI_DOMAIN: "meet.jit.si"
-        VITE_JITSI_APP_ID: "izara-telemedicine"
+        JITSI_APP_ID: "izara-telemedicine"
 ```
 
 

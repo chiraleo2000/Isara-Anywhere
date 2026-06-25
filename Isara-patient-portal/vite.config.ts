@@ -1,9 +1,12 @@
-import { defineConfig } from 'vite';
+import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
 import path from 'node:path';
+import { VITE_CLIENT_ENV_PREFIXES } from './vite-client-env-prefixes.mjs';
 
 // https://vitejs.dev/config/
-export default defineConfig({
+export default defineConfig(({ mode }) => {
+  loadEnv(mode, path.resolve(__dirname), VITE_CLIENT_ENV_PREFIXES);
+  return {
   root: 'frontend',
   publicDir: path.resolve(__dirname, 'public'),
   plugins: [react()],
@@ -51,4 +54,6 @@ export default defineConfig({
   optimizeDeps: {
     include: ['react', 'react-dom', '@google/generative-ai'],
   },
+  envPrefix: VITE_CLIENT_ENV_PREFIXES,
+};
 });

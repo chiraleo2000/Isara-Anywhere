@@ -13,6 +13,7 @@ Single guide for **localhost**, **LAN HTTP**, and **LAN HTTPS**.
 | [isara-nginx-http.conf](isara-nginx-http.conf) | HTTP reverse proxy (`--http`) |
 | [PGADMIN_LAN_ACCESS_TH.md](PGADMIN_LAN_ACCESS_TH.md) | pgAdmin LAN (Thai) |
 | [PGADMIN_DESKTOP_WINDOWS.md](PGADMIN_DESKTOP_WINDOWS.md) | **pgAdmin 4 Windows app** → Postgres on Ubuntu (no browser) |
+| [WINDOWS_CLIENT_SETUP.md](WINDOWS_CLIENT_SETUP.md) | **Windows PC** — hosts file + trust mkcert for `*.demotoday.net` |
 
 Env templates (repo root): `.env.docker.example` · `.env.docker.lan.example` · `.env.docker.lan.https.example`
 
@@ -110,22 +111,24 @@ bash deploy/nginx/deploy.sh --http
 
 Options: `--skip-build` · `--docker-only` · `--pull` · `--prune` · `--diagnose`
 
-### 4. Client hosts file
+### 4. Client hosts file (Windows)
 
-On every PC (replace IP):
+On every Windows PC on the LAN, add to `C:\Windows\System32\drivers\etc\hosts` (Notepad **as Administrator**):
 
 ```text
-192.168.x.x   patient.isara.local doctor.isara.local meeting.isara.local dbadmin.isara.local
+192.168.10.239   patient.demotoday.net doctor.demotoday.net meeting.demotoday.net dbadmin.demotoday.net
 ```
+
+Full steps: [WINDOWS_CLIENT_SETUP.md](WINDOWS_CLIENT_SETUP.md)
 
 ### 5. URLs & demo users
 
 | Portal | HTTPS URL | Login |
 | ------ | --------- | ----- |
-| Patient | https://patient.isara.local/login | `demo.test@gmail.com` / `P@ssw0rd` |
-| Doctor | https://doctor.isara.local/login | `admin.test@izara.com` / `IzaraAdmin@2024` |
-| Meeting | https://meeting.isara.local/health | API |
-| pgAdmin | https://dbadmin.isara.local | see `.env.docker` |
+| Patient | https://patient.demotoday.net/login | `demo.test@gmail.com` / `P@ssw0rd` |
+| Doctor | https://doctor.demotoday.net/login | `admin.test@izara.com` / `IzaraAdmin@2024` |
+| Meeting | https://meeting.demotoday.net/health | API |
+| pgAdmin | https://dbadmin.demotoday.net | see `.env.docker` |
 
 ### 6. Trust TLS on client PCs
 
@@ -144,7 +147,7 @@ bash deploy/nginx/diagnose.sh
 | ------- | ----- | ---- |
 | 5–6 | Login smokes (doctor + patient) | HTTP 200 |
 | 7 | Nginx error log tail | Recent lines or empty (no repeating upstream errors) |
-| 8 | Socket.IO via `meeting.isara.local` | `PASS meeting Socket.IO polling → HTTP 200` or `400` (400 = handshake without sid is OK) |
+| 8 | Socket.IO via `meeting.demotoday.net` | `PASS meeting Socket.IO polling → HTTP 200` or `400` (400 = handshake without sid is OK) |
 
 ---
 
@@ -154,7 +157,7 @@ bash deploy/nginx/diagnose.sh
 | ------- | --- |
 | 502 Bad Gateway | `bash deploy/nginx/diagnose.sh` — Docker not on :3005/:3010 |
 | Doctor URL shows patient login | Wrong nginx `server_name` — run `bash deploy/nginx/deploy.sh` |
-| Login 401/500 CORS | `CORS_ORIGINS` must include `https://doctor.isara.local` |
+| Login 401/500 CORS | `CORS_ORIGINS` must include `https://doctor.demotoday.net` |
 | `vite: Permission denied` on build | Use root `.dockerignore`; do not copy Windows `node_modules` |
 | Postgres auth failed | `POSTGRES_PASSWORD=postgres` in `.env.docker`; redeploy |
 | CRLF on scripts | `sed -i 's/\r$//' deploy/nginx/*.sh` |

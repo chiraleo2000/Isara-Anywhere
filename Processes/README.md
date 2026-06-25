@@ -1,9 +1,11 @@
 # 📄 Izara Telemedicine — Comprehensive Workflows, Processes & Architecture
 
-**Version:** 1.7.52
+**Version:** 1.7.54
 **Last Updated:** June 25, 2026
 **Focus:** Web Application Only (Patient Portal + Doctor Portal + Meeting Server)
-**Status:** ✅ Phase 1 Complete — Calendar sync on confirm, 3-party meeting lifecycle, zero-skip local Docker gate (2982 unit + 35 E2E core)
+**Status:** ✅ Phase 1 Complete — see [WORKFLOW_CONNECTIONS.md](WORKFLOW_CONNECTIONS.md) for diagrams
+
+> **Hub navigation:** [WORKFLOW_CONNECTIONS.md](WORKFLOW_CONNECTIONS.md) · [Combined_Workflows](Combined_Workflows_And_Actions.md) · [Pages/](Pages/)
 
 ---
 
@@ -298,146 +300,15 @@ The database is initialized via Docker entrypoint scripts (local) or manual migr
 
 ### 3.3 Database Tables — Complete Catalog (53+ Tables)
 
-> **Quick reference:** [DATABASE_TABLES_REFERENCE.md](DATABASE_TABLES_REFERENCE.md) — all tables with descriptions and workflow mapping.
+> **Quick reference:** [DATABASE_TABLES_REFERENCE.md](DATABASE_TABLES_REFERENCE.md) — all tables with descriptions and workflow mapping.  
+> **Connection diagrams:** [WORKFLOW_CONNECTIONS.md](WORKFLOW_CONNECTIONS.md) — platform topology, pipeline, realtime chain.
 
-
-#### 3.3.1 Core User & Authentication Tables
-
-| Table | Purpose | Key Fields |
-| ------- | ---------| ----------- |
-| `users` | All user accounts (unified patient/doctor/admin) | id, email, password_hash, role, name, name_thai, is_active, is_verified, is_approved, approval_status, admin_privileges (JSONB), login_attempts, locked_until, preferences (JSONB), notification_settings (JSONB) |
-| `sessions` | Active login sessions | user_id, token, ip_address, user_agent, expires_at, logged_out_at |
-| `password_resets` | Password recovery tokens | user_id (UNIQUE), token, expires_at, used, used_at |
-| `patient_profiles` | Patient demographics | patient_id → users, demographics (JSONB), emergency_contact (JSONB), insurance_info (JSONB) |
-| `doctor_profiles` | Doctor professional data | doctor_id → users, specialty, sub_specialties (JSONB), qualifications, experience_years, hospital_name, department, languages (JSONB), rating (DECIMAL), consultation_fee, is_available, schedule (JSONB) |
-| `doctor_schedules` | Weekly availability | doctor_id → users, day_of_week, start_time, end_time, slot_duration_minutes |
-
-
-#### 3.3.2 Clinical Tables
-
-| Table | Purpose | Key Fields |
-| ------- | ---------| ----------- |
-| `appointments` | Appointment scheduling & tracking | patient_id, doctor_id, status (requested/confirmed/completed/cancelled), appointment_type, confirmed_date, jitsi_room_name, follow_up, symptoms (JSONB), ai_symptom_analysis (JSONB) |
-| `emr` | Electronic Medical Records (SOAP) | patient_id, doctor_id, appointment_id, subjective (JSONB), objective (JSONB), assessment (JSONB), plan (JSONB), diagnosis, ai_summary (TEXT), ai_suggestions (JSONB), requires_validation (BOOL), icd_codes, status (draft/signed), doctor_signature, signed_at |
-| `phr` | Personal Health Records | patient_id, vital_signs_history (JSONB), allergies (JSONB), chronic_conditions (JSONB), medications (JSONB), vaccinations (JSONB), family_history (JSONB), surgical_history (JSONB), lifestyle (JSONB), blood_type, height_cm, weight_kg, bmi |
-| `vital_signs` | Individual vital measurements | patient_id, blood_pressure_systolic/diastolic, heart_rate, temperature, respiratory_rate, oxygen_saturation, blood_glucose (with type), weight, height, bmi, measured_at, source |
-| `prescriptions` | Medication orders | patient_id, doctor_id, appointment_id, drug_name, dosage, frequency, duration, notes, status |
-| `lab_orders` | Lab test orders & results | patient_id, doctor_id, appointment_id, test_type, results (JSONB), status, normal_ranges, flags (high/low/critical) |
-| `drugs` | Drug database | name, generic_name, dosage_forms, interactions, contraindications |
-| `icd10_codes` | ICD-10 diagnosis codes | code, description, description_thai, category |
-| `patient_consents` | PDPA consent records | patient_id, consent_type, granted (BOOL), doctor_id, data_types (JSONB), status (pending/active), granted_at, expires_at, revoked_at |
-
-
-#### 3.3.3 Living Will Tables
-
-| Table | Purpose | Key Fields |
-| ------- | ---------| ----------- |
-| `living_wills` | Patient living will documents | patient_id, statement, treatments (JSONB), representatives (JSONB), signature (JSONB), pdpa_consent (JSONB), status (active/revoked), is_shared_with_doctors, version, decisions (JSONB), witness_info (JSONB), audit_log (JSONB) |
-| `living_will_versions` | Version history | patient_id, version (INT), data (JSONB), note (TEXT) |
-
-
-#### 3.3.4 Meeting & Transcription Tables
-
-| Table | Purpose | Key Fields |
-| ------- | ---------| ----------- |
-| `meeting_records` | Meeting lifecycle & results | appointment_id, patient_id, doctor_id, status (in_progress/completed/cancelled), started_at, ended_at, transcript (TEXT), ai_summary (TEXT), recording_data (BYTEA), recording_url, doctor_validation_status, validated_at, ready_for_patient, ai_recommendations (JSONB), section_summaries (JSONB) |
-| `meeting_transcripts` | Segment-by-segment transcript | meeting_id, speaker_role (doctor/patient/guest), speaker_name, content (TEXT), timestamp, language |
-| `meeting_chats` | In-meeting chat messages | meeting_id, sender_id, sender_name, message (XSS-sanitized TEXT), timestamp |
-| `meeting_invites` | Guest invitation tokens | meeting_id, invite_token, invitee_email, invitee_type (patient_relative/doctor_consultant/family_member), status, expires_at |
-| `ai_validations` | Man-in-the-loop approval records | meeting_id, doctor_id, validation_type, original_content, validated_content, status (pending/approved/rejected), validated_at |
-| `transcript_embeddings` | Vector chunks for search | meeting_id, chunk_text, embedding (vector), chunk_index |
-| `patient_instructions` | AI-generated post-visit instructions | appointment_id, patient_id, doctor_id, content (TEXT/Thai PDF), status, validated_by |
-
-
-#### 3.3.5 Content Tables
-
-| Table | Purpose | Key Fields |
-| ------- | ---------| ----------- |
-| `medical_content` | Health education articles for patients | id (MC-xxx), title, title_thai, content (TEXT), category, status (draft/pending/published), author_id, approved_by, tags (JSONB), images (JSONB) |
-| `clinical_resources` | Clinical guidelines for doctors | id (CR-xxx), title, title_thai, content, category, resource_type, status (draft/pending/published), author_id, source, references (JSONB) |
-| `consultants` | Specialist directory | id (CONS-xxx), name, specialty, hospital, email, phone, is_available, rating, reviews (JSONB), admin_notes |
-
-
-#### 3.3.6 AI & Knowledge Tables
-
-| Table | Purpose | Key Fields |
-| ------- | ---------| ----------- |
-| `ai_chat_history` | AI chat sessions (doctor + patient) | user_id, session_id, role (user/assistant/system), content (TEXT), context (JSONB) |
-| `ai_document_analysis` | AI PDF/document analysis results | document_id, user_id, analysis_type, original_text, ai_analysis (JSONB) |
-| `knowledge_base` | RAG-indexed clinical knowledge | id, content, embedding (vector), source, category, metadata (JSONB) |
-| `cds_logs` | Clinical Decision Support logs | patient_id, doctor_id, alert_type, alert_content, action_taken |
-
-
-#### 3.3.7 Extended Clinical Module Tables (schema deployed)
-
-| Table | Purpose | Key Fields |
-| ------- | ---------| ----------- |
-| `ctm_assessments` | Thai Traditional Medicine assessments | patient_id, doctor_id, dhatu (ธาตุ), symptoms (JSONB), herbal_prescription (JSONB), diagnosis |
-| `geriatric_screenings` | Elderly screening battery | patient_id, scores (JSONB), risk_level, recommendations (JSONB) |
-| `sos_alerts` | Emergency SOS alerts | patient_id, alert_type, latitude, longitude, status (active/acknowledged/resolved) |
-| `follow_ups` | Follow-up tracking | patient_id, doctor_id, appointment_id, follow_up_date, status |
-| `nursing_tasks` | Nursing workflow tasks | nurse_id, patient_id, task_type, priority (1-5), due_at, status |
-| `predictive_analytics` | AI risk predictions | patient_id, analysis_type, risk_scores (JSONB), model_version |
-| `emr_records` | Simplified visit records | patient_id, chief_complaint, diagnosis, treatment, visit_date |
-
-
-#### 3.3.8 Mobile, Sync & Integration Tables (schema deployed)
-
-| Table | Purpose | Key Fields |
-| ------- | ---------| ----------- |
-| `device_tokens` | Push notification registration | user_id, device_token, platform (ios/android/web), device_name, app_version |
-| `biometric_credentials` | Fingerprint/face auth | user_id, credential_type (fingerprint/face_id/iris), public_key, device_id |
-| `refresh_tokens` | JWT token rotation | user_id, token_hash, device_id, expires_at, is_revoked, replaced_by |
-| `push_subscriptions` | Notification channel toggles | user_id, appointment_reminders, medication_reminders, health_tips, lab_results, quiet_hours |
-| `sync_queue` | Offline sync for mobile | user_id, entity_type, entity_id, operation, payload (JSONB), sync_status, retry_count |
-| `user_api_connections` | Third-party APIs | user_id, service_type, access_token_encrypted, connection_status |
-| `api_connection_audit` | API audit trail | connection_id, user_id, action, service_type, ip_address |
-
-
-#### 3.3.9 System Tables
-
-| Table | Purpose | Key Fields |
-| ------- | ---------| ----------- |
-| `notifications` | In-app notification queue | user_id, type (appointment_*/meeting_*/emr_*/system_*), title, message, is_read, link, metadata (JSONB) |
-| `notification_preferences` | Per-user channel settings | user_id, channel (push/email/sms/in_app/line), category, enabled |
-| `user_settings` | User preferences | user_id, theme (light/dark/system), language, font_size, biometric_enabled, auto_sync |
-| `health_timeline` | Chronological event log | patient_id, event_type, event_data (JSONB), timestamp |
-| `audit_logs` | Security audit trail | user_id, action, entity_type, entity_id, ip_address, details (JSONB) |
-
+See linked docs for full column definitions (do not duplicate table catalogs here).
 
 ### 3.4 Real-Time Sync (PostgreSQL NOTIFY Triggers)
 
-Eight database triggers fire `pg_notify('data_changes', payload)` on data changes, enabling cross-service real-time synchronization:
-
-```text
-┌────────────────────┐    pg_notify()    ┌─────────────────────────────┐
-│  PostgreSQL Trigger │ ──────────────── │  pgNotifyListener (each     │
-│  (AFTER INSERT /    │                  │  portal) receives event and │
-│   UPDATE / DELETE)  │                  │  pushes via Socket.IO       │
-└────────────────────┘                  └─────────────────────────────┘
-
-Trigger                      Table              Events
-─────────────────────────────────────────────────────────
-trg_appointments_notify      appointments       INSERT, UPDATE, DELETE
-trg_emr_notify               emr                INSERT, UPDATE
-trg_prescriptions_notify     prescriptions      INSERT, UPDATE
-trg_lab_orders_notify        lab_orders         INSERT, UPDATE
-trg_notifications_notify     notifications      INSERT, UPDATE
-trg_vital_signs_notify       vital_signs        INSERT, UPDATE
-trg_phr_notify               phr                INSERT, UPDATE
-trg_doctor_schedules_notify  doctor_schedules   INSERT, UPDATE, DELETE
-
-Payload format: { "table", "operation", "id", "patient_id", "doctor_id" }
-```
-
-
-## How it works
-
-1. A service (e.g., Doctor Portal) writes data to PostgreSQL (e.g., confirms an appointment)
-2. The `trg_appointments_notify` trigger fires and calls `pg_notify('data_changes', ...)`
-3. Each portal's `pgNotifyListener` (running in the Express server) receives the notification via the PostgreSQL `LISTEN` channel
-4. The listener emits a Socket.IO event to all connected frontend clients
-5. React components subscribed to that event update in real-time without polling
+Eight triggers on data changes → `pg_notify('data_changes')` → `pgNotifyListener` → Socket.IO.  
+**Full diagram + event catalog:** [Data_Sync_Documentation.md](Data_Sync_Documentation.md) · [WORKFLOW_CONNECTIONS.md](WORKFLOW_CONNECTIONS.md) §4.
 
 ---
 
@@ -447,172 +318,24 @@ Payload format: { "table", "operation", "id", "patient_id", "doctor_id" }
 
 ### 4.1 Appointment & Meeting Workflow (End-to-End)
 
-> **Full Documentation:** [Appointment_Workflows.md](Appointment_Workflows.md), [VIDEO_MEETING_JITSI_GEMINI.md](VIDEO_MEETING_JITSI_GEMINI.md)
-
-This is the **core Phase 1 deliverable** — the complete end-to-end flow from appointment booking to patient delivery.
-
-
-#### Overview
+> **Connection diagrams:** [WORKFLOW_CONNECTIONS.md](WORKFLOW_CONNECTIONS.md)  
+> **Step detail:** [Appointment_Workflows.md](Appointment_Workflows.md) · [VIDEO_MEETING_JITSI_GEMINI.md](VIDEO_MEETING_JITSI_GEMINI.md) · [POST_MEETING_WORKFLOW.md](POST_MEETING_WORKFLOW.md)  
+> **Page map:** [Pages/README.md](Pages/README.md)
 
 ```text
-Patient Books ──→ AI Analysis ──→ Admin Assigns / Doctor Confirms ──→ Meeting Link
-    ──→ Multi-Party Video (Jitsi) + Live Transcript (Web Speech API) + Chat
-    ──→ AI SOAP Summary (Gemini) ──→ Doctor Man-in-Loop Review
-    ──→ EMR + Prescriptions + Lab Orders + Imaging Orders
-    ──→ Patient Instruction Sheet (Thai PDF) ──→ Follow-up Scheduled
+Book → pool/assign → confirm → Jitsi (HOST=doctor) → transcript → Gemini SOAP
+  → man-in-the-loop → EMR + Rx + labs → patient instructions → notification
 ```
 
+| # | Scenario | Doc section |
+| - | -------- | ----------- |
+| 1–3 | Book, assign, confirm | Appointment_Workflows |
+| 4–7 | Pre-meeting AI, video, transcript, recording | VIDEO_MEETING_JITSI_GEMINI |
+| 8–9 | Post-meeting AI, doctor validation | POST_MEETING_WORKFLOW |
+| 10–12 | EMR, orders, patient instructions | Health_Records_Processes |
+| 13–14 | Patient delivery, follow-up | Combined_Workflows §1, Appointment §follow-up |
 
-#### Step-by-Step Scenarios
-
-
-## Scenario 1: Patient Books Appointment
-
-1. Patient logs into Patient Portal → navigates to Appointments → clicks "ขอนัดหมายแพทย์" (Book Appointment)
-2. Fills 3-step wizard: select specialty/doctor (or "Any Doctor"), describe symptoms, choose preferred date/time
-3. AI analyzes symptoms via Gemini (symptom analysis, urgency scoring)
-4. Appointment created in `appointments` table with status `requested`
-5. Notification sent to admin/assigned doctor
-
-
-## Scenario 2: Admin Assigns Doctor (Unassigned Appointments)
-
-1. Admin sees unassigned appointments in Appointment Pool Management page
-2. Reviews AI symptom analysis and recommended specialty
-3. Manually assigns a doctor or uses AI-matching (specialty + availability)
-4. Appointment status changes to `assigned`
-5. Assigned doctor receives notification
-
-
-## Scenario 3: Doctor Confirms Appointment
-
-1. Doctor sees appointment in Health Meeting page queue
-2. Reviews patient history + AI pre-consultation summary
-3. Confirms appointment → status becomes `confirmed`
-4. System generates Jitsi room with 3 distinct URLs:
-   - **Doctor URL:** Full host controls (recording, transcript, lobby management)
-   - **Patient URL:** Lobby entry, participant controls
-   - **Guest URL:** Lobby entry with name-only registration
-5. Meeting link stored in `appointments.jitsi_room_name`
-6. Patient receives notification with meeting link + calendar event
-
-
-## Scenario 4: Pre-Meeting AI Preparation
-
-1. Doctor clicks "AI สรุปก่อนพบ" (AI Pre-Consultation Summary) on dashboard
-2. Gemini AI processes: patient PHR, previous EMRs, current medications, allergies, lab results, appointment symptoms
-3. Returns structured summary: patient history overview, risk factors, medication interactions, suggested questions
-4. CDS (Clinical Decision Support) alerts shown if applicable (e.g., "ปรับยา Metformin สำหรับ eGFR 38")
-
-
-## Scenario 5: Multi-Party Video Meeting
-
-1. **Doctor starts meeting** (HOST) — opens Jitsi room with full moderator controls
-2. **Patient enters lobby** — waits for doctor to admit
-3. **Guest invites** — Doctor or patient can invite:
-   - Patient relatives/friends (via Patient Portal sharing)
-   - Other doctors/specialists (via token-based invite)
-   - Non-registered users (guest join page → enter name → lobby)
-4. **Doctor admits participants** from lobby (like Microsoft Teams)
-5. **Camera & microphone** default ON for all (`startWithVideoMuted=false`, `startWithAudioMuted=false`)
-6. **Text chat** always available — all messages captured with timestamps and sender attribution
-7. Up to 8 participants per meeting recommended
-
-
-## Scenario 6: Real-Time Transcript Streaming
-
-1. **Doctor (HOST) controls transcript**: START → PAUSE → RESUME → STOP buttons
-2. Web Speech API (browser-native, FREE) captures speech
-3. Real-time transcript streams via Socket.IO to all participants
-4. Speaker labels: 👨‍⚕️ Doctor / 🧑 Patient / 👥 Guest
-5. Interim text shown with yellow pulsing background
-6. Language switching: Thai (th-TH) ↔ English (en-US)
-7. Transcript saved segment-by-segment to `meeting_transcripts` table
-8. Chat messages captured to `meeting_chats` table
-
-
-## Scenario 7: Recording
-
-1. Doctor can start/stop video recording
-2. Recording consent dialog shown to all participants
-3. Recording stored as BYTEA in `meeting_records.recording_data` (primary)
-4. Filesystem fallback if PostgreSQL write fails
-
-
-## Scenario 8: Post-Meeting AI Pipeline
-
-1. Doctor ends meeting → status changes to `completed`
-2. Meeting Server triggers AI processing:
-   - Collects: transcript segments + chat messages + meeting duration
-   - Gemini AI generates structured SOAP summary (30-minute sections for long meetings)
-   - Outputs: subjective, objective, assessment, plan, red flags, patient instructions
-3. AI summary stored in `meeting_records.ai_summary`
-4. Section summaries in `meeting_records.section_summaries` (JSONB)
-5. AI recommendations in `meeting_records.ai_recommendations` (JSONB)
-
-
-## Scenario 9: Man-in-the-Loop Validation
-
-1. Doctor Portal shows AI-generated summary in Health Meeting results panel
-2. Doctor reviews, edits, approves or rejects each section
-3. Validation record stored in `ai_validations` table
-4. Status: `pending` → `approved` / `rejected`
-5. Only doctor-approved content proceeds to EMR and patient delivery
-6. `meeting_records.doctor_validation_status` and `validated_at` updated
-
-
-## Scenario 10: EMR Creation (AI-Prefilled)
-
-1. Doctor opens EMR Editor modal (CompleteEMREditor.tsx)
-2. EMR auto-populated from validated AI summary:
-   - ประวัติ (S) — Subjective: Chief complaint, history of present illness
-   - ตรวจร่างกาย (O) — Objective: Physical examination findings
-   - วินิจฉัย (A) — Assessment: Diagnosis, ICD-10 codes
-   - แผนการรักษา (P) — Plan: Treatment orders, follow-up
-   - สรุป AI — AI Summary for patient
-3. Doctor edits/completes each SOAP tab
-4. Voice dictation available (Web Speech API, device-based)
-5. Auto-save during editing
-6. Doctor signs digitally → EMR status becomes `signed`
-7. EMR stored in `emr` table
-
-
-## Scenario 11: Prescriptions, Lab Orders, Imaging Orders
-
-1. From EMR Editor, doctor opens E-Prescribing → searches drugs → selects dosage/frequency/duration → drug interaction check → signs
-2. Lab Orders: selects test types → enters clinical indication → orders saved to `lab_orders`
-3. Imaging Orders: selects modality → enters clinical question → orders saved
-4. All orders linked to appointment_id and patient_id
-
-
-## Scenario 12: Patient Instruction Sheet
-
-1. AI generates patient-friendly instruction sheet in Thai
-2. Content includes: diagnosis summary, medications with dosage instructions, lifestyle recommendations, warning signs, follow-up date
-3. Doctor validates (man-in-the-loop) before sending to patient
-4. Patient receives as PDF (Thai) via Patient Portal
-5. Stored in `patient_instructions` table
-
-
-## Scenario 13: Patient Receives Results
-
-1. Patient logs into Patient Portal → Dashboard shows latest appointment result
-2. Timeline page shows chronological treatment history
-3. PHR page updated with new vital signs, diagnosis, medications
-4. Notification received: "เวชระเบียนพร้อมดู" (EMR Ready)
-5. Patient Instruction Sheet available for download
-
-
-## Scenario 14: Follow-up Scheduling
-
-1. Doctor sets follow-up date in EMR plan
-2. System creates follow-up record in `follow_ups` table
-3. Patient receives reminder notification 24 hours before
-4. Patient can book follow-up appointment directly from the reminder
-
-**Database Tables Used:** `appointments`, `emr`, `meeting_records`, `meeting_transcripts`, `meeting_chats`, `meeting_invites`, `ai_validations`, `patient_instructions`, `prescriptions`, `lab_orders`, `follow_ups`, `notifications`, `health_timeline`
-
-**API Endpoints:** See [Appointment_Workflows.md](Appointment_Workflows.md) and [VIDEO_MEETING_JITSI_GEMINI.md](VIDEO_MEETING_JITSI_GEMINI.md) for complete endpoint lists.
+**Tables:** `appointments`, `meeting_records`, `meeting_transcripts`, `ai_validations`, `emr`, `prescriptions`, `lab_orders`, `patient_instructions`, `notifications` — see [DATABASE_TABLES_REFERENCE.md](DATABASE_TABLES_REFERENCE.md).
 
 ---
 
@@ -1224,138 +947,44 @@ Ensures consistent data across the three independent services via PostgreSQL as 
 
 ## 5. Patient Portal Pages (15 Pages)
 
-> **Full Page Documentation:** [Pages/Patient-Portal/](Pages/Patient-Portal/)
-> **Portal URL:** `localhost:3005`
-> **Technology:** React 18 + TypeScript + Vite + Tailwind CSS + Express.js backend
+> **Canonical specs:** [Pages/Patient-Portal/](Pages/Patient-Portal/) · **Feature map:** [WORKFLOW_CONNECTIONS.md](WORKFLOW_CONNECTIONS.md) §5
 
-
-### Authentication Pages
-
-| # | Page | Route | Component | Description |
-| --- | ------| ------- | -----------| ------------- |
-| 1 | [Login](Pages/Patient-Portal/01_Login_Page.md) | `/login` | `LoginPage.tsx` | Email + password authentication. Thai-first UI with language toggle. Error handling for locked accounts, invalid credentials. Redirects to dashboard on success. |
-| 2 | [Register](Pages/Patient-Portal/02_Register_Page.md) | `/register` | `RegisterPage.tsx` | 2-step wizard: personal information (name, name_thai, DOB, gender, phone) + credentials (email, password with strength meter). Immediate access upon registration. PDPA consent checkbox required. |
-| 3 | [Reset Password](Pages/Patient-Portal/03_Reset_Password_Page.md) | `/reset-password` | `ResetPasswordPage.tsx` | Enter email → receive reset link → enter new password with confirmation. Token validation and expiration handling. |
-
-
-### Dashboard & Navigation
-
-| # | Page | Route | Component | Description |
-| --- | ------| ------- | -----------| ------------- |
-| 4 | [Dashboard](Pages/Patient-Portal/04_Dashboard_Page.md) | `/` | `DashboardPage.tsx` | Central patient hub with 2-column layout. Left (2/5): Quick actions (book appointment, AI chat, view records) + upcoming appointments with countdown. Right (3/5): Health Studio with recent health data, notifications, medical content recommendations. Latest appointment results shown prominently. |
-
-
-### Clinical Pages
-
-| # | Page | Route | Component | Description |
-| --- | ------| ------- | -----------| ------------- |
-| 5 | [Appointments](Pages/Patient-Portal/05_Appointments_Page.md) | `/appointments`, `/book-appointment`, `/appointments/:id` | `AppointmentPages.tsx` | **List View**: All appointments with status badges (requested/confirmed/completed/cancelled), filter by status. **Book New**: 3-step wizard (specialty/doctor → symptoms with AI analysis → date/time). **Detail View**: Meeting link (if confirmed), join button, invite relatives, Google Calendar integration, view results after completion. |
-| 6 | [PHR (Health Records)](Pages/Patient-Portal/06_PHR_Page.md) | `/phr` | `PHRPage.tsx` | 5-tab health data management. **Overview**: Summary of all health data + charts. **Vitals**: Record/view blood pressure, heart rate, temperature, O2 sat, blood glucose (with fasting/random/post-meal type), weight/height/BMI. **Medications**: Current medication list with dosage, frequency. **Allergies**: Drug allergies with severity flags. **Profile**: Demographics, emergency contact, insurance, chronic conditions. Includes **Living Will** management sub-tab. |
-| 7 | [Timeline](Pages/Patient-Portal/14_Timeline_Page.md) | `/timeline` | `TimelinePage.tsx` | Chronological timeline of ALL medical events: appointments (with status), medications (start/change/stop), lab results (with flags), procedures, diagnoses. Filter by event type. Click any event → navigate to detail page. Prescription PDFs and Patient Instruction Sheets downloadable. |
-
-
-### AI & Content Pages
-
-| # | Page | Route | Component | Description |
-| --- | ------| ------- | -----------| ------------- |
-| 8 | [AI Doctor](Pages/Patient-Portal/07_AI_Doctor_Page.md) | `/ai-doctor` | `AIDoctorPage.tsx` | AI health assistant powered by Gemini 2.5 Flash Lite. Toggleable sidebar with saved chat sessions. Medical context-aware: uses patient PHR, medications, allergies for personalized responses. Symptom assessment, medication questions, health education. Thai-first with English support. Disclaimer: "AI is not a substitute for professional medical advice." |
-| 9 | [Medical Content Library](Pages/Patient-Portal/08_Medical_Content_Library.md) | `/health-library` | `MedicalContentLibrary.tsx` | Read-only library of published medical content in "คลังความรู้สุขภาพ" (Health Knowledge) tab in Health Studio. Search by title/tag, filter by category (10 categories). Content shown in Thai (primary) with optional English. Inline images supported. Links to related articles. |
-
-
-### Health Management Pages
-
-| # | Page | Route | Component | Description |
-| --- | ------| ------- | -----------| ------------- |
-| 10 | [PDPA](Pages/Patient-Portal/10_PDPA_Page.md) | `/pdpa` | `PDPAPage.tsx` | Privacy & data consent management. View/revoke data sharing consents. PDPA policy display. Consent history with timestamps. Data access audit log showing who accessed patient data and when. |
-| 11 | [Living Will](Pages/Patient-Portal/11_Living_Will_Page.md) | `/living-will` | `LivingWillPage.tsx` | 4-step wizard for creating/editing Living Will (see workflow 4.7). View existing document with status badge (Active/Revoked). Share settings toggle. Version history. Edit/Revoke buttons. |
-
-
-### System Pages
-
-| # | Page | Route | Component | Description |
-| --- | ------| ------- | -----------| ------------- |
-| 12 | [Map](Pages/Patient-Portal/09_Map_Page.md) | `/map` | `MapPage.tsx` | Google Maps integration showing nearby healthcare facilities: hospitals, clinics, pharmacies, health centers. Search by type, distance filter. Click marker → facility details, directions. |
-| 13 | [Profile](Pages/Patient-Portal/12_Profile_Page.md) | `/profile` | `ProfilePage.tsx` | User profile management: name, name_thai, email, phone, DOB, gender, avatar. Password change. Account deletion request. |
-| 14 | [Settings](Pages/Patient-Portal/13_Settings_Page.md) | `/settings` | `SettingsPage.tsx` | Theme (light/dark/system), language (Thai/English), font size (small/medium/large), notification preferences, data sync settings. |
-| 15 | [Notifications](Pages/Patient-Portal/15_Notification_System.md) | Header component | `NotificationBell.tsx` + `NotificationDropdown.tsx` | Bell icon with unread count badge. Dropdown list of recent notifications. Click → navigate to relevant page (appointment detail, lab results, etc.). Mark as read. Mark all as read. Polling every 30 seconds + real-time Socket.IO updates. |
+| # | Page | Route | Spec |
+| - | ---- | ----- | ---- |
+| 1 | Login | `/login` | [01_Login_Page.md](Pages/Patient-Portal/01_Login_Page.md) |
+| 2 | Register | `/register` | [02_Register_Page.md](Pages/Patient-Portal/02_Register_Page.md) |
+| 3 | Reset Password | `/reset-password` | [03_Reset_Password_Page.md](Pages/Patient-Portal/03_Reset_Password_Page.md) |
+| 4 | Dashboard | `/` | [04_Dashboard_Page.md](Pages/Patient-Portal/04_Dashboard_Page.md) |
+| 5 | Appointments | `/appointments` | [05_Appointments_Page.md](Pages/Patient-Portal/05_Appointments_Page.md) |
+| 6 | PHR | `/phr` | [06_PHR_Page.md](Pages/Patient-Portal/06_PHR_Page.md) |
+| 7 | AI Doctor | `/ai-doctor` | [07_AI_Doctor_Page.md](Pages/Patient-Portal/07_AI_Doctor_Page.md) |
+| 8 | Health Library | `/health-library` | [08_Medical_Content_Library.md](Pages/Patient-Portal/08_Medical_Content_Library.md) |
+| 9 | Map | `/map` | [09_Map_Page.md](Pages/Patient-Portal/09_Map_Page.md) |
+| 10 | PDPA | `/pdpa` | [10_PDPA_Page.md](Pages/Patient-Portal/10_PDPA_Page.md) |
+| 11 | Living Will | `/living-will` | [11_Living_Will_Page.md](Pages/Patient-Portal/11_Living_Will_Page.md) |
+| 12 | Profile | `/profile` | [12_Profile_Page.md](Pages/Patient-Portal/12_Profile_Page.md) |
+| 13 | Settings | `/settings` | [13_Settings_Page.md](Pages/Patient-Portal/13_Settings_Page.md) |
+| 14 | Timeline | `/timeline` | [14_Timeline_Page.md](Pages/Patient-Portal/14_Timeline_Page.md) |
+| 15 | Notifications | header bell | [15_Notification_System.md](Pages/Patient-Portal/15_Notification_System.md) |
 
 ---
 
 
 ## 6. Doctor Portal Pages (21 Pages)
 
-> **Full Page Documentation:** [Pages/Doctor-Portal/](Pages/Doctor-Portal/)
-> **Portal URL:** `localhost:3010`
-> **Technology:** React 18 + TypeScript + Vite + Tailwind CSS + Express.js (CJS) + Nginx
+> **Canonical specs:** [Pages/Doctor-Portal/](Pages/Doctor-Portal/) · Meeting route: `/meeting/:id` → [01_Meeting_Room.md](Pages/Meeting-Server/01_Meeting_Room.md)
 
+| # | Page | Route | Spec |
+| - | ---- | ----- | ---- |
+| 1–2 | Login, Reset | `/login`, `/reset-password` | [01](Pages/Doctor-Portal/01_Login_Page.md), [02](Pages/Doctor-Portal/02_Reset_Password_Page.md) |
+| 3–4 | Dashboard, Schedule | `/dashboard`, `/schedule` | [03](Pages/Doctor-Portal/03_Dashboard_Page.md), [04](Pages/Doctor-Portal/04_Schedule_Page.md) |
+| 5–11 | Patients, Meeting, EMR, Rx, Labs, Records | `/patients`, `/health-meeting`, modals | [05–11](Pages/Doctor-Portal/05_Patient_Management_Page.md) |
+| 12 | Consultants | `/consultants` | [12_Medical_Consultants_Page.md](Pages/Doctor-Portal/12_Medical_Consultants_Page.md) |
+| 13–14 | Content, Resources | `/medical-content`, `/clinical-resources` | [13](Pages/Doctor-Portal/13_Medical_Content_Page.md), [14](Pages/Doctor-Portal/14_Clinical_Resources_Page.md) |
+| 15–16 | AI Studio, Profile | FAB, `/profile` | [15](Pages/Doctor-Portal/15_Gemini_AI_Studio.md), [16](Pages/Doctor-Portal/16_Doctor_Profile_Page.md) |
+| 17–21 | Admin + pool + queue | `/admin/*`, `/appointment-pool-management` | [17–21](Pages/Doctor-Portal/17_Admin_Appointment_Management.md) |
 
-### Authentication Pages
-
-| # | Page | Route | Component | Description |
-| --- | ------| ------- | -----------| ------------- |
-| 1 | [Login](Pages/Doctor-Portal/01_Login_Page.md) | `/login` | `LoginPage.tsx` | Doctor/admin login with email + password. Registration tab for new doctor sign-up (requires admin approval). Thai-first UI. |
-| 2 | [Reset Password](Pages/Doctor-Portal/02_Reset_Password_Page.md) | `/reset-password` | `ResetPasswordPage.tsx` | Token-based password recovery identical to patient portal flow. |
-
-
-### Dashboard & Schedule
-
-| # | Page | Route | Component | Description |
-| --- | ------| ------- | -----------| ------------- |
-| 3 | [Dashboard](Pages/Doctor-Portal/03_Dashboard_Page.md) | `/dashboard` | `DoctorDashboard.tsx` | Central clinical hub with 3-column layout: **Health Data** (patient stats, AI analysis), **Health Meeting** (today's appointments with AI pre-consultation buttons, CDS alerts), **Health Studio** (documents pending review, AI assistant). Shows: today's appointment count, pending tasks, completed consultations. Quick actions: start meeting, view patient record, AI pre-consultation summary. |
-| 4 | [Schedule](Pages/Doctor-Portal/04_Schedule_Page.md) | `/schedule` | `CompleteSchedule.tsx` | Day/week/month calendar views. Each appointment shows: patient name, time, status badge, specialty. Click → open appointment detail. "Join Meeting" button for confirmed appointments with Jitsi link. Color-coded by status. Drag-and-drop rescheduling. |
-
-
-### Clinical Workflow Pages
-
-| # | Page | Route | Component | Description |
-| --- | ------| ------- | -----------| ------------- |
-| 5 | [Patient Management](Pages/Doctor-Portal/05_Patient_Management_Page.md) | `/patients`, `/patients/:id` | `PatientManagement.tsx` | Patient list with search, filter by status/condition. Patient detail: demographics, appointment history, PHR summary, EMR history. Quick actions: create EMR, prescribe, order labs, start consultation. |
-| 6 | [Health Meeting](Pages/Doctor-Portal/06_Health_Meeting_Page.md) | `/health-meeting` | `HealthMeeting.tsx` | **Primary workflow page.** Patient queue with status tabs (waiting/in-progress/completed). For each appointment: patient info, AI pre-consultation summary button, "Start Meeting" button (creates Jitsi room), view meeting results. Post-meeting: AI summary review, man-in-the-loop validation, create EMR button. Admin view: all appointments across doctors, assign from pool. |
-| 7 | ~~Virtual Meeting~~ [Meeting Room](Pages/Doctor-Portal/07_Virtual_Meeting.md) | `/meeting/:id` | `MeetingRoom.tsx` | **REMOVED v1.7.53:** `VirtualMeeting.tsx` deleted. Full-screen Jitsi via `/meeting/:id` from Health Meeting. **HOST controls**: camera/mic, recording, live transcript, lobby admit/reject. Sidebar: participants, chat, transcript. AI Clinical Copilot during consult. Post-meeting AI SOAP pipeline. |
-| 8 | [EMR Editor](Pages/Doctor-Portal/08_EMR_Editor.md) | Modal | `CompleteEMREditor.tsx` | Thai Ministry of Public Health OPD Card format. **5 tabs**: ประวัติ (S—Subjective), ตรวจร่างกาย (O—Objective), วินิจฉัย (A—Assessment with ICD-10 search), แผนการรักษา (P—Plan), สรุป AI (AI Summary for patient). Features: AI pre-fill from meeting transcript, voice dictation (Web Speech API), auto-save, encounter type selection, linked prescriptions/labs/imaging. Digital signature to finalize. |
-| 9 | [E-Prescribing](Pages/Doctor-Portal/09_Prescribing.md) | Modal | `CompletePrescribing.tsx` | Real-time drug search from database. Auto-fill dosage forms. **Safety checks**: allergy cross-reference, drug-drug interaction, dose adjustment for renal/hepatic impairment. Prescription list with dosage, frequency, duration, quantity, instructions (Thai). Digital signature. Print/export capability. CDS alerts inline. |
-| 10 | [Lab & Imaging Orders](Pages/Doctor-Portal/10_Lab_Orders.md) | Modal | `CompleteLabOrders.tsx` | **Lab Orders**: Categorized test menu, clinical indication field, urgency level. **Imaging Orders**: Modality selection (X-ray, CT, MRI, Ultrasound), clinical question, body part. **Results Entry**: Numeric values with normal ranges, automatic flag calculation (normal/high/low/critical). Result history with trend visualization. |
-| 11 | [Patient Record Viewer](Pages/Doctor-Portal/11_Patient_Record_Viewer.md) | Modal | `PatientRecordViewer.tsx` | Comprehensive patient viewer with tabs: **PHR** (vitals, medications, allergies, demographics, Living Will card), **EMR History** (all past records, SOAP view), **EHR** (combined health record). Timeline view of all events. Lab results with trend charts. Prescription history. |
-
-
-### Patient Queue
-
-| # | Page | Route | Component | Description |
-| --- | ------| ------- | -----------| ------------- |
-| 12 | [Queue Management](Pages/Doctor-Portal/21_Queue_Management.md) | Embedded | `QueueManagement.tsx` | Real-time patient queue for today's confirmed appointments. Queue state: waiting → called → in-consultation → completed. Actions: call next patient, skip, complete. Wait time tracking with color-coded urgency. AI triage score display (from `patient_queue.ai_triage_score`). |
-
-
-### Content Management Pages
-
-| # | Page | Route | Component | Description |
-| --- | ------| ------- | -----------| ------------- |
-| 13 | [Medical Consultants](Pages/Doctor-Portal/12_Medical_Consultants_Page.md) | `/consultants` | `MedicalConsultants.tsx` | Specialist directory with search/filter. Card view: photo, name, specialty, hospital, rating, availability badge. Actions: view details, rate (1-5 stars + comment), contact (email/phone). Admin: add, edit, delete, toggle availability. |
-| 14 | [Medical Content](Pages/Doctor-Portal/13_Medical_Content_Page.md) | `/medical-content` | `MedicalContent.tsx` | Health education content management. Create/edit articles with rich text editor. Thai-first: Thai fields required, English optional. Image upload/inline support. Category and tag management. Status workflow: draft → pending → published. Admin approval queue with pending count badge. |
-| 15 | [Clinical Resources](Pages/Doctor-Portal/14_Clinical_Resources_Page.md) | `/clinical-resources` | `ClinicalResources.tsx` | Clinical guidelines and protocols. Same CRUD and approval workflow as Medical Content. Resource types: guideline, protocol, research paper, case study. RAG-indexed for AI search. References and source citation support. |
-
-
-### AI Tools
-
-| # | Page | Route | Component | Description |
-| --- | ------| ------- | -----------| ------------- |
-| 16 | [Gemini AI Studio](Pages/Doctor-Portal/15_Gemini_AI_Studio.md) | FAB Modal (all pages) | `GeminiAIStudio.tsx` | Floating action button (bottom-right) accessible from ANY page. **AI Chat**: Context-aware medical assistant powered by Gemini 2.5 Flash Lite. Uses patient data, EMR, clinical resources as context. **Medical Calculators**: BMI, eGFR (CKD-EPI), MELD Score, CHA₂DS₂-VASc, CURB-65, Wells Score, etc. Chat history saved per session. |
-
-
-### Profile
-
-| # | Page | Route | Component | Description |
-| --- | ------| ------- | -----------| ------------- |
-| 17 | [Doctor Profile](Pages/Doctor-Portal/16_Doctor_Profile_Page.md) | `/profile` | `DoctorProfilePage.tsx` | Profile management: name, name_thai, specialty, sub-specialties, hospital, department, qualifications, experience years, consultation fee, bio, bio_thai, languages, avatar. Schedule management: weekly availability slots. |
-
-
-### Admin-Only Pages
-
-| # | Page | Route | Component | Description | Access |
-| --- | ------| ------- | -----------| ------------- | -------- |
-| 18 | [Admin Appointment Management](Pages/Doctor-Portal/17_Admin_Appointment_Management.md) | `/admin/appointments` | `AdminAppointmentManagement.tsx` | View ALL appointments across all doctors. Assign unassigned appointments to doctors. Override appointment status. Reschedule on behalf of doctors. Statistics dashboard: daily/weekly/monthly appointment counts. | 🔒 Admin |
-| 19 | [Admin Doctor Management](Pages/Doctor-Portal/18_Admin_Doctor_Management.md) | `/admin/doctors` | `AdminDoctorManagement.tsx` | Review pending doctor registrations. Approve/reject with reason. View all doctor profiles. Edit doctor details. Deactivate/reactivate accounts. License verification. | 🔒 Admin |
-| 20 | [Doctors Management](Pages/Doctor-Portal/19_Doctors_Management_Page.md) | `/doctors` | `DoctorsManagement.tsx` | Doctor directory for all portal users. View doctor profiles with specialty, hospital, availability, rating. Search and filter. Different from admin management — no approval controls. | Doctor/Admin |
-| 21 | [Appointment Pool](Pages/Doctor-Portal/20_Appointment_Pool_Management.md) | `/appointment-pool-management` | `AppointmentPoolManagement.tsx` | Unassigned appointment queue. Doctors view appointments matching their specialty. Actions: claim appointment, view patient summary. Flow: pending → AI-matched → claimed → admin-assigned. Prevents double-claiming with optimistic locking. | Doctor/Admin |
+Legacy: [07_Virtual_Meeting.md](Pages/Doctor-Portal/07_Virtual_Meeting.md) (stub — use Meeting Server spec).
 
 ---
 
@@ -1758,12 +1387,30 @@ Ensures consistent data across the three independent services via PostgreSQL as 
 ## 12. Document Index
 
 
-### Database Documents (2)
+### Database Documents (3)
 
 | Document | Description |
 | ---------- | ------------- |
-| [PostgreSQL_Database_Architecture.md](PostgreSQL_Database_Architecture.md) | Full schema, ER diagram, NOTIFY triggers, migrations, access matrix |
+| [WORKFLOW_CONNECTIONS.md](WORKFLOW_CONNECTIONS.md) | **Platform topology, pipeline, realtime, feature matrix (diagrams)** |
+| [PostgreSQL_Database_Architecture.md](PostgreSQL_Database_Architecture.md) | Full schema, ER diagram, NOTIFY triggers, migrations |
 | [DATABASE_TABLES_REFERENCE.md](DATABASE_TABLES_REFERENCE.md) | All 53+ tables with descriptions and workflow mapping |
+
+### Workflow index documents (2)
+
+| Document | Description |
+| ---------- | ------------- |
+| [Combined_Workflows_And_Actions.md](Combined_Workflows_And_Actions.md) | End-to-end patient/doctor/admin journeys |
+| [Separated_Workflows_And_Functions.md](Separated_Workflows_And_Functions.md) | Atomic domain sections A–U |
+
+### Contracts & gates (5)
+
+| Document | Description |
+| ---------- | ------------- |
+| [FULL_WORKFLOW_CONTRACT.md](FULL_WORKFLOW_CONTRACT.md) | Canonical acceptance contract (+ baseline topology) |
+| [PHASE1_REQUIREMENTS.md](PHASE1_REQUIREMENTS.md) | Stakeholder requirements |
+| [GATE0_IMPLEMENTATION_STATUS.md](GATE0_IMPLEMENTATION_STATUS.md) | Appointment pool / host contract status |
+| [PROCESS_TO_TEST_GATE.md](PROCESS_TO_TEST_GATE.md) | Process doc → test commands |
+| [ENV_AND_STACK_CHECK.md](ENV_AND_STACK_CHECK.md) | Ports, env, Docker health |
 
 ### Core Workflow Documents (10)
 
@@ -1786,14 +1433,13 @@ Ensures consistent data across the three independent services via PostgreSQL as 
 | Document | Description |
 | ---------- | ------------- |
 | [Living_Will_Processes.md](Living_Will_Processes.md) | 4-step wizard, healthcare proxy, PDPA sharing controls, audit trail |
-| [Living_Will_Implementation_Plan.md](Living_Will_Implementation_Plan.md) | TypeScript interfaces, API design, database schema, component specs |
 
+> Archived: [Living_Will_Implementation_Plan.md](Living_Will_Implementation_Plan.md) (merged) · [UI_Pages_Workflows.md](UI_Pages_Workflows.md) (use `Pages/`)
 
-### UI & Requirements Documents (2)
+### UI & Requirements Documents (1)
 
 | Document | Description |
 | ---------- | ------------- |
-| [UI_Pages_Workflows.md](UI_Pages_Workflows.md) | Cross-page navigation flows and UI patterns |
 | [PHASE1_REQUIREMENTS.md](PHASE1_REQUIREMENTS.md) | Original Phase 1 stakeholder requirements (Dr. Isara + P. Beer) |
 
 
@@ -1818,7 +1464,13 @@ Ensures consistent data across the three independent services via PostgreSQL as 
 ## 🆕 Version History
 
 
-### v1.7.52 (June 25, 2026) — Current
+### v1.7.54 (June 25, 2026) — Current
+
+- New [WORKFLOW_CONNECTIONS.md](WORKFLOW_CONNECTIONS.md) — mermaid topology, pipeline, feature matrix
+- README trimmed: table catalog, 14 scenarios, page blurbs → links to domain docs and `Pages/`
+- Archived stubs: `UI_Pages_Workflows`, `07_Virtual_Meeting`, `PHASE1_BASELINE` (merged into FULL_WORKFLOW_CONTRACT)
+
+### v1.7.52 (June 25, 2026)
 
 - Database tables reference: [DATABASE_TABLES_REFERENCE.md](DATABASE_TABLES_REFERENCE.md) — 53+ tables with workflow mapping
 - Removed unimplemented Phase 2 planning docs; schema tables documented against actual migrations

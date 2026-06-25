@@ -1,9 +1,35 @@
 # Documents — Izara Anywhere documentation hub
 
-> **Layout version:** June 2026 · **App release:** v1.7.53  
+> **Layout version:** June 2026 · **App release:** v1.7.54  
 > **Gates:** `npm run phase:0` … `phase:9` · LAN: [deploy/nginx/DEPLOYMENT.md](../deploy/nginx/DEPLOYMENT.md)
 
 รวมเอกสารทั้งหมดของโปรเจกต์ภายใต้โฟลเดอร์เดียว `Documents/`
+
+---
+
+## Four-repo documentation map (platform split)
+
+| Repository | Path | `docs/` deliverables | Standalone PG |
+|------------|------|----------------------|---------------|
+| **Platform** | `Isara-Anywhere` | `Processes/`, `Documents/`, [docs/APP_DOCS_SYNC.md](../docs/APP_DOCS_SYNC.md) | **5433** |
+| **Patient** | `Isara-patient-portal/` | 16 pages, `DATABASE.md`, `TEST_COVERAGE.md` | **5434** |
+| **Doctor** | `Isara-doctor-portal/` | 22 pages, `DATABASE.md`, `TEST_COVERAGE.md` | **5435** |
+| **Meeting** | `Izara-jitsi-server/` | 4 pages, `DATABASE.md`, `TEST_COVERAGE.md` | **5436** |
+
+Refresh from platform root: `npm run docs:sync-to-apps` · table map: `scripts/docs/table-ownership.json` · ports: `npm run multitask:ports`
+
+---
+
+## Platform split (4-repo map)
+
+| Repo path | Standalone PG | Docs | CI |
+|-----------|---------------|------|-----|
+| `Isara-patient-portal/` | 5434 | `docs/` (16 pages) | `.github/workflows/standalone-ci.yml` |
+| `Isara-doctor-portal/` | 5435 | `docs/` (22 pages) | `.github/workflows/standalone-ci.yml` |
+| `Izara-jitsi-server/` | 5436 | `docs/` (4 pages) | `.github/workflows/standalone-ci.yml` |
+| `Isara-Anywhere` (platform) | 5433 | `Processes/`, `docs/COMBINED_*` | `.github/workflows/platform-combined-gate.yml` |
+
+Refresh app docs: `npm run docs:sync-to-apps` · Split procedure: [docs/SPLIT_REPOS.md](../docs/SPLIT_REPOS.md)
 
 ---
 

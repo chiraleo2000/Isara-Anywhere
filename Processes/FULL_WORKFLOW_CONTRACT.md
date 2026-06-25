@@ -23,6 +23,19 @@ This contract is the baseline acceptance reference for all regression runs and d
 - Clinical AI outputs are treated as draft until doctor validation (man-in-the-loop).
 - Patient-visible outputs exclude internal doctor-only notes.
 
+## Baseline Runtime Topology (from Phase 1 baseline contract)
+
+| Service | Local URLs | Notes |
+| ------- | ---------- | ----- |
+| Patient portal | UI `:3005`, API `:3004` (dev) / unified `:3005` (Docker) | Session auth |
+| Doctor portal | UI `:3010`, auth `:3011`, API + Socket.IO `:3009` (`/ws`) | JWT + session |
+| Meeting server | `:3020` | Jitsi orchestration + AI pipeline |
+| PostgreSQL | `izara_phase1` — host `:5433` / internal `:5432` | NOTIFY → Socket.IO |
+
+**Prerequisites:** Shared `JWT_SECRET`, single `DATABASE_URL`, `CORS_ORIGINS` for all portals, triggers from `scripts/database/v2.2.0-notify-triggers.sql`, `pgNotifyListener` in patient + doctor backends.
+
+Connection diagrams: [WORKFLOW_CONNECTIONS.md](WORKFLOW_CONNECTIONS.md).
+
 ## Must-Pass Behaviors by Domain
 
 ### 1) Auth and Access

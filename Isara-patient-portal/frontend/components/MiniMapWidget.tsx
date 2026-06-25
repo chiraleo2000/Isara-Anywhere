@@ -8,7 +8,9 @@ import { MapPin, Building2, Stethoscope, Pill, Heart, Navigation, Loader2 } from
 import { useSettings } from '../contexts/SettingsContext';
 import { useState, useEffect } from 'react';
 
-const MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '';
+import { resolveEnv } from '../utils/resolveEnv';
+
+const MAPS_API_KEY = resolveEnv('GOOGLE_MAPS_API_KEY');
 
 interface Counts { hospital: number; clinic: number; pharmacy: number; health_center: number; total: number; }
 

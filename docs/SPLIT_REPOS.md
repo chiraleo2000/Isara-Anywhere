@@ -27,7 +27,9 @@ Each app repo includes:
 
 ## Option A — Git subtree split (preserve history)
 
-From monorepo root, one-time per app:
+**Prerequisite:** Part B P5B green (`test:local:pre-deploy-gate` + `test:standalone:all`).
+
+From monorepo root, one-time per app (do **not** push without explicit approval):
 
 ```bash
 # Patient portal
@@ -41,7 +43,15 @@ git push git@github.com:YOUR_ORG/Isara-doctor-portal.git split/doctor-portal:mai
 # Meeting server
 git subtree split --prefix=Izara-jitsi-server -b split/meeting-server
 git push git@github.com:YOUR_ORG/Izara-jitsi-server.git split/meeting-server:main
+
+# Platform hub (slim tree or submodules)
+git subtree split --prefix=scripts -b split/platform-scripts
+# Or keep monorepo as Isara-Anywhere with git submodules pointing at split remotes
 ```
+
+Tags after split: `platform-v1.8.0`, `patient-v1.7.x`, `doctor-v1.7.x`, `meeting-v1.7.x`.
+
+Sibling clone layout: `bash scripts/repos/clone-siblings.sh ../izara-siblings`
 
 Create empty GitHub repos first (`gh repo create ... --private`).
 

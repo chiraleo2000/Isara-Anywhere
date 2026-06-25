@@ -32,6 +32,7 @@ services:
   # PostgreSQL Database with pgvector
   # ==========================================================================
   postgres:
+    profiles: ["full", "default", "external-db"]
     image: pgvector/pgvector:pg18
     container_name: izara-postgres
     restart: unless-stopped
@@ -70,6 +71,7 @@ services:
   # pgAdmin for Database Management
   # ==========================================================================
   pgadmin:
+    profiles: ["full", "default"]
     image: dpage/pgadmin4:latest
     container_name: izara-pgadmin
     restart: unless-stopped
@@ -91,20 +93,21 @@ services:
   # Patient Portal - Unified (Frontend + Backend on port 3005)
   # ==========================================================================
   patient-portal:
+    profiles: ["full", "default"]
     build:
-      context: .
-      dockerfile: Isara-patient-portal/Dockerfile.unified
+      context: ./Isara-patient-portal
+      dockerfile: Dockerfile.unified
       args:
         VITE_API_URL: ""
         VITE_APP_NAME: Izara Patient Portal
         VITE_APP_VERSION: 1.7.3
         VITE_APP_ENV: production
         VITE_USE_POSTGRESQL: ${USE_POSTGRESQL:-true}
-        VITE_MEETING_SERVER_URL: ${VITE_MEETING_SERVER_URL:-http://localhost:3020}
+        VITE_MEETING_SERVER_URL: ${MEETING_PUBLIC_URL:-http://localhost:3020}
         VITE_GCP_PROJECT_ID: ${GCP_PROJECT_ID:-izara-telemedicine}
-        VITE_GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+        GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
         VITE_GOOGLE_MAPS_API_KEY: ${GOOGLE_MAPS_API_KEY:-}
-        VITE_GOOGLE_MAPS_MAP_ID: ${VITE_GOOGLE_MAPS_MAP_ID:-}
+        GOOGLE_MAPS_MAP_ID: ${GOOGLE_MAPS_MAP_ID:-}
         VITE_GEMINI_API_KEY: ${GEMINI_API_KEY:-xxxxx}
         VITE_GEMINI_MODEL: ${GEMINI_MODEL:-gemini-3.1-flash-lite}
         JITSI_DOMAIN: ${JITSI_DOMAIN:-meet.jit.si}
@@ -138,7 +141,7 @@ services:
 
       # Meeting Server URL
       MEETING_SERVER_URL: http://meeting-server:3020
-      VITE_MEETING_SERVER_URL: ${VITE_MEETING_SERVER_URL:-http://localhost:3020}
+      MEETING_PUBLIC_URL: ${MEETING_PUBLIC_URL:-http://localhost:3020}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3005,http://localhost:3010,http://localhost:3020,http://patient.isara.local,http://doctor.isara.local,http://meeting.isara.local}
       JITSI_DOMAIN: ${JITSI_DOMAIN:-meet.jit.si}
 
@@ -175,9 +178,10 @@ services:
   # Doctor Portal - Unified (Frontend + Backend on port 3010)
   # ==========================================================================
   doctor-portal:
+    profiles: ["full", "default"]
     build:
-      context: .
-      dockerfile: Isara-doctor-portal/Dockerfile.unified
+      context: ./Isara-doctor-portal
+      dockerfile: Dockerfile.unified
       args:
         VITE_API_URL: ""
         VITE_AUTH_URL: ${VITE_AUTH_URL:-}
@@ -185,9 +189,9 @@ services:
         VITE_APP_VERSION: 1.7.3
         VITE_APP_ENV: production
         VITE_USE_POSTGRESQL: ${USE_POSTGRESQL:-true}
-        VITE_MEETING_SERVER_URL: ${VITE_MEETING_SERVER_URL:-http://localhost:3020}
+        VITE_MEETING_SERVER_URL: ${MEETING_PUBLIC_URL:-http://localhost:3020}
         VITE_GCP_PROJECT_ID: ${GCP_PROJECT_ID:-izara-telemedicine}
-        VITE_GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+        GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
         VITE_GEMINI_API_KEY: ${GEMINI_API_KEY:-xxxxx}
         VITE_GEMINI_MODEL: ${GEMINI_MODEL:-gemini-3.1-flash-lite}
         JITSI_DOMAIN: ${JITSI_DOMAIN:-meet.jit.si}
@@ -224,7 +228,7 @@ services:
 
       # Meeting Server URL
       MEETING_SERVER_URL: http://meeting-server:3020
-      VITE_MEETING_SERVER_URL: ${VITE_MEETING_SERVER_URL:-http://localhost:3020}
+      MEETING_PUBLIC_URL: ${MEETING_PUBLIC_URL:-http://localhost:3020}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3005,http://localhost:3010,http://localhost:3020,http://patient.isara.local,http://doctor.isara.local,http://meeting.isara.local}
       JITSI_DOMAIN: ${JITSI_DOMAIN:-meet.jit.si}
 
@@ -256,9 +260,10 @@ services:
   # Jitsi Meeting Server - Transcription & AI Summary (port 3020)
   # ==========================================================================
   meeting-server:
+    profiles: ["full", "default"]
     build:
-      context: .
-      dockerfile: Izara-jitsi-server/Dockerfile
+      context: ./Izara-jitsi-server
+      dockerfile: Dockerfile
     container_name: izara-meeting-server
     restart: unless-stopped
     env_file:

@@ -4266,7 +4266,7 @@ const JITSI_TOKEN_AUTH_ENABLED = false;
 // Google Cloud Speech-to-Text API Configuration
 const GOOGLE_SPEECH_API_KEY = process.env.GOOGLE_SPEECH_API_KEY ||
                               process.env.VITE_GOOGLE_SPEECH_API_KEY || 
-                              process.env.VITE_GOOGLE_MEET_API_KEY || 
+                              process.env.GOOGLE_MEET_API_KEY || 
                               '';
 
 // Gemini AI Configuration (for summary & recommendations)
@@ -9344,7 +9344,9 @@ async function startServer() {
 
     // Auto-apply pg_notify triggers, then start LISTEN/NOTIFY listener
     if (pool) {
-      const triggerSqlPath = path.resolve(__dirname, '../../scripts/database/v2.2.0-notify-triggers.sql');
+      const bundledTrigger = path.join(__dirname, '../scripts/database/v2.2.0-notify-triggers.sql');
+      const monorepoTrigger = path.resolve(__dirname, '../../scripts/database/v2.2.0-notify-triggers.sql');
+      const triggerSqlPath = fs.existsSync(bundledTrigger) ? bundledTrigger : monorepoTrigger;
       if (fs.existsSync(triggerSqlPath)) {
         const triggerSql = fs.readFileSync(triggerSqlPath, 'utf8');
         pool.query(triggerSql)

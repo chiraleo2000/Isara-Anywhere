@@ -9,6 +9,10 @@
     "start": "node backend/index.js",
     "build": "echo 'No build step required'",
     "docker:build": "docker build -t izara-jitsi-server .",
+    "db:init:standalone": "node scripts/database/init-standalone.mjs",
+    "db:seed:standalone": "node scripts/database/seed-standalone.mjs",
+    "test:smoke:e2e": "node scripts/run-standalone-tests.mjs",
+    "test:standalone": "node scripts/run-standalone-tests.mjs",
     "docker:run": "docker run -p 3020:3020 --env-file .env izara-jitsi-server"
   },
   "dependencies": {

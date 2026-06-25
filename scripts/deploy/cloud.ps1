@@ -236,7 +236,7 @@ if (-not $SkipBuild) {
         --build-arg VITE_API_URL="" --build-arg VITE_APP_NAME="Izara Patient Portal (Dev)" `
         --build-arg VITE_APP_VERSION="1.6.0" --build-arg VITE_APP_ENV=production `
         --build-arg VITE_USE_POSTGRESQL=true --build-arg VITE_MEETING_SERVER_URL=$MEETING_URL `
-        --build-arg VITE_GOOGLE_MAPS_API_KEY=$MAPS_API_KEY --build-arg VITE_GOOGLE_MAPS_MAP_ID=$MAPS_MAP_ID `
+        --build-arg VITE_GOOGLE_MAPS_API_KEY=$MAPS_API_KEY --build-arg GOOGLE_MAPS_MAP_ID=$MAPS_MAP_ID `
         --build-arg VITE_GEMINI_API_KEY=$GEMINI_API_KEY --build-arg VITE_GEMINI_MODEL=gemini-3.1-flash-lite `
         -t $IMG_PATIENT .
     if ($LASTEXITCODE -ne 0) { Write-Err "Build failed!"; Pop-Location; exit 1 }

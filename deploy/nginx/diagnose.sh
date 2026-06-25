@@ -6,8 +6,9 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=compose.sh
 source "${SCRIPT_DIR}/compose.sh"
 
-ORIGIN_DOCTOR="${ORIGIN_DOCTOR:-https://doctor.isara.local}"
-ORIGIN_PATIENT="${ORIGIN_PATIENT:-https://patient.isara.local}"
+LAN_DOMAIN="${LAN_DOMAIN:-demotoday.net}"
+ORIGIN_DOCTOR="${ORIGIN_DOCTOR:-https://doctor.${LAN_DOMAIN}}"
+ORIGIN_PATIENT="${ORIGIN_PATIENT:-https://patient.${LAN_DOMAIN}}"
 
 echo "=== Izara diagnostic ==="
 echo ""
@@ -63,15 +64,15 @@ echo "  patient login: ${patient_code}"
 echo ""
 
 echo "--- Nginx routing ---"
-if curl -sk --connect-timeout 3 https://doctor.isara.local/login 2>/dev/null | grep -q "Izara Anywhere"; then
-  echo "  doctor.isara.local → doctor portal OK"
+if curl -sk --connect-timeout 3 "https://doctor.${LAN_DOMAIN}/login" 2>/dev/null | grep -q "Izara Anywhere"; then
+  echo "  doctor.${LAN_DOMAIN} → doctor portal OK"
 else
-  echo "  doctor.isara.local → WRONG (may show patient if nginx server_name missing)"
+  echo "  doctor.${LAN_DOMAIN} → WRONG (may show patient if nginx server_name missing)"
 fi
-if curl -sk --connect-timeout 3 https://patient.isara.local/login 2>/dev/null | grep -q Patient; then
-  echo "  patient.isara.local → patient portal OK"
+if curl -sk --connect-timeout 3 "https://patient.${LAN_DOMAIN}/login" 2>/dev/null | grep -q Patient; then
+  echo "  patient.${LAN_DOMAIN} → patient portal OK"
 else
-  echo "  patient.isara.local → FAIL"
+  echo "  patient.${LAN_DOMAIN} → FAIL"
 fi
 echo ""
 
@@ -91,15 +92,15 @@ else
 fi
 echo ""
 
-echo "--- Socket.IO (meeting.isara.local) ---"
-MEETING_ORIGIN="${MEETING_ORIGIN:-https://meeting.isara.local}"
+echo "--- Socket.IO (meeting.${LAN_DOMAIN}) ---"
+MEETING_ORIGIN="${MEETING_ORIGIN:-https://meeting.${LAN_DOMAIN}}"
 socket_code=$(curl -sk -o /dev/null -w "%{http_code}" --connect-timeout 5 \
   "${MEETING_ORIGIN}/socket.io/?EIO=4&transport=polling" 2>/dev/null || echo "000")
 if [[ "${socket_code}" == "200" || "${socket_code}" == "400" ]]; then
   echo "  PASS meeting Socket.IO polling → HTTP ${socket_code} (400 = handshake without sid is OK)"
 else
   echo "  FAIL meeting Socket.IO polling → HTTP ${socket_code} (expected 200 or 400)"
-  echo "  Hint: check nginx proxy_pass for /socket.io/ on meeting.isara.local"
+  echo "  Hint: check nginx proxy_pass for /socket.io/ on meeting.${LAN_DOMAIN}"
 fi
 echo ""
 

@@ -75,7 +75,7 @@ Regenerate merge after edits: `node scripts/merge-drawio-diagrams.mjs`
 
 1. Primary data: `GET /api/map/nearby?lang=`
 2. Optional Google Places supplemental (ratings, open status via `opening_hours.isOpen()`)
-3. Map display: **AdvancedMarkerElement** when `VITE_GOOGLE_MAPS_MAP_ID` set; classic `Marker` fallback otherwise
+3. Map display: **AdvancedMarkerElement** when `GOOGLE_MAPS_MAP_ID` set; classic `Marker` fallback otherwise
 4. Script load: `libraries=places,marker`
 
 ---

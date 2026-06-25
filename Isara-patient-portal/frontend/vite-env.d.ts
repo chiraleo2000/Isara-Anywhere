@@ -5,13 +5,13 @@ interface ImportMetaEnv {
   readonly VITE_APP_VERSION: string;
   readonly VITE_GCP_PROJECT_ID: string;
   readonly VITE_GCP_REGION: string;
-  readonly VITE_GOOGLE_CLIENT_ID: string;
+  readonly GOOGLE_CLIENT_ID: string;
   readonly VITE_GCS_BUCKET_AUTH: string;
   readonly VITE_GCS_BUCKET_PATIENT: string;
   readonly VITE_GCS_BUCKET_DOCTOR: string;
   readonly VITE_GCS_BUCKET_APPOINTMENTS: string;
   readonly VITE_GCS_BUCKET_METADATA: string;
-  readonly VITE_GOOGLE_CALENDAR_API_KEY: string;
+  readonly GOOGLE_CALENDAR_API_KEY: string;
   readonly VITE_GOOGLE_MAPS_API_KEY: string;
   readonly VITE_GEMINI_API_KEY: string;
   readonly VITE_GEMINI_MODEL: string;

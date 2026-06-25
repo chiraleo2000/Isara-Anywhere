@@ -9,7 +9,7 @@ export interface GoogleClientIdState {
  * Resolves Google OAuth client ID: Vite build-time first, then runtime /auth/public-config.
  */
 export function useGoogleClientId(configPath = '/auth/public-config'): GoogleClientIdState {
-  const builtIn = (import.meta as ImportMeta & { env?: { VITE_GOOGLE_CLIENT_ID?: string } }).env?.VITE_GOOGLE_CLIENT_ID || '';
+  const builtIn = (import.meta as ImportMeta & { env?: { GOOGLE_CLIENT_ID?: string } }).env?.GOOGLE_CLIENT_ID || '';
   const [clientId, setClientId] = useState(builtIn);
   const [resolved, setResolved] = useState(!!builtIn);
 

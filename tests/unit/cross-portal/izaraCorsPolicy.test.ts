@@ -74,6 +74,14 @@ describe('izaraCorsPolicy', () => {
     expect(isIzaraOriginAllowed('https://meeting.isara.local', policy)).toBe(true);
   });
 
+  it('ICP06b — allows Mode B LAN HTTPS subdomains (*.demotoday.net)', () => {
+    const policy = buildIzaraCorsPolicy();
+    expect(isIzaraOriginAllowed('https://doctor.demotoday.net', policy)).toBe(true);
+    expect(isIzaraOriginAllowed('https://patient.demotoday.net', policy)).toBe(true);
+    expect(isIzaraOriginAllowed('https://meeting.demotoday.net', policy)).toBe(true);
+    expect(isIzaraOriginAllowed('https://custom.demotoday.net', policy)).toBe(true);
+  });
+
   it('ICP07 — allows short LAN hostnames (patient.local / doctor.local)', () => {
     const policy = buildIzaraCorsPolicy();
     expect(isIzaraOriginAllowed('https://patient.local', policy)).toBe(true);

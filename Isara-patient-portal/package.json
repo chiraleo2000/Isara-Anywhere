@@ -19,6 +19,10 @@
     "docker:build:frontend": "docker build -t izara-frontend .",
     "docker:build:backend": "docker build -f Dockerfile.backend -t izara-backend .",
     "docker:build:unified": "docker build -f Dockerfile.unified -t isara-patient-portal .",
+    "db:init:standalone": "node scripts/database/init-standalone.mjs",
+    "db:seed:standalone": "node scripts/database/seed-standalone.mjs",
+    "test:smoke:e2e": "node scripts/run-standalone-tests.mjs",
+    "test:standalone": "npm run lint && npm run type-check && node scripts/run-standalone-tests.mjs",
     "docker:build": "npm run docker:build:frontend && npm run docker:build:backend",
     "k8s:deploy": "kubectl apply -f k8s/"
   },

@@ -1115,7 +1115,7 @@ router.get('/health/db', async (_req: Request, res: Response) => {
 // ============================================================================
 import { OAuth2Client } from 'google-auth-library';
 
-const GOOGLE_CLIENT_ID = (process.env.GOOGLE_CLIENT_ID || process.env.VITE_GOOGLE_CLIENT_ID || '').replace(/\r?\n/g, '').trim();
+const GOOGLE_CLIENT_ID = (process.env.GOOGLE_CLIENT_ID || process.env.GOOGLE_CLIENT_ID || '').replace(/\r?\n/g, '').trim();
 const googleAuthClient = GOOGLE_CLIENT_ID ? new OAuth2Client(GOOGLE_CLIENT_ID) : null;
 
 if (!GOOGLE_CLIENT_ID) {

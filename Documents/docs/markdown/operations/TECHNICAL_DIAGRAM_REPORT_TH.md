@@ -121,7 +121,7 @@ Doctor Portal บน production ใช้ unified image: nginx ฟังพอ�
 
 อธิบาย flow การเข้าระบบสำหรับทีม support ทีมความปลอดภัย และผู้ทดสอบ UAT ลดความสับสนระหว่างพอร์ทัลผู้ป่วยและแพทย์ และชี้จุดที่ต้องอนุมัติแอดมิน
 
-ผู้ป่วยล็อกอินผ่าน Patient Portal: ส่ง POST login ด้วยอีเมล/รหัสผ่าน ระบบสร้าง session หรือ token เก็บใน cookie/header รองรับ Google SSO เมื่อตั้ง VITE_GOOGLE_CLIENT_ID — อีเมลจาก Google ต้องตรงกับ users.email ที่ลงทะเบียนแล้ว มิฉะนั้นจะ login ไม่สำเร็จ
+ผู้ป่วยล็อกอินผ่าน Patient Portal: ส่ง POST login ด้วยอีเมล/รหัสผ่าน ระบบสร้าง session หรือ token เก็บใน cookie/header รองรับ Google SSO เมื่อตั้ง GOOGLE_CLIENT_ID — อีเมลจาก Google ต้องตรงกับ users.email ที่ลงทะเบียนแล้ว มิฉะนั้นจะ login ไม่สำเร็จ
 
 แพทย์และแอดมินล็อกอินผ่าน Doctor Portal: ตรวจรหัสผ่านด้วย bcrypt ออก JWT อายุตามการตั้งค่า ทุก /api ตรวจ role (doctor หรือ admin) แพทย์ที่สมัครใหม่มี is_approved=false จนแอดมินกดอนุมัติที่ Manage Doctors จึงจะเห็นคิวและ EMR ได้ครบ
 

@@ -4,7 +4,7 @@ import { authMiddleware } from '../middleware/auth';
 const router = Router();
 
 // Google Calendar API
-const CALENDAR_API_KEY = process.env.VITE_GOOGLE_CALENDAR_API_KEY || process.env.GOOGLE_CALENDAR_API_KEY;
+const CALENDAR_API_KEY = process.env.GOOGLE_CALENDAR_API_KEY || process.env.GOOGLE_CALENDAR_API_KEY;
 const MAPS_API_KEY = process.env.GOOGLE_MAPS_API_KEY || process.env.VITE_GOOGLE_MAPS_API_KEY;
 
 // ============================================================================

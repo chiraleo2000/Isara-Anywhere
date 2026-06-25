@@ -188,7 +188,7 @@
 ### 5.3 Config ฝั่ง client
 
 - `GET /auth/public-config` หรือ config service — คืน `googleClientId`, `googleSsoEnabled`
-- Env: `GOOGLE_CLIENT_ID` / `VITE_GOOGLE_CLIENT_ID`
+- Env: `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_ID`
 
 ---
 

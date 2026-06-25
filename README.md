@@ -84,7 +84,7 @@ node scripts/database/db-tool.cjs --seed
 | Patient | [Patient login](https://izara-patient-portal-dev-testing-724889190329.asia-southeast1.run.app/login) | http://localhost:3005/login | http://patient.isara.local/login |
 | Doctor / Admin | [Doctor login](https://izara-doctor-portal-dev-testing-724889190329.asia-southeast1.run.app/login) | http://localhost:3010/login | http://doctor.isara.local/login |
 
-**Google SSO:** Set `VITE_GOOGLE_CLIENT_ID` in each portal `.env` (see `.env.example`). SSO accounts must match a registered email.
+**Google SSO:** Set `GOOGLE_CLIENT_ID` in each portal `.env` (see `.env.example`). SSO accounts must match a registered email.
 
 **Do not use demo passwords in production.**
 
@@ -131,7 +131,7 @@ See [docs/ENV_SETUP.md](docs/ENV_SETUP.md) · [docs/SPLIT_REPOS.md](docs/SPLIT_R
 | `VITE_GOOGLE_MAPS_API_KEY` | Healthcare map |
 | `VITE_GEMINI_API_KEY` / `GEMINI_API_KEY` | AI features (dev placeholder: `xxxxx` in `.env.example`) |
 | `GOOGLE_SPEECH_API_KEY` | Meeting transcription |
-| `VITE_GOOGLE_CLIENT_ID` | Google Sign-In |
+| `GOOGLE_CLIENT_ID` | Google Sign-In |
 
 ### Docker commands
 
@@ -322,6 +322,7 @@ Isara-Anywhere/
 | [PROCESS_TO_TEST_GATE.md](Processes/PROCESS_TO_TEST_GATE.md) | Process doc → test command mapping |
 | [DEPLOYMENT.md](deploy/nginx/DEPLOYMENT.md) | Docker + Nginx (localhost / LAN HTTP / HTTPS) |
 | [DATABASE_TABLES_REFERENCE.md](Processes/DATABASE_TABLES_REFERENCE.md) | All 53+ PostgreSQL tables with workflow mapping |
+| [WORKFLOW_CONNECTIONS.md](Processes/WORKFLOW_CONNECTIONS.md) | Platform topology, pipeline & feature diagrams |
 | [FULL_WORKFLOW_CONTRACT.md](Processes/FULL_WORKFLOW_CONTRACT.md) | End-to-end contracts |
 | [MARKDOWN_GUIDE.md](Documents/docs/markdown/operations/MARKDOWN_GUIDE.md) | Doc linting & auto-fix |
 | [VIDEO_MEETING_JITSI_GEMINI.md](Processes/VIDEO_MEETING_JITSI_GEMINI.md) | Video + AI pipeline |

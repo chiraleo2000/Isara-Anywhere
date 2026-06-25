@@ -97,10 +97,10 @@ export class GoogleMeetService {
   private initializationAttempts = 0;
   private readonly MAX_INIT_ATTEMPTS = 3;
 
-  private readonly CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+  private readonly CLIENT_ID = import.meta.env.GOOGLE_CLIENT_ID;
   private readonly API_KEY =
     import.meta.env.VITE_GOOGLE_API_KEY ||
-    import.meta.env.VITE_GOOGLE_CALENDAR_API_KEY;
+    import.meta.env.GOOGLE_CALENDAR_API_KEY;
   private readonly DISCOVERY_DOC = 'https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest';
   private readonly SCOPES = 'https://www.googleapis.com/auth/calendar.events';
 
@@ -115,7 +115,7 @@ export class GoogleMeetService {
       this.API_KEY.includes('your-api-key')) {
       console.warn('⚠️ Google Calendar API credentials not configured.');
       console.info('ℹ️ To enable Google Meet integration:');
-      console.info('1. Set VITE_GOOGLE_CLIENT_ID in your .env file');
+      console.info('1. Set GOOGLE_CLIENT_ID in your .env file');
       console.info('2. Set VITE_GOOGLE_API_KEY in your .env file');
       console.info('3. Enable Google Calendar API in Google Cloud Console');
       return;

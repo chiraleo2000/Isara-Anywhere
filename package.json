@@ -136,7 +136,14 @@
     "cloud:migrate": "node scripts/apply-cloud-db-from-env.cjs --cloud",
     "cloud:deploy": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/deploy-cloud-from-env.ps1",
     "seed": "node scripts/database/db-tool.cjs --seed",
-    "seed:all": "node scripts/database/db-tool.cjs --all"
+    "seed:all": "node scripts/database/db-tool.cjs --all",
+    "multitask:ports": "node scripts/multitask/verify-ports.mjs",
+    "docs:sync-to-apps": "node scripts/docs/sync-to-apps.mjs",
+    "db:bundle:apps": "node scripts/database/bundle-apps.mjs",
+    "test:standalone:patient": "cd Isara-patient-portal && npm run test:standalone",
+    "test:standalone:doctor": "cd Isara-doctor-portal && npm run test:standalone",
+    "test:standalone:meeting": "cd Izara-jitsi-server && npm run test:standalone",
+    "test:standalone:all": "node scripts/multitask/run-standalone-all.mjs"
   },
   "keywords": [],
   "author": "",

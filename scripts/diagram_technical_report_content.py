@@ -243,7 +243,7 @@ SECTIONS: list[dict] = [
         "body": [
             "ผู้ป่วยล็อกอินผ่าน Patient Portal: ส่ง POST login ด้วยอีเมล/รหัสผ่าน "
             "ระบบสร้าง session หรือ token เก็บใน cookie/header รองรับ Google SSO "
-            "เมื่อตั้ง VITE_GOOGLE_CLIENT_ID — อีเมลจาก Google ต้องตรงกับ users.email ที่ลงทะเบียนแล้ว "
+            "เมื่อตั้ง GOOGLE_CLIENT_ID — อีเมลจาก Google ต้องตรงกับ users.email ที่ลงทะเบียนแล้ว "
             "มิฉะนั้นจะ login ไม่สำเร็จ",
             "แพทย์และแอดมินล็อกอินผ่าน Doctor Portal: ตรวจรหัสผ่านด้วย bcrypt "
             "ออก JWT อายุตามการตั้งค่า ทุก /api ตรวจ role (doctor หรือ admin) "

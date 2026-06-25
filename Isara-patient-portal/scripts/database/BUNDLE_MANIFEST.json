@@ -1,0 +1,16 @@
+{
+  "bundledAt": "2026-06-25T04:49:40.881Z",
+  "schemaVersion": "5.1.0",
+  "source": "scripts/database/",
+  "files": [
+    "izara-database.sql",
+    "v2.2.0-notify-triggers.sql",
+    "seed-dev-data.sql",
+    "README.md",
+    "migrations/v2.0.0-phase2-tables.sql",
+    "migrations/v2.1.0-phase2-ai-his.sql",
+    "migrations/2025-add-google-sub.sql",
+    "migrations/2025-ensure-appointment-columns.sql"
+  ],
+  "readOnly": true
+}

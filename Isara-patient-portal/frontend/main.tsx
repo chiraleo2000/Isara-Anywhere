@@ -13,7 +13,7 @@ setTimeout(() => {
   requestNotificationPermission();
 }, 5000); // Wait 5 seconds after page load
 
-const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
+const GOOGLE_CLIENT_ID = import.meta.env.GOOGLE_CLIENT_ID || '';
 
 const rootElement = document.getElementById('root');
 if (rootElement) {

@@ -30,9 +30,11 @@ import {
 type MapGlobal = typeof globalThis & { google?: typeof google; L?: any };
 const mapGlobal = globalThis as MapGlobal;
 
-const MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '';
-/** Cloud Build may set VITE_GOOGLE_MAPS_MAP_ID; AdvancedMarker requires a Map ID in GCP. */
-const MAPS_MAP_ID = import.meta.env.VITE_GOOGLE_MAPS_MAP_ID || '';
+import { resolveEnv } from '../utils/resolveEnv';
+
+const MAPS_API_KEY = resolveEnv('GOOGLE_MAPS_API_KEY');
+/** Cloud Build may set GOOGLE_MAPS_MAP_ID; AdvancedMarker requires a Map ID in GCP. */
+const MAPS_MAP_ID = resolveEnv('GOOGLE_MAPS_MAP_ID');
 
 type MapPinHandle = {
   title: string;

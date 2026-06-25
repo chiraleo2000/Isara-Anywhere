@@ -20,6 +20,7 @@ cd "${REPO_ROOT}"
 source "${SCRIPT_DIR}/compose.sh"
 
 ENV_FILE=".env.docker"
+LAN_DOMAIN="demotoday.net"
 MODE="https"
 DOCKER_ONLY=0
 SKIP_BUILD=0
@@ -83,21 +84,21 @@ patch_env_https() {
   sed -i 's/^POSTGRES_PASSWORD=.*/POSTGRES_PASSWORD=postgres/' "${ENV_FILE}"
   sed -i 's|^DATABASE_URL=.*|DATABASE_URL=postgresql://postgres:postgres@postgres:5432/izara_phase1|' "${ENV_FILE}"
   sed -i 's/^DB_PASSWORD=.*/DB_PASSWORD=postgres/' "${ENV_FILE}"
-  sed -i 's|^VITE_OAUTH_REDIRECT_URI=.*|VITE_OAUTH_REDIRECT_URI=https://patient.isara.local/auth/callback|' "${ENV_FILE}"
-  sed -i 's|^VITE_AUTH_PORTAL_URL=.*|VITE_AUTH_PORTAL_URL=https://patient.isara.local/auth|' "${ENV_FILE}"
-  sed -i 's|^VITE_PATIENT_URL=.*|VITE_PATIENT_URL=https://patient.isara.local/home|' "${ENV_FILE}"
-  sed -i 's|^VITE_WEBSOCKET_URL=.*|VITE_WEBSOCKET_URL=wss://patient.isara.local/ws|' "${ENV_FILE}"
-  sed -i 's|^VITE_MEETING_SERVER_URL=.*|VITE_MEETING_SERVER_URL=https://meeting.isara.local|' "${ENV_FILE}"
-  sed -i 's|^CORS_ORIGINS=.*|CORS_ORIGINS=https://patient.isara.local,https://doctor.isara.local,https://meeting.isara.local,https://dbadmin.isara.local,https://patient.local,https://doctor.local,https://meeting.local,http://localhost:3005,http://localhost:3010,http://localhost:3020|' "${ENV_FILE}"
+  sed -i "s|^OAUTH_REDIRECT_URI=.*|OAUTH_REDIRECT_URI=https://patient.${LAN_DOMAIN}/auth/callback|" "${ENV_FILE}"
+  sed -i "s|^VITE_AUTH_PORTAL_URL=.*|VITE_AUTH_PORTAL_URL=https://patient.${LAN_DOMAIN}/auth|" "${ENV_FILE}"
+  sed -i "s|^VITE_PATIENT_URL=.*|VITE_PATIENT_URL=https://patient.${LAN_DOMAIN}/home|" "${ENV_FILE}"
+  sed -i "s|^VITE_WEBSOCKET_URL=.*|VITE_WEBSOCKET_URL=wss://patient.${LAN_DOMAIN}/ws|" "${ENV_FILE}"
+  sed -i "s|^VITE_MEETING_SERVER_URL=.*|VITE_MEETING_SERVER_URL=https://meeting.${LAN_DOMAIN}|" "${ENV_FILE}"
+  sed -i "s|^CORS_ORIGINS=.*|CORS_ORIGINS=https://patient.${LAN_DOMAIN},https://doctor.${LAN_DOMAIN},https://meeting.${LAN_DOMAIN},https://dbadmin.${LAN_DOMAIN},http://localhost:3005,http://localhost:3010,http://localhost:3020|" "${ENV_FILE}"
 }
 
 patch_env_http() {
-  sed -i 's|^VITE_OAUTH_REDIRECT_URI=.*|VITE_OAUTH_REDIRECT_URI=http://patient.isara.local/auth/callback|' "${ENV_FILE}"
-  sed -i 's|^VITE_AUTH_PORTAL_URL=.*|VITE_AUTH_PORTAL_URL=http://patient.isara.local/auth|' "${ENV_FILE}"
-  sed -i 's|^VITE_PATIENT_URL=.*|VITE_PATIENT_URL=http://patient.isara.local/home|' "${ENV_FILE}"
-  sed -i 's|^VITE_WEBSOCKET_URL=.*|VITE_WEBSOCKET_URL=ws://patient.isara.local/ws|' "${ENV_FILE}"
-  sed -i 's|^VITE_MEETING_SERVER_URL=.*|VITE_MEETING_SERVER_URL=http://meeting.isara.local|' "${ENV_FILE}"
-  sed -i 's|^CORS_ORIGINS=.*|CORS_ORIGINS=http://patient.isara.local,http://doctor.isara.local,http://meeting.isara.local,http://dbadmin.isara.local,http://localhost:3005,http://localhost:3010,http://localhost:3020|' "${ENV_FILE}"
+  sed -i "s|^OAUTH_REDIRECT_URI=.*|OAUTH_REDIRECT_URI=http://patient.${LAN_DOMAIN}/auth/callback|" "${ENV_FILE}"
+  sed -i "s|^VITE_AUTH_PORTAL_URL=.*|VITE_AUTH_PORTAL_URL=http://patient.${LAN_DOMAIN}/auth|" "${ENV_FILE}"
+  sed -i "s|^VITE_PATIENT_URL=.*|VITE_PATIENT_URL=http://patient.${LAN_DOMAIN}/home|" "${ENV_FILE}"
+  sed -i "s|^VITE_WEBSOCKET_URL=.*|VITE_WEBSOCKET_URL=ws://patient.${LAN_DOMAIN}/ws|" "${ENV_FILE}"
+  sed -i "s|^VITE_MEETING_SERVER_URL=.*|VITE_MEETING_SERVER_URL=http://meeting.${LAN_DOMAIN}|" "${ENV_FILE}"
+  sed -i "s|^CORS_ORIGINS=.*|CORS_ORIGINS=http://patient.${LAN_DOMAIN},http://doctor.${LAN_DOMAIN},http://meeting.${LAN_DOMAIN},http://dbadmin.${LAN_DOMAIN},http://localhost:3005,http://localhost:3010,http://localhost:3020|" "${ENV_FILE}"
 }
 
 echo "=== Izara deploy (${MODE}) ==="
@@ -123,7 +124,7 @@ docker exec -i "$PG" psql -U postgres -d izara_phase1 < scripts/database/seed-de
 if [[ "${DOCKER_ONLY}" -eq 0 ]] && command -v nginx >/dev/null 2>&1; then
   echo "--- Nginx (${MODE}) ---"
   if [[ "${MODE}" == "https" ]]; then
-    DOMAINS="patient.isara.local doctor.isara.local meeting.isara.local dbadmin.isara.local patient.local doctor.local meeting.local dbadmin.local"
+    DOMAINS="patient.${LAN_DOMAIN} doctor.${LAN_DOMAIN} meeting.${LAN_DOMAIN} dbadmin.${LAN_DOMAIN}"
     SSL_DIR="/etc/nginx/ssl/isara"
     sudo mkdir -p "$SSL_DIR"
     if ! command -v mkcert >/dev/null 2>&1; then
@@ -142,8 +143,8 @@ if [[ "${DOCKER_ONLY}" -eq 0 ]] && command -v nginx >/dev/null 2>&1; then
   fi
   sudo ln -sf /etc/nginx/sites-available/isara-system /etc/nginx/sites-enabled/isara-system
   sudo rm -f /etc/nginx/sites-enabled/default
-  grep -q 'doctor.isara.local' /etc/hosts 2>/dev/null || \
-    echo "127.0.0.1 patient.isara.local doctor.isara.local meeting.isara.local dbadmin.isara.local patient.local doctor.local meeting.local dbadmin.local" | sudo tee -a /etc/hosts >/dev/null
+  grep -q "doctor.${LAN_DOMAIN}" /etc/hosts 2>/dev/null || \
+    echo "127.0.0.1 patient.${LAN_DOMAIN} doctor.${LAN_DOMAIN} meeting.${LAN_DOMAIN} dbadmin.${LAN_DOMAIN}" | sudo tee -a /etc/hosts >/dev/null
   sudo ufw allow 80/tcp 2>/dev/null || true
   sudo ufw allow 443/tcp 2>/dev/null || true
   sudo nginx -t
@@ -154,11 +155,11 @@ echo "--- Verify ---"
 bash scripts/docker/verify-stack.sh "${MODE}"
 
 echo ""
-echo "Client hosts file (replace IP):"
-echo "  $(hostname -I 2>/dev/null | awk '{print $1}' || echo 'SERVER_IP')   patient.isara.local doctor.isara.local meeting.isara.local"
+echo "Client hosts file on Windows (run Notepad as Administrator, edit C:\\Windows\\System32\\drivers\\etc\\hosts):"
+echo "  $(hostname -I 2>/dev/null | awk '{print $1}' || echo 'SERVER_IP')   patient.${LAN_DOMAIN} doctor.${LAN_DOMAIN} meeting.${LAN_DOMAIN} dbadmin.${LAN_DOMAIN}"
 if [[ "${MODE}" == "https" ]]; then
-  echo "  https://patient.isara.local/login  |  https://doctor.isara.local/login"
-  echo "  Trust mkcert CA on clients: $(mkcert -CAROOT 2>/dev/null || echo '~/.local/share/mkcert')/rootCA.pem"
+  echo "  https://patient.${LAN_DOMAIN}/login  |  https://doctor.${LAN_DOMAIN}/login"
+  echo "  Trust mkcert CA on Windows: copy $(mkcert -CAROOT 2>/dev/null || echo '~/.local/share/mkcert')/rootCA.pem → install to Trusted Root (see deploy/nginx/WINDOWS_CLIENT_SETUP.md)"
 else
-  echo "  http://patient.isara.local/login  |  http://doctor.isara.local/login"
+  echo "  http://patient.${LAN_DOMAIN}/login  |  http://doctor.${LAN_DOMAIN}/login"
 fi

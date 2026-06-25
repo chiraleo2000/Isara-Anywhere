@@ -1,19 +1,155 @@
 {
-  "checkedAt": "2026-06-24T05:01:51.140Z",
+  "checkedAt": "2026-06-25T06:06:50.279Z",
   "minBytes": 15000,
   "groups": [
+    {
+      "groupName": "group-A",
+      "directory": "docs\\screenshots\\group-A",
+      "errors": [],
+      "files": {
+        "A01-patient-dashboard.png": {
+          "bytes": 362000,
+          "sha256": "8d4e715a00077681972403a99217306b877fe01a71ac769e58023c3701d9a061"
+        },
+        "A01-doctor-dashboard.png": {
+          "bytes": 467364,
+          "sha256": "3c2db89811002f679e7e803981f5c94e978d5a277eeffa5a526d257e5d22207f"
+        },
+        "A09-doctor-stats.png": {
+          "bytes": 467364,
+          "sha256": "3c2db89811002f679e7e803981f5c94e978d5a277eeffa5a526d257e5d22207f"
+        },
+        "A09-doctor-kpi.png": {
+          "bytes": 46354,
+          "sha256": "82d1ea5e634aa5285b4990ae19c2bb6807ea83d73df733fc7c50480b1a456a48"
+        }
+      },
+      "pass": true
+    },
+    {
+      "groupName": "group-B",
+      "directory": "docs\\screenshots\\group-B",
+      "errors": [],
+      "files": {
+        "B01-dashboard.png": {
+          "bytes": 362222,
+          "sha256": "23286d2cde4c72fe6daa780237efabc0cca93583b735855551cb3d3116be07d0"
+        },
+        "B05-phr.png": {
+          "bytes": 185608,
+          "sha256": "fa74ccc5378cd11ae4aadee2d75767119a7a7c6c9f3b2885e2d677ab73ddb924"
+        },
+        "B06-timeline.png": {
+          "bytes": 111565,
+          "sha256": "49874ea17038714fe3663cf9526c10fce962016f9b595fdb407a193a020ae1ed"
+        }
+      },
+      "pass": true
+    },
+    {
+      "groupName": "group-D",
+      "directory": "docs\\screenshots\\group-D",
+      "errors": [],
+      "files": {
+        "D03-booking-wizard.png": {
+          "bytes": 236790,
+          "sha256": "8948fdfb5ea2510a00ea4e4041f29d55227dfa845c453abe437ee2dfd5d13b05"
+        },
+        "D07-submitted.png": {
+          "bytes": 138639,
+          "sha256": "4ce259c8eb7d054cc8b8d71121647f82a14ceb9c48d8df1f20175a7cf9ef51a3"
+        },
+        "D09-health-meeting.png": {
+          "bytes": 724965,
+          "sha256": "89a15f0c9f9b71d87f0004be65440a3e41fcb52fa57bbfd2a15ea939c66e83ec"
+        }
+      },
+      "pass": true
+    },
     {
       "groupName": "group-E",
       "directory": "docs\\screenshots\\group-E",
       "errors": [],
       "files": {
         "E04-patients-list.png": {
-          "bytes": 122961,
-          "sha256": "7a45f77249d9a9e295dd0003370ffa9251706ac22152fc8461ad965dd0bca26d"
+          "bytes": 122937,
+          "sha256": "2ed7dd881a399c2f3751a53c712b2f967ceac968df1b1bb5c33b860a7b9184fe"
         },
         "E08-health-meeting.png": {
-          "bytes": 363258,
-          "sha256": "2fa38f7c8dcaef5289e194e9816570c07e8af6d87ea1272f1dbc9cb8ad9f227b"
+          "bytes": 752362,
+          "sha256": "230eadb7b840748d198f6be7076dfb12a17c95a79b1c8ac485cbafd20248f848"
+        }
+      },
+      "pass": true
+    },
+    {
+      "groupName": "group-Q",
+      "directory": "docs\\screenshots\\group-Q",
+      "errors": [],
+      "files": {
+        "Q01b-doctor-host-jitsi.png": {
+          "bytes": 19304,
+          "sha256": "b991fbe2f08512634c7a1c7ae8316294c3af5ab39bfe718476b2294b01b61a0c"
+        },
+        "Q01c-patient-lobby-waiting.png": {
+          "bytes": 25590,
+          "sha256": "4b9af026aeeae610c2dd3982a111254c117d03be6d9a921a7c72ad5f0394fc32"
+        },
+        "Q01d-guest-lobby-waiting.png": {
+          "bytes": 19957,
+          "sha256": "885ad8c43859ecc65027cd5aa437a5ff86890661d3a54959f04063b47a2589c2"
+        },
+        "Q01e-doctor-admitted.png": {
+          "bytes": 63676,
+          "sha256": "e602d338b6e4a5f2205bc57df598731372252b662c66ab20d5af69e6d95dc04f"
+        },
+        "Q01f-three-party-held.png": {
+          "bytes": 62453,
+          "sha256": "17344562a932043dda0efbb6c69fe5186fc11e763dc3642157dc1016143055b2"
+        },
+        "Q02c-dashboard-recording.png": {
+          "bytes": 96018,
+          "sha256": "08b1f9f3944fa07c058a5379d1a5aae45bb632f705af4817b8ef4afdc664ec4f"
+        }
+      },
+      "pass": true
+    },
+    {
+      "groupName": "group-Q2",
+      "directory": "docs\\screenshots\\group-Q2",
+      "errors": [],
+      "files": {
+        "Q2-01-results-route.png": {
+          "bytes": 129621,
+          "sha256": "1b85d2da67822ef64ac1ea2283796c00e87cab0e122232b5a2266c58efcb4602"
+        },
+        "Q2-03-transcript-tab.png": {
+          "bytes": 96570,
+          "sha256": "0015e6b1991ba8375a232265b29690629d1513f204c40b529073da2a6915655a"
+        },
+        "Q2-04-summary-tab.png": {
+          "bytes": 41572,
+          "sha256": "787790715ea07e75260e17e0250740a80f6218c514e6b13208424e80d91771a3"
+        },
+        "Q2-05-dashboard-summary.png": {
+          "bytes": 486358,
+          "sha256": "6c0f3358f709e5d67e6c4c73af9e677cfee33ced82e2b859ea4e19a1e8b7f74e"
+        }
+      },
+      "pass": true
+    },
+    {
+      "groupName": "group-S",
+      "directory": "docs\\screenshots\\group-S",
+      "errors": [],
+      "files": {
+        "S01-patient-dashboard.png": {
+          "bytes": 361975,
+          "sha256": "7d78df4fe904c251755314126d0a65a0d25c6c503cbf1376ec0bd7e603330844"
+        },
+        "S05-patient-appointments.png": {
+          "bytes": 608974,
+          "sha256": "f89f5a470841ca4eeb3e976fa402f8b69d225a7b6d3323a10474aebfefdb8453"
         }
       },
       "pass": true
