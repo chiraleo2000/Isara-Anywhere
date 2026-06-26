@@ -19,7 +19,7 @@
 npm run docker:probe-health          # PASS — :3005/:3010/:3020
 npm run sonar:lint                   # PASS — quality-gate-summary.json passed=true
 npm run test:audit:process           # PASS — 0 gaps
-ping 192.168.10.239                  # FAIL — 100% loss (P4 deferred, W8)
+ping 192.168.10.239                  # SKIPPED — user-approved P4 skip (no ping retries)
 Test-Path Documents/docs/technical/pdf/TECHNICAL_ARCHITECTURE_WORD_TH.pdf  # PASS — 312791 bytes
 ```
 

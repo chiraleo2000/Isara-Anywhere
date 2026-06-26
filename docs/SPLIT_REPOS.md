@@ -51,7 +51,7 @@ git subtree split --prefix=scripts -b split/platform-scripts
 
 Tags after split: `patient-v1.7.55`, `doctor-v1.7.55`, `meeting-v1.7.55` (see `reports/defect-fix/subtree-split-ready-2026-06-26.md` for current SHAs).
 
-**Local split status (2026-06-26):** branches `split/patient-portal`, `split/doctor-portal`, `split/meeting-server` created; push pending explicit approval.
+**Local split status (2026-06-26):** branches `split/patient-portal`, `split/doctor-portal`, `split/meeting-server` pushed to chiraleo2000 GitHub repos; tags `patient-v1.7.55`, `doctor-v1.7.55`, `meeting-v1.7.55`. See `reports/defect-fix/subtree-split-ready-2026-06-26.md` for SHAs.
 
 Sibling clone layout: `bash scripts/repos/clone-siblings.sh ../izara-siblings`
 
