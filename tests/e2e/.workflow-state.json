@@ -1,7 +1,11 @@
 {
-  "appointmentId": "APT-1782371139182-2E35EA10",
+  "appointmentId": "APT-1782462282604-A0102FFF",
   "patientId": "PATIENT-DEMO",
   "doctorId": "DOC-TEST-001",
   "symptomText": "Headache and fever for 2 days",
-  "offlineAppointmentId": "APT-1782371139916-8AF45E27"
+  "offlineAppointmentId": "APT-1782462284638-9864B055",
+  "meetingId": "10144092-eef8-452a-b5cb-d39e2a5d8fd5",
+  "roomName": "Izara-APT-1782-c45e950d",
+  "recordingUrl": "/api/recordings/meetings/DOC-TEST-001/10144092-eef8-452a-b5cb-d39e2a5d8fd5/video.webm",
+  "labOrderId": "LAB-1782463144380"
 }

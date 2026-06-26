@@ -1,0 +1,63 @@
+name: CI Quality Gate
+
+on:
+  push:
+    branches: [main, develop, 'v*-test-hardening']
+  pull_request:
+    branches: [main, develop]
+  workflow_dispatch:
+  schedule:
+    - cron: '0 2 * * *'
+
+jobs:
+  pr-fast:
+    if: github.event_name != 'schedule'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: cd tests/unit && npm ci
+      - run: npm run phase:0
+      - run: npm run test:guards:static
+      - run: node scripts/run-unit-groups-sequential.mjs --fail-fast
+      - run: npm run test:meeting-server:contract
+      - run: npm run sonar:lint
+      - run: npm run test:unit:process-contracts
+
+  pr-docker-e2e:
+    if: contains(github.event.pull_request.labels.*.name, 'run-docker-e2e')
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: cd tests/unit && npm ci
+      - run: cp .env.docker.example .env.docker
+      - run: docker compose --env-file .env.docker --profile full up -d --build
+      - run: npm run docker:probe-health
+      - run: npx cross-env PW_HEADLESS=1 PW_SKIP_LIVE_GEMINI=1 PW_WORKERS=1 npx playwright test --project=A-auth --project=Q-meeting-lifecycle --workers=1
+
+  nightly-full:
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: cd tests/unit && npm ci
+      - run: cp .env.docker.example .env.docker
+      - run: docker compose --env-file .env.docker --profile full up -d --build
+      - run: npm run test:local:pre-deploy-gate

@@ -18,6 +18,7 @@
 | SEC-014 | 2026-06-23 | master-release Phase 10 | all | — | — | Final signoff post-cleanup: `security:scan` PASS; `sonar:lint` PASS (`quality-gate-summary.json` passed=true); app-scan 0 errors; CVE Lite prod HIGH+=0 | **Verified v1.7.53**
 | SEC-015 | 2026-06-24 | full_gate_fix COORD W0 | all | — | — | W0 baseline: guards:static, security:scan, sonar:lint, unit:coverage:gate, process-contracts (140), env:audit PASS; scan-baseline `reports/defect-fix/scan-baseline-2026-06-24.md` | **Verified v1.7.53**
 | SEC-016 | 2026-06-24 | full_gate_fix W9 cloud | all | — | — | Cloud deploy PASS (`6f819e99`, revs 00156-87g / 00124-rr8 / 00224-6rw); deploy-gate exit 1 (D15 session); A09 cloud PASS; `cloudbuild.yaml` Docker context fix; process audit 0 gaps | **Open** — D15 cloud session + guides PDF lock
+| SEC-017 | 2026-06-26 | full_gate_release_fix | all | — | — | `sonar:lint` PASS (eslint-deep doctor/patient/jitsi exit 0, 0 warnings); `security:scan` PASS; `test:local:pre-deploy-gate` ledger round 9 P0=0; `test:screenshots:all` 16/16 + global 209 unique hashes | **Verified v1.7.54**
 
 ## Commands (local)
 

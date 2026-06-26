@@ -36,10 +36,10 @@ A **Living Will** (พินัยกรรมชีวิต) is a legal docume
 | Task | File | Status |
 | ---- | ---- | ------ |
 | TypeScript Types | `Isara-patient-portal/frontend/types/sharedPHRTypes.ts` | ✅ Done |
-| Patient API Routes | `Isara-patient-portal/server/routes/phr.ts` | ✅ Done |
+| Patient API Routes | `Isara-patient-portal/backend/routes/phr.ts` | ✅ Done |
 | Doctor Portal Types | `Isara-doctor-portal/frontend/services/patientRecordService.ts` | ✅ Done |
 | Doctor GCS Service | `Isara-doctor-portal/frontend/services/gcsDataService.ts` | ✅ Done |
-| Doctor API Endpoint | `Isara-doctor-portal/server/mainApiServer.cjs` | ✅ Done |
+| Doctor API Endpoint | `Isara-doctor-portal/backend/mainApiServer.cjs` | ✅ Done |
 | Living Will UI Card | `Isara-doctor-portal/frontend/components/PatientRecordViewer.tsx` | ✅ Done |
 
 ---
@@ -701,7 +701,7 @@ If the patient has not shared their Living Will:
 </Tab>
 ```
 
-**`Isara-patient-portal/server/routes/phr.ts`** — API route stubs:
+**`Isara-patient-portal/backend/routes/phr.ts`** — API route stubs:
 
 ```typescript
 // GET /api/phr/:patientId/living-will
@@ -746,7 +746,7 @@ const PHRView = ({ phrData, patient }) => {
 };
 ```
 
-**`Isara-doctor-portal/server/mainApiServer.cjs`** — Doctor API endpoint:
+**`Isara-doctor-portal/backend/mainApiServer.cjs`** — Doctor API endpoint:
 
 ```javascript
 // GET /api/patients/:patientId/living-will

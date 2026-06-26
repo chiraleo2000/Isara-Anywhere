@@ -76,30 +76,40 @@ function runStepWithRetry(name, cmd, args, { retries = 2 } = {}) {
 // 1) Unit coverage — Windows uses test:unit via coverage:gate (vitest .tmp flake)
 runStep('unit-coverage', 'npm', ['run', 'test:unit:coverage:gate']);
 
-// 2) Deep ESLint (sonarjs rules) — warn-only, capture to files
+// 2) Deep ESLint (sonarjs rules) — strict: fail on warnings/errors
 for (const portal of ['doctor', 'patient']) {
   const out = path.join(root, 'reports', `eslint-deep-${portal}.txt`);
   const r = spawnSync(
     'node',
     ['scripts/lint/eslint.deep-scan.cjs', `--portal=${portal}`],
-    { cwd: root, shell: true, encoding: 'utf8' },
+    { cwd: root, shell: true, encoding: 'utf8', stdio: 'pipe', maxBuffer: 16 * 1024 * 1024 },
   );
-  fs.writeFileSync(out, `exit=${r.status ?? 1}\n`, { flag: 'a' });
+  if (r.stdout) fs.writeFileSync(out, r.stdout);
+  if (r.stderr) fs.appendFileSync(out, r.stderr);
+  fs.appendFileSync(out, `\nexit=${r.status ?? 1}\n`);
+  const ok = (r.status ?? 1) === 0;
+  if (!ok) failed = true;
   steps.push({
     name: `eslint-deep-${portal}`,
-    ok: true,
-    exitCode: r.status ?? 0,
-    note: 'warn-only gate',
+    ok,
+    exitCode: r.status ?? 1,
   });
 }
 
 const jitsiOut = path.join(root, 'reports', 'eslint-deep-jitsi.txt');
 const jitsiEslint = spawnSync(
-  'npx',
-  ['eslint', 'backend/**/*.js', '--max-warnings', '99999'],
-  { cwd: path.join(root, 'Izara-jitsi-server'), shell: true, encoding: 'utf8' },
+  'node',
+  ['scripts/lint/eslint.deep-scan.jitsi.cjs'],
+  { cwd: root, shell: true, encoding: 'utf8', stdio: 'pipe', maxBuffer: 16 * 1024 * 1024 },
 );
-fs.writeFileSync(jitsiOut, `exit=${jitsiEslint.status ?? 1}\n`);
+fs.writeFileSync(jitsiOut, `${jitsiEslint.stdout || ''}${jitsiEslint.stderr || ''}\nexit=${jitsiEslint.status ?? 1}\n`);
+const jitsiOk = (jitsiEslint.status ?? 1) === 0;
+if (!jitsiOk) failed = true;
+steps.push({
+  name: 'eslint-deep-jitsi',
+  ok: jitsiOk,
+  exitCode: jitsiEslint.status ?? 1,
+});
 
 // 3) App security scan
 runStep('app-security-scan', 'npm', ['run', 'security:app-scan']);

@@ -47,12 +47,13 @@ steps:
     args:
       - build
       - -f
-      - Izara-jitsi-server/Dockerfile
+      - Dockerfile
       - -t
       - ${_REGISTRY}/izara-jitsi-meeting:${_TAG}
       - -t
       - ${_REGISTRY}/izara-jitsi-meeting:latest
       - .
+    dir: Izara-jitsi-server
     waitFor: ["-"]
 
   - id: build-patient-portal
@@ -60,7 +61,7 @@ steps:
     args:
       - build
       - -f
-      - Isara-patient-portal/Dockerfile.unified
+      - Dockerfile.unified
       - -t
       - ${_REGISTRY}/izara-patient-portal:${_TAG}
       - -t
@@ -78,6 +79,7 @@ steps:
       - --build-arg
       - GOOGLE_CLIENT_ID=${_GOOGLE_CLIENT_ID}
       - .
+    dir: Isara-patient-portal
     waitFor: ["-"]
 
   - id: build-doctor-portal
@@ -85,7 +87,7 @@ steps:
     args:
       - build
       - -f
-      - Isara-doctor-portal/Dockerfile.unified
+      - Dockerfile.unified
       - -t
       - ${_REGISTRY}/izara-doctor-portal:${_TAG}
       - -t
@@ -103,6 +105,7 @@ steps:
       - --build-arg
       - GOOGLE_CLIENT_ID=${_GOOGLE_CLIENT_ID}
       - .
+    dir: Isara-doctor-portal
     waitFor: ["-"]
 
   # ============================================================

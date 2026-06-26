@@ -54,9 +54,11 @@ function showUpdateNotification() {
 
 export function requestNotificationPermission() {
   if ('Notification' in globalThis && Notification.permission === 'default') {
-    Notification.requestPermission().then((permission) => {
-      console.log('[PWA] Notification permission:', permission);
-    });
+    Notification.requestPermission()
+      .then((permission) => {
+        console.log('[PWA] Notification permission:', permission);
+      })
+      .catch(() => { /* permission prompt dismissed */ });
   }
 }
 

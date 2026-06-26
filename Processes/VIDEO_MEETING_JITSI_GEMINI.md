@@ -1625,7 +1625,7 @@ npm run test:e2e:meeting-lifecycle
 
 ## Post-meeting pipeline (recording → transcript → AI summary)
 
-**Module:** `Izara-jitsi-server/server/postMeetingPipeline.js`
+**Module:** `Izara-jitsi-server/backend/services/postMeetingPipeline.js`
 
 | Stage | What happens | Failure handling |
 |-------|----------------|------------------|

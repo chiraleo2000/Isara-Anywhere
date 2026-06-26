@@ -16,12 +16,12 @@ This document outlines the implementation plan for adding Living Will functional
 
 | Task | File | Status |
 | ------ | ------ | -------- |
-| TypeScript Types | `Isara-patient-portal/src/types/sharedPHRTypes.ts` | ✅ Done |
-| Patient API Routes | `Isara-patient-portal/server/routes/phr.ts` | ✅ Done |
-| Doctor Portal Types | `Isara-doctor-portal/src/services/patientRecordService.ts` | ✅ Done |
-| Doctor GCS Service | `Isara-doctor-portal/src/services/gcsDataService.ts` | ✅ Done |
-| Doctor API Endpoint | `Isara-doctor-portal/server/mainApiServer.cjs` | ✅ Done |
-| Living Will UI Card | `Isara-doctor-portal/src/components/PatientRecordViewer.tsx` | ✅ Done |
+| TypeScript Types | `Isara-patient-portal/frontend/types/sharedPHRTypes.ts` | ✅ Done |
+| Patient API Routes | `Isara-patient-portal/backend/routes/phr.ts` | ✅ Done |
+| Doctor Portal Types | `Isara-doctor-portal/frontend/services/patientRecordService.ts` | ✅ Done |
+| Doctor GCS Service | `Isara-doctor-portal/frontend/services/gcsDataService.ts` | ✅ Done |
+| Doctor API Endpoint | `Isara-doctor-portal/backend/mainApiServer.cjs` | ✅ Done |
+| Living Will UI Card | `Isara-doctor-portal/frontend/components/PatientRecordViewer.tsx` | ✅ Done |
 
 ---
 
@@ -31,7 +31,7 @@ This document outlines the implementation plan for adding Living Will functional
 
 ### 1.1. Add Living Will Types to Shared Types
 
-**File:** `Isara-patient-portal/src/types/sharedPHRTypes.ts`
+**File:** `Isara-patient-portal/frontend/types/sharedPHRTypes.ts`
 
 Add the following interfaces:
 
@@ -130,7 +130,7 @@ export interface LivingWillForDoctor {
 
 ### 1.2. Create Living Will Form Component
 
-**File:** `Isara-patient-portal/src/components/health/LivingWillForm.tsx`
+**File:** `Isara-patient-portal/frontend/components/health/LivingWillForm.tsx`
 
 Key sections:
 
@@ -144,7 +144,7 @@ Key sections:
 
 ### 1.3. Create Living Will View Component
 
-**File:** `Isara-patient-portal/src/components/health/LivingWillView.tsx`
+**File:** `Isara-patient-portal/frontend/components/health/LivingWillView.tsx`
 
 Display existing Living Will with:
 
@@ -169,7 +169,7 @@ Display existing Living Will with:
 
 ### 1.4. Add Living Will Tab to PHR Page
 
-**File:** `Isara-patient-portal/src/pages/health/PHRPage.tsx`
+**File:** `Isara-patient-portal/frontend/pages/health/PHRPage.tsx`
 
 Add new tab:
 
@@ -182,7 +182,7 @@ Add new tab:
 
 ### 1.5. Create API Routes
 
-**File:** `Isara-patient-portal/server/routes/phr.ts`
+**File:** `Isara-patient-portal/backend/routes/phr.ts`
 
 Add endpoints:
 
@@ -202,14 +202,14 @@ Add endpoints:
 
 ### 2.1. Add Living Will Types
 
-**File:** `Isara-doctor-portal/src/types/index.ts`
+**File:** `Isara-doctor-portal/frontend/types/index.ts`
 
 Copy or import the Living Will types from shared types.
 
 
 ### 2.2. Update Patient Record Service
 
-**File:** `Isara-doctor-portal/src/services/patientRecordService.ts`
+**File:** `Isara-doctor-portal/frontend/services/patientRecordService.ts`
 
 Add methods:
 
@@ -221,7 +221,7 @@ async checkLivingWillAccess(patientId: string, doctorId: string): Promise<boolea
 
 ### 2.3. Create Living Will Card Component
 
-**File:** `Isara-doctor-portal/src/components/LivingWillCard.tsx`
+**File:** `Isara-doctor-portal/frontend/components/LivingWillCard.tsx`
 
 Display Living Will in patient record with:
 
@@ -243,7 +243,7 @@ Display Living Will in patient record with:
 
 ### 2.4. Update Patient Record Viewer
 
-**File:** `Isara-doctor-portal/src/components/PatientRecordViewer.tsx`
+**File:** `Isara-doctor-portal/frontend/components/PatientRecordViewer.tsx`
 
 Add Living Will section at the TOP of PHR tab:
 
@@ -270,7 +270,7 @@ const PHRView = ({ phrData, patient }) => {
 
 ### 2.5. Add API Endpoint
 
-**File:** `Isara-doctor-portal/server/mainApiServer.cjs`
+**File:** `Isara-doctor-portal/backend/mainApiServer.cjs`
 
 Add endpoint:
 

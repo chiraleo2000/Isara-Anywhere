@@ -53,18 +53,19 @@ describe('Doctor Portal process pages — route access matrix', () => {
     });
   }
 
-  it('DPC-00 — all 22 doctor process docs registered in workflow registry', () => {
-    expect(DOCTOR_PORTAL_PROCESS_TESTS).toHaveLength(22);
+  it('DPC-00 — all 21 active doctor process docs registered in workflow registry', () => {
+    expect(DOCTOR_PORTAL_PROCESS_TESTS).toHaveLength(21);
     const ids = DOCTOR_PORTAL_PROCESS_TESTS.map((e) => e.processDoc.split('/').pop());
     expect(ids).toContain('00_Doctor_Portal_Overview.md');
     expect(ids).toContain('21_Queue_Management.md');
+    expect(ids).not.toContain('07_Virtual_Meeting.md');
   });
 
   it('DPC-P0 — meeting and queue pages marked P0', () => {
     const p0 = DOCTOR_PORTAL_PROCESS_TESTS.filter((e) => e.priority === 'P0');
     const pages = p0.map((e) => e.processDoc);
     expect(pages.some((p) => p.includes('06_Health_Meeting'))).toBe(true);
-    expect(pages.some((p) => p.includes('07_Virtual_Meeting'))).toBe(true);
+    expect(pages.some((p) => p.includes('07_Virtual_Meeting'))).toBe(false);
     expect(pages.some((p) => p.includes('20_Appointment_Pool'))).toBe(true);
     expect(pages.some((p) => p.includes('21_Queue_Management'))).toBe(true);
   });

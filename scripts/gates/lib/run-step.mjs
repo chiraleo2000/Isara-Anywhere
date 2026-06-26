@@ -8,12 +8,20 @@ const isWin = process.platform === 'win32';
  */
 export function runStep(step) {
   console.log(`\n═══ [${step.name}] ═══`);
-  const r = spawnSync(step.cmd, step.args ?? [], {
-    cwd: step.cwd,
-    stdio: 'inherit',
-    shell: isWin,
-    env: { ...process.env, ...step.env },
-  });
+  const args = step.args ?? [];
+  const r = isWin
+    ? spawnSync([step.cmd, ...args].join(' '), {
+        cwd: step.cwd,
+        stdio: 'inherit',
+        shell: true,
+        env: { ...process.env, ...step.env },
+      })
+    : spawnSync(step.cmd, args, {
+        cwd: step.cwd,
+        stdio: 'inherit',
+        shell: false,
+        env: { ...process.env, ...step.env },
+      });
   const ok = r.status === 0;
   console.log(ok ? `✅ ${step.name} passed` : `❌ ${step.name} failed (exit ${r.status ?? 1})`);
   return ok;

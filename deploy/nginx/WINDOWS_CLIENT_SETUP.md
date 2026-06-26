@@ -79,3 +79,21 @@ Demo logins: see [DEPLOYMENT.md](DEPLOYMENT.md).
 If using Google Sign-In, add this redirect URI in [Google Cloud Console](https://console.cloud.google.com/apis/credentials):
 
 `https://patient.demotoday.net/auth/callback`
+
+## 6. LAN deploy gate (automated)
+
+After server deploy and hosts/TLS setup (steps 1–3), from the monorepo on Windows:
+
+```powershell
+# API smoke through nginx
+$env:MEETING_URL='https://meeting.demotoday.net'
+$env:DOCTOR_URL='https://doctor.demotoday.net'
+npm run docker:meeting-api-smoke
+
+# Headed E2E: Q + R + B through LAN URLs (BASELINE_VISUAL=1)
+npm run test:lan:deploy-gate
+```
+
+See [DEPLOYMENT.md](DEPLOYMENT.md) and [LOCAL_INSTALL.md](../../docs/runbooks/LOCAL_INSTALL.md).
+
+**Prerequisite:** Windows PC must be on the same LAN as `192.168.10.239`. Verify with `ping patient.demotoday.net` (expect replies from 192.168.10.239). If the Ubuntu host is unreachable (ping timeout), deferral is documented in `reports/defect-fix/lan-gate-deferred-2026-06-26.md` — local gates (P3) and cloud gates (P7) remain valid without LAN.

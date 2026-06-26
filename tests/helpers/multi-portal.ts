@@ -1734,7 +1734,7 @@ async function newContextWithStorageFallback(
   storageStatePath: string,
   label: string,
 ): Promise<BrowserContext> {
-  const STORAGE_CTX_TIMEOUT_MS = IS_CLOUD ? 60_000 : 45_000;
+  const STORAGE_CTX_TIMEOUT_MS = IS_CLOUD ? 120_000 : 45_000;
   try {
     return await Promise.race([
       browser.newContext({ ...ctxOpts, storageState: storageStatePath }),
@@ -1849,8 +1849,8 @@ async function gotoWithRetry( // NOSONAR S3776 — navigation retry with auth re
 
   console.log(`  📄 ${label} navigated in ${Date.now() - t0}ms → ${page.url()}`);
 
-  // If redirected to login, re-inject auth and reload once
-  if (page.url().includes('/login') || page.url().includes('/register')) {
+  // If redirected to login, re-inject auth and navigate back to intended URL
+  if (page.url().includes('/login')) {
     console.log(`  🔄 ${label} redirected to login — re-injecting auth...`);
     if (fs.existsSync(storageStatePath)) {
       const state = JSON.parse(fs.readFileSync(storageStatePath, 'utf-8'));
@@ -1858,11 +1858,11 @@ async function gotoWithRetry( // NOSONAR S3776 — navigation retry with auth re
       await page.evaluate((entries: { name: string; value: string }[]) => {
         for (const e of entries) localStorage.setItem(e.name, e.value);
       }, items);
-      await page.reload({ waitUntil: 'domcontentloaded', timeout: 15_000 });
+      await page.goto(url, { waitUntil: 'domcontentloaded', timeout });
     }
   }
 
-  const contentWait = scaleTimeout(IS_CLOUD ? 12_000 : 10_000, role);
+  const contentWait = scaleTimeout(IS_CLOUD ? 25_000 : 10_000, role);
   const deadline = Date.now() + contentWait;
   while (Date.now() < deadline) {
     const len = await page.evaluate(() => document.body?.innerText?.trim().length ?? 0).catch(() => 0);
@@ -1870,10 +1870,10 @@ async function gotoWithRetry( // NOSONAR S3776 — navigation retry with auth re
     await page.waitForTimeout(500);
   }
 
-  // On cloud: blank page after wait → reload once (handles cold-start blank renders)
-  if (IS_CLOUD) {
-    console.warn(`  ⚠️ ${label} content sparse after ${contentWait / 1000}s — reloading page...`);
-    // Re-inject auth before reload in case token was lost
+  // On cloud: blank page after wait → re-navigate once (handles cold-start blank renders)
+  const isPublicAuthShell = /\/(register|reset-password|login|forgot-password)(\/|$|\?)/i.test(url);
+  if (IS_CLOUD && !isPublicAuthShell) {
+    console.warn(`  ⚠️ ${label} content sparse after ${contentWait / 1000}s — re-navigating...`);
     if (fs.existsSync(storageStatePath)) {
       const state = JSON.parse(fs.readFileSync(storageStatePath, 'utf-8'));
       const items = state.origins?.[0]?.localStorage || [];
@@ -1881,9 +1881,14 @@ async function gotoWithRetry( // NOSONAR S3776 — navigation retry with auth re
         for (const e of entries) localStorage.setItem(e.name, e.value);
       }, items);
     }
-    await page.reload({ waitUntil: 'domcontentloaded', timeout: 30_000 });
+    try {
+      await page.goto(url, { waitUntil: 'commit', timeout: Math.min(timeout, 90_000) });
+    } catch {
+      console.warn(`  ⚠️ ${label} sparse-content recovery timed out — proceeding anyway`);
+      return;
+    }
     // Wait another 12s for content after reload
-    const deadline2 = Date.now() + 12_000;
+    const deadline2 = Date.now() + (IS_CLOUD ? 20_000 : 12_000);
     while (Date.now() < deadline2) {
       const len = await page.evaluate(() => document.body?.innerText?.trim().length ?? 0).catch(() => 0);
       if (len > 50) return;

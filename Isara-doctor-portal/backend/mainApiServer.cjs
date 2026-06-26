@@ -9366,12 +9366,12 @@ async function startServer() {
   });
 
   // Verify GCS connection in the background (non-blocking)
-  verifyGCSConnection().then(gcsConnected => {
+  void verifyGCSConnection().then((gcsConnected) => {
     if (!gcsConnected) {
       console.error('⚠️  WARNING: Could not connect to GCS');
       console.error('   Data operations may fail\n');
     }
-  });
+  }).catch(() => {});
 }
 
 // Start the server

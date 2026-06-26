@@ -19,15 +19,19 @@ export function useGoogleClientId(configPath = '/auth/public-config'): GoogleCli
       return;
     }
     let cancelled = false;
-    fetch(configPath)
-      .then((r) => (r.ok ? r.json() : null))
-      .then((data: { googleClientId?: string } | null) => {
-        if (!cancelled && data?.googleClientId) setClientId(data.googleClientId.replace(/\r?\n/g, '').trim());
-      })
-      .catch(() => { /* public-config optional */ })
-      .finally(() => {
+    void (async () => {
+      try {
+        const r = await fetch(configPath);
+        const data: { googleClientId?: string } | null = r.ok ? await r.json() : null;
+        if (!cancelled && data?.googleClientId) {
+          setClientId(data.googleClientId.replace(/\r?\n/g, '').trim());
+        }
+      } catch {
+        /* public-config optional */
+      } finally {
         if (!cancelled) setResolved(true);
-      });
+      }
+    })();
     return () => { cancelled = true; };
   }, [builtIn, configPath]);
 

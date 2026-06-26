@@ -1,0 +1,20 @@
+{
+  "round": "final",
+  "timestamp": "2026-06-26T06:43:25.932Z",
+  "immutable": true,
+  "environment": {
+    "testEnv": "cloud",
+    "patientUrl": "",
+    "doctorUrl": "",
+    "meetingUrl": ""
+  },
+  "stats": {
+    "expected": 21,
+    "unexpected": 0,
+    "skipped": 0,
+    "durationMs": 676972.581
+  },
+  "failures": [],
+  "p0Count": 0,
+  "p1Count": 0
+}

@@ -76,6 +76,83 @@ const GROUP_MANIFESTS = {
       'S05-patient-appointments.png',
     ],
   },
+  'group-C': {
+    minUnique: 3,
+    required: [
+      'C01-dashboard.png',
+      'C03-patients.png',
+      'C04-health-meeting.png',
+    ],
+  },
+  'group-F': {
+    minUnique: 2,
+    required: [
+      'F01-phr-page.png',
+      'F09-lab-results-tab.png',
+    ],
+  },
+  'group-G': {
+    minUnique: 2,
+    required: [
+      'G01-pdpa-page.png',
+      'G04-living-will.png',
+    ],
+  },
+  'group-H': {
+    minUnique: 2,
+    required: [
+      'H01-medical-content.png',
+      'H06-clinical-resources.png',
+    ],
+  },
+  'group-I': {
+    minUnique: 2,
+    required: [
+      'I01-admin-dashboard.png',
+      'I02-manage-doctors.png',
+    ],
+  },
+  'group-J': {
+    minUnique: 2,
+    required: [
+      'J01-ai-doctor.png',
+      'J05-timeline.png',
+    ],
+  },
+  'group-R': {
+    minUnique: 2,
+    required: [
+      'Q01b-doctor-host-jitsi.png',
+      'Q01c-patient-lobby-waiting.png',
+    ],
+    altDir: 'group-Q',
+  },
+  'group-L': {
+    minUnique: 2,
+    required: [
+      'F09-lab-results-tab.png',
+      'F10-patients.png',
+    ],
+    altDir: 'group-F',
+  },
+  'group-defect': {
+    minUnique: 3,
+    required: [
+      'DM1-doctor-lobby-panel.png',
+      'DM3-doctor-jitsi-with-patient.png',
+      'DM5-patient-in-jitsi-3party.png',
+    ],
+    lobbyOnly: ['DM1-doctor-lobby-panel.png'],
+    jitsiStages: ['DM3-doctor-jitsi-with-patient.png', 'DM5-patient-in-jitsi-3party.png'],
+  },
+  'group-W': {
+    minUnique: 3,
+    required: [
+      'W01-patient-login.png',
+      'W02-doctor-login.png',
+      'W04-doctor-meeting-room.png',
+    ],
+  },
 };
 
 const MIN_BYTES = Number.parseInt(process.env.SCREENSHOT_MIN_BYTES || '15000', 10);
@@ -111,12 +188,18 @@ function hammingSimilarity(a, b) {
   return same / len;
 }
 
-function resolveDir(groupName) {
+function resolveDir(groupName, manifest) {
   if (process.env.SCREENSHOT_DIR && parseGroups().length === 1) {
     return process.env.SCREENSHOT_DIR;
   }
-  const docs = path.join(root, 'docs', 'screenshots', groupName);
-  if (fs.existsSync(docs)) return docs;
+  const candidates = [];
+  if (manifest?.altDir) {
+    candidates.push(path.join(root, 'docs', 'screenshots', manifest.altDir));
+  }
+  candidates.push(path.join(root, 'docs', 'screenshots', groupName));
+  for (const c of candidates) {
+    if (fs.existsSync(c)) return c;
+  }
   return path.join(root, 'tests', 'output', 'screenshots', 'chromium', groupName);
 }
 
@@ -176,7 +259,7 @@ function validateGroup(groupName) {
     return { groupName, errors: [`Unknown group ${groupName}`], files: {}, pass: false };
   }
 
-  const dir = resolveDir(groupName);
+  const dir = resolveDir(groupName, manifest);
   const errors = [];
   const files = {};
 

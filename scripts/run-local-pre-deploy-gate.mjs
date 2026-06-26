@@ -17,6 +17,7 @@ const gateEnv = {
   PW_SKIP_LIVE_GEMINI: '1',
   PW_HEADED: '1',
   PW_WORKERS: '1',
+  BASELINE_VISUAL: '1',
   PW_SKIP_FIREFOX_JROLE: '1',
   PW_SKIP_DEFECT_DM5: '1',
   PW_SKIP_DEFECT_DM6: '1',
@@ -37,7 +38,6 @@ const hostMeetingEnv = {
   PW_SKIP_LIVE_GEMINI: '1',
 };
 delete gateEnv.PW_HEADLESS;
-delete gateEnv.BASELINE_VISUAL;
 delete gateEnv.PW_ALLOW_RECORDING_SEED;
 
 const processDocMap = {
@@ -105,6 +105,7 @@ const gateSteps = [
   npmStep('screenshots-group-e', 'test:screenshots:group-e'),
   npmStep('screenshots-group-s', 'test:screenshots:group-s'),
   npmStep('screenshots-group-q2', 'test:screenshots:group-q2'),
+  npmStep('screenshots-global', 'test:screenshots:global'),
   npmStep('process-audit', 'test:audit:process'),
 ];
 

@@ -45,7 +45,7 @@ npm run test:cloud:deploy-gate
 | 04_Schedule | scheduleManagement | D |
 | 05_Patient_Management | patientDetailView | E |
 | 06_Health_Meeting | queueManagementWorkflow | D, Q |
-| 07_Virtual_Meeting | virtualMeetingWorkflow | Q, E |
+| 07_Virtual_Meeting | **REMOVED** — use Meeting-Server/01_Meeting_Room | — |
 | 08_EMR_Editor | emrAutosave | E |
 | 09_Prescribing | prescribingAllergy | E |
 | 10_Lab_Orders | labOrders | F, L |
@@ -80,3 +80,23 @@ npm run test:cloud:deploy-gate
 ## Gemini-lite mode
 
 Set `PW_SKIP_LIVE_GEMINI=1` for local E2E. Q02d accepts `summary-degraded-badge` OR `summary-structured`.
+
+## LAN deploy gate (after local green)
+
+```bash
+# On Ubuntu: bash deploy/nginx/deploy.sh (see deploy/nginx/DEPLOYMENT.md)
+# On Windows client: deploy/nginx/WINDOWS_CLIENT_SETUP.md (hosts + mkcert)
+npm run test:lan:deploy-gate   # TEST_ENV=lan, Q+R+B headed, BASELINE_VISUAL=1
+```
+
+| Step | URLs |
+|------|------|
+| API smoke | `https://meeting.demotoday.net` via `docker:meeting-api-smoke` |
+| Headed E2E | `patient.demotoday.net`, `doctor.demotoday.net`, `meeting.demotoday.net` |
+
+## Release ladder (local → LAN → cloud)
+
+1. `npm run test:local:pre-deploy-gate` — ledger round 9 P0=0
+2. `npm run test:lan:deploy-gate` — W8 manual second device optional
+3. `npm run cloud:deploy -- -Tag v1.7.55` then `npm run test:cloud:deploy-gate`
+4. `npm run test:cloud:doc-screenshots` + `docs:sync-screenshots` + `guides:all`

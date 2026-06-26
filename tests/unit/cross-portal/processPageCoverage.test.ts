@@ -28,8 +28,10 @@ describe('processPageCoverage — full Processes documentation registry', () => 
     });
   }
 
-  it('PCOV-DOC — all 22 doctor portal process pages registered', () => {
-    expect(DOCTOR_PORTAL_PROCESS_TESTS).toHaveLength(22);
+  it('PCOV-DOC — all 21 active doctor portal process pages registered (07_Virtual_Meeting REMOVED)', () => {
+    expect(DOCTOR_PORTAL_PROCESS_TESTS).toHaveLength(21);
+    const ids = DOCTOR_PORTAL_PROCESS_TESTS.map((e) => e.processDoc.split('/').pop());
+    expect(ids).not.toContain('07_Virtual_Meeting.md');
   });
 
   it('PCOV-PAT — all 16 patient portal process pages registered', () => {

@@ -727,10 +727,10 @@ Both portals now use a shared type definition for PHR data to ensure consistency
 ### File Locations
 
 
-- Patient Portal: `src/types/sharedPHRTypes.ts`
+- Patient Portal: `frontend/types/sharedPHRTypes.ts`
 
 
-- Doctor Portal: `src/types/sharedPHRTypes.ts`
+- Doctor Portal: `frontend/types/sharedPHRTypes.ts`
 
 
 #### Key Types

@@ -44,7 +44,7 @@ Region: `asia-southeast1` · Project: `izara-telemedicine`. Health: `npm run clo
 
 ### Local (Docker Compose)
 
-Full guide: **[deploy/nginx/DEPLOYMENT.md](deploy/nginx/DEPLOYMENT.md)** — localhost, LAN HTTP, LAN HTTPS.
+Full guide: **[docs/runbooks/LOCAL_INSTALL.md](docs/runbooks/LOCAL_INSTALL.md)** (Windows quick start) · **[deploy/nginx/DEPLOYMENT.md](deploy/nginx/DEPLOYMENT.md)** — localhost, LAN HTTP, LAN HTTPS.
 
 | Mode | Patient | Doctor | Meeting |
 | ---- | ------- | ------ | ------- |

@@ -1,6 +1,6 @@
 # Local Pre-Deploy Gate Baseline (v5.2)
 
-Date: 2026-06-25T06:06:50.216Z
+Date: 2026-06-26T05:20:49.285Z
 
 | Step | Process doc | Result |
 |------|-------------|--------|
@@ -33,6 +33,7 @@ Date: 2026-06-25T06:06:50.216Z
 | screenshots-group-e | — | PASS |
 | screenshots-group-s | — | PASS |
 | screenshots-group-q2 | — | PASS |
+| screenshots-global | — | PASS |
 | process-audit | Processes/PROCESS_TO_TEST_GATE.md | PASS |
 
 **Overall:** PASS
