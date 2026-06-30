@@ -14,13 +14,15 @@
  * UPDATED: Now uses PostgreSQL backend via apiDataService - NO GCS!
  */
 
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { User, QueuePatient } from '../../types';
 import { useSettings } from '../../hooks/useSettings';
 import { useResponsive } from '../../hooks/useResponsive';
+import { todayLocalYmd } from '../../utils/formatLocalDateYmd';
 import { getToken } from '../../services/authServices';
 import { doctorDataService } from '../../services/doctorDataService';
+import { isDemoAutoMeetingEnabled, shouldStayOnHealthMeetingQueue } from '../../utils/demoAutoAuth';
 // PostgreSQL-backed API service - NO GCS!
 import {
   fetchAllAppointments,
@@ -286,6 +288,8 @@ const HealthMeeting: React.FC<HealthMeetingProps> = ({ doctor }) => {
   const { theme } = useSettings();
   const isDark = theme === 'dark';
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const autostartHandledRef = useRef(false);
   const { isMobile } = useResponsive();
   const [mobileSection, setMobileSection] = useState<MobileSection>('queue');
   const [queueToast, setQueueToast] = useState<string | null>(null);
@@ -402,8 +406,34 @@ const HealthMeeting: React.FC<HealthMeetingProps> = ({ doctor }) => {
   };
 
   const startInAppMeeting = (appointmentId: string) => {
+    if (!doctor?.id) {
+      console.error('[HealthMeeting] Cannot start meeting — doctor id missing');
+      return;
+    }
     navigate(`/doctor/${doctor.id}/meeting/${appointmentId}`);
   };
+
+  // Docker/demo: skip manual "Start meeting" — first ready telehealth or ?autostart= (E2E uses ?stayOnQueue=1)
+  useEffect(() => {
+    if (autostartHandledRef.current) return;
+    if (shouldStayOnHealthMeetingQueue(searchParams)) return;
+
+    const paramId = searchParams.get('autostart') || searchParams.get('appointmentId');
+    if (paramId && (isDemoAutoMeetingEnabled() || searchParams.has('autostart'))) {
+      autostartHandledRef.current = true;
+      startInAppMeeting(paramId);
+      return;
+    }
+
+    if (!isDemoAutoMeetingEnabled() || loading) return;
+    const next = meetings.find(
+      (m) => (m.status === 'scheduled' || m.status === 'in-progress') && Boolean(m.meetingLink),
+    );
+    if (next?.id) {
+      autostartHandledRef.current = true;
+      startInAppMeeting(String(next.id));
+    }
+  }, [searchParams, loading, meetings, doctor.id]);
 
   const handlePreConsultation = async (apt: any) => {
     const aptId = apt.id;
@@ -1131,6 +1161,7 @@ Izara Telehealth Team
       setQueueToast(`Confirming ${selectedAppointment.id}…`);
       scheduleToastClear(setQueueToast);
       console.log('🔄 Starting appointment confirmation process...');
+      const confirmedAppointmentId = selectedAppointment.id;
 
       // Step 1: Generate Jitsi meeting links (with doctor URL as host, patient URL, and guest URL)
       console.log('📹 Generating Jitsi Meet links...');
@@ -1257,6 +1288,10 @@ Izara Telehealth Team
       console.log('🔄 Reloading all data...');
       await loadAllData();
       console.log('✅ Data reloaded');
+
+      if (isDemoAutoMeetingEnabled()) {
+        startInAppMeeting(confirmedAppointmentId);
+      }
 
       setSuccessMessage(
         `Appointment confirmed. Host link ready — patient link sent. Add to calendar?`,
@@ -1931,7 +1966,7 @@ Izara Telehealth Team
           </div>
 
           {/* Completed today — post-meeting Results primary */}
-          {allAppointments.filter((a: any) => a.status === 'completed' && isAppointmentToday(a)).length > 0 && (
+          {allAppointments.some((a: any) => a.status === 'completed' && isAppointmentToday(a)) && (
             <div className="mt-8" data-testid="health-meeting-completed-today">
               <h3 className={`text-lg font-bold mb-3 ${hmDarkText(isDark)}`}>
                 ✅ Completed Today ({allAppointments.filter((a: any) => a.status === 'completed' && isAppointmentToday(a)).length})
@@ -2220,7 +2255,8 @@ Izara Telehealth Team
                     type="date"
                     value={assignData.date}
                     onChange={(e) => setAssignData({ ...assignData, date: e.target.value })}
-                    min={new Date().toISOString().split('T')[0]}
+                    min={todayLocalYmd()}
+                    data-testid="health-meeting-confirm-date"
                     className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500"
                   />
                 </div>
@@ -2354,7 +2390,8 @@ Izara Telehealth Team
                     type="date"
                     value={confirmDate}
                     onChange={(e) => setConfirmDate(e.target.value)}
-                    min={new Date().toISOString().split('T')[0]}
+                    min={todayLocalYmd()}
+                    data-testid="health-meeting-confirm-date"
                     className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500"
                   />
                 </div>

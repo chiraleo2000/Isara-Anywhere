@@ -17,6 +17,7 @@
 import {
   test, expect, assertFullHealth, snap,
   navPatient, navDoctor, waitForContent, assertHasData,
+  PATIENT_URL, DOCTOR_URL, readPageBearerToken,
 } from './helpers/multi-portal';
 
 test.describe('Group H — Content, Resources & Consultants', () => {
@@ -221,5 +222,79 @@ test.describe('Group H — Content, Resources & Consultants', () => {
     });
 
     console.log('\n  🎉 H4 COMPLETE — Admin content management\n');
+  });
+
+  /* ═════════════════════════════════════════════════════════════════
+     H5 — Content approval: draft → admin approve → patient library
+     ═════════════════════════════════════════════════════════════════ */
+  test('H5 — Medical content draft approval workflow', async ({ portals }) => {
+    const { doctor, admin, patient } = portals;
+    const uniqueTitle = `E2E Draft ${Date.now()}`;
+
+    await test.step('H-approval-1 — Doctor creates draft via API', async () => {
+      const token = await readPageBearerToken(doctor.page);
+      const createResp = await doctor.page.request.post(`${DOCTOR_URL}/api/content/medical`, {
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        data: {
+          titleThai: uniqueTitle,
+          contentThai: 'บทความทดสอบรอการอนุมัติจากแอดมิน',
+          category: 'general-health',
+          tags: ['e2e'],
+          status: 'draft',
+        },
+      });
+      expect(createResp.status(), 'create draft').toBeLessThan(400);
+      const created = await createResp.json();
+      const articleId = created.article?.id || created.id;
+      expect(articleId).toBeTruthy();
+
+      const listResp = await doctor.page.request.get(`${DOCTOR_URL}/api/content/medical`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const listBody = await listResp.json();
+      const titles = (listBody.articles || []).map((a: { title?: string; titleThai?: string }) => a.title || a.titleThai);
+      expect(titles.some((t: string) => t?.includes(uniqueTitle)), 'author sees draft').toBe(true);
+
+      const patientList = await patient.page.request.get(`${PATIENT_URL}/api/content/medical`);
+      const patientBody = await patientList.json();
+      const patientTitles = (patientBody.articles || patientBody || []).map(
+        (a: { title?: string; titleThai?: string }) => a.title || a.titleThai,
+      );
+      expect(patientTitles.some((t: string) => t?.includes(uniqueTitle)), 'patient must not see draft').toBe(false);
+
+      await doctor.page.evaluate((id) => sessionStorage.setItem('h5-article-id', id), articleId);
+      console.log(`  ✅ H-approval-1: Draft created ${articleId}`);
+    });
+
+    await test.step('H-approval-2 — Doctor submits → admin approves → patient sees', async () => {
+      const articleId = await doctor.page.evaluate(() => sessionStorage.getItem('h5-article-id'));
+      expect(articleId).toBeTruthy();
+
+      const doctorToken = await readPageBearerToken(doctor.page);
+      const submitResp = await doctor.page.request.post(
+        `${DOCTOR_URL}/api/content/medical/${articleId}/submit`,
+        { headers: { Authorization: `Bearer ${doctorToken}` } },
+      );
+      expect(submitResp.status(), 'submit for review').toBeLessThan(400);
+
+      const adminToken = await readPageBearerToken(admin.page);
+      const reviewResp = await admin.page.request.post(
+        `${DOCTOR_URL}/api/content/medical/${articleId}/review`,
+        {
+          headers: { Authorization: `Bearer ${adminToken}`, 'Content-Type': 'application/json' },
+          data: { action: 'approve' },
+        },
+      );
+      expect(reviewResp.status(), 'admin approve').toBeLessThan(400);
+
+      await patient.page.waitForTimeout(1_000);
+      const patientList = await patient.page.request.get(`${PATIENT_URL}/api/content/medical`);
+      const patientBody = await patientList.json();
+      const patientTitles = (patientBody.articles || patientBody || []).map(
+        (a: { title?: string; titleThai?: string }) => a.title || a.titleThai,
+      );
+      expect(patientTitles.some((t: string) => t?.includes(uniqueTitle)), 'patient sees published').toBe(true);
+      console.log('  ✅ H-approval-2: Published visible to patient');
+    });
   });
 });

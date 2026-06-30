@@ -189,6 +189,9 @@ const GROUP_CROSS_PORTAL = [
   'cross-portal/notificationWorkflowContract.test.ts',
   'cross-portal/livingWillContract.test.ts',
   'cross-portal/doctorEnvAudit.test.ts',
+  'cross-portal/pdpaConsentContract.test.ts',
+  'cross-portal/contentVisibilityContract.test.ts',
+  'cross-portal/errorBoundaryContract.test.ts',
   'cross-portal/appointmentUxContract.test.ts',
   'cross-portal/meetingUxContract.test.ts',
   'cross-portal/phrEmrUxContract.test.ts',
@@ -270,6 +273,7 @@ export default defineConfig({
       '@doctor': path.resolve(__dirname, '../../Isara-doctor-portal/frontend'),
       '@patient': path.resolve(__dirname, '../../Isara-patient-portal/frontend'),
       '@meeting': path.resolve(__dirname, '../../Izara-jitsi-server/backend'),
+      jsonwebtoken: path.resolve(__dirname, 'node_modules/jsonwebtoken'),
     },
   },
 });

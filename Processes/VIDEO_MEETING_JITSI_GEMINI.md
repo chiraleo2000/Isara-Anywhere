@@ -1,7 +1,7 @@
 # Video Meeting Implementation - Jitsi Meet + Device Speech-to-Text + Gemini AI
 
-**Version:** 1.7.53
-**Last Updated:** June 13, 2026
+**Version:** 1.7.56
+**Last Updated:** June 29, 2026
 **Status:** ✅ Phase 1 — 3-party meeting lifecycle (doctor HOST + patient + guest), 10s A/V hold, calendar sync on confirm, zero-skip local Docker gate
 
 > **v1.7.53 — Real Jitsi only.** `VirtualMeeting.tsx` and the `/virtual-meeting/:id` route are removed.
@@ -11,6 +11,8 @@
 > tokens (`sessions` table), not JWT. No external meeting links in the UI.
 
 > **v1.7.54 — Env consolidation (June 2026).** `.env` uses server-canonical names (`GEMINI_API_KEY`, `JITSI_DOMAIN`, `GOOGLE_MAPS_API_KEY`, `GCP_PROJECT_ID`). Browser URLs use `VITE_MEETING_SERVER_URL` + `resolveEnv()` / `window.ENV`. Docker compose bridges server vars to Vite build-args. Repo layout: `frontend/` + `backend/` per portal; `Izara-jitsi-server/backend/`.
+
+> **v1.7.56 — Meeting stack parity (June 2026).** `DEMO_AUTO_LOGIN=1` + `DEMO_AUTO_MEETING=1` on doctor/patient portals (local `.env.docker` + Cloud Run) for silent session login. Guest invites use **token URL only** (`/guest/join/:token` on patient portal); bare `/guest-join/:id` is blocked unless `GUEST_ALLOW_ANONYMOUS_JOIN=1` (dev). Doctor lobby **manual Admit** always (`VITE_AUTO_ADMIT_LOBBY=0` in docker, gate, and cloud). E2E tests click `admit-all-btn` in the doctor lobby panel. Meeting-server needs `PATIENT_PORTAL_URL` for `buildGuestPortalUrls`.
 
 > This document is the core Phase 1 deliverable describing the complete meeting workflow:
 > Appointment → Multi-Party Meeting → Transcript Streaming → AI Summary → EMR → Patient Delivery
@@ -157,14 +159,13 @@ This document describes the video meeting implementation using:
 
 
 - **Guest Join Pages** (public, no login required):
-  - Patient Portal: `/guest-join/:meetingId` (optional `?name=` for E2E)
-  - Doctor Portal: `/guest-join/:meetingId` (same lobby flow)
-  - JWT invite: `/guest/join/:token` (24h, from `POST /api/meetings/:id/guest-invite`)
+  - **Production (canonical):** Patient Portal `/guest/join/:token` — opaque invite from `POST /api/meetings/:id/guest-invite`; guest enters display name + clicks join → Izara lobby
+  - **Deprecated (blocked by default):** `/guest-join/:meetingId` on patient and doctor portals — returns `guest-access-denied` unless `GUEST_ALLOW_ANONYMOUS_JOIN=1` (local dev only)
 
 - **Canonical invite URLs** (meeting server `buildGuestPortalUrls` — copy from API only, never hardcode doctor origin):
-  - `guestJoinUrl`: `{PATIENT_PORTAL_URL}/guest-join/{meetingKey}?name=...`
-  - `guestTokenUrl`: `{PATIENT_PORTAL_URL}/guest/join/{jwt}`
-  - `POST /api/meetings/:id/share-link` and `guest-invite` return both; Cloud Build sets `PATIENT_PORTAL_URL` after portal deploy.
+  - `guestLink` / `guestTokenUrl`: `{PATIENT_PORTAL_URL}/guest/join/{opaqueToken}` — **use this in UI copy-to-clipboard**
+  - `guestJoinUrl`: bare `/guest-join/{meetingKey}` — only when `GUEST_ALLOW_ANONYMOUS_JOIN=1`
+  - `POST /api/meetings/:id/share-link` and `guest-invite` return token URL; Cloud Build sets `PATIENT_PORTAL_URL` on meeting-server after portal deploy.
 
 - **Guest video mount**: full-height `jitsi-guest-container`; wait for `host-ready` (poll + socket on **all room aliases** via `GET /socket-rooms`) before Jitsi External API; iframe sized 100%×70vh; retry on failure.
 - **Socket rooms**: `join-meeting` joins appointment id + meeting UUID + lobby aliases so `host-ready` and `lobby-update` reach guests.
@@ -1191,7 +1192,7 @@ const response = await fetch('/api/video-meeting/APT-2025-001/summarize', {
 ## Security Considerations
 
 1. **Room Name Hashing**: Room names include secure hash to prevent guessing
-2. **Pre-join Verification**: Users must click "Join" button, can't auto-join
+2. **Role-based auto-join**: Authenticated doctors and patients auto-enter meetings with account display names; only URL guests enter a name manually
 3. **No Persistent Storage**: Meeting URLs expire after meeting ends
 4. **PDPA Compliance**: Transcripts stored according to PDPA guidelines
 5. **End-to-End Encryption**: Jitsi supports E2EE for sensitive consultations
@@ -1634,7 +1635,34 @@ npm run test:e2e:meeting-lifecycle
 | AI summary | Gemini clinical JSON + Thai SOAP narrative → `ai_summary`, `ai_summary_structured` | Socket `meeting-summary-ready`; doctor must validate before EMR |
 | UI | Doctor dashboard `GET /api/video-meeting/:appointmentId/files`; AI Summary tab | `summaryText` / `aiSummary`; pipeline status in `postMeetingPipeline` |
 
-**Production (meet.jit.si):** MediaRecorder → `POST /api/meetings/:id/save-recording` → `queuePostMeetingPipeline`. Jibri webhook is for future self-hosted Jitsi only.
+**Production (meet.jit.si):** MediaRecorder → `POST /api/meetings/:id/save-recording` → `queuePostMeetingPipeline`. Jibri webhook is for self-hosted Jitsi only.
+
+---
+
+## Self-hosted Jitsi (local Docker + LAN)
+
+**Stack:** `deploy/jitsi/docker-jitsi-meet` (vendored stable-9646) via `docker compose --profile jitsi`.
+
+| Environment | `JITSI_DOMAIN` | TLS | E2E notes |
+|-------------|----------------|-----|-----------|
+| Local Windows | `meet.localhost:8443` | Jitsi web self-signed | Chromium `--host-resolver-rules=MAP meet.localhost 127.0.0.1` |
+| Ubuntu LAN | `meet.demotoday.net` | Nginx (`deploy/nginx/`) | `TEST_ENV=lan`; hosts/DNS on client PCs |
+
+**Setup:** `node scripts/jitsi/setup-local-jitsi.mjs --sync-docker-env` syncs `JITSI_JWT_SECRET` / `JITSI_APP_ID` into Prosody and `.env.docker`.
+
+**Role JWT (private domain only):**
+
+| Role | JWT claim | `configOverwrite.moderator` |
+|------|-----------|----------------------------|
+| Doctor | `moderator: true` | `true` |
+| Patient | `moderator: false` | `false` |
+| Guest | `moderator: false` | `false` |
+
+**Recording:** Doctor manual toggle only (`MeetingRoom.tsx` — no auto-record on join). Browser `save-recording` path is primary for local/LAN; optional Jibri profile (`docker compose --profile jibri`) for webhook-only validation — not required for gate PASS.
+
+**Gate evidence:** `phase:4` Q+R headed; `selfHostedJitsiJwt.contract.test.ts`; ledger round 9 P0=0; `PW_SKIP_FIREFOX_JROLE=1` in full gate (JROLE01 Chromium only).
+
+---
 
 **APIs:**
 
@@ -1667,11 +1695,17 @@ npm run test:e2e:meeting-lifecycle
 
 ### Role matrix
 
-| Role | Jitsi moderator | JWT affiliation | Toolbar |
-|------|-----------------|-----------------|---------|
-| Doctor | `true` (config + JWT on private Jitsi) | `owner` | participants-pane, recording |
-| Patient | `false` | `member` | no host controls |
-| Guest | `false` | `none` | limited; name form on guest join only |
+| Role | Portal login | Enter meeting | Lobby / admit | Jitsi moderator | Toolbar |
+|------|--------------|---------------|---------------|-----------------|---------|
+| Doctor | `DEMO_AUTO_LOGIN=1` → silent session (`AuthProvider`) | Auto host consent + Jitsi mount; display name from account; **Health Meeting** auto-enters first ready telehealth when `DEMO_AUTO_MEETING=1` (`?stayOnQueue=1` test-only opt-out) | **HOST** — sees lobby panel; clicks **Admit** (`VITE_AUTO_ADMIT_LOBBY=0` prod) | `true` | participants-pane, recording |
+| Patient | `DEMO_AUTO_LOGIN=1` → silent session (`AuthContext`) | Auto `lobby_starting` → Izara lobby; waits `host-ready` + admit | Waits until doctor admits | `false` | no host controls |
+| Guest | Manual name on `/guest/join/:token` only | Name form + `guest-join-btn` → Izara lobby | Waits until doctor admits | `false` | limited |
+
+| Role | JWT affiliation (legacy doc) |
+|------|------------------------------|
+| Doctor | `owner` |
+| Patient | `member` |
+| Guest | `none` |
 
 ### Host-ready timing (critical)
 
@@ -1704,7 +1738,7 @@ See [`POST_MEETING_WORKFLOW.md`](POST_MEETING_WORKFLOW.md).
 | Portal + meeting API | PostgreSQL opaque session token (`Authorization: Bearer`) |
 | Guest invite | Opaque token in `meeting_invites` table |
 | Recording share | Opaque token in `recording_share_tokens` table |
-| Jitsi roles | Izara lobby + `configOverwrite.moderator` (doctor host, patient participant) — **no Jitsi JWT** |
+| Jitsi roles | Izara lobby + `configOverwrite.moderator`; **HS256 JWT on private domain** (`meet.localhost`, LAN) — doctor moderator, patient/guest not |
 
 ### E2E testing policy (v1.7.52)
 

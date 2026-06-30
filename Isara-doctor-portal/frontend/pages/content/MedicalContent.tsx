@@ -30,6 +30,18 @@ import {
 // ============================================================================
 const API_BASE = import.meta.env.VITE_API_URL || '';
 
+function normalizeArticle(raw: Record<string, unknown>): MedicalContentArticle {
+  const author = raw.author as { id?: string; name?: string } | undefined;
+  const base = raw as unknown as MedicalContentArticle;
+  return {
+    ...base,
+    createdBy: (raw.createdBy as string) || author?.id || base.createdBy || '',
+    createdByName: (raw.createdByName as string) || author?.name || base.createdByName || 'Unknown',
+    title: (raw.title as string) || (raw.titleThai as string) || base.title || '',
+    summary: (raw.summary as string) || base.summary || '',
+  };
+}
+
 // ============================================================================
 // CUSTOM ICONS (Icons not in NewSvgIcons)
 // ============================================================================
@@ -240,10 +252,13 @@ const MedicalContent: React.FC = () => {
   const fetchContent = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await fetch(`${API_BASE}/api/content/medical`);
+      const response = await fetch(`${API_BASE}/api/content/medical`, {
+        headers: getAuthHeaders(),
+        credentials: 'include',
+      });
       if (!response.ok) throw new Error('Failed to fetch content');
       const data = await response.json();
-      setContent(data.articles || []);
+      setContent((data.articles || []).map((a: Record<string, unknown>) => normalizeArticle(a)));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error');
       console.error('Error fetching content:', err);
@@ -263,26 +278,43 @@ const MedicalContent: React.FC = () => {
     }
   }, []);
 
+  const fetchPendingApprovals = useCallback(async () => {
+    if (!isAdmin) return;
+    try {
+      const headers = getAuthHeaders();
+      const response = await fetch(`${API_BASE}/api/content/medical/pending`, {
+        headers,
+        credentials: 'include',
+      });
+      if (!response.ok) throw new Error('Failed to fetch pending');
+      const data = await response.json();
+      const articles = (data.articles || []).map((a: Record<string, unknown>) => normalizeArticle(a));
+      setPendingArticles(articles);
+      setPendingCount(articles.length);
+    } catch (err) {
+      console.error('Error fetching pending:', err);
+    }
+  }, [isAdmin]);
+
   useEffect(() => {
     fetchContent();
     fetchTags();
-  }, [fetchContent, fetchTags]);
+    if (isAdmin) {
+      fetchPendingApprovals();
+    }
+  }, [fetchContent, fetchTags, isAdmin, fetchPendingApprovals]);
+
+  useEffect(() => {
+    if (isAdmin) {
+      setPendingCount(pendingArticles.length);
+    }
+  }, [isAdmin, pendingArticles]);
 
   // Real-time sync: refetch whenever any content changes
   useRealtimeSync({
     doctorId: user?.id,
     onContentChange: fetchContent,
   });
-
-  // Fetch pending approvals for admin users
-  useEffect(() => {
-    if (isAdmin) {
-      // Count pending articles from content
-      const pending = content.filter(a => a.status === 'pending');
-      setPendingCount(pending.length);
-      setPendingArticles(pending);
-    }
-  }, [isAdmin, content]);
 
   // ============================================================================
   // FILTERING
@@ -312,10 +344,13 @@ const MedicalContent: React.FC = () => {
       const response = await fetch(`${API_BASE}/api/content/medical`, {
         method: 'POST',
         headers,
+        credentials: 'include',
         body: JSON.stringify({
-          ...formData,
-          userId: user?.id || 'unknown',
-          userName: user?.name || user?.email || 'Unknown',
+          titleThai: formData.titleTh || formData.title,
+          contentThai: formData.contentTh || formData.content,
+          category: formData.category,
+          tags: formData.tags,
+          status: 'draft',
         }),
       });
       if (!response.ok) {
@@ -323,11 +358,11 @@ const MedicalContent: React.FC = () => {
         throw new Error(errorData.error || `Failed to create article (${response.status})`);
       }
       const result = await response.json();
-      // Backend returns { success: true, article: {...} }
-      const article = result.article || result;
+      const article = normalizeArticle(result.article || result);
       setContent((prev) => [...prev, article]);
       setShowCreateModal(false);
       resetForm();
+      await fetchContent();
     } catch (err) {
       console.error('Error creating article:', err);
       setError(err instanceof Error ? err.message : 'Failed to create article');
@@ -386,36 +421,17 @@ const MedicalContent: React.FC = () => {
   // APPROVAL WORKFLOW FUNCTIONS
   // ============================================================================
 
-  const fetchPendingApprovals = useCallback(async () => {
-    if (!isAdmin) return;
-    try {
-      const headers = getAuthHeaders();
-      const response = await fetch(`${API_BASE}/api/content/medical/pending`, { headers });
-      if (!response.ok) throw new Error('Failed to fetch pending');
-      const data = await response.json();
-      setPendingArticles(data.articles || []);
-      setPendingCount(data.count || 0);
-    } catch (err) {
-      console.error('Error fetching pending:', err);
-    }
-  }, [isAdmin]);
-
   const handleSubmitForApproval = async (article: MedicalContentArticle) => {
     try {
-      const headers = { ...getAuthHeaders(), 'Content-Type': 'application/json' };
-      const response = await fetch(`${API_BASE}/api/content/medical/${article.id}`, {
-        method: 'PUT',
+      const headers = getAuthHeaders();
+      const response = await fetch(`${API_BASE}/api/content/medical/${article.id}/submit`, {
+        method: 'POST',
         headers,
-        body: JSON.stringify({
-          status: 'pending',
-          userId: user?.id || 'unknown',
-          userName: user?.name || user?.email || 'Unknown',
-          changeNote: 'Submitted for approval',
-        }),
+        credentials: 'include',
       });
       if (!response.ok) throw new Error('Failed to submit for approval');
       const result = await response.json();
-      const updatedArt = result.article || result;
+      const updatedArt = normalizeArticle(result.article || result);
       setContent((prev) => prev.map((a) => (a.id === updatedArt.id ? updatedArt : a)));
       if (selectedArticle?.id === article.id) {
         setSelectedArticle(updatedArt);

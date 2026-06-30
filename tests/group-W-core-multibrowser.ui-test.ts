@@ -200,7 +200,7 @@ test.describe('Group W — Core multi-browser workflow', () => {
       await assertFullHealth(patient.page, 'W04-patient-meeting');
       await expect(patient.page.getByTestId('patient-meeting-room')).toBeVisible({ timeout: 20_000 });
       const meetingShell = patient.page.locator(
-        '[data-testid="meeting-loading"], [data-testid="meeting-agreement"], [data-testid="host-waiting-screen"], [data-testid="jitsi-meeting-container"]',
+        '[data-testid="meeting-auth-starting"], [data-testid="meeting-loading"], [data-testid="lobby-starting-screen"], [data-testid="lobby-waiting-screen"], [data-testid="host-waiting-screen"], [data-testid="jitsi-meeting-container"]',
       ).first();
       await expect(meetingShell).toBeVisible({ timeout: 25_000 });
       await snapSuccess(patient.page, 'W04-patient-meeting-room', WORKFLOW);

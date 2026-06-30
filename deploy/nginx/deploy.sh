@@ -89,7 +89,9 @@ patch_env_https() {
   sed -i "s|^VITE_PATIENT_URL=.*|VITE_PATIENT_URL=https://patient.${LAN_DOMAIN}/home|" "${ENV_FILE}"
   sed -i "s|^VITE_WEBSOCKET_URL=.*|VITE_WEBSOCKET_URL=wss://patient.${LAN_DOMAIN}/ws|" "${ENV_FILE}"
   sed -i "s|^VITE_MEETING_SERVER_URL=.*|VITE_MEETING_SERVER_URL=https://meeting.${LAN_DOMAIN}|" "${ENV_FILE}"
-  sed -i "s|^CORS_ORIGINS=.*|CORS_ORIGINS=https://patient.${LAN_DOMAIN},https://doctor.${LAN_DOMAIN},https://meeting.${LAN_DOMAIN},https://dbadmin.${LAN_DOMAIN},http://localhost:3005,http://localhost:3010,http://localhost:3020|" "${ENV_FILE}"
+  sed -i "s|^CORS_ORIGINS=.*|CORS_ORIGINS=https://patient.${LAN_DOMAIN},https://doctor.${LAN_DOMAIN},https://meeting.${LAN_DOMAIN},https://meet.${LAN_DOMAIN},https://dbadmin.${LAN_DOMAIN},http://localhost:3005,http://localhost:3010,http://localhost:3020|" "${ENV_FILE}"
+  sed -i "s|^JITSI_DOMAIN=.*|JITSI_DOMAIN=meet.${LAN_DOMAIN}|" "${ENV_FILE}" 2>/dev/null || true
+  sed -i "s|^VITE_JITSI_DOMAIN=.*|VITE_JITSI_DOMAIN=meet.${LAN_DOMAIN}|" "${ENV_FILE}" 2>/dev/null || true
 }
 
 patch_env_http() {
@@ -121,15 +123,28 @@ compose --env-file "${ENV_FILE}" up -d ${BUILD_FLAG} patient-portal doctor-porta
 sleep 35
 docker exec -i "$PG" psql -U postgres -d izara_phase1 < scripts/database/seed-dev-data.sql 2>/dev/null || true
 
+echo "--- Self-hosted Jitsi (LAN) ---"
+if [[ -d deploy/jitsi/docker-jitsi-meet ]]; then
+  node scripts/jitsi/setup-local-jitsi.mjs --sync-docker-env --lan || node scripts/jitsi/setup-local-jitsi.mjs --lan
+  compose --env-file "${ENV_FILE}" -f docker-compose.yml -f deploy/jitsi/docker-compose.jitsi.yml --profile jitsi up -d ${BUILD_FLAG}
+  sleep 15
+fi
+
 if [[ "${DOCKER_ONLY}" -eq 0 ]] && command -v nginx >/dev/null 2>&1; then
   echo "--- Nginx (${MODE}) ---"
   if [[ "${MODE}" == "https" ]]; then
-    DOMAINS="patient.${LAN_DOMAIN} doctor.${LAN_DOMAIN} meeting.${LAN_DOMAIN} dbadmin.${LAN_DOMAIN}"
+    DOMAINS="patient.${LAN_DOMAIN} doctor.${LAN_DOMAIN} meeting.${LAN_DOMAIN} meet.${LAN_DOMAIN} dbadmin.${LAN_DOMAIN}"
     SSL_DIR="/etc/nginx/ssl/isara"
     sudo mkdir -p "$SSL_DIR"
     if ! command -v mkcert >/dev/null 2>&1; then
       sudo apt-get update -qq
       sudo apt-get install -y -qq mkcert libnss3-tools
+    fi
+    # Certs embed server clock — sync NTP first or browsers show ERR_CERT_DATE_INVALID.
+    if command -v timedatectl >/dev/null 2>&1; then
+      sudo timedatectl set-ntp true 2>/dev/null || true
+      sleep 2
+      timedatectl status 2>/dev/null | sed 's/^/  /' || true
     fi
     mkcert -install 2>/dev/null || true
     mkcert -cert-file /tmp/izara.pem -key-file /tmp/izara-key.pem $DOMAINS
@@ -143,10 +158,13 @@ if [[ "${DOCKER_ONLY}" -eq 0 ]] && command -v nginx >/dev/null 2>&1; then
   fi
   sudo ln -sf /etc/nginx/sites-available/isara-system /etc/nginx/sites-enabled/isara-system
   sudo rm -f /etc/nginx/sites-enabled/default
-  grep -q "doctor.${LAN_DOMAIN}" /etc/hosts 2>/dev/null || \
-    echo "127.0.0.1 patient.${LAN_DOMAIN} doctor.${LAN_DOMAIN} meeting.${LAN_DOMAIN} dbadmin.${LAN_DOMAIN}" | sudo tee -a /etc/hosts >/dev/null
+  # Always include meet.* — older hosts lines may omit it and break Jitsi DNS on the server.
+  sudo sed -i '/demotoday\.net/d' /etc/hosts 2>/dev/null || true
+  echo "127.0.0.1 patient.${LAN_DOMAIN} doctor.${LAN_DOMAIN} meeting.${LAN_DOMAIN} meet.${LAN_DOMAIN} dbadmin.${LAN_DOMAIN}" | sudo tee -a /etc/hosts >/dev/null
   sudo ufw allow 80/tcp 2>/dev/null || true
   sudo ufw allow 443/tcp 2>/dev/null || true
+  # JVB RTP/WebRTC — doctor laptop cam/mic media (UDP to server LAN IP)
+  sudo ufw allow 10000/udp 2>/dev/null || true
   sudo nginx -t
   sudo systemctl reload nginx
 fi
@@ -156,10 +174,14 @@ bash scripts/docker/verify-stack.sh "${MODE}"
 
 echo ""
 echo "Client hosts file on Windows (run Notepad as Administrator, edit C:\\Windows\\System32\\drivers\\etc\\hosts):"
-echo "  $(hostname -I 2>/dev/null | awk '{print $1}' || echo 'SERVER_IP')   patient.${LAN_DOMAIN} doctor.${LAN_DOMAIN} meeting.${LAN_DOMAIN} dbadmin.${LAN_DOMAIN}"
+echo "  $(hostname -I 2>/dev/null | awk '{print $1}' || echo 'SERVER_IP')   patient.${LAN_DOMAIN} doctor.${LAN_DOMAIN} meeting.${LAN_DOMAIN} meet.${LAN_DOMAIN} dbadmin.${LAN_DOMAIN}"
 if [[ "${MODE}" == "https" ]]; then
+  CA_EXPORT="${REPO_ROOT}/deploy/nginx/isara-mkcert-rootCA.pem"
+  cp "$(mkcert -CAROOT 2>/dev/null)/rootCA.pem" "${CA_EXPORT}" 2>/dev/null || true
+  chmod 644 "${CA_EXPORT}" 2>/dev/null || true
   echo "  https://patient.${LAN_DOMAIN}/login  |  https://doctor.${LAN_DOMAIN}/login"
-  echo "  Trust mkcert CA on Windows: copy $(mkcert -CAROOT 2>/dev/null || echo '~/.local/share/mkcert')/rootCA.pem → install to Trusted Root (see deploy/nginx/WINDOWS_CLIENT_SETUP.md)"
+  echo "  Windows TLS: copy ${CA_EXPORT} → install-mkcert-ca-windows.ps1 (see deploy/nginx/WINDOWS_CLIENT_SETUP.md)"
+  echo "  If ERR_CERT_DATE_INVALID: bash deploy/nginx/fix-tls.sh on server + sync Windows clock"
 else
   echo "  http://patient.${LAN_DOMAIN}/login  |  http://doctor.${LAN_DOMAIN}/login"
 fi

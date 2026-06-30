@@ -8,6 +8,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../components/common/AuthProvider';
 import { useSettings } from '../../hooks/useSettings';
 import { useRealtimeSync } from '../../services/useRealtimeSync';
+import { getAuthHeaders } from '../../services/authServices';
 import {
   type ClinicalResourceItem,
   type ContentTag,
@@ -244,11 +245,10 @@ export const ClinicalResources: React.FC = () => {
   const fetchResources = useCallback(async () => {
     try {
       setLoading(true);
-      const params = new URLSearchParams({
-        userId: user?.id || '',
-        isAdmin: isAdmin ? 'true' : 'false',
+      const response = await fetch(`${API_BASE}/api/content/clinical`, {
+        headers: getAuthHeaders(),
+        credentials: 'include',
       });
-      const response = await fetch(`${API_BASE}/api/content/clinical?${params}`);
       if (!response.ok) throw new Error('Failed to fetch resources');
       const data = await response.json();
       setResources(data.resources || []);
@@ -275,7 +275,10 @@ export const ClinicalResources: React.FC = () => {
   const fetchPendingApprovals = useCallback(async () => {
     if (!isAdmin) return;
     try {
-      const response = await fetch(`${API_BASE}/api/content/clinical/pending`);
+      const response = await fetch(`${API_BASE}/api/content/clinical/pending`, {
+        headers: getAuthHeaders(),
+        credentials: 'include',
+      });
       if (!response.ok) throw new Error('Failed to fetch pending');
       const data = await response.json();
       setPendingResources(data.resources || []);
@@ -326,11 +329,11 @@ export const ClinicalResources: React.FC = () => {
       setError(null);
       const response = await fetch(`${API_BASE}/api/content/clinical`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({
           ...formData,
-          userId: user?.id || 'unknown',
-          userName: user?.name || user?.email || 'Unknown',
+          status: 'draft',
         }),
       });
       if (!response.ok) {
@@ -355,7 +358,8 @@ export const ClinicalResources: React.FC = () => {
     try {
       const response = await fetch(`${API_BASE}/api/content/clinical/${selectedResource.id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({
           ...formData,
           userId: user?.id || 'unknown',
@@ -379,8 +383,8 @@ export const ClinicalResources: React.FC = () => {
     if (!selectedResource) return;
     try {
       const response = await fetch(
-        `${API_BASE}/api/content/clinical/${selectedResource.id}?userId=${user?.id}`,
-        { method: 'DELETE' }
+        `${API_BASE}/api/content/clinical/${selectedResource.id}`,
+        { method: 'DELETE', headers: getAuthHeaders(), credentials: 'include' }
       );
       if (!response.ok) throw new Error('Failed to delete resource');
       setResources((prev) => prev.filter((r) => r.id !== selectedResource.id));
@@ -397,7 +401,8 @@ export const ClinicalResources: React.FC = () => {
     try {
       const response = await fetch(`${API_BASE}/api/content/clinical/${selectedResource.id}/review`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({
           action,
           userId: user?.id,

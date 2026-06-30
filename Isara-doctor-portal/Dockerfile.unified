@@ -1,4 +1,5 @@
 # Izara Doctor Portal - Unified Docker Image
+# syntax=docker/dockerfile:1
 # Runs frontend (Nginx) + all backend services (Node.js) in a single container
 # Optimized for Google Cloud Run deployment
 
@@ -37,23 +38,14 @@ ARG GOOGLE_CLIENT_ID=724889190329-svf2733fjqklfic9tet9d2qkmhkgmu0l.apps.googleus
 
 # (Google Cloud Storage buckets removed — PostgreSQL + local FS only)
 
-# Google APIs - These must be passed as build args from CI/CD or .env file
-# Example: docker build --build-arg VITE_GOOGLE_MAPS_API_KEY=$GOOGLE_MAPS_API_KEY ...
-ARG GOOGLE_CALENDAR_API_KEY
-ARG GOOGLE_MEET_API_KEY
-ARG VITE_GOOGLE_MAPS_API_KEY
-ARG VITE_GOOGLE_GMAIL_API_KEY
-ARG VITE_GOOGLE_SHEETS_API_KEY
-
-# Google Cloud Speech-to-Text API (for post-meeting transcription)
-ARG VITE_GOOGLE_SPEECH_API_KEY
-ARG GOOGLE_SPEECH_API_KEY
+# Build-time API credentials: pass via BuildKit secret file (not ARG/ENV — Sonar S6472 / layer safety).
+#   docker build --secret id=vite_build_env,src=.env.vite.build ...
+# Local/CI without secrets: Vite build uses empty optional keys from env-config template.
 
 # Jitsi Meet Video Conferencing (FREE)
 ARG JITSI_DOMAIN=meet.jit.si
 
-# Gemini AI Configuration - API key must be passed as build arg
-ARG VITE_GEMINI_API_KEY
+# Gemini AI — model flags only at build; API credential via vite_build_env secret mount
 ARG VITE_GEMINI_MODEL=gemini-3.1-flash-lite
 ARG VITE_GEMINI_TEMPERATURE=0.3
 ARG VITE_GEMINI_MAX_TOKENS=8192
@@ -99,15 +91,7 @@ ENV VITE_APP_NAME=${VITE_APP_NAME} \
     VITE_GCP_PROJECT_ID=${VITE_GCP_PROJECT_ID} \
     VITE_GCP_REGION=${VITE_GCP_REGION} \
     GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID} \
-    GOOGLE_CALENDAR_API_KEY=${GOOGLE_CALENDAR_API_KEY} \
-    GOOGLE_MEET_API_KEY=${GOOGLE_MEET_API_KEY} \
-    VITE_GOOGLE_MAPS_API_KEY=${VITE_GOOGLE_MAPS_API_KEY} \
-    VITE_GOOGLE_GMAIL_API_KEY=${VITE_GOOGLE_GMAIL_API_KEY} \
-    VITE_GOOGLE_SHEETS_API_KEY=${VITE_GOOGLE_SHEETS_API_KEY} \
-    VITE_GOOGLE_SPEECH_API_KEY=${VITE_GOOGLE_SPEECH_API_KEY} \
-    GOOGLE_SPEECH_API_KEY=${GOOGLE_SPEECH_API_KEY} \
     JITSI_DOMAIN=${JITSI_DOMAIN} \
-    VITE_GEMINI_API_KEY=${VITE_GEMINI_API_KEY} \
     VITE_GEMINI_MODEL=${VITE_GEMINI_MODEL} \
     VITE_GEMINI_TEMPERATURE=${VITE_GEMINI_TEMPERATURE} \
     VITE_GEMINI_MAX_TOKENS=${VITE_GEMINI_MAX_TOKENS} \
@@ -130,12 +114,14 @@ ENV VITE_APP_NAME=${VITE_APP_NAME} \
     VITE_JITSI_DOMAIN=${VITE_JITSI_DOMAIN} \
     JITSI_APP_ID=${JITSI_APP_ID}
 
-RUN chmod -R a+x node_modules/.bin 2>/dev/null || true && \
-    node ./node_modules/vite/bin/vite.js build
+RUN chmod +x docker/vite-build.sh
+RUN --mount=type=secret,id=vite_build_env,required=false \
+    docker/vite-build.sh
 
 # =============================================================================
 # STAGE 2: Production Runtime (with embedded PostgreSQL)
-# =============================================================================
+# supervisord/nginx/postgres require root; app workers drop privileges in docker-entrypoint.sh
+# NOSONAR docker:S6471
 FROM node:22-alpine AS production
 WORKDIR /app
 
@@ -160,10 +146,9 @@ RUN npm ci --only=production && npm cache clean --force
 COPY backend/ ./backend/
 COPY shared/corsPolicy.cjs ./shared/corsPolicy.cjs
 COPY shared/corsPolicy.cjs /shared/corsPolicy.cjs
-RUN test -f ./shared/corsPolicy.cjs && test -f ./backend/loadCorsPolicy.cjs || (echo "FATAL: corsPolicy loader missing" && exit 1)
-# Create public directory for credentials (mount at runtime if needed)
-# and database directory for SQL initialization
-RUN mkdir -p ./public /app/database
+RUN test -f ./shared/corsPolicy.cjs && test -f ./backend/loadCorsPolicy.cjs \
+    || (echo "FATAL: corsPolicy loader missing" && exit 1) \
+ && mkdir -p ./public /app/database
 COPY --from=frontend-builder /app/frontend/dist /usr/share/nginx/html
 
 # Database SQL is mounted from host via docker-compose volumes, not baked into image
@@ -185,10 +170,12 @@ RUN printf '%s\n' \
 '    add_header X-Content-Type-Options "nosniff" always;' \
 '    add_header Strict-Transport-Security "max-age=31536000; includeSubDomains; preload" always;' \
 '    add_header Referrer-Policy "strict-origin-when-cross-origin" always;' \
-'    set $izara_pp "camera=(self \"https://meet.jit.si\"), microphone=(self \"https://meet.jit.si\")";' \
+'    set $izara_cam "camera=(self \"https://meet.jit.si\" \"https://meet.localhost:8443\" \"https://meet.demotoday.net\")";' \
+'    set $izara_mic "microphone=(self \"https://meet.jit.si\" \"https://meet.localhost:8443\" \"https://meet.demotoday.net\")";' \
+'    set $izara_pp "$izara_cam, $izara_mic";' \
 '    set $izara_pp "${izara_pp}, geolocation=(self), payment=(), usb=()";' \
 '    add_header Permissions-Policy $izara_pp always;' \
-'    add_header Content-Security-Policy "default-src '"'"'self'"'"' https:; script-src '"'"'self'"'"' '"'"'unsafe-inline'"'"' '"'"'unsafe-eval'"'"' https://meet.jit.si https://8x8.vc https://accounts.google.com https://apis.google.com https://maps.googleapis.com; style-src '"'"'self'"'"' '"'"'unsafe-inline'"'"' https://fonts.googleapis.com; font-src '"'"'self'"'"' https://fonts.gstatic.com; img-src '"'"'self'"'"' data: blob: https:; connect-src '"'"'self'"'"' http://localhost:* ws://localhost:* wss://localhost:* http://127.0.0.1:* ws://127.0.0.1:* wss://127.0.0.1:* http://host.docker.internal:* ws://host.docker.internal:* wss://host.docker.internal:* https://*.googleapis.com https://*.run.app wss://*.run.app wss://meet.jit.si; frame-src '"'"'self'"'"' https://meet.jit.si https://8x8.vc https://accounts.google.com; frame-ancestors '"'"'self'"'"'; object-src '"'"'none'"'"'; base-uri '"'"'self'"'"'; form-action '"'"'self'"'"'; media-src '"'"'self'"'"' blob: https: mediastream:; worker-src '"'"'self'"'"' blob:;" always;' \
+'    add_header Content-Security-Policy "default-src '"'"'self'"'"' https:; script-src '"'"'self'"'"' '"'"'unsafe-inline'"'"' '"'"'unsafe-eval'"'"' https://meet.jit.si https://meet.localhost:8443 https://meet.demotoday.net https://8x8.vc https://accounts.google.com https://apis.google.com https://maps.googleapis.com; style-src '"'"'self'"'"' '"'"'unsafe-inline'"'"' https://fonts.googleapis.com; font-src '"'"'self'"'"' https://fonts.gstatic.com; img-src '"'"'self'"'"' data: blob: https:; connect-src '"'"'self'"'"' http://localhost:* ws://localhost:* wss://localhost:* http://127.0.0.1:* ws://127.0.0.1:* wss://127.0.0.1:* http://host.docker.internal:* ws://host.docker.internal:* wss://host.docker.internal:* https://*.googleapis.com https://*.run.app wss://*.run.app wss://meet.jit.si wss://meet.localhost:8443 https://meet.localhost:8443 wss://meet.demotoday.net https://meet.demotoday.net; frame-src '"'"'self'"'"' https://meet.jit.si https://meet.localhost:8443 https://meet.demotoday.net https://8x8.vc https://accounts.google.com; frame-ancestors '"'"'self'"'"'; object-src '"'"'none'"'"'; base-uri '"'"'self'"'"'; form-action '"'"'self'"'"'; media-src '"'"'self'"'"' blob: https: mediastream:; worker-src '"'"'self'"'"' blob:;" always;' \
 '    location /health {' \
 '        access_log off;' \
 '        return 200 '"'"'{"status":"healthy","service":"izara-unified"}'"'"';' \
@@ -304,7 +291,12 @@ printf '%s\n' \
 '  MEETING_SERVER_URL: "${VITE_MEETING_SERVER_URL}",' \
 '  JITSI_DOMAIN: "${JITSI_DOMAIN}",' \
 '  PDPA_ENABLED: "${VITE_PDPA_ENABLED}",' \
-'  CONSENT_REQUIRED: "${VITE_CONSENT_REQUIRED}"' \
+'  CONSENT_REQUIRED: "${VITE_CONSENT_REQUIRED}",' \
+'  DEMO_AUTO_LOGIN: "${DEMO_AUTO_LOGIN}",' \
+'  DEMO_AUTO_MEETING: "${DEMO_AUTO_MEETING}",' \
+'  DEMO_DOCTOR_EMAIL: "${DEMO_DOCTOR_EMAIL}",' \
+'  DEMO_DOCTOR_PASSWORD: "${DEMO_DOCTOR_PASSWORD}",' \
+'  VITE_AUTO_ADMIT_LOBBY: "${VITE_AUTO_ADMIT_LOBBY}"' \
 '};' > /usr/share/nginx/html/env-config.template.js && \
 printf '%s\n' \
 '[supervisord]' \
@@ -357,19 +349,13 @@ printf '%s\n' \
 'stderr_logfile=/dev/stderr' \
 'stderr_logfile_maxbytes=0' > /etc/supervisord.conf
 
-# Set environment variables for Gemini AI, Jitsi, and Database
-# These should be provided at runtime via docker run -e or docker-compose environment
-# DO NOT hardcode API keys here - use secrets management in production
-ENV GEMINI_API_KEY=${GEMINI_API_KEY:-} \
-    GEMINI_MODEL=${GEMINI_MODEL:-gemini-3.1-flash-lite} \
+# Runtime credentials (GEMINI_API_KEY, DB_PASSWORD, etc.) injected by Cloud Run / compose — not declared here (S6472).
+ENV GEMINI_MODEL=${GEMINI_MODEL:-gemini-3.1-flash-lite} \
     JITSI_DOMAIN=${JITSI_DOMAIN:-meet.jit.si} \
-    GOOGLE_SPEECH_API_KEY=${GOOGLE_SPEECH_API_KEY:-} \
     USE_POSTGRESQL=${USE_POSTGRESQL:-true} \
-    DATABASE_URL=${DATABASE_URL:-} \
     DB_HOST=${DB_HOST:-} \
     DB_NAME=${DB_NAME:-} \
     DB_USER=${DB_USER:-} \
-    DB_PASSWORD=${DB_PASSWORD:-} \
     DB_PORT=${DB_PORT:-5432}
 
 # Entrypoint script - copied from repo to avoid bash quoting issues in printf

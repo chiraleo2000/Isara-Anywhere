@@ -42,5 +42,7 @@ for (const project of ['C-doctor-portal', 'I-admin-notifications']) {
 }
 
 if (!runScreenshotGate('group-D', 'screenshots-group-D')) bailWithArchive(ROUND, 'screenshots-group-D');
+if (!runScreenshotGate('group-C', 'screenshots-group-C')) bailWithArchive(ROUND, 'screenshots-group-C');
+if (!runScreenshotGate('group-I', 'screenshots-group-I')) bailWithArchive(ROUND, 'screenshots-group-I');
 if (!runLedgerRound(ROUND)) bailWithArchive(ROUND, 'ledger-round');
 process.exit(0);

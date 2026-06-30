@@ -44,6 +44,7 @@ interface LivingWillData {
   digitalSignature: string;
   witnessSignatures: string[];
   sharedWith: string[];
+  shareWithEveryone?: boolean;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -235,16 +236,23 @@ async function loadLivingWillData(opts: LoadLivingWillOptions) {
   }
   try {
     const pid = patientId || userId;
-    const [livingWillData, doctorsData, versionsData] = await Promise.all([
+    const [livingWillData, doctorsData, versionsData, sharesData] = await Promise.all([
       pdpaService.getLivingWill(pid).catch(() => null),
       doctorService.getAll().catch(() => []),
       pdpaService.getLivingWillVersions(pid).catch(() => []),
+      pdpaService.getLivingWillShares(pid).catch(() => []),
     ]);
     if (livingWillData) {
+      const sharedFromApi = Array.isArray(sharesData)
+        ? sharesData.map((s: { doctor_id: string }) => s.doctor_id).filter(Boolean)
+        : [];
       setForm(prev => ({
         ...prev,
         ...livingWillData,
-        sharedWith: livingWillData.sharedWith || [],
+        sharedWith: livingWillData.sharedWith?.length
+          ? livingWillData.sharedWith
+          : sharedFromApi,
+        shareWithEveryone: Boolean(livingWillData.shareWithEveryone),
         witnessSignatures: livingWillData.witnessSignatures || [],
       }));
       setHasExisting(true);
@@ -1008,14 +1016,23 @@ function StepSignature({ canvasRef, form, startDrawing, draw, stopDrawing, clear
   );
 }
 
-function StepShareDoctors({ form, sharedDoctors, onShowDoctorModal, removeDoctorFromShare, onSave, saving, onBack }: Readonly<{
+function formatShareDoctorSummary(shareWithEveryone: boolean, language: string, doctorCount: number): string {
+  if (shareWithEveryone) {
+    return language === 'th' ? 'ทุกท่าน' : 'Everyone';
+  }
+  return `${doctorCount} คน`;
+}
+
+function StepShareDoctors({ form, setForm, sharedDoctors, onShowDoctorModal, removeDoctorFromShare, onSave, saving, onBack, language }: Readonly<{
   form: LivingWillData;
+  setForm: React.Dispatch<React.SetStateAction<LivingWillData>>;
   sharedDoctors: Doctor[];
   onShowDoctorModal: () => void;
   removeDoctorFromShare: (id: string) => void;
   onSave: () => void;
   saving: boolean;
   onBack: () => void;
+  language: string;
 }>) {
   return (
   <div className="space-y-6">
@@ -1025,10 +1042,38 @@ function StepShareDoctors({ form, sharedDoctors, onShowDoctorModal, removeDoctor
         แชร์พินัยกรรมชีวิตกับแพทย์
       </h2>
       <p className="text-sm text-gray-600 mb-4">
-        เลือกแพทย์ที่คุณต้องการให้เข้าถึงพินัยกรรมชีวิตของคุณ
-        เพื่อให้แพทย์สามารถปฏิบัติตามความต้องการของคุณได้
+        เลือกแพทย์เฉพาะราย หรืออนุญาตให้แพทย์ทุกท่านในระบบเข้าถึงพินัยกรรมชีวิตล่าสุดของคุณ
+        (การอัปเดตจะมีผลทันทีโดยไม่ต้องสร้างใหม่)
       </p>
 
+      <label
+        aria-label={language === 'th' ? 'แชร์กับแพทย์ทุกท่านในระบบ' : 'Share with all doctors'}
+        className="flex items-center justify-between p-4 bg-emerald-50 border border-emerald-200 rounded-xl mb-4 cursor-pointer"
+      >
+        <div>
+          <p className="font-medium text-gray-800">
+            {language === 'th' ? 'แชร์กับแพทย์ทุกท่านในระบบ' : 'Share with all doctors'}
+          </p>
+          <p className="text-sm text-gray-600">
+            {language === 'th' ? 'แพทย์ที่ได้รับอนุญาตทุกท่านสามารถดูพินัยกรรมชีวิตล่าสุด' : 'All authorized doctors can view your latest living will'}
+          </p>
+        </div>
+        <input
+          type="checkbox"
+          checked={Boolean(form.shareWithEveryone)}
+          onChange={(e) =>
+            setForm((prev) => ({
+              ...prev,
+              shareWithEveryone: e.target.checked,
+              sharedWith: e.target.checked ? [] : prev.sharedWith,
+            }))
+          }
+          className="w-5 h-5 text-emerald-600 rounded"
+        />
+      </label>
+
+      {!form.shareWithEveryone && (
+        <>
       <button
         onClick={onShowDoctorModal}
         className="w-full flex items-center justify-center gap-2 py-3 bg-emerald-50 border-2 border-dashed border-emerald-300 rounded-xl text-emerald-700 font-medium hover:bg-emerald-100 mb-4"
@@ -1072,6 +1117,8 @@ function StepShareDoctors({ form, sharedDoctors, onShowDoctorModal, removeDoctor
           <p className="text-sm">คุณสามารถเพิ่มภายหลังได้</p>
         </div>
       )}
+        </>
+      )}
     </div>
 
     {/* Summary */}
@@ -1108,7 +1155,9 @@ function StepShareDoctors({ form, sharedDoctors, onShowDoctorModal, removeDoctor
         </div>
         <div className="flex justify-between py-2">
           <span className="text-gray-600">แชร์กับแพทย์</span>
-          <span>{sharedDoctors.length} คน</span>
+          <span>
+            {formatShareDoctorSummary(Boolean(form.shareWithEveryone), language, sharedDoctors.length)}
+          </span>
         </div>
       </div>
     </div>
@@ -1614,12 +1663,14 @@ export default function LivingWillPage() {
       {step === 4 && (
         <StepShareDoctors
           form={form}
+          setForm={setForm}
           sharedDoctors={sharedDoctors}
           onShowDoctorModal={() => setShowDoctorModal(true)}
           removeDoctorFromShare={removeDoctorFromShare}
           onSave={handleSave}
           saving={saving}
           onBack={() => setStep(3)}
+          language={language}
         />
       )}
 

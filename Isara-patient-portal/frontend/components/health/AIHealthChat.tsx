@@ -164,17 +164,20 @@ export const AIHealthChat: React.FC<AIHealthChatProps> = ({ className = '', comp
         <div className="flex items-center gap-1">
           {messages.length > 0 && (
             <button
+              type="button"
               onClick={handleClearHistory}
               className="p-1.5 hover:bg-white/20 rounded-lg transition-colors"
-              title="ล้างประวัติ"
+              aria-label="ล้างประวัติ"
             >
               <Trash2 className="w-4 h-4" />
             </button>
           )}
           {compact && (
             <button
+              type="button"
               onClick={() => setIsExpanded(!isExpanded)}
               className="p-1.5 hover:bg-white/20 rounded-lg transition-colors"
+              aria-label={isExpanded ? 'ย่อหน้าต่างแชท' : 'ขยายหน้าต่างแชท'}
             >
               {isExpanded ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
             </button>
@@ -261,8 +264,10 @@ export const AIHealthChat: React.FC<AIHealthChatProps> = ({ className = '', comp
             disabled={loading}
           />
           <button
+            type="button"
             onClick={handleSend}
             disabled={!input.trim() || loading}
+            aria-label="ส่งข้อความ"
             className="p-2 bg-purple-600 text-white rounded-xl hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Send className="w-4 h-4" />

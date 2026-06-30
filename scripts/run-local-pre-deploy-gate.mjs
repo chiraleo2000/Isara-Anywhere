@@ -20,12 +20,15 @@ const gateEnv = {
   BASELINE_VISUAL: '1',
   PW_SKIP_FIREFOX_JROLE: '1',
   PW_SKIP_DEFECT_DM5: '1',
-  PW_SKIP_DEFECT_DM6: '1',
   E2E_ALLOW_PARALLEL_SESSIONS: '1',
   PATIENT_URL: 'http://127.0.0.1:3005',
   DOCTOR_URL: 'http://127.0.0.1:3010',
   MEETING_URL: 'http://127.0.0.1:3020',
   VITE_MEETING_SERVER_URL: 'http://127.0.0.1:3020',
+  DEMO_AUTO_LOGIN: '1',
+  DEMO_AUTO_MEETING: '1',
+  // Teams/Zoom manual admit — doctor clicks Admit in lobby UI (never auto-admit)
+  VITE_AUTO_ADMIT_LOBBY: '0',
 };
 const dockerBuildEnv = {
   ...gateEnv,
@@ -100,6 +103,24 @@ const gateSteps = [
     args: ['run', 'verify:gate0:local'],
     cwd: root,
   },
+  {
+    name: 'browser-core-firefox',
+    cmd: 'npx',
+    args: ['playwright', 'test', '--headed', '--project=W-core-firefox', '--workers=1'],
+    cwd: root,
+  },
+  {
+    name: 'browser-core-webkit',
+    cmd: 'npx',
+    args: ['playwright', 'test', '--headed', '--project=W-core-webkit', '--workers=1'],
+    cwd: root,
+  },
+  {
+    name: 'browser-appointments-firefox',
+    cmd: 'npx',
+    args: ['playwright', 'test', '--headed', '--project=D-appointments', '--workers=1'],
+    cwd: root,
+  },
   npmStep('e2e-full-headed', 'test:local:e2e-full'),
   npmStep('screenshots-all', 'test:screenshots:all'),
   npmStep('screenshots-group-e', 'test:screenshots:group-e'),
@@ -125,22 +146,24 @@ let failed = false;
 let failedStep = '';
 let failedProcessDoc = '';
 
+function resolveStepEnv(step) {
+  if (step.name === 'docker-compose') return dockerBuildEnv;
+  if (step.name.startsWith('e2e') || step.name === 'gate0-local' || step.name.startsWith('browser-')) {
+    return gateEnv;
+  }
+  if (step.name === 'meeting-contract' || step.name === 'post-meeting-pipeline') {
+    return hostMeetingEnv;
+  }
+  return { ...process.env, PW_SKIP_LIVE_GEMINI: '1' };
+}
+
 function runStep(step) {
   console.log(`\n═══ [${step.name}] ═══`);
-  const useGateEnv = step.name.startsWith('e2e') || step.name === 'gate0-local';
-  const useDockerEnv = step.name === 'docker-compose';
-  const useHostMeetingEnv = step.name === 'meeting-contract' || step.name === 'post-meeting-pipeline';
   const r = spawnSync(step.cmd, step.args, {
     cwd: step.cwd,
     stdio: 'inherit',
     shell: isWin,
-    env: useDockerEnv
-      ? dockerBuildEnv
-      : useGateEnv
-        ? gateEnv
-        : useHostMeetingEnv
-          ? hostMeetingEnv
-          : { ...process.env, PW_SKIP_LIVE_GEMINI: '1' },
+    env: resolveStepEnv(step),
   });
   const ok = r.status === 0;
   results.push({

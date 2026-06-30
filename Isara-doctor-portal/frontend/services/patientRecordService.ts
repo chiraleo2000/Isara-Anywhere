@@ -113,11 +113,25 @@ export interface LivingWillForDoctorView {
   lastUpdated: string;
 }
 
+/** Living will exists on file but patient has not shared with this doctor */
+export type LivingWillNotSharedResponse = {
+  exists: true;
+  isShared: false;
+  authorized: false;
+  message: string;
+};
+
 /** Response from the living will endpoint — may be full data, exists-but-not-shared, or null */
 export type LivingWillResponse =
   | LivingWillForDoctorView
-  | { exists: true; isShared: false; authorized: false; message: string }
+  | LivingWillNotSharedResponse
   | null;
+
+export function isLivingWillNotShared(
+  lw: NonNullable<LivingWillResponse>,
+): lw is LivingWillNotSharedResponse {
+  return 'exists' in lw && lw.exists === true;
+}
 
 export interface EMRRecord {
   id: string;
@@ -171,6 +185,43 @@ export interface ExternalRecord {
   uploadedAt: string;
   uploadedBy: string;
   viewUrl: string;
+}
+
+export interface PDPAPatientSummary {
+  hasAccess: boolean;
+  accessSource: string | null;
+  isEmergencyBypass?: boolean;
+  isBroadConsent?: boolean;
+  isAppointmentBypass?: boolean;
+  appointmentId?: string | null;
+  privacyConsents: Array<{
+    type: string;
+    granted: boolean;
+    grantedAt?: string;
+    status?: string;
+    updatedAt?: string;
+  }>;
+  doctorAccess: Array<{
+    doctorId: string;
+    doctorName: string;
+    doctorSpecialty?: string | null;
+    granted: boolean;
+    status: string;
+    grantedAt?: string;
+    revokedAt?: string;
+  }>;
+  myAccess: {
+    granted: boolean;
+    status: string;
+    grantedAt?: string;
+    revokedAt?: string;
+  } | null;
+  recentAudit: Array<{
+    action: string;
+    timestamp: string;
+    doctorName?: string | null;
+    details?: unknown;
+  }>;
 }
 
 // ============================================================================
@@ -341,6 +392,23 @@ class PatientRecordService {
     } catch (error) {
       console.error('Error requesting access:', error);
       return { success: false };
+    }
+  }
+
+  async getPDPASummary(patientId: string): Promise<PDPAPatientSummary | null> {
+    const cacheKey = `pdpa:${patientId}`;
+    const cached = this.getCached<PDPAPatientSummary>(cacheKey);
+    if (cached) return cached;
+
+    try {
+      const data = await apiFetch<PDPAPatientSummary>(
+        `/api/pdpa/patient/${encodeURIComponent(patientId)}/summary`
+      );
+      this.setCache(cacheKey, data);
+      return data;
+    } catch (error) {
+      console.error('Error fetching PDPA summary:', error);
+      return null;
     }
   }
 }

@@ -33,6 +33,7 @@
     "cross-env": "^7.0.3",
     "typescript": "^5.3.3",
     "zod": "^3.24.2",
-    "jsonwebtoken": "^9.0.2"
+    "jsonwebtoken": "^9.0.2",
+    "@types/jsonwebtoken": "^9.0.9"
   }
 }

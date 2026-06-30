@@ -30,9 +30,12 @@ import {
   prepareLayoutThenMount,
   resolveJitsiDomain,
   stableRoomNameForAppointment,
+  verifyJitsiDomainReachable,
+  wireJitsiSkipPrejoin,
   type MeetingJoinConfig,
 } from '../../utils/jitsiMeetingConfig';
 import { resolveMeetingServerUrl } from '../../utils/resolveMeetingServerUrl';
+import { resolveEnvBool } from '../../utils/resolveEnv';
 import { JitsiMeetingShell } from '../../features/meeting/components/JitsiMeetingShell';
 
 // Helper: authenticated fetch for same-origin meeting BFF (refresh + retry on SESSION_INVALID)
@@ -42,12 +45,13 @@ async function meetingFetch(
 ): Promise<Response> {
   await ensureMeetingSessionFresh();
   const { json, ...rest } = init;
-  const method = rest.method || (json !== undefined ? 'POST' : 'GET');
+  const hasJsonBody = json !== undefined;
+  const method = rest.method ?? (hasJsonBody ? 'POST' : 'GET');
   return authFetch(path, {
     ...rest,
     method,
     credentials: 'include',
-    body: json !== undefined ? JSON.stringify(json) : rest.body,
+    body: hasJsonBody ? JSON.stringify(json) : rest.body,
   });
 }
 
@@ -296,7 +300,7 @@ interface MediaDeviceStatus {
 }
 
 interface MeetingState {
-  status: 'loading' | 'agreement' | 'pre_join' | 'ready' | 'in_progress' | 'ended';
+  status: 'loading' | 'host_starting' | 'ready' | 'in_progress' | 'ended';
   isTranscribing: boolean;
   isPaused: boolean;
   transcriptLanguage: 'th-TH' | 'en-US';
@@ -312,10 +316,8 @@ interface LobbyParticipant {
 }
 
 // ============================================================================
-// CONFIGURATION
+// CONFIGURATION (resolve at runtime — window.ENV from env-config.js)
 // ============================================================================
-
-const JITSI_DOMAIN = resolveJitsiDomain();
 
 function meetingServerUrl(): string {
   return resolveMeetingServerUrl();
@@ -456,8 +458,11 @@ const MeetingRoom: React.FC = () => { // NOSONAR
   const socketRef = useRef<any>(null);
   const roomNameRef = useRef<string>('');
   const jitsiJwtRef = useRef<string | undefined>(undefined);
-  const jitsiDomainRef = useRef(JITSI_DOMAIN);
+  const jitsiDomainRef = useRef(resolveJitsiDomain());
   const joinCfgRef = useRef<MeetingJoinConfig | null>(null);
+  const shouldAutoStartHostRef = useRef(false);
+  const autoStartAttemptsRef = useRef(0);
+  const [autoStartRetry, setAutoStartRetry] = useState(0);
 
   // State
   const [meetingState, setMeetingState] = useState<MeetingState>({
@@ -490,11 +495,6 @@ const MeetingRoom: React.FC = () => { // NOSONAR
   const [guestLinkCopied, setGuestLinkCopied] = useState(false);
   const [lastGuestJoinUrl, setLastGuestJoinUrl] = useState('');
   const [lastGuestTokenUrl, setLastGuestTokenUrl] = useState('');
-
-  // Agreement / Consent
-  const [consentRecording, setConsentRecording] = useState(false);
-  const [consentTranscript, setConsentTranscript] = useState(false);
-  const [consentDataSharing, setConsentDataSharing] = useState(false);
 
   // Lobby / Waiting Room
   const [lobbyParticipants, setLobbyParticipants] = useState<LobbyParticipant[]>([]);
@@ -531,6 +531,7 @@ const MeetingRoom: React.FC = () => { // NOSONAR
 
   const transcriptEndRef = useRef<HTMLDivElement>(null);
   const durationTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const hostPresentRefreshRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // ============================================================================
   // DURATION TIMER (moved before useEffect so handlers can reference it)
@@ -600,22 +601,6 @@ const MeetingRoom: React.FC = () => { // NOSONAR
     }
   }, []);
 
-  const togglePreviewCamera = useCallback(() => {
-    if (previewStreamRef.current) {
-      const videoTrack = previewStreamRef.current.getVideoTracks()[0];
-      if (videoTrack) videoTrack.enabled = !videoTrack.enabled;
-    }
-    setCameraOn(prev => !prev);
-  }, []);
-
-  const togglePreviewMic = useCallback(() => {
-    if (previewStreamRef.current) {
-      const audioTrack = previewStreamRef.current.getAudioTracks()[0];
-      if (audioTrack) audioTrack.enabled = !audioTrack.enabled;
-    }
-    setMicOn(prev => !prev);
-  }, []);
-
   // ============================================================================
   // INITIALIZE MEETING
   // ============================================================================
@@ -633,8 +618,7 @@ const MeetingRoom: React.FC = () => { // NOSONAR
     console.log('[Jitsi] Conference joined:', data);
     setMeetingState(prev => ({ ...prev, status: 'in_progress' }));
     startDurationTimer();
-    const autoAdmit =
-      import.meta.env.VITE_AUTO_ADMIT_LOBBY === '1' || import.meta.env.VITE_AUTO_ADMIT_LOBBY === 'true';
+    const autoAdmit = resolveEnvBool('VITE_AUTO_ADMIT_LOBBY');
     if (autoAdmit) {
       fetch(`/api/meetings/${appointmentId}/lobby/admit-all`, {
         method: 'POST',
@@ -643,17 +627,11 @@ const MeetingRoom: React.FC = () => { // NOSONAR
       }).catch(() => { /* UI admit-all remains available */ });
     }
     void notifyHostPresent('', appointmentId || '', getToken());
-    // Auto-start server-side recording so recording-indicator is visible for E2E + post-meeting pipeline
-    setIsRecording(true);
-    fetch(`/api/meetings/${appointmentId}/auto-record`, {
-      method: 'POST',
-      headers: getAuthHeaders(),
-      body: JSON.stringify({
-        recording: true,
-        recordedBy: user?.id,
-        doctorName: getIzaraDisplayName(user, 'Doctor'),
-      }),
-    }).catch(() => { /* manual recording toggle remains available */ });
+    if (hostPresentRefreshRef.current) clearInterval(hostPresentRefreshRef.current);
+    hostPresentRefreshRef.current = setInterval(() => {
+      void notifyHostPresent('', appointmentId || '', getToken());
+    }, 45_000);
+    // Recording starts only when doctor clicks Record (toggleRecording) — not on join.
   }, [appointmentId, user, startDurationTimer]);
 
   const handleParticipantJoined = useCallback((data: any) => {
@@ -664,6 +642,10 @@ const MeetingRoom: React.FC = () => { // NOSONAR
   const handleReadyToClose = useCallback(() => {
     setMeetingState(prev => ({ ...prev, status: 'ended' }));
     if (durationTimerRef.current) clearInterval(durationTimerRef.current);
+    if (hostPresentRefreshRef.current) {
+      clearInterval(hostPresentRefreshRef.current);
+      hostPresentRefreshRef.current = null;
+    }
     void notifyHostAbsent('', appointmentId || '', getToken());
   }, [appointmentId]);
 
@@ -730,6 +712,9 @@ const MeetingRoom: React.FC = () => { // NOSONAR
     const fetchTimeoutMs = 20_000;
     const msUrl = '';
 
+    // Clear stale host-ready from prior sessions so patients never mount Jitsi early
+    void notifyHostAbsent(msUrl, appointmentId || '', getToken());
+
     try {
       // 1. Try meeting server for existing meeting record (bounded wait)
       try {
@@ -778,9 +763,11 @@ const MeetingRoom: React.FC = () => { // NOSONAR
       setError(err.message || 'Failed to initialize meeting');
     } finally {
       roomNameRef.current = roomName;
-      setMeetingState(prev => ({ ...prev, status: 'agreement' }));
       connectSocket();
-      void checkMediaDevices();
+      await checkMediaDevices();
+      autoStartAttemptsRef.current = 0;
+      shouldAutoStartHostRef.current = true;
+      setMeetingState(prev => ({ ...prev, status: 'host_starting' }));
     }
   }, [appointmentId, user, doctorDisplayName, checkMediaDevices, connectSocket]);
 
@@ -808,10 +795,10 @@ const MeetingRoom: React.FC = () => { // NOSONAR
   }, [appointmentId, initMeeting, stopPreviewStream]);
 
   // ============================================================================
-  // JOIN MEETING (from pre-join screen → launch Jitsi)
+  // JOIN MEETING (doctor host auto-start → launch Jitsi)
   // ============================================================================
 
-  const joinMeeting = useCallback(async () => {
+  const joinMeeting = useCallback(async (): Promise<boolean> => {
     stopPreviewStream();
     try {
       const mount = buildDoctorJitsiMountOptions({
@@ -825,12 +812,13 @@ const MeetingRoom: React.FC = () => { // NOSONAR
         displayName: doctorDisplayName,
         appointmentLabel: `Izara Consultation - ${appointmentId?.substring(0, 8) || 'Meeting'}`,
       });
+      await verifyJitsiDomainReachable(mount.domain);
       await loadJitsiExternalApiScript(mount.domain);
       const mountResult = await prepareLayoutThenMount(
         (nextStatus) => setMeetingState(prev => ({ ...prev, status: nextStatus as MeetingState['status'] })),
         () => jitsiContainerRef.current,
         'ready',
-        'pre_join',
+        'host_starting',
         async () => {
           const api = new (globalThis as any).JitsiMeetExternalAPI(mount.domain, {
             roomName: mount.roomName,
@@ -846,6 +834,7 @@ const MeetingRoom: React.FC = () => { // NOSONAR
           });
 
           jitsiApiRef.current = api;
+          wireJitsiSkipPrejoin(api);
 
           const iframe = jitsiContainerRef.current?.querySelector('iframe');
           if (iframe) {
@@ -856,6 +845,9 @@ const MeetingRoom: React.FC = () => { // NOSONAR
 
           api.on('readyToClose', handleReadyToClose);
           api.on('videoConferenceJoined', handleConferenceJoined);
+          api.on('videoConferenceFailed', () => {
+            void notifyHostAbsent('', appointmentId || '', getToken());
+          });
           api.on('participantJoined', handleParticipantJoined);
           api.on('participantLeft', handleParticipantLeft);
           api.on('chatUpdated', handleChatUpdated);
@@ -863,13 +855,63 @@ const MeetingRoom: React.FC = () => { // NOSONAR
       );
       if (!mountResult.ok) {
         setError(mountResult.error || 'Failed to join meeting');
+        setMeetingState(prev => ({ ...prev, status: 'host_starting' }));
+        return false;
       }
+      return true;
     } catch (err: any) {
       console.error('[MeetingRoom] Join error:', err);
-      setError(err.message || 'Failed to join meeting');
-      setMeetingState(prev => ({ ...prev, status: 'pre_join' }));
+      const domain = jitsiDomainRef.current || resolveJitsiDomain();
+      const hint =
+        err?.message?.includes('Failed to load Jitsi') || err?.message?.includes('load')
+          ? `Cannot load Jitsi from https://${domain}/external_api.js — add meet.demotoday.net to Windows hosts (192.168.10.239) and trust mkcert CA on your laptop. Use your PC browser, not the Ubuntu server.`
+          : '';
+      setError([err.message || 'Failed to join meeting', hint].filter(Boolean).join(' '));
+      setMeetingState(prev => ({ ...prev, status: 'host_starting' }));
+      return false;
     }
   }, [stopPreviewStream, micOn, cameraOn, appointmentId, user, doctorDisplayName, handleConferenceJoined, handleParticipantJoined, handleReadyToClose, handleParticipantLeft, handleChatUpdated, startDurationTimer]);
+
+  const retryJoinMeeting = useCallback(() => {
+    setError(null);
+    autoStartAttemptsRef.current = 0;
+    shouldAutoStartHostRef.current = true;
+    setMeetingState(prev => ({ ...prev, status: 'host_starting' }));
+    setAutoStartRetry((n) => n + 1);
+  }, []);
+
+  // Auto-start host meeting: record consent then join without manual pre-join steps
+  useEffect(() => {
+    if (meetingState.status !== 'host_starting' || !shouldAutoStartHostRef.current) return;
+    if (autoStartAttemptsRef.current >= 3) return;
+
+    shouldAutoStartHostRef.current = false;
+    autoStartAttemptsRef.current += 1;
+
+    const autoStartHost = async () => {
+      try {
+        await fetchWithTimeout(`/api/meetings/${appointmentId}/consent`, {
+          method: 'POST',
+          headers: getAuthHeaders(),
+          body: JSON.stringify({
+            participantId: user?.id || 'unknown',
+            participantName: doctorDisplayName,
+            role: 'doctor',
+            consentRecording: true,
+            consentTranscript: true,
+            consentDataSharing: true,
+            hostAutoConsent: true,
+          }),
+        }, 10_000);
+      } catch { /* silent */ }
+      const joined = await joinMeeting();
+      if (!joined && autoStartAttemptsRef.current < 3) {
+        shouldAutoStartHostRef.current = true;
+        globalThis.setTimeout(() => setAutoStartRetry((n) => n + 1), 1500);
+      }
+    };
+    void autoStartHost();
+  }, [meetingState.status, autoStartRetry, appointmentId, user, doctorDisplayName, joinMeeting]);
 
   // Auto-scroll transcript
   useEffect(() => {
@@ -1088,14 +1130,14 @@ const MeetingRoom: React.FC = () => { // NOSONAR
       if (res.ok) {
         const data = await res.json();
         const guestUrl =
-          data.guestJoinUrl ||
           data.guestLink ||
-          (data.guestTokenUrl as string | undefined) ||
+          data.guestTokenUrl ||
+          data.guestJoinUrl ||
           '';
         if (!guestUrl) throw new Error('No guest URL returned');
-        setLastGuestJoinUrl(data.guestJoinUrl || guestUrl);
-        setLastGuestTokenUrl(data.guestTokenUrl || '');
-        await navigator.clipboard.writeText(guestUrl);
+        setLastGuestJoinUrl(data.guestLink || data.guestTokenUrl || guestUrl);
+        setLastGuestTokenUrl(data.guestTokenUrl || data.guestLink || '');
+        await navigator.clipboard.writeText(data.guestLink || data.guestTokenUrl || guestUrl);
         setGuestLinkCopied(true);
         setGuestName('');
         setTimeout(() => setGuestLinkCopied(false), 3000);
@@ -1238,26 +1280,6 @@ const MeetingRoom: React.FC = () => { // NOSONAR
     saveRecordingBlob,
     navigate,
   ]);
-
-  // ============================================================================
-  // AGREEMENT / CONSENT
-  // ============================================================================
-
-  const handleAgreeAndContinue = useCallback(async () => {
-    setMeetingState(prev => ({ ...prev, status: 'pre_join' }));
-    try {
-      await fetchWithTimeout(`/api/meetings/${appointmentId}/consent`, {
-        method: 'POST',
-        headers: getAuthHeaders(),
-        body: JSON.stringify({
-          participantId: user?.id || 'unknown',
-          participantName: doctorDisplayName,
-          role: 'doctor',
-          consentRecording, consentTranscript, consentDataSharing,
-        }),
-      }, 10_000);
-    } catch { /* silent */ }
-  }, [appointmentId, user, consentRecording, consentTranscript, consentDataSharing]);
 
   // ============================================================================
   // LOBBY MANAGEMENT (Doctor as Host)
@@ -1419,217 +1441,52 @@ const MeetingRoom: React.FC = () => { // NOSONAR
         </div>
       )}
 
-      {/* ================================================================== */}
-      {/* MEETING AGREEMENT SCREEN */}
-      {/* ================================================================== */}
-      {meetingState.status === 'agreement' && (
-        <div className="flex-1 flex flex-col items-center justify-center bg-gradient-to-b from-gray-900 via-gray-800 to-gray-900" data-testid="meeting-agreement">
-          <div className="absolute top-0 left-0 right-0 flex items-center justify-between px-6 py-4">
-            <div className="flex items-center gap-2">
-              <span className="text-xl font-bold text-blue-400">Izara Meeting</span>
+      {meetingState.status === 'host_starting' && (
+        <div
+          className="flex-1 flex flex-col items-center justify-center gap-4 px-6"
+          data-testid="host-starting-screen"
+        >
+          {!error && (
+            <>
+              <div className="w-10 h-10 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+              <p className="text-gray-300">กำลังเริ่มการประชุม...</p>
+              <p className="text-gray-400 text-sm">Starting meeting on your laptop camera &amp; microphone...</p>
+            </>
+          )}
+          {error && (
+            <div className="max-w-lg w-full bg-red-900/40 border border-red-700 rounded-lg p-4 text-sm text-red-200" data-testid="meeting-join-error">
+              {error}
             </div>
-            <button onClick={goBack} className="text-gray-400 hover:text-white text-sm transition">← กลับ</button>
-          </div>
-
-          <div className="max-w-lg w-full px-8">
-            <div className="bg-gray-800/80 rounded-2xl p-8 border border-gray-700 shadow-2xl">
-              <div className="text-center mb-6">
-                <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-blue-600/20 flex items-center justify-center"><svg className="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg></div>
-                <h1 className="text-2xl font-bold mb-2">ข้อตกลงก่อนเข้าประชุม</h1>
-                <p className="text-gray-400 text-sm">กรุณายอมรับข้อตกลงก่อนเข้าร่วมการประชุมทางการแพทย์</p>
-              </div>
-
-              <div className="space-y-4 mb-6">
-                <label htmlFor="consent-recording-input" className="flex items-start gap-3 cursor-pointer group" data-testid="consent-recording" aria-label="ยินยอมการบันทึกวิดีโอ">
-                  <input id="consent-recording-input" type="checkbox" data-testid="consent-recording-input" checked={consentRecording} onChange={e => setConsentRecording(e.target.checked)}
-                    className="mt-1 w-5 h-5 rounded border-gray-600 text-blue-600 focus:ring-blue-500" />
-                  <div>
-                    <span className="font-medium group-hover:text-blue-300 transition">ยินยอมการบันทึกวิดีโอ</span>
-                    <p className="text-xs text-gray-400 mt-1">การประชุมอาจถูกบันทึกเพื่อวัตถุประสงค์ทางการแพทย์</p>
-                  </div>
-                </label>
-
-                <label htmlFor="consent-transcript-input" className="flex items-start gap-3 cursor-pointer group" data-testid="consent-transcript" aria-label="ยินยอมการถอดเสียง">
-                  <input id="consent-transcript-input" type="checkbox" data-testid="consent-transcript-input" checked={consentTranscript} onChange={e => setConsentTranscript(e.target.checked)}
-                    className="mt-1 w-5 h-5 rounded border-gray-600 text-blue-600 focus:ring-blue-500" />
-                  <div>
-                    <span className="font-medium group-hover:text-blue-300 transition">ยินยอมการถอดเสียง (Transcript)</span>
-                    <p className="text-xs text-gray-400 mt-1">บทสนทนาจะถูกถอดเสียงเป็นข้อความเพื่อบันทึกประวัติการรักษา</p>
-                  </div>
-                </label>
-
-                <label htmlFor="consent-data-sharing-input" className="flex items-start gap-3 cursor-pointer group" data-testid="consent-data-sharing" aria-label="ยินยอมการแบ่งปันข้อมูล">
-                  <input id="consent-data-sharing-input" type="checkbox" data-testid="consent-data-sharing-input" checked={consentDataSharing} onChange={e => setConsentDataSharing(e.target.checked)}
-                    className="mt-1 w-5 h-5 rounded border-gray-600 text-blue-600 focus:ring-blue-500" />
-                  <div>
-                    <span className="font-medium group-hover:text-blue-300 transition">ยินยอมการแบ่งปันข้อมูล</span>
-                    <p className="text-xs text-gray-400 mt-1">ข้อมูลประชุมจะถูกจัดเก็บในระบบ EMR อย่างปลอดภัย ตาม PDPA</p>
-                  </div>
-                </label>
-              </div>
-
-              <div className="bg-gray-700/50 rounded-lg p-3 mb-6 text-xs text-gray-300">
-                <p className="font-medium text-yellow-400 mb-1">หมายเหตุ</p>
-                <p>ข้อมูลทั้งหมดจะถูกเข้ารหัสและจัดเก็บตามมาตรฐาน PDPA และกฎหมายคุ้มครองข้อมูลส่วนบุคคล ท่านสามารถเพิกถอนความยินยอมได้ทุกเมื่อ</p>
-              </div>
-
-              <button
-                onClick={handleAgreeAndContinue}
-                disabled={!consentRecording || !consentTranscript || !consentDataSharing}
-                className="w-full min-h-11 py-4 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed rounded-xl text-lg font-bold transition-all shadow-lg"
-                data-testid="agree-continue-btn"
-              >
-                ยอมรับและดำเนินการต่อ
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ================================================================== */}
-      {/* PRE-JOIN SCREEN (Teams-like) */}
-      {/* ================================================================== */}
-      {meetingState.status === 'pre_join' && (
-        <div className="flex-1 flex flex-col items-center justify-center bg-gradient-to-b from-gray-900 via-gray-800 to-gray-900" data-testid="pre-join-screen">
-          {/* Header */}
-          <div className="absolute top-0 left-0 right-0 flex items-center justify-between px-6 py-4">
-            <div className="flex items-center gap-2">
-              <span className="text-xl font-bold text-blue-400">Izara Meeting</span>
-            </div>
-            <button onClick={goBack} className="text-gray-400 hover:text-white text-sm transition">
-              ← กลับ
+          )}
+          {(mediaStatus.camera === 'denied' || mediaStatus.microphone === 'denied') && (
+            <p className="text-amber-300 text-sm text-center max-w-md">
+              Allow camera &amp; microphone in your browser (Chrome/Edge lock icon → Site settings). Media uses your doctor laptop — not the Ubuntu server.
+            </p>
+          )}
+          <p className="text-gray-500 text-sm" data-testid="doctor-display-name">{doctorDisplayName}</p>
+          {error && (
+            <button
+              type="button"
+              onClick={retryJoinMeeting}
+              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-sm font-medium"
+              data-testid="retry-join-meeting"
+            >
+              Retry join meeting
             </button>
-          </div>
-
-          <div className="flex flex-col lg:flex-row items-center gap-12 max-w-5xl w-full px-8">
-            {/* Video Preview / Avatar */}
-            <div className="flex-1 flex flex-col items-center gap-4">
-              <div className="relative w-[480px] h-[320px] bg-gray-800 rounded-2xl overflow-hidden border-2 border-gray-600 shadow-2xl">
-                {cameraOn && mediaStatus.camera === 'granted' ? (
-                  <video ref={previewVideoRef} autoPlay muted playsInline className="w-full h-full object-cover mirror [transform:scaleX(-1)]" />
-                ) : (
-                  <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-gray-800 to-gray-900">
-                    <div className="w-28 h-28 rounded-full bg-blue-500 flex items-center justify-center text-4xl font-bold text-white shadow-lg mb-3">
-                      {getUserInitials(doctorDisplayName)}
-                    </div>
-                    <span className="text-lg font-medium text-white">{doctorDisplayName}</span>
-                    <span className="text-sm text-blue-300 mt-1">แพทย์</span>
-                  </div>
-                )}
-              </div>
-
-              {/* Zoom-style Media Controls Bar */}
-              <div className="flex items-center gap-3">
-                <div className="flex flex-col items-center">
-                  <button
-                    onClick={togglePreviewMic}
-                    className={`w-12 h-12 rounded-full flex items-center justify-center transition-all shadow-lg ${
-                      micOn && mediaStatus.microphone === 'granted'
-                        ? 'bg-gray-600 hover:bg-gray-500 text-white'
-                        : 'bg-red-600 hover:bg-red-500 text-white'
-                    }`}
-                    title={micOn ? 'ปิดไมค์' : 'เปิดไมค์'}
-                  >
-                    {micOn && mediaStatus.microphone === 'granted' ? (
-                      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4M12 15a3 3 0 003-3V5a3 3 0 00-6 0v7a3 3 0 003 3z" /></svg>
-                    ) : (
-                      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4M12 15a3 3 0 003-3V5a3 3 0 00-6 0v7a3 3 0 003 3z" /><line x1="3" y1="3" x2="21" y2="21" stroke="currentColor" strokeWidth={2} strokeLinecap="round" /></svg>
-                    )}
-                  </button>
-                  <span className="text-xs text-gray-400 mt-1">{micOn ? 'ไมค์เปิด' : 'ปิดเสียง'}</span>
-                </div>
-                <div className="flex flex-col items-center">
-                  <button
-                    onClick={togglePreviewCamera}
-                    className={`w-12 h-12 rounded-full flex items-center justify-center transition-all shadow-lg ${
-                      cameraOn && mediaStatus.camera === 'granted'
-                        ? 'bg-gray-600 hover:bg-gray-500 text-white'
-                        : 'bg-red-600 hover:bg-red-500 text-white'
-                    }`}
-                    title={cameraOn ? 'ปิดกล้อง' : 'เปิดกล้อง'}
-                  >
-                    {cameraOn && mediaStatus.camera === 'granted' ? (
-                      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
-                    ) : (
-                      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /><line x1="3" y1="3" x2="21" y2="21" stroke="currentColor" strokeWidth={2} strokeLinecap="round" /></svg>
-                    )}
-                  </button>
-                  <span className="text-xs text-gray-400 mt-1">{cameraOn ? 'กล้องเปิด' : 'ปิดกล้อง'}</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Meeting Info & Device Status */}
-            <div className="flex-1 flex flex-col items-center lg:items-start gap-6 max-w-sm">
-              <div>
-                <h1 className="text-2xl font-bold mb-2">เข้าร่วมการประชุม</h1>
-                <p className="text-gray-400 text-sm">
-                  Izara Consultation — {appointmentId?.substring(0, 8)}
-                </p>
-              </div>
-
-              {/* Participant Info */}
-              <div className="w-full bg-gray-800/60 rounded-xl p-4 border border-gray-700">
-                <h3 className="text-sm font-semibold text-gray-300 mb-3">ข้อมูลผู้เข้าร่วม</h3>
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-full bg-blue-500 flex items-center justify-center text-lg font-bold shadow">
-                    {getUserInitials(doctorDisplayName)}
-                  </div>
-                  <div>
-                    <div className="font-medium">{doctorDisplayName}</div>
-                    <div className="text-sm text-blue-400">แพทย์ผู้ดูแล</div>
-                    <div className="text-xs text-gray-500">{user?.email || ''}</div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Device Status */}
-              <div className="w-full bg-gray-800/60 rounded-xl p-4 border border-gray-700" data-testid="device-status">
-                <h3 className="text-sm font-semibold text-gray-300 mb-3">สถานะอุปกรณ์</h3>
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm flex items-center gap-2">
-                      ไมโครโฟน
-                    </span>
-                    <span className="text-xs">
-                      {getMediaStatusIcon(mediaStatus.microphone)} {getMediaStatusText(mediaStatus.microphone)}
-                    </span>
-                  </div>
-                  {mediaStatus.microphoneLabel && (
-                    <div className="text-xs text-gray-500 pl-6">{mediaStatus.microphoneLabel}</div>
-                  )}
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm flex items-center gap-2">
-                      กล้อง
-                    </span>
-                    <span className="text-xs">
-                      {getMediaStatusIcon(mediaStatus.camera)} {getMediaStatusText(mediaStatus.camera)}
-                    </span>
-                  </div>
-                  {mediaStatus.cameraLabel && (
-                    <div className="text-xs text-gray-500 pl-6">{mediaStatus.cameraLabel}</div>
-                  )}
-                </div>
-              </div>
-
-              {/* Join Button */}
-              <button
-                onClick={joinMeeting}
-                className="w-full py-4 bg-blue-600 hover:bg-blue-700 rounded-xl text-lg font-bold transition-all shadow-lg hover:shadow-blue-600/30"
-                data-testid="join-meeting-btn"
-              >
-                เข้าร่วมการประชุม
-              </button>
-
-              {(mediaStatus.camera === 'denied' || mediaStatus.microphone === 'denied') && (
-                <div className="w-full bg-yellow-900/30 border border-yellow-700/50 rounded-lg p-3 text-yellow-300 text-xs">
-                  กรุณาอนุญาตการเข้าถึงกล้องและไมโครโฟนในเบราว์เซอร์เพื่อใช้งานวิดีโอคอล
-                </div>
-              )}
-            </div>
-          </div>
+          )}
         </div>
       )}
+
+      {/* Jitsi mount target — always in DOM so layout-first join can find the container */}
+      <div
+        ref={jitsiContainerRef}
+        data-testid="jitsi-meeting-container"
+        className={`w-full flex-1 min-h-[480px] ${
+          meetingState.status === 'ready' || meetingState.status === 'in_progress' || meetingState.status === 'ended'
+            ? ''
+            : 'hidden'
+        }`}
+      />
 
       {/* ================================================================== */}
       {/* MAIN MEETING UI (after joining) — Teams-like layout */}
@@ -1891,7 +1748,7 @@ const MeetingRoom: React.FC = () => { // NOSONAR
             </div>
           ) : (
             <div className="flex flex-col flex-1">
-              <div ref={jitsiContainerRef} data-testid="jitsi-meeting-container" className="w-full flex-1 min-h-[480px]" />
+              {/* jitsi container rendered above (shared ref) */}
               {/* Zoom-style Bottom Control Bar */}
               {(meetingState.status === 'ready' || meetingState.status === 'in_progress') && (
                 <div className="flex items-center justify-center gap-3 py-2.5 bg-[#1b1b1b] border-t border-gray-800">

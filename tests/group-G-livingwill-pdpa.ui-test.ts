@@ -15,8 +15,24 @@
  */
 import {
   test, expect, assertFullHealth, snap,
-  navPatient, navDoctor, waitForContent,
+  navPatient, navDoctor, waitForContent, PATIENT_URL, DOCTOR_URL,
+  readPageBearerToken,
 } from './helpers/multi-portal';
+
+const DEMO_DOCTOR_ID = 'DOC-TEST-001';
+const DEMO_PATIENT_ID = 'PATIENT-DEMO';
+
+async function openDoctorPatientRecord(doctorPage: import('@playwright/test').Page, label: string) {
+  await doctorPage.goto(`${DOCTOR_URL}/doctor/${DEMO_DOCTOR_ID}/patients/${DEMO_PATIENT_ID}`, {
+    waitUntil: 'domcontentloaded',
+    timeout: 15_000,
+  });
+  await waitForContent(doctorPage, label);
+  const viewRecordBtn = doctorPage.getByRole('button', { name: /View Record|ดูเวชระเบียน/i });
+  await expect(viewRecordBtn, `${label} View Record button`).toBeVisible({ timeout: 12_000 });
+  await viewRecordBtn.click();
+  await doctorPage.waitForTimeout(2_000);
+}
 
 test.describe('Group G — Living Will & PDPA', () => {
   test.describe.configure({ mode: 'serial' });
@@ -279,5 +295,76 @@ test.describe('Group G — Living Will & PDPA', () => {
     });
 
     console.log('\n  🎉 G3 COMPLETE — Cross-portal verification\n');
+  });
+
+  /* ═════════════════════════════════════════════════════════════════
+     G4 — Patient grants doctor access → doctor reads PHR (G15/G16)
+     ═════════════════════════════════════════════════════════════════ */
+  test('G4 — PDPA doctor access grant and revoke', async ({ portals }) => {
+    const { patient, doctor } = portals;
+
+    await test.step('G15 — Patient grants demo doctor medical record access', async () => {
+      await navPatient(patient.page, '/pdpa', 'G15');
+      const doctorsTab = patient.page.getByRole('button', { name: /Doctor Access|แพทย์ที่เข้าถึง/i });
+      if (await doctorsTab.isVisible({ timeout: 5_000 }).catch(() => false)) {
+        await doctorsTab.click();
+        await patient.page.waitForTimeout(500);
+      }
+
+      const token = await readPageBearerToken(patient.page);
+      const grantResp = await patient.page.request.post(`${PATIENT_URL}/api/pdpa/doctor-access`, {
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        data: { doctor_id: DEMO_DOCTOR_ID },
+      });
+      expect(grantResp.status(), 'G15 grant API').toBeLessThan(400);
+
+      await patient.page.reload();
+      await waitForContent(patient.page, 'G15-reload');
+      const doctorsTabAfterReload = patient.page.getByRole('button', { name: /Doctor Access|แพทย์ที่เข้าถึง/i });
+      if (await doctorsTabAfterReload.isVisible({ timeout: 5_000 }).catch(() => false)) {
+        await doctorsTabAfterReload.click();
+        await patient.page.waitForTimeout(500);
+      }
+      const accessRow = patient.page.getByTestId(`pdpa-doctor-access-row-${DEMO_DOCTOR_ID}`);
+      await expect(accessRow, 'G15 doctor access row visible').toBeVisible({ timeout: 10_000 });
+      await snap(patient.page, 'G15-doctor-access-granted', 'group-G');
+      console.log('  ✅ G15: Patient granted doctor access');
+    });
+
+    await test.step('G15b — Doctor opens patient record and sees PHR', async () => {
+      await openDoctorPatientRecord(doctor.page, 'G15b');
+      const body = await doctor.page.locator('body').innerText();
+      expect(body, 'G15b no PDPA gate').not.toMatch(/PDPA Consent Required/i);
+      await expect(doctor.page.getByTestId('patient-record-phr-summary'), 'G15b PHR summary').toBeVisible({ timeout: 12_000 });
+      await snap(doctor.page, 'G15b-doctor-patient-phr', 'group-G');
+      console.log('  ✅ G15b: Doctor patient record accessible');
+    });
+
+    await test.step('G16 — Patient revokes access → doctor sees consent gate', async () => {
+      const token = await readPageBearerToken(patient.page);
+      const revokeResp = await patient.page.request.delete(
+        `${PATIENT_URL}/api/pdpa/doctor-access/${DEMO_DOCTOR_ID}`,
+        { headers: { Authorization: `Bearer ${token}` } },
+      );
+      expect(revokeResp.status(), 'G16 revoke API').toBeLessThan(400);
+
+      const doctorToken = await readPageBearerToken(doctor.page);
+      const checkResp = await doctor.page.request.get(
+        `${DOCTOR_URL}/api/pdpa/check/${DEMO_PATIENT_ID}`,
+        { headers: { Authorization: `Bearer ${doctorToken}` } },
+      );
+      expect(checkResp.ok(), 'G16 consent check API').toBeTruthy();
+      const checkBody = await checkResp.json();
+      expect(checkBody.hasConsent, 'G16 API hasConsent false after revoke').toBe(false);
+
+      await openDoctorPatientRecord(doctor.page, 'G16');
+      const body = await doctor.page.locator('body').innerText();
+      const denied = /PDPA Consent Required|Request Access from Patient|PDPA consent required for medical records|Request Access/i.test(body);
+      expect(denied, 'G16 consent gate after revoke').toBeTruthy();
+      await snap(doctor.page, 'G16-doctor-consent-denied', 'group-G');
+      console.log('  ✅ G16: Revoke restored consent gate');
+    });
+
+    console.log('\n  🎉 G4 COMPLETE — PDPA grant/revoke chain\n');
   });
 });

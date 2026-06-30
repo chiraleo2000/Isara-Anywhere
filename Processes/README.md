@@ -171,10 +171,10 @@ All 5 services run via `docker-compose up --build`:
 │   │                                                              │    │
 │   │  izara-patient-portal-dev-testing    1CPU / 1GB / max 2     │    │
 │   │  izara-doctor-portal-dev-testing     1CPU / 1GB / max 2     │    │
-│   │  izara-meeting-server-dev-testing    1CPU / 2GB / max 2     │    │
+│   │  izara-meeting-server-dev-testing    1CPU / 1GB / max 2     │    │
 │   │                                                              │    │
 │   │  • gen2 execution environment                                │    │
-│   │  • cpu-boost enabled                                         │    │
+│   │  • --no-cpu-boost (cost profile)                             │    │
 │   │  • allow-unauthenticated (public)                            │    │
 │   │  • timeout: 300s (portals), 600s (meeting server)            │    │
 │   │  • min-instances: 0 (scale to zero)                          │    │

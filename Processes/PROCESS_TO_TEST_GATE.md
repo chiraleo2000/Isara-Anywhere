@@ -5,8 +5,12 @@ Maps each Processes document to Vitest contracts, Playwright groups, and gate st
 ## Local pre-deploy gate
 
 ```bash
+# If Docker stack is already up (skip rebuild — avoids Hub TLS timeouts on Windows):
+# PowerShell: $env:GATE_SKIP_DOCKER_BUILD='1'
 npm run test:local:pre-deploy-gate
 ```
+
+**Latest:** 2026-06-30 — Round 6 local: self-hosted Jitsi (`meet.localhost:8443`), doctor moderator JWT, manual recording; phases 0–5 + phase 3 ledger round 2 P0=0; LAN gate **BLOCKED** (Ubuntu `192.168.10.239` unreachable). See `reports/signoff/round6-local-lan-signoff-2026-06-30.md`.
 
 | Step | Command | Process docs covered |
 |------|---------|-------------------|
@@ -20,6 +24,26 @@ npm run test:local:pre-deploy-gate
 | Docker health | `docker:probe-health` | ENV_AND_STACK_CHECK |
 | E2E full (Gemini-lite) | `test:local:e2e-full` | All Pages A–S |
 | Process audit | `test:audit:process` | Processes/Pages/* |
+
+## Meeting / demo env parity (local Docker + Cloud Run)
+
+Set on **patient portal**, **doctor portal**, and **meeting-server** (meeting-server needs `PATIENT_PORTAL_URL` for guest invite links). Canonical template: `.env.docker.example`.
+
+| Variable | Default (prod/demo) | E2E gate only | Purpose |
+|----------|---------------------|---------------|---------|
+| `DEMO_AUTO_LOGIN` | `1` | — | Silent session login for doctor + patient (no login form) |
+| `DEMO_AUTO_MEETING` | `1` | — | Auto-navigate to meeting when appointment context present (doctor: first ready telehealth on Health Meeting load) |
+| `stayOnQueue` (query) | unset | `1` on E2E health-meeting URLs only | Test-only: keep queue UI visible; never set in prod demo |
+| `DEMO_DOCTOR_EMAIL` / `DEMO_DOCTOR_PASSWORD` | demo creds | — | Doctor portal auto-login |
+| `DEMO_PATIENT_EMAIL` / `DEMO_PATIENT_PASSWORD` | demo creds | — | Patient portal auto-login |
+| `PATIENT_PORTAL_URL` | `http://127.0.0.1:3005` (local) | — | Guest invite URLs on patient origin |
+| `DOCTOR_PORTAL_URL` | `http://127.0.0.1:3010` (local) | — | Doctor portal origin for CORS/links |
+| `MEETING_PUBLIC_URL` | `http://127.0.0.1:3020` (local) | — | Browser-reachable meeting API |
+| `VITE_AUTO_ADMIT_LOBBY` | `0` | `0` (gate + docker + cloud) | Doctor must click Admit in lobby (Teams/Zoom); E2E uses `admit-all-btn` UI |
+| `GUEST_ALLOW_ANONYMOUS_JOIN` | unset / `0` | optional dev | Allow bare `/guest-join/:id` (not production) |
+| `PW_INCLUDE_GUEST` | unset | `1` for Q guest steps | Enable Q01d 3-party guest in Playwright |
+
+Contract tests: MEET-UX-15 (`.env.docker.example`), MEET-UX-18 (`buildGuestPortalUrls` token URL).
 
 ## Cloud deploy gate (after local green)
 
@@ -77,6 +101,17 @@ npm run test:cloud:deploy-gate
 | GATE0_IMPLEMENTATION_STATUS.md | verify:gate0 | D, Q |
 | TWO_ROUND_CLOUD_TESTING.md | — | local gate = Round 1 |
 
+## PDPA + content approval gates (G15–G16, H-approval)
+
+| Gate | Asserts |
+|------|---------|
+| G15 | Patient `POST /api/pdpa/doctor-access` → doctor patient record without PDPA gate |
+| G16 | Patient revoke → doctor sees consent required |
+| H-approval | Doctor draft → not in patient library → admin approve → patient sees |
+| `npm run test:browser:full-gate` | lint + unit workflows + W-firefox/webkit + D-firefox |
+
+Pre-deploy gate (`run-local-pre-deploy-gate.mjs`) also runs `browser-core-firefox`, `browser-core-webkit`, `browser-appointments-firefox` before full E2E.
+
 ## Gemini-lite mode
 
 Set `PW_SKIP_LIVE_GEMINI=1` for local E2E. Q02d accepts `summary-degraded-badge` OR `summary-structured`.
@@ -96,7 +131,8 @@ npm run test:lan:deploy-gate   # TEST_ENV=lan, Q+R+B headed, BASELINE_VISUAL=1
 
 ## Release ladder (local → LAN → cloud)
 
-1. `npm run test:local:pre-deploy-gate` — ledger round 9 P0=0
-2. `npm run test:lan:deploy-gate` — W8 manual second device optional
-3. `npm run cloud:deploy -- -Tag v1.7.55` then `npm run test:cloud:deploy-gate`
-4. `npm run test:cloud:doc-screenshots` + `docs:sync-screenshots` + `guides:all`
+1. `npm run test:local:pre-deploy-gate` — ledger round 9 P0=0 ✅
+2. `npm run test:lan:deploy-gate` — **BLOCKED** until Ubuntu LAN reachable
+3. Self-hosted Jitsi LAN (`meet.demotoday.net`) — j8 deferred with LAN
+4. `gcloud builds submit` with `_MIN_INSTANCES=0,_MAX_INSTANCES=2` then `npm run test:cloud:deploy-gate` — **BLOCKED** pending user approval
+5. `npm run test:cloud:doc-screenshots` + `docs:sync-screenshots` + `guides:all` (optional after cloud green)

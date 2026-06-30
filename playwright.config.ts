@@ -134,11 +134,19 @@ const RESPONSIVE_PROJECTS = [
   { name: 'S-tablet-lg', viewport: RESPONSIVE_VIEWPORTS.tabletLg },
 ] as const;
 
+function resolvePlaywrightRetries(): number {
+  if (IS_CLOUD) return 0;
+  if (process.env.PW_HEADED === '1') return 1;
+  return 0;
+}
+
+const playwrightRetries = resolvePlaywrightRetries();
+
 export default defineConfig({
   testDir: './tests',
   outputDir: PRE_DEBUG_OUTPUT,
   timeout: IS_CLOUD ? 420_000 : 300_000,
-  retries: IS_CLOUD ? 0 : process.env.PW_HEADED === '1' ? 1 : 0,
+  retries: playwrightRetries,
   workers,
   maxFailures: 10,
   forbidOnly: true,
@@ -231,6 +239,12 @@ export default defineConfig({
       testMatch: 'group-Q-meeting-lifecycle.ui-test.ts',
       dependencies: ['D-appointments', 'D-doctor-host'],
       timeout: IS_CLOUD ? 900_000 : 600_000,
+    },
+    {
+      name: 'MEET-auto-meeting',
+      testMatch: 'group-MEET-auto-meeting.ui-test.ts',
+      dependencies: ['A-auth'],
+      timeout: IS_CLOUD ? 300_000 : 180_000,
     },
     {
       name: 'Q2-post-meeting-doctor',

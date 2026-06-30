@@ -1,6 +1,7 @@
-import { createContext, useContext, useState, useEffect, ReactNode, useCallback, useMemo } from 'react';
+import { createContext, useContext, useState, useEffect, useRef, ReactNode, useCallback, useMemo } from 'react';
 import { User } from '../types';
 import { resolveApiBaseUrl } from '../utils/resolveApiBaseUrl';
+import { getDemoPatientCredentials, isDemoAutoLoginEnabled, shouldSkipDemoAutoLogin } from '../utils/demoAutoAuth';
 
 interface AuthContextType {
   user: User | null;
@@ -81,6 +82,7 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [lastActivity, setLastActivity] = useState<number>(Date.now());
+  const demoAutoLoginAttempted = useRef(false);
 
   // Update last activity timestamp
   const updateActivity = useCallback(() => {
@@ -188,6 +190,18 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
     const data = await res.json();
     saveAuth(data.user, data.token);
   };
+
+  // Docker/E2E: silent demo patient login — no manual click on /login
+  useEffect(() => {
+    if (!isDemoAutoLoginEnabled() || user || isLoading || demoAutoLoginAttempted.current) return;
+    if (shouldSkipDemoAutoLogin()) return;
+    demoAutoLoginAttempted.current = true;
+    const creds = getDemoPatientCredentials();
+    login(creds.email, creds.password).catch((err) => {
+      console.warn('[Auth] Demo auto-login failed:', err);
+      demoAutoLoginAttempted.current = false;
+    });
+  }, [user, isLoading]);
 
   const loginWithGoogle = async (idToken: string) => {
     const res = await fetch(getApiUrl('/api/auth/google-auth'), {

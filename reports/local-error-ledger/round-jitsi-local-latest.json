@@ -1,0 +1,20 @@
+{
+  "round": "jitsi-local",
+  "timestamp": "2026-06-30T07:27:09.245Z",
+  "immutable": true,
+  "environment": {
+    "testEnv": "local",
+    "patientUrl": "http://localhost:3005",
+    "doctorUrl": "http://localhost:3010",
+    "meetingUrl": "http://localhost:3020"
+  },
+  "stats": {
+    "expected": 22,
+    "unexpected": 0,
+    "skipped": 1,
+    "durationMs": 170380.531
+  },
+  "failures": [],
+  "p0Count": 0,
+  "p1Count": 0
+}

@@ -19,10 +19,13 @@ import {
   resolveJitsiDomain,
   resolvePatientMeetingDisplayName,
   waitForHostReady,
+  wireJitsiSkipPrejoin,
   type MeetingJoinConfig,
 } from '../utils/jitsiMeetingConfig';
 import { JitsiMeetingShell } from '../features/meeting/JitsiMeetingShell';
 import { resolveMeetingServerUrl } from '../utils/resolveMeetingServerUrl';
+import { isDemoAutoLoginEnabled } from '../utils/demoAutoAuth';
+import { patientMeetingUrl, resolvePatientMeetingApiBase } from '../utils/resolvePatientMeetingApi';
 
 const JITSI_DOMAIN = resolveJitsiDomain();
 
@@ -55,7 +58,7 @@ async function tryMeetingServer(appointmentId: string, authToken?: string | null
   try {
     const headers: Record<string, string> = {};
     if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
-    const res = await fetch(`${resolveMeetingServerUrl()}/api/meetings/${appointmentId}`, {
+    const res = await fetch(patientMeetingUrl(appointmentId, ''), {
       headers,
       credentials: 'include',
     });
@@ -109,18 +112,6 @@ interface MediaDeviceStatus {
 
 // ── PURE UTILITY FUNCTIONS (module-level to reduce component complexity) ──
 
-function getUserInitials(name: string): string {
-  return name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() || 'PT';
-}
-
-function getMediaStatusIcon(s: string): string {
-  switch (s) { case 'granted': return '✓'; case 'denied': return '✗'; case 'unavailable': return '○'; default: return '...'; }
-}
-
-function getMediaStatusText(s: string): string {
-  switch (s) { case 'granted': return 'พร้อมใช้งาน'; case 'denied': return 'ถูกปฏิเสธ'; case 'unavailable': return 'ไม่พบอุปกรณ์ — เข้าร่วมได้โดยไม่ต้องใช้'; default: return 'กำลังตรวจสอบ...'; }
-}
-
 async function probeMediaDevices(): Promise<{ status: MediaDeviceStatus; stream: MediaStream | null }> {
   const ms: MediaDeviceStatus = { camera: 'checking', microphone: 'checking', cameraLabel: '', microphoneLabel: '' };
   const mediaPromise = (async () => {
@@ -170,7 +161,7 @@ function guestParticipantId(appointmentId: string): string {
 const PatientMeetingRoom: React.FC = () => { // NOSONAR
   const { appointmentId } = useParams<{ appointmentId: string }>();
   const [searchParams] = useSearchParams();
-  const { user, token } = useAuth();
+  const { user, token, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
 
   const jitsiContainerRef = useRef<HTMLDivElement>(null);
@@ -183,32 +174,19 @@ const PatientMeetingRoom: React.FC = () => { // NOSONAR
   const previewVideoRef = useRef<HTMLVideoElement>(null);
 
   const [status, setStatus] = useState<
-    'loading' | 'agreement' | 'pre_join' | 'lobby_waiting' | 'waiting_host' | 'ready' | 'in_meeting' | 'ended'
+    'loading' | 'lobby_starting' | 'lobby_waiting' | 'waiting_host' | 'ready' | 'in_meeting' | 'ended'
   >('loading');
+  const [autoStartRetry, setAutoStartRetry] = useState(0);
+  const shouldAutoStartLobbyRef = useRef(false);
+  const autoStartAttemptsRef = useRef(0);
   const [resolvedName, setResolvedName] = useState<string>('');
   const [transcripts, setTranscripts] = useState<TranscriptSegment[]>([]);
   const [showTranscript, setShowTranscript] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [meetingDuration, setMeetingDuration] = useState(0);
   const durationTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const [mediaStatus, setMediaStatus] = useState<MediaDeviceStatus>({
-    camera: 'checking', microphone: 'checking',
-    cameraLabel: '', microphoneLabel: '',
-  });
   const [cameraOn, setCameraOn] = useState(true);
   const [micOn, setMicOn] = useState(true);
-
-  // Agreement / Consent
-  const [consentRecording, setConsentRecording] = useState(false);
-  const [consentTranscript, setConsentTranscript] = useState(false);
-  const [consentDataSharing, setConsentDataSharing] = useState(false);
-
-  // Invite sharing
-  const [inviteName, setInviteName] = useState('');
-  const [inviteEmail, setInviteEmail] = useState('');
-  const [inviteLink, setInviteLink] = useState<string | null>(null);
-  const [showInvite, setShowInvite] = useState(false);
-  const [lobbyStatus, setLobbyStatus] = useState<'none' | 'waiting' | 'admitted' | 'rejected'>('none');
 
   // Consultation result (shown after meeting ends and doctor approves)
   const [consultationResult, setConsultationResult] = useState<{
@@ -218,6 +196,8 @@ const PatientMeetingRoom: React.FC = () => { // NOSONAR
     doctorName?: string;
     validatedAt?: string;
   } | null>(null);
+
+  const [lobbyStatus, setLobbyStatus] = useState<'none' | 'waiting' | 'admitted' | 'rejected'>('none');
 
   const participantId = user?.id || guestParticipantId(appointmentId || 'room');
   const patientName = resolvePatientMeetingDisplayName({
@@ -243,23 +223,6 @@ const PatientMeetingRoom: React.FC = () => { // NOSONAR
       if (ms.camera === 'denied' || ms.camera === 'unavailable') setCameraOn(false);
       if (ms.microphone === 'denied' || ms.microphone === 'unavailable') setMicOn(false);
     }
-    setMediaStatus(ms);
-  };
-
-  const togglePreviewCamera = () => {
-    if (previewStreamRef.current) {
-      const vt = previewStreamRef.current.getVideoTracks()[0];
-      if (vt) vt.enabled = !vt.enabled;
-    }
-    setCameraOn(prev => !prev);
-  };
-
-  const togglePreviewMic = () => {
-    if (previewStreamRef.current) {
-      const at = previewStreamRef.current.getAudioTracks()[0];
-      if (at) at.enabled = !at.enabled;
-    }
-    setMicOn(prev => !prev);
   };
 
   // Poll for consultation result after meeting ends
@@ -324,11 +287,12 @@ const PatientMeetingRoom: React.FC = () => { // NOSONAR
 
     const init = async () => {
       try {
+        const apiBase = resolvePatientMeetingApiBase();
         const roomName = await fetchRoomName(appointmentId || 'room', token);
         roomNameRef.current = roomName;
         const displayNameForConfig = getIzaraDisplayName(user, 'Patient');
         const joinCfg = await fetchMeetingJoinConfig(
-          resolveMeetingServerUrl(),
+          apiBase,
           appointmentId || 'room',
           'patient',
           displayNameForConfig,
@@ -340,14 +304,23 @@ const PatientMeetingRoom: React.FC = () => { // NOSONAR
         if (joinCfg?.domain) jitsiDomainRef.current = joinCfg.domain;
         await checkMediaDevices();
         await connectPatientSocket(appendTranscript);
-        setStatus('agreement');
+        autoStartAttemptsRef.current = 0;
+        shouldAutoStartLobbyRef.current = true;
+        setStatus('lobby_starting');
       } catch (err: any) {
         setError(err.message);
-        setStatus('agreement');
+        autoStartAttemptsRef.current = 0;
+        shouldAutoStartLobbyRef.current = true;
+        setStatus('lobby_starting');
       }
     };
 
-    if (appointmentId) init();
+    if (!appointmentId) return;
+    if (authLoading) return;
+    // Wait for demo/session auth before patient lobby (avoids 401 on meeting-server)
+    if (!user && isDemoAutoLoginEnabled()) return;
+
+    init();
 
     return () => {
       if (jitsiApiRef.current) try { jitsiApiRef.current.dispose(); } catch { /* */ }
@@ -355,57 +328,10 @@ const PatientMeetingRoom: React.FC = () => { // NOSONAR
       if (durationTimerRef.current) clearInterval(durationTimerRef.current);
       stopPreviewStream();
     };
-  }, [appointmentId, user]);
-
-  const handleAgreeAndContinue = async () => {
-    setStatus('pre_join');
-    try {
-      const ctrl = new AbortController();
-      const timer = setTimeout(() => ctrl.abort(), 10_000);
-      await fetch(`${resolveMeetingServerUrl()}/api/meetings/${appointmentId}/consent`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          participantId,
-          participantName: patientName,
-          role: 'patient',
-          consentRecording, consentTranscript, consentDataSharing,
-        }),
-        signal: ctrl.signal,
-        credentials: 'include',
-      });
-      clearTimeout(timer);
-    } catch { /* silent */ }
-  };
-
-  const shareInviteLink = async () => {
-    if (!inviteName) return;
-    try {
-      const res = await fetch(`${resolveMeetingServerUrl()}/api/meetings/${appointmentId}/share-link`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          sharedBy: user?.id, sharedByName: patientName,
-          recipientName: inviteName, recipientEmail: inviteEmail,
-        }),
-        credentials: 'include',
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setInviteLink(data.guestJoinUrl || data.inviteLink);
-        setInviteName('');
-        setInviteEmail('');
-      }
-    } catch { /* silent */ }
-  };
-
-  const copyInviteLink = () => {
-    if (inviteLink) {
-      navigator.clipboard.writeText(inviteLink).catch(() => {});
-    }
-  };
+  }, [appointmentId, user, token, authLoading]);
 
   const videoConnectStartedRef = useRef(false);
+  const retryVideoConnectRef = useRef<() => void>(() => {});
 
   const mountJitsiMeeting = useCallback(async () => {
     try {
@@ -432,6 +358,7 @@ const PatientMeetingRoom: React.FC = () => { // NOSONAR
         });
 
         jitsiApiRef.current = api;
+        wireJitsiSkipPrejoin(api);
 
         const iframe = jitsiContainerRef.current?.querySelector('iframe');
         if (iframe) {
@@ -454,6 +381,27 @@ const PatientMeetingRoom: React.FC = () => { // NOSONAR
             setMeetingDuration(Math.floor((Date.now() - start) / 1000));
           }, 1000);
         });
+        api.on('videoConferenceFailed', (err: { error?: string }) => {
+          const reason = String(err?.error || '');
+          if (reason.includes('membersOnly') || reason.includes('connectionError')) {
+            try { api.dispose(); } catch { /* */ }
+            jitsiApiRef.current = null;
+            videoConnectStartedRef.current = false;
+            setStatus('waiting_host');
+            setError('รอแพทย์เข้าห้องประชุมก่อน — แพทย์ต้องเป็นผู้ดำเนินการห้อง');
+            globalThis.setTimeout(() => {
+              setError(null);
+              retryVideoConnectRef.current();
+            }, 3000);
+          }
+        });
+        api.on('lobbyJoined', () => {
+          try { api.dispose(); } catch { /* */ }
+          jitsiApiRef.current = null;
+          videoConnectStartedRef.current = false;
+          setStatus('waiting_host');
+          setError('รอแพทย์อนุมัติห้องประชุม — อย่าใช้หน้า Log-in ของ Jitsi');
+        });
       }
     } catch (err: any) {
       setError(err.message);
@@ -461,7 +409,7 @@ const PatientMeetingRoom: React.FC = () => { // NOSONAR
   }, [patientName, micOn, cameraOn, user, resolvedName, searchParams, appointmentId]);
 
   const connectVideoWhenReady = useCallback(async () => {
-    const hostReady = await waitForHostReady(resolveMeetingServerUrl(), appointmentId || '', 120_000);
+    const hostReady = await waitForHostReady(resolvePatientMeetingApiBase(), appointmentId || '', 120_000);
     if (!hostReady) {
       setError('รอแพทย์เข้าห้องประชุม — แพทย์ต้องเข้าก่อนจึงจะเชื่อมต่อวิดีโอได้');
       return;
@@ -472,6 +420,11 @@ const PatientMeetingRoom: React.FC = () => { // NOSONAR
     await mountJitsiMeeting();
     setStatus('in_meeting');
   }, [appointmentId, stopPreviewStream, mountJitsiMeeting]);
+
+  retryVideoConnectRef.current = () => {
+    videoConnectStartedRef.current = false;
+    void connectVideoWhenReady();
+  };
 
   useEffect(() => {
     if (lobbyStatus !== 'admitted') return;
@@ -492,7 +445,7 @@ const PatientMeetingRoom: React.FC = () => { // NOSONAR
     const poll = setInterval(async () => {
       try {
         const r = await fetch(
-          `${resolveMeetingServerUrl()}/api/meetings/${appointmentId}/lobby/status/${encodeURIComponent(participantId)}`,
+          patientMeetingUrl(appointmentId, `/lobby/status/${encodeURIComponent(participantId)}`),
           { credentials: 'include' },
         );
         if (!r.ok) return;
@@ -510,7 +463,7 @@ const PatientMeetingRoom: React.FC = () => { // NOSONAR
     return () => clearInterval(poll);
   }, [lobbyStatus, appointmentId, participantId]);
 
-  const joinMeeting = async () => {
+  const joinMeeting = useCallback(async (): Promise<boolean> => {
     setError(null);
     setStatus('lobby_waiting');
     setLobbyStatus('waiting');
@@ -518,7 +471,7 @@ const PatientMeetingRoom: React.FC = () => { // NOSONAR
     try {
       const ctrl = new AbortController();
       const timer = setTimeout(() => ctrl.abort(), 10_000);
-      const lobbyRes = await fetch(`${resolveMeetingServerUrl()}/api/meetings/${appointmentId}/lobby/join`, {
+      const lobbyRes = await fetch(patientMeetingUrl(appointmentId || '', '/join'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -542,22 +495,78 @@ const PatientMeetingRoom: React.FC = () => { // NOSONAR
         } else {
           setLobbyStatus('waiting');
         }
-        return;
+        return true;
       }
     } catch {
       /* lobby request failed — handled below; never bypass the host gate */
     }
 
-    // Lobby join failed. Do NOT auto-admit — the doctor must host and admit from the lobby.
     setLobbyStatus('none');
-    setStatus('agreement');
+    setStatus('lobby_waiting');
     setError('ไม่สามารถเข้าห้องรอได้ในขณะนี้ กรุณารอให้แพทย์เริ่มห้องประชุมแล้วลองใหม่อีกครั้ง');
-  };
+    return false;
+  }, [appointmentId, token, patientName, participantId, user?.email]);
+
+  // Auto-start patient lobby: record consent then join without manual steps
+  useEffect(() => {
+    if (status !== 'lobby_starting' || !shouldAutoStartLobbyRef.current) return;
+    if (autoStartAttemptsRef.current >= 3) return;
+
+    shouldAutoStartLobbyRef.current = false;
+    autoStartAttemptsRef.current += 1;
+
+    const autoStartLobby = async () => {
+      try {
+        const ctrl = new AbortController();
+        const timer = setTimeout(() => ctrl.abort(), 10_000);
+        await fetch(patientMeetingUrl(appointmentId || '', '/consent'), {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+          body: JSON.stringify({
+            participantId,
+            participantName: patientName,
+            role: 'patient',
+            consentRecording: true,
+            consentTranscript: true,
+            consentDataSharing: true,
+            patientAutoConsent: true,
+          }),
+          signal: ctrl.signal,
+          credentials: 'include',
+        });
+        clearTimeout(timer);
+      } catch { /* silent */ }
+      const joined = await joinMeeting();
+      if (!joined && autoStartAttemptsRef.current < 3) {
+        shouldAutoStartLobbyRef.current = true;
+        setStatus('lobby_starting');
+        globalThis.setTimeout(() => setAutoStartRetry((n) => n + 1), 1500);
+      }
+    };
+    void autoStartLobby();
+  }, [status, autoStartRetry, appointmentId, token, participantId, patientName, joinMeeting]);
 
   const fmt = (s: number) => {
     const m = Math.floor(s / 60); const sec = s % 60;
     return `${m}:${String(sec).padStart(2, '0')}`;
   };
+
+  if (authLoading || (!user && isDemoAutoLoginEnabled())) {
+    return (
+      <JitsiMeetingShell className="fixed inset-0 z-50 min-h-[100dvh] max-h-[100dvh]">
+        <div
+          className="flex flex-1 flex-col items-center justify-center min-h-[100dvh] bg-gray-900 text-white"
+          data-testid="meeting-auth-starting"
+        >
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-400 mb-4" />
+          <p className="text-gray-300 text-sm">กำลังเข้าสู่ระบบ...</p>
+        </div>
+      </JitsiMeetingShell>
+    );
+  }
 
   return (
     <JitsiMeetingShell className="fixed inset-0 z-50 min-h-[100dvh] max-h-[100dvh]">
@@ -577,250 +586,19 @@ const PatientMeetingRoom: React.FC = () => { // NOSONAR
         </div>
       )}
 
-      {/* ================================================================== */}
-      {/* MEETING AGREEMENT SCREEN */}
-      {/* ================================================================== */}
-      {status === 'agreement' && (
-        <div className="flex-1 flex flex-col items-center justify-center bg-gradient-to-b from-gray-900 via-gray-800 to-gray-900" data-testid="meeting-agreement">
-          <div className="absolute top-0 left-0 right-0 flex items-center justify-between px-6 py-4">
-            <div className="flex items-center gap-2">
-              <span className="text-xl font-bold text-emerald-400">Izara Meeting</span>
-            </div>
-            <button onClick={() => navigate('/appointments')} className="text-gray-400 hover:text-white text-sm transition">← กลับ</button>
-          </div>
-
-          <div className="max-w-lg w-full px-8">
-            <div className="bg-gray-800/80 rounded-2xl p-8 border border-gray-700 shadow-2xl">
-              <div className="text-center mb-6">
-                <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-emerald-600/20 flex items-center justify-center"><svg className="w-6 h-6 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg></div>
-                <h1 className="text-2xl font-bold mb-2">ข้อตกลงก่อนเข้าประชุม</h1>
-                <p className="text-gray-400 text-sm">กรุณายอมรับข้อตกลงก่อนเข้าร่วมการประชุมกับแพทย์</p>
-              </div>
-
-              <div className="space-y-4 mb-6">
-                <label htmlFor="patient-consent-recording-input" className="flex items-start gap-3 cursor-pointer group" data-testid="consent-recording" aria-label="ยินยอมการบันทึกวิดีโอ">
-                  <input id="patient-consent-recording-input" type="checkbox" data-testid="consent-recording-input" checked={consentRecording} onChange={e => setConsentRecording(e.target.checked)}
-                    className="mt-1 w-5 h-5 rounded border-gray-600 text-emerald-600 focus:ring-emerald-500" />
-                  <div>
-                    <span className="font-medium group-hover:text-emerald-300 transition">ยินยอมการบันทึกวิดีโอ</span>
-                    <p className="text-xs text-gray-400 mt-1">การประชุมอาจถูกบันทึกเพื่อวัตถุประสงค์ทางการแพทย์</p>
-                  </div>
-                </label>
-
-                <label htmlFor="patient-consent-transcript-input" className="flex items-start gap-3 cursor-pointer group" data-testid="consent-transcript" aria-label="ยินยอมการถอดเสียง">
-                  <input id="patient-consent-transcript-input" type="checkbox" data-testid="consent-transcript-input" checked={consentTranscript} onChange={e => setConsentTranscript(e.target.checked)}
-                    className="mt-1 w-5 h-5 rounded border-gray-600 text-emerald-600 focus:ring-emerald-500" />
-                  <div>
-                    <span className="font-medium group-hover:text-emerald-300 transition">ยินยอมการถอดเสียง (Transcript)</span>
-                    <p className="text-xs text-gray-400 mt-1">บทสนทนาจะถูกถอดเสียงเป็นข้อความเพื่อบันทึกประวัติการรักษา</p>
-                  </div>
-                </label>
-
-                <label htmlFor="patient-consent-data-sharing-input" className="flex items-start gap-3 cursor-pointer group" data-testid="consent-data-sharing" aria-label="ยินยอมการแบ่งปันข้อมูล">
-                  <input id="patient-consent-data-sharing-input" type="checkbox" data-testid="consent-data-sharing-input" checked={consentDataSharing} onChange={e => setConsentDataSharing(e.target.checked)}
-                    className="mt-1 w-5 h-5 rounded border-gray-600 text-emerald-600 focus:ring-emerald-500" />
-                  <div>
-                    <span className="font-medium group-hover:text-emerald-300 transition">ยินยอมการแบ่งปันข้อมูล</span>
-                    <p className="text-xs text-gray-400 mt-1">ข้อมูลจะถูกจัดเก็บในระบบสุขภาพอย่างปลอดภัย ตาม PDPA</p>
-                  </div>
-                </label>
-              </div>
-
-              <div className="bg-gray-700/50 rounded-lg p-3 mb-6 text-xs text-gray-300">
-                <p className="font-medium text-yellow-400 mb-1">หมายเหตุ</p>
-                <p>ข้อมูลทั้งหมดจะถูกเข้ารหัสและจัดเก็บตามมาตรฐาน PDPA ท่านสามารถเพิกถอนความยินยอมได้ทุกเมื่อ</p>
-              </div>
-
-              <button
-                onClick={handleAgreeAndContinue}
-                disabled={!consentRecording || !consentTranscript || !consentDataSharing}
-                className="w-full min-h-11 py-4 bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-600 disabled:cursor-not-allowed rounded-xl text-lg font-bold transition-all shadow-lg"
-                data-testid="agree-continue-btn"
-              >
-                ยอมรับและดำเนินการต่อ
-              </button>
-            </div>
-          </div>
+      {status === 'lobby_starting' && (
+        <div
+          className="flex-1 flex flex-col items-center justify-center gap-4"
+          data-testid="lobby-starting-screen"
+        >
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-400" />
+          <p className="text-gray-300">กำลังเข้าห้องรอ...</p>
+          <p className="text-gray-400 text-sm">Joining lobby...</p>
+          <p className="text-gray-500 text-sm" data-testid="patient-display-name">{patientName}</p>
+          {error && <p className="text-red-400 text-sm max-w-md text-center px-4">{error}</p>}
         </div>
       )}
 
-      {/* ================================================================== */}
-      {/* PRE-JOIN SCREEN (Teams-like) */}
-      {/* ================================================================== */}
-      {status === 'pre_join' && (
-        <div className="flex-1 flex flex-col items-center justify-center bg-gradient-to-b from-gray-900 via-gray-800 to-gray-900" data-testid="pre-join-screen">
-          {/* Header */}
-          <div className="absolute top-0 left-0 right-0 flex items-center justify-between px-6 py-4">
-            <div className="flex items-center gap-2">
-              <span className="text-xl font-bold text-emerald-400">Izara Meeting</span>
-            </div>
-            <button onClick={() => navigate('/appointments')} className="text-gray-400 hover:text-white text-sm transition">
-              ← กลับ
-            </button>
-          </div>
-
-          <div className="flex flex-col lg:flex-row items-center gap-12 max-w-5xl w-full px-8">
-            {/* Video Preview / Avatar */}
-            <div className="flex-1 flex flex-col items-center gap-4">
-              <div className="relative w-[480px] h-[320px] bg-gray-800 rounded-2xl overflow-hidden border-2 border-gray-600 shadow-2xl">
-                {cameraOn && mediaStatus.camera === 'granted' ? (
-                  <video ref={previewVideoRef} autoPlay muted playsInline className="w-full h-full object-cover [transform:scaleX(-1)]" />
-                ) : (
-                  <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-gray-800 to-gray-900">
-                    <div className="w-28 h-28 rounded-full bg-emerald-500 flex items-center justify-center text-4xl font-bold text-white shadow-lg mb-3">
-                      {getUserInitials(patientName)}
-                    </div>
-                    <span className="text-lg font-medium text-white" data-testid="patient-display-name">{patientName}</span>
-                    <span className="text-sm text-emerald-300 mt-1">ผู้ป่วย</span>
-                  </div>
-                )}
-              </div>
-
-              {/* Zoom-style Media Controls */}
-              <div className="flex items-center gap-3">
-                <div className="flex flex-col items-center">
-                  <button
-                    onClick={togglePreviewMic}
-                    className={`w-12 h-12 rounded-full flex items-center justify-center transition-all shadow-lg ${
-                      micOn && mediaStatus.microphone === 'granted'
-                        ? 'bg-gray-600 hover:bg-gray-500 text-white'
-                        : 'bg-red-600 hover:bg-red-500 text-white'
-                    }`}
-                    title={micOn ? 'ปิดไมค์' : 'เปิดไมค์'}
-                  >
-                    {micOn && mediaStatus.microphone === 'granted' ? (
-                      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4M12 15a3 3 0 003-3V5a3 3 0 00-6 0v7a3 3 0 003 3z" /></svg>
-                    ) : (
-                      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4M12 15a3 3 0 003-3V5a3 3 0 00-6 0v7a3 3 0 003 3z" /><line x1="3" y1="3" x2="21" y2="21" stroke="currentColor" strokeWidth={2} strokeLinecap="round" /></svg>
-                    )}
-                  </button>
-                  <span className="text-xs text-gray-400 mt-1">{micOn ? 'ไมค์เปิด' : 'ปิดเสียง'}</span>
-                </div>
-                <div className="flex flex-col items-center">
-                  <button
-                    onClick={togglePreviewCamera}
-                    className={`w-12 h-12 rounded-full flex items-center justify-center transition-all shadow-lg ${
-                      cameraOn && mediaStatus.camera === 'granted'
-                        ? 'bg-gray-600 hover:bg-gray-500 text-white'
-                        : 'bg-red-600 hover:bg-red-500 text-white'
-                    }`}
-                    title={cameraOn ? 'ปิดกล้อง' : 'เปิดกล้อง'}
-                  >
-                    {cameraOn && mediaStatus.camera === 'granted' ? (
-                      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
-                    ) : (
-                      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /><line x1="3" y1="3" x2="21" y2="21" stroke="currentColor" strokeWidth={2} strokeLinecap="round" /></svg>
-                    )}
-                  </button>
-                  <span className="text-xs text-gray-400 mt-1">{cameraOn ? 'กล้องเปิด' : 'ปิดกล้อง'}</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Meeting Info & Device Status */}
-            <div className="flex-1 flex flex-col items-center lg:items-start gap-6 max-w-sm">
-              <div>
-                <h1 className="text-2xl font-bold mb-2">เข้าร่วมการประชุม</h1>
-                <p className="text-gray-400 text-sm">
-                  นัดหมายแพทย์ — {appointmentId?.substring(0, 8)}
-                </p>
-              </div>
-
-              {/* Participant Info */}
-              <div className="w-full bg-gray-800/60 rounded-xl p-4 border border-gray-700">
-                <h3 className="text-sm font-semibold text-gray-300 mb-3">ข้อมูลผู้เข้าร่วม</h3>
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-full bg-emerald-500 flex items-center justify-center text-lg font-bold shadow">
-                    {getUserInitials(patientName)}
-                  </div>
-                  <div>
-                    <div className="font-medium" data-testid="patient-display-name">{patientName}</div>
-                    <div className="text-sm text-emerald-400">ผู้ป่วย</div>
-                    <div className="text-xs text-gray-500">{user?.email || ''}</div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Device Status */}
-              <div className="w-full bg-gray-800/60 rounded-xl p-4 border border-gray-700" data-testid="device-status">
-                <h3 className="text-sm font-semibold text-gray-300 mb-3">สถานะอุปกรณ์</h3>
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm">ไมโครโฟน</span>
-                    <span className="text-xs">{getMediaStatusIcon(mediaStatus.microphone)} {getMediaStatusText(mediaStatus.microphone)}</span>
-                  </div>
-                  {mediaStatus.microphoneLabel && (
-                    <div className="text-xs text-gray-500 pl-6">{mediaStatus.microphoneLabel}</div>
-                  )}
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm">กล้อง</span>
-                    <span className="text-xs">{getMediaStatusIcon(mediaStatus.camera)} {getMediaStatusText(mediaStatus.camera)}</span>
-                  </div>
-                  {mediaStatus.cameraLabel && (
-                    <div className="text-xs text-gray-500 pl-6">{mediaStatus.cameraLabel}</div>
-                  )}
-                </div>
-              </div>
-
-              {/* Invite Others Section */}
-              <div className="w-full bg-gray-800/60 rounded-xl p-4 border border-gray-700" data-testid="invite-section">
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-sm font-semibold text-gray-300">เชิญผู้อื่นเข้าร่วม</h3>
-                  <button onClick={() => setShowInvite(!showInvite)} className="text-xs text-emerald-400 hover:text-emerald-300">
-                    {showInvite ? 'ซ่อน' : 'แสดง'}
-                  </button>
-                </div>
-                {showInvite && (
-                  <div className="space-y-2">
-                    <input type="text" value={inviteName} onChange={e => setInviteName(e.target.value)}
-                      placeholder="ชื่อผู้เข้าร่วม" aria-label="ชื่อผู้เข้าร่วม" data-testid="invite-name-input"
-                      className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-sm focus:outline-none focus:border-emerald-500" />
-                    <input type="email" value={inviteEmail} onChange={e => setInviteEmail(e.target.value)}
-                      placeholder="อีเมล (ถ้ามี)" aria-label="อีเมลผู้เข้าร่วม" data-testid="invite-email-input"
-                      className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-sm focus:outline-none focus:border-emerald-500" />
-                    <button onClick={shareInviteLink} disabled={!inviteName}
-                      className="w-full py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-600 rounded-lg text-sm font-medium transition"
-                      data-testid="generate-invite-btn">
-                      สร้างลิงก์เชิญ
-                    </button>
-                    {inviteLink && (
-                      <div className="bg-gray-700/50 rounded-lg p-2 text-xs" data-testid="invite-link-display">
-                        <p className="text-gray-400 mb-1">ลิงก์เชิญ:</p>
-                        <div className="flex gap-1">
-                          <input type="text" readOnly value={inviteLink} aria-label="ลิงก์เชิญเข้าร่วม"
-                            className="flex-1 bg-gray-800 border border-gray-600 rounded px-2 py-1 text-xs text-emerald-300" />
-                          <button onClick={copyInviteLink}
-                            className="px-2 py-1 bg-emerald-600 hover:bg-emerald-700 rounded text-xs">
-                            คัดลอก
-                          </button>
-                        </div>
-                        <p className="text-yellow-400 text-xs mt-1">ผู้ที่ได้รับลิงก์จะต้องรอแพทย์อนุมัติก่อนเข้าประชุม</p>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-
-              {/* Join Button */}
-              <button
-                onClick={joinMeeting}
-                className="w-full py-4 bg-emerald-600 hover:bg-emerald-700 rounded-xl text-lg font-bold transition-all shadow-lg hover:shadow-emerald-600/30"
-                data-testid="join-meeting-btn"
-              >
-                เข้าร่วมการประชุม
-              </button>
-
-              {(mediaStatus.camera === 'denied' || mediaStatus.microphone === 'denied') && (
-                <div className="w-full bg-yellow-900/30 border border-yellow-700/50 rounded-lg p-3 text-yellow-300 text-xs">
-                  กรุณาอนุญาตการเข้าถึงกล้องและไมโครโฟนในเบราว์เซอร์เพื่อใช้งานวิดีโอคอล
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ================================================================== */}
       {/* LOBBY REJECTED (shown over waiting / pre-meeting states) */}
       {/* ================================================================== */}
       {lobbyStatus === 'rejected' && (
@@ -977,6 +755,9 @@ const PatientMeetingRoom: React.FC = () => { // NOSONAR
             <div
               ref={jitsiContainerRef}
               data-testid="jitsi-meeting-container"
+              data-jitsi-moderator="false"
+              data-jitsi-participant="true"
+              data-jitsi-display-name={patientName}
               className={`${showTranscript ? 'flex-1' : 'w-full'} h-full min-h-[480px]`}
             />
             {lobbyStatus === 'rejected' && (

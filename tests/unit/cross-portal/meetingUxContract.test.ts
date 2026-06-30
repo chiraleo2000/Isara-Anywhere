@@ -45,22 +45,26 @@ describe('Meeting UX contract (MEET-UX)', () => {
       .toMatch(/health-meeting-breadcrumb/);
   });
 
-  it('MEET-UX-08 — meeting consent requires all three checkboxes (doctor portal)', () => {
+  it('MEET-UX-08 — doctor host auto-consent and auto-start (no manual checkboxes)', () => {
     const src = fs.readFileSync(path.join(root, 'Isara-doctor-portal/frontend/pages/meetings/MeetingRoom.tsx'), 'utf8');
-    expect(src).toMatch(/consent-recording-input/);
-    expect(src).toMatch(/consent-transcript-input/);
-    expect(src).toMatch(/consent-data-sharing-input/);
-    expect(src).toMatch(/disabled=\{!consentRecording \|\| !consentTranscript \|\| !consentDataSharing\}/);
-    expect(src).toMatch(/htmlFor="consent-recording-input"/);
+    expect(src).toMatch(/host_starting/);
+    expect(src).toMatch(/host-starting-screen/);
+    expect(src).toMatch(/hostAutoConsent:\s*true/);
+    expect(src).toMatch(/doctor-display-name/);
+    expect(src).not.toMatch(/data-testid="meeting-agreement"/);
+    expect(src).not.toMatch(/data-testid="pre-join-screen"/);
+    expect(src).not.toMatch(/data-testid="join-meeting-btn"/);
   });
 
-  it('MEET-UX-09 — meeting consent requires all three checkboxes (patient portal)', () => {
+  it('MEET-UX-09 — patient auto-consent and auto-lobby (no manual checkboxes)', () => {
     const src = fs.readFileSync(path.join(root, 'Isara-patient-portal/frontend/pages/PatientMeetingRoom.tsx'), 'utf8');
-    expect(src).toMatch(/consent-recording-input/);
-    expect(src).toMatch(/consent-transcript-input/);
-    expect(src).toMatch(/consent-data-sharing-input/);
-    expect(src).toMatch(/disabled=\{!consentRecording \|\| !consentTranscript \|\| !consentDataSharing\}/);
-    expect(src).toMatch(/htmlFor="patient-consent-recording-input"/);
+    expect(src).toMatch(/lobby_starting/);
+    expect(src).toMatch(/lobby-starting-screen/);
+    expect(src).toMatch(/patientAutoConsent:\s*true/);
+    expect(src).toMatch(/patient-display-name/);
+    expect(src).not.toMatch(/data-testid="meeting-agreement"/);
+    expect(src).not.toMatch(/data-testid="pre-join-screen"/);
+    expect(src).not.toMatch(/data-testid="join-meeting-btn"/);
   });
 
   it('MEET-UX-10 — no virtual-meeting route or VirtualMeeting page exists', () => {
@@ -84,5 +88,133 @@ describe('Meeting UX contract (MEET-UX)', () => {
     // After a failed lobby join we must not auto-admit; doctor hosts and admits.
     expect(src).not.toMatch(/setLobbyStatus\('admitted'\);\s*\n\s*setStatus\('waiting_host'\);\s*\n\s*void connectVideoWhenReady/);
     expect(src).toMatch(/waitForHostReady/);
+  });
+
+  it('MEET-UX-13 — patient Jitsi container exposes role attrs for E2E (JROLE01)', () => {
+    const src = fs.readFileSync(path.join(root, 'Isara-patient-portal/frontend/pages/PatientMeetingRoom.tsx'), 'utf8');
+    expect(src).toMatch(/data-jitsi-moderator="false"/);
+    expect(src).toMatch(/data-jitsi-participant="true"/);
+    expect(src).toMatch(/data-jitsi-display-name/);
+  });
+
+  it('MEET-UX-14 — join-config downgrades non-appointed doctor from HOST', () => {
+    const src = fs.readFileSync(path.join(root, 'Izara-jitsi-server/backend/index.js'), 'utf8');
+    expect(src).toMatch(/appointedDoctorId/);
+    expect(src).toMatch(/appointedDoctorId !== requestDoctorId/);
+    expect(src).toMatch(/isHost = false/);
+    expect(src).toMatch(/downgraded when doctor is not appointed/);
+  });
+
+  it('MEET-UX-15 — demo auto-login and auto-meeting env hooks (no manual login/join clicks)', () => {
+    const patientAuth = fs.readFileSync(path.join(root, 'Isara-patient-portal/frontend/contexts/AuthContext.tsx'), 'utf8');
+    const doctorAuth = fs.readFileSync(path.join(root, 'Isara-doctor-portal/frontend/components/common/AuthProvider.tsx'), 'utf8');
+    const patientApt = fs.readFileSync(path.join(root, 'Isara-patient-portal/frontend/pages/AppointmentPages.tsx'), 'utf8');
+    expect(patientAuth).toMatch(/isDemoAutoLoginEnabled/);
+    expect(patientAuth).toMatch(/shouldSkipDemoAutoLogin/);
+    expect(doctorAuth).toMatch(/isDemoAutoLoginEnabled/);
+    expect(patientApt).toMatch(/isDemoAutoMeetingEnabled/);
+    const dockerExample = fs.readFileSync(path.join(root, '.env.docker.example'), 'utf8');
+    expect(dockerExample).toMatch(/DEMO_AUTO_LOGIN=1/);
+    expect(dockerExample).toMatch(/VITE_AUTO_ADMIT_LOBBY=0/);
+    expect(dockerExample).toMatch(/PATIENT_PORTAL_URL=/);
+  });
+
+  it('MEET-UX-16 — Jitsi prejoin bypass wired in both portals', () => {
+    const patientRoom = fs.readFileSync(path.join(root, 'Isara-patient-portal/frontend/pages/PatientMeetingRoom.tsx'), 'utf8');
+    const doctorRoom = fs.readFileSync(path.join(root, 'Isara-doctor-portal/frontend/pages/meetings/MeetingRoom.tsx'), 'utf8');
+    const patientCfg = fs.readFileSync(path.join(root, 'Isara-patient-portal/frontend/utils/jitsiMeetingConfig.ts'), 'utf8');
+    expect(patientRoom).toMatch(/wireJitsiSkipPrejoin/);
+    expect(doctorRoom).toMatch(/wireJitsiSkipPrejoin/);
+    expect(patientCfg).toMatch(/joinConference/);
+  });
+
+  it('MEET-UX-17 — patient meeting API uses same-origin BFF (fixes meeting-server 401)', () => {
+    const patientRoom = fs.readFileSync(path.join(root, 'Isara-patient-portal/frontend/pages/PatientMeetingRoom.tsx'), 'utf8');
+    const proxy = fs.readFileSync(path.join(root, 'Isara-patient-portal/backend/routes/video-meeting-proxy.ts'), 'utf8');
+    const server = fs.readFileSync(path.join(root, 'Izara-jitsi-server/backend/index.js'), 'utf8');
+    expect(patientRoom).toMatch(/resolvePatientMeetingApiBase/);
+    expect(patientRoom).toMatch(/patientMeetingUrl/);
+    expect(proxy).toMatch(/join-config/);
+    expect(server).toMatch(/ensureMeetingRecordForAppointment/);
+  });
+
+  it('MEET-UX-18 — guest invite uses token URL; doctor copies guestLink not bare guest-join', () => {
+    const jitsiCfg = fs.readFileSync(path.join(root, 'Izara-jitsi-server/backend/jitsiConfig.js'), 'utf8');
+    expect(jitsiCfg).toMatch(/guestLink:\s*guestTokenUrl/);
+    const meetingRoom = fs.readFileSync(path.join(root, 'Isara-doctor-portal/frontend/pages/meetings/MeetingRoom.tsx'), 'utf8');
+    expect(meetingRoom).toMatch(/data\.guestLink\s*\|\|\s*data\.guestTokenUrl/);
+    const doctorGuest = fs.readFileSync(path.join(root, 'Isara-doctor-portal/frontend/pages/meetings/GuestMeetingJoin.tsx'), 'utf8');
+    expect(doctorGuest).toMatch(/openGuestJoinBlocked/);
+    expect(doctorGuest).toMatch(/Anonymous guest access is disabled/);
+    expect(doctorGuest).toMatch(/PATIENT_PORTAL_URL/);
+  });
+
+  it('MEET-UX-19 — doctor AuthProvider never navigates to /login on meeting route when DEMO_AUTO_LOGIN', () => {
+    const auth = fs.readFileSync(path.join(root, 'Isara-doctor-portal/frontend/components/common/AuthProvider.tsx'), 'utf8');
+    expect(auth).toMatch(/shouldBypassLoginRedirectForMeeting/);
+    expect(auth).toMatch(/isDoctorMeetingRoute/);
+    expect(auth).toMatch(/meeting-auth-starting/);
+    expect(auth).toMatch(/!shouldBypassLoginRedirectForMeeting\(location\.pathname\)[\s\S]*navigate\('\/login'/);
+  });
+
+  it('MEET-UX-20 — patient /meeting route is public (not behind ProtectedRoute)', () => {
+    const app = fs.readFileSync(path.join(root, 'Isara-patient-portal/frontend/App.tsx'), 'utf8');
+    expect(app).toMatch(/path="\/meeting\/:appointmentId"/);
+    expect(app).not.toMatch(/path="\/meeting\/:appointmentId" element=\{<ProtectedRoute>/);
+  });
+
+  it('MEET-UX-21 — docker env: DEMO_AUTO_LOGIN=1 and VITE_AUTO_ADMIT_LOBBY=0', () => {
+    const dockerExample = fs.readFileSync(path.join(root, '.env.docker.example'), 'utf8');
+    expect(dockerExample).toMatch(/DEMO_AUTO_LOGIN=1/);
+    expect(dockerExample).toMatch(/VITE_AUTO_ADMIT_LOBBY=0/);
+    const gate = fs.readFileSync(path.join(root, 'scripts/run-local-pre-deploy-gate.mjs'), 'utf8');
+    expect(gate).toMatch(/VITE_AUTO_ADMIT_LOBBY:\s*'0'/);
+    expect(gate).not.toMatch(/VITE_AUTO_ADMIT_LOBBY:\s*'1'/);
+  });
+
+  it('MEET-UX-22 — guest form testids on patient GuestMeetingJoin', () => {
+    const guest = fs.readFileSync(path.join(root, 'Isara-patient-portal/frontend/pages/GuestMeetingJoin.tsx'), 'utf8');
+    expect(guest).toMatch(/data-testid="guest-name-input"/);
+    expect(guest).toMatch(/data-testid="guest-join-btn"/);
+    expect(guest).toMatch(/data-testid="guest-lobby-waiting"/);
+  });
+
+  it('MEET-UX-23 — headed E2E env keeps manual admit (VITE_AUTO_ADMIT_LOBBY=0)', () => {
+    const headed = fs.readFileSync(path.join(root, 'scripts/gates/lib/run-step.mjs'), 'utf8');
+    expect(headed).toMatch(/VITE_AUTO_ADMIT_LOBBY:\s*'0'/);
+  });
+
+  it('MEET-UX-24 — patient Jitsi only after lobby admit and host-ready', () => {
+    const patientRoom = fs.readFileSync(path.join(root, 'Isara-patient-portal/frontend/pages/PatientMeetingRoom.tsx'), 'utf8');
+    expect(patientRoom).toMatch(/lobbyStatus !== 'admitted'/);
+    expect(patientRoom).toMatch(/waitForHostReady/);
+    expect(patientRoom).toMatch(/mountJitsiMeeting/);
+  });
+
+  it('MEET-UX-25 — doctor HealthMeeting autostart when DEMO_AUTO_MEETING + stayOnQueue guard', () => {
+    const hm = fs.readFileSync(path.join(root, 'Isara-doctor-portal/frontend/pages/meetings/HealthMeeting.tsx'), 'utf8');
+    expect(hm).toMatch(/isDemoAutoMeetingEnabled/);
+    expect(hm).toMatch(/meetings\.find/);
+    expect(hm).toMatch(/shouldStayOnHealthMeetingQueue|stayOnQueue/);
+  });
+
+  it('MEET-UX-26 — demoAutoAuth shouldStayOnHealthMeetingQueue helper', () => {
+    const auth = fs.readFileSync(path.join(root, 'Isara-doctor-portal/frontend/utils/demoAutoAuth.ts'), 'utf8');
+    expect(auth).toMatch(/shouldStayOnHealthMeetingQueue/);
+    expect(auth).toMatch(/stayOnQueue/);
+  });
+
+  it('MEET-UX-27 — multi-portal doctorHealthMeetingUrl defaults stayOnQueue for tests', () => {
+    const mp = fs.readFileSync(path.join(root, 'tests/helpers/multi-portal.ts'), 'utf8');
+    expect(mp).toMatch(/doctorHealthMeetingUrl/);
+    expect(mp).toMatch(/stayOnQueue=1/);
+    expect(mp).toMatch(/ensureHealthMeetingStayOnQueue/);
+  });
+
+  it('MEET-UX-28 — gate env keeps DEMO_AUTO_MEETING=1', () => {
+    const gate = fs.readFileSync(path.join(root, 'scripts/run-local-pre-deploy-gate.mjs'), 'utf8');
+    const headed = fs.readFileSync(path.join(root, 'scripts/gates/lib/run-step.mjs'), 'utf8');
+    expect(gate).toMatch(/DEMO_AUTO_MEETING:\s*'1'/);
+    expect(headed).toMatch(/DEMO_AUTO_MEETING:\s*'1'/);
   });
 });

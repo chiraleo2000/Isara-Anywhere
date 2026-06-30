@@ -7,8 +7,20 @@ import {
 } from '../backend/sessionAuth.js';
 
 describe('sessionAuth', () => {
-  it('createJitsiRoleJwt returns null (JWT removed)', () => {
+  it('createJitsiRoleJwt returns null without options (public default)', () => {
     assert.equal(createJitsiRoleJwt(), null);
+  });
+
+  it('createJitsiRoleJwt issues JWT on private domain when enabled', () => {
+    const token = createJitsiRoleJwt({
+      enabled: true,
+      roomName: 'test-room',
+      domain: 'meet.localhost',
+      signingSecret: 'test-secret-min-32-characters-long',
+      role: 'doctor',
+      user: { id: 'd1', name: 'Doctor' },
+    });
+    assert.ok(typeof token === 'string' && token.length > 20);
   });
 
   it('generateOpaqueToken produces 64-char hex', () => {

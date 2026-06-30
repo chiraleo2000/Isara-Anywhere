@@ -11,7 +11,16 @@
 | P0.07 | P0 | test:audit:process | **PASS** | PROCESS_COVERAGE_GAPS.md 0 gaps |
 | P0.08 | P0 | phase:0 | **PASS** | lint-portals-full, meeting-server-contract green |
 | P1.07 | P1 | sonar:lint | **PASS** | quality-gate-summary.json passed=true; eslint deadlock fix on Windows |
-| P3.09 | P3 | test:local:pre-deploy-gate | **PASS** | Ledger round 9 P0=0; screenshots-global 209 unique hashes |
+| P3.09 | P3 | test:local:pre-deploy-gate | **PASS** | Ledger round 9 P0=0 (2026-06-26T13:58Z, 105 tests); unit 17/17; meeting-api-smoke PASS |
+
+## Full local re-run (2026-06-26T13:58Z)
+
+| Check | Result |
+|-------|--------|
+| `run-unit-groups-sequential` | **PASS** 17/17 (meeting, workflows, process-contracts, post-meeting-pipeline) |
+| `test:local:pre-deploy-gate` | **PASS** with `GATE_SKIP_DOCKER_BUILD=1` (stack already up) |
+| Ledger round 9 | **p0Count=0**, 105 tests, ~638s |
+| Screenshots A,B,D,E,Q,Q2,S | **PASS** all groups |
 
 ## Fixes applied this session
 

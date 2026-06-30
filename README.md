@@ -1,6 +1,6 @@
 # Izara Telemedicine Platform (อิสระ เทเลเมดิซิน)
 
-![Version](https://img.shields.io/badge/release-v1.7.53-blue.svg)
+![Version](https://img.shields.io/badge/release-v1.7.54-blue.svg)
 ![Tests](https://img.shields.io/badge/unit%20tests-3200%2B%20passing-brightgreen.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 ![Node](https://img.shields.io/badge/node-%3E%3D22.0.0-brightgreen.svg)
@@ -10,7 +10,7 @@
 
 Full-stack telemedicine for Thailand: video consultations (Jitsi), PHR/EMR, e-prescribing, AI clinical tools, appointment pool, and PDPA-aware data handling.
 
-**Quick links:** [Docker + Nginx deployment](deploy/nginx/DEPLOYMENT.md) · [Documents hub](Documents/README.md) · [Thai technical 01–05](Documents/Technical_Documents/01_System_Architecture_and_Workflow.md) · [Docs index](Documents/docs/README.md) · [Diagram report — Word](Documents/docs/technical/word/TECHNICAL_DIAGRAM_REPORT_TH.docx) · [Diagram report — PPT](Documents/docs/technical/ppt/TECHNICAL_DIAGRAM_REPORT_PPT_TH.pptx) · [URLs & demo users](Documents/docs/markdown/operations/URLS_AND_DEFAULT_USERS.md) · [Technical diagrams (draw.io)](Documents/docs/diagrams/diagrams.drawio) · [Architecture slides (Sarabun 16pt)](Documents/docs/technical/slides/TECHNICAL_ARCHITECTURE_SLIDES.html) · [Architecture Word TH](Documents/docs/technical/word/TECHNICAL_ARCHITECTURE_WORD_TH.docx) · [Architecture PPT TH (FC Iconic)](Documents/docs/technical/ppt/TECHNICAL_ARCHITECTURE_PPT_TH.pptx) · [Patient Word (TH)](Documents/docs/guides/patient/USER_GUIDE_PATIENT_WORD_TH.docx) · [Doctor Word (TH)](Documents/docs/guides/doctor/USER_GUIDE_DOCTOR_WORD_TH.docx) · [Patient PPT (TH)](Documents/docs/guides/patient/USER_GUIDE_PATIENT_PPT_TH.pptx) · [Doctor PPT (TH)](Documents/docs/guides/doctor/USER_GUIDE_DOCTOR_PPT_TH.pptx) · [Cloud access (TH)](Documents/docs/markdown/operations/CLOUD_ACCESS_TH.md) · [Process pages](Processes/Pages/README.md) · [Markdown guide](Documents/docs/markdown/operations/MARKDOWN_GUIDE.md)
+**Quick links:** [Docker + Nginx deployment](deploy/nginx/DEPLOYMENT.md) · [LAN video (TH)](Documents/docs/markdown/operations/LAN_VIDEO_CLIENT_TH.md) · [Jitsi + API (`demotoday.net`)](Documents/docs/markdown/operations/JITSI_MEETING_DEMOTODAY_API.md) · [Reports](reports/README.md) · [Documents hub](Documents/README.md) · [Thai technical 01–05](Documents/Technical_Documents/01_System_Architecture_and_Workflow.md) · [Docs index](Documents/docs/README.md) · [Diagram report — Word](Documents/docs/technical/word/TECHNICAL_DIAGRAM_REPORT_TH.docx) · [Diagram report — PPT](Documents/docs/technical/ppt/TECHNICAL_DIAGRAM_REPORT_PPT_TH.pptx) · [URLs & demo users](Documents/docs/markdown/operations/URLS_AND_DEFAULT_USERS.md) · [Technical diagrams (draw.io)](Documents/docs/diagrams/diagrams.drawio) · [Architecture slides (Sarabun 16pt)](Documents/docs/technical/slides/TECHNICAL_ARCHITECTURE_SLIDES.html) · [Architecture Word TH](Documents/docs/technical/word/TECHNICAL_ARCHITECTURE_WORD_TH.docx) · [Architecture PPT TH (FC Iconic)](Documents/docs/technical/ppt/TECHNICAL_ARCHITECTURE_PPT_TH.pptx) · [Patient Word (TH)](Documents/docs/guides/patient/USER_GUIDE_PATIENT_WORD_TH.docx) · [Doctor Word (TH)](Documents/docs/guides/doctor/USER_GUIDE_DOCTOR_WORD_TH.docx) · [Patient PPT (TH)](Documents/docs/guides/patient/USER_GUIDE_PATIENT_PPT_TH.pptx) · [Doctor PPT (TH)](Documents/docs/guides/doctor/USER_GUIDE_DOCTOR_PPT_TH.pptx) · [Cloud access (TH)](Documents/docs/markdown/operations/CLOUD_ACCESS_TH.md) · [Process pages](Processes/Pages/README.md) · [Markdown guide](Documents/docs/markdown/operations/MARKDOWN_GUIDE.md)
 
 ---
 
@@ -20,7 +20,7 @@ Full-stack telemedicine for Thailand: video consultations (Jitsi), PHR/EMR, e-pr
 | ------ | --- | ----------------- |
 | **Patient** (`Isara-patient-portal`) | Patients, caregivers | Book appointments, PHR, video visit, AI health chat, map, living will, PDPA |
 | **Doctor** (`Isara-doctor-portal`) | Doctors, nurses, admins | EMR/SOAP, queue & pool, prescriptions, lab orders, content approval, AI copilot |
-| **Meeting** (`Izara-jitsi-server`) | Consultations | Jitsi embed, transcription, recording → STT, AI SOAP summary, guest join |
+| **Meeting** (`Izara-jitsi-server`) | Consultations | Meeting API, lobby, transcription, recording → STT, AI SOAP; **video WebRTC** on self-hosted `meet.demotoday.net` or `meet.localhost` |
 
 ---
 
@@ -36,9 +36,9 @@ Full-stack telemedicine for Thailand: video consultations (Jitsi), PHR/EMR, e-pr
 
 | Service | Cloud Run revision | Image tag | DB |
 | ------- | ------------------ | --------- | -- |
-| Patient | `00107-nmv` | `v1.7.12` | Cloud SQL `izara-postgres-server` |
-| Doctor | `00132-ts6` | `v1.7.12` | Cloud SQL · port **8080** (nginx unified) |
-| Meeting | latest | `v1.7.12` | Cloud SQL |
+| Patient | `00107-nmv` | `v1.7.12` | GCE VM `35.240.157.230:5432` |
+| Doctor | `00132-ts6` | `v1.7.12` | GCE VM · port **8080** (nginx unified) |
+| Meeting | latest | `v1.7.12` | GCE VM (same host) |
 
 Region: `asia-southeast1` · Project: `izara-telemedicine`. Health: `npm run cloud:smoke`. Details: [Documents/docs/markdown/operations/CLOUD_ACCESS_TH.md](Documents/docs/markdown/operations/CLOUD_ACCESS_TH.md).
 
@@ -57,6 +57,31 @@ Full guide: **[docs/runbooks/LOCAL_INSTALL.md](docs/runbooks/LOCAL_INSTALL.md)**
 | pgAdmin | 5050 |
 
 **Ubuntu redeploy:** `bash deploy/nginx/compose.sh --env-file .env.docker up -d --build` (works with `docker compose` V2 or `docker-compose` V1).
+
+### Ubuntu LAN HTTPS (`*.demotoday.net`) — **live on 192.168.10.239**
+
+Full deploy: `bash scripts/deploy/ubuntu-lan-remaining.sh` (on server) or `bash deploy/nginx/deploy.sh` · Client setup: [deploy/nginx/WINDOWS_CLIENT_SETUP.md](deploy/nginx/WINDOWS_CLIENT_SETUP.md) · **Video user guide (TH):** [Documents/docs/markdown/operations/LAN_VIDEO_CLIENT_TH.md](Documents/docs/markdown/operations/LAN_VIDEO_CLIENT_TH.md)
+
+| Service | URL |
+| ------- | --- |
+| Patient | https://patient.demotoday.net/login |
+| Doctor | https://doctor.demotoday.net/login |
+| Meeting API | https://meeting.demotoday.net |
+| **Jitsi video** | https://meet.demotoday.net |
+
+**Doctor laptop:** camera/microphone come from **your PC browser** — add `meet.demotoday.net` to Windows hosts + trust mkcert CA. Do not test video on the Ubuntu desktop (no webcam).
+
+**Jitsi + REST API guide:** [Documents/docs/markdown/operations/JITSI_MEETING_DEMOTODAY_API.md](Documents/docs/markdown/operations/JITSI_MEETING_DEMOTODAY_API.md)
+
+**Smoke test:**
+
+```bash
+MEETING_URL=https://meeting.demotoday.net DOCTOR_URL=https://doctor.demotoday.net \
+PATIENT_URL=https://patient.demotoday.net NODE_TLS_REJECT_UNAUTHORIZED=0 \
+node scripts/docker/meeting-api-smoke.mjs
+```
+
+**LAN headed gate:** `npm run test:lan:deploy-gate` (after hosts + TLS on Windows)
 
 ### Demo accounts (default startup / testing)
 
@@ -79,10 +104,10 @@ node scripts/database/db-tool.cjs --seed
 
 **Where to log in**
 
-| Role | Cloud URL | Local URL | LAN URL |
-| ---- | --------- | --------- | ------- |
-| Patient | [Patient login](https://izara-patient-portal-dev-testing-724889190329.asia-southeast1.run.app/login) | http://localhost:3005/login | http://patient.isara.local/login |
-| Doctor / Admin | [Doctor login](https://izara-doctor-portal-dev-testing-724889190329.asia-southeast1.run.app/login) | http://localhost:3010/login | http://doctor.isara.local/login |
+| Role | Cloud URL | Local URL | LAN URL (`demotoday.net`) |
+| ---- | --------- | --------- | ------------------------- |
+| Patient | [Patient login](https://izara-patient-portal-dev-testing-724889190329.asia-southeast1.run.app/login) | http://localhost:3005/login | https://patient.demotoday.net/login |
+| Doctor / Admin | [Doctor login](https://izara-doctor-portal-dev-testing-724889190329.asia-southeast1.run.app/login) | http://localhost:3010/login | https://doctor.demotoday.net/login |
 
 **Google SSO:** Set `GOOGLE_CLIENT_ID` in each portal `.env` (see `.env.example`). SSO accounts must match a registered email.
 
@@ -193,7 +218,7 @@ Details: [Processes/GATE0_IMPLEMENTATION_STATUS.md](Processes/GATE0_IMPLEMENTATI
 | Data | PostgreSQL 18, pgvector |
 | Realtime | Socket.IO, PostgreSQL NOTIFY |
 | AI | Google Gemini |
-| Video | Jitsi (meet.jit.si or custom domain) |
+| Video | Self-hosted Jitsi (`meet.demotoday.net` LAN / `meet.localhost:8443` dev) or public `meet.jit.si` |
 | Deploy | Google Cloud Build → Cloud Run |
 
 ---
@@ -324,6 +349,8 @@ Isara-Anywhere/
 | [DATABASE_TABLES_REFERENCE.md](Processes/DATABASE_TABLES_REFERENCE.md) | All 53+ PostgreSQL tables with workflow mapping |
 | [WORKFLOW_CONNECTIONS.md](Processes/WORKFLOW_CONNECTIONS.md) | Platform topology, pipeline & feature diagrams |
 | [FULL_WORKFLOW_CONTRACT.md](Processes/FULL_WORKFLOW_CONTRACT.md) | End-to-end contracts |
+| [LAN video client (TH)](Documents/docs/markdown/operations/LAN_VIDEO_CLIENT_TH.md) | Doctor/patient LAN video setup |
+| [Reports index](reports/README.md) | Sign-off, ledgers, baselines |
 | [MARKDOWN_GUIDE.md](Documents/docs/markdown/operations/MARKDOWN_GUIDE.md) | Doc linting & auto-fix |
 | [VIDEO_MEETING_JITSI_GEMINI.md](Processes/VIDEO_MEETING_JITSI_GEMINI.md) | Video + AI pipeline |
 | [SPEC_KIT.md](specs/SPEC_KIT.md) | Full specification |
@@ -350,7 +377,7 @@ npm run cleanup:cloud-test   # after E2E — purge test rows + re-seed baseline 
 
 - bcrypt + JWT (doctor) / session tokens (patient); 12-char password policy
 - OWASP headers (Helmet), rate limiting, CORS restricted on Cloud Run
-- Permissions-Policy scoped for Jitsi (`camera`, `microphone`)
+- Permissions-Policy scoped for Jitsi (`camera`, `microphone`) including `meet.demotoday.net` on LAN
 - IDOR-safe, scoped APIs; sanitized production errors
 - **Man-in-the-loop:** clinicians approve AI outputs before patient delivery
 - PDPA-oriented consent and audit patterns
@@ -377,11 +404,19 @@ CI tiers: [.github/workflows/ci.yml](.github/workflows/ci.yml) — PR fast / `ru
 
 **Defect remediation:** [`reports/defect-fix/DEFECT_REGISTER.md`](reports/defect-fix/DEFECT_REGISTER.md) · draw.io: [Documents/docs/markdown/testing/DEFECT_REMEDIATION_DRAWIO_UPDATES.md](Documents/docs/markdown/testing/DEFECT_REMEDIATION_DRAWIO_UPDATES.md)
 
-Error ledgers: `reports/local-error-ledger/*-latest.json` (run `npm run ledger:local`; root `*_ERROR_LEDGER_ROUND*.md` are not kept).
+Error ledgers: `reports/local-error-ledger/*-latest.json` — index: [reports/README.md](reports/README.md)
 
 ---
 
 ## Changelog (recent)
+
+### v1.7.54 (June 30, 2026)
+
+- **Ubuntu LAN HTTPS** live: `*.demotoday.net` on `192.168.10.239` — portals + self-hosted Jitsi + Nginx TLS
+- **Video fix:** CSP/Permissions-Policy allow `meet.demotoday.net`; JVB WebRTC (`10000/udp`); doctor laptop cam/mic (not server)
+- **Jitsi LAN:** `setup-local-jitsi.mjs --lan`, Colibri/XMPP websockets, nginx → Jitsi `:8000`
+- **Gates:** `test:local:pre-deploy-gate` PASS (round 9 P0=0); `docker:meeting-api-smoke` on LAN URLs; ledgers `lan`, `jitsi-lan`
+- **Docs:** [LAN_VIDEO_CLIENT_TH.md](Documents/docs/markdown/operations/LAN_VIDEO_CLIENT_TH.md), [reports/README.md](reports/README.md)
 
 ### v1.7.53 (June 2026)
 

@@ -1,4 +1,4 @@
-﻿/**
+/**
  * GROUP E - MEETING SERVER, ROOM ACCESS & GUEST INVITE WORKFLOW
  * Browsers (parallel fixture): Patient=Chrome, Doctor=Chrome, Admin=Firefox
  * SERIAL after D - uses appointment data from D1 + admin-assigned in D3.
@@ -24,7 +24,6 @@ import { loadWorkflowState, reloadWorkflowStateFromDisk, saveWorkflowState } fro
 import {
   overrideBrowserMeetingServerUrl,
   proxyLocalMeetingServer,
-  waitForMeetingHostReady,
   notifyHostPresentAfterJitsi,
   assertNoJitsiModeratorGate,
 } from './helpers/meeting-lifecycle-fixture';
@@ -32,6 +31,15 @@ import { assertAiMountOnlyWhenSkipped, isSkipLiveGemini } from './helpers/ai-gat
 
 const IS_CLOUD = process.env.TEST_ENV === 'cloud';
 const API_TIMEOUT = 30_000;
+
+/** Local Docker uses self-hosted Jitsi; cloud may use meet.jit.si. */
+function expectJitsiDomainInUrl(url: string, label: string) {
+  expect(url, label).toMatch(/meet\.(jit\.si|localhost)/);
+}
+
+function expectJitsiJoinConfigDomain(domain: string, label: string) {
+  expect(domain, label).toMatch(/meet\.(jit\.si|localhost)/);
+}
 
 let sharedMeetingId = '';
 let sharedRoomName = '';
@@ -182,10 +190,10 @@ test.describe('Group E - Meeting Server & Clinical Workflow', () => {
       expect(meetData.meetingId, 'Meeting ID returned').toBeTruthy();
       expect(meetData.roomName, 'Room name generated').toBeTruthy();
       expect(meetData.urls, 'Meeting URLs returned').toBeTruthy();
-      expect(meetData.urls.base, 'Base meeting URL').toContain('meet.jit.si');
-      expect(meetData.urls.doctor, 'Doctor meeting URL').toContain('meet.jit.si');
-      expect(meetData.urls.patient, 'Patient meeting URL').toContain('meet.jit.si');
-      expect(meetData.urls.guest, 'Guest meeting URL').toContain('meet.jit.si');
+      expectJitsiDomainInUrl(meetData.urls.base, 'Base meeting URL');
+      expectJitsiDomainInUrl(meetData.urls.doctor, 'Doctor meeting URL');
+      expectJitsiDomainInUrl(meetData.urls.patient, 'Patient meeting URL');
+      expectJitsiDomainInUrl(meetData.urls.guest, 'Guest meeting URL');
       expect(meetData.urls.doctor, 'Doctor URL uses Izara display name').toContain('userInfo.displayName');
       expect(meetData.urls.patient, 'Patient URL uses Izara display name').toContain('userInfo.displayName');
       // Meeting server URL flags (requireDisplayName=false) apply after jitsi-server redeploy;
@@ -222,7 +230,14 @@ test.describe('Group E - Meeting Server & Clinical Workflow', () => {
 
       const assertJoinConfigOk = async (role: 'doctor' | 'patient' | 'guest', query = '') => {
         const headers: Record<string, string> = {};
-        if (role === 'doctor') headers.Authorization = `Bearer ${token}`;
+        if (role === 'doctor') {
+          headers.Authorization = `Bearer ${token}`;
+        } else if (role === 'patient') {
+          const patientToken = await patient.page.evaluate(() =>
+            localStorage.getItem('auth_token') || localStorage.getItem('token') || '',
+          );
+          headers.Authorization = `Bearer ${patientToken}`;
+        }
         const resp = await doctor.page.request.get(
           `${MEETING_URL}/api/meetings/${sharedAppointmentId}/join-config?role=${role}${query}`,
           { headers, timeout: API_TIMEOUT },
@@ -230,7 +245,7 @@ test.describe('Group E - Meeting Server & Clinical Workflow', () => {
         expect(resp.status(), `join-config ${role} status`).toBe(200);
         const cfg = await resp.json();
         expect(cfg.success, `join-config ${role} success`).toBe(true);
-        expect(cfg.domain, `join-config ${role} domain`).toContain('jit.si');
+        expectJitsiJoinConfigDomain(cfg.domain, `join-config ${role} domain`);
         expect(cfg.roomName, `join-config ${role} room`).toBeTruthy();
         expect(cfg.useIzaraLobbyOnly, `join-config ${role} Izara lobby`).toBe(true);
         expect(cfg.noJitsiLoginRequired, `join-config ${role} no Jitsi login`).toBe(true);
@@ -282,7 +297,7 @@ test.describe('Group E - Meeting Server & Clinical Workflow', () => {
       await snap(doctor.page, 'E10b-doctor-meeting-route', 'group-E');
 
       const inAppUi = doctor.page.locator(
-        '[data-testid="meeting-agreement"], [data-testid="pre-join-screen"], [data-testid="join-meeting-btn"]',
+        '[data-testid="host-starting-screen"], [data-testid="jitsi-meeting-container"], [data-testid="end-meeting-btn"]',
       ).first();
       const inAppVisible = await inAppUi.isVisible({ timeout: IS_CLOUD ? 45_000 : 30_000 }).catch(() => false);
       if (inAppVisible) {
@@ -325,7 +340,7 @@ test.describe('Group E - Meeting Server & Clinical Workflow', () => {
       }
       const jitsiShell = doctor.page.getByTestId('jitsi-meeting-container');
       const hostControls = doctor.page.getByTestId('end-meeting-btn');
-      const preJoin = doctor.page.getByTestId('pre-join-screen');
+      const preJoin = doctor.page.getByTestId('host-starting-screen');
       await expect(
         jitsiShell.or(hostControls).or(preJoin).first(),
         'E10c doctor meeting shell',
@@ -610,7 +625,7 @@ test.describe('Group E - Meeting Server & Clinical Workflow', () => {
     await test.step('E16 - Patient meeting URL has correct room', async () => {
       expect(sharedMeetingUrls.patient, 'Patient URL exists').toBeTruthy();
       expect(sharedMeetingUrls.patient, 'Patient URL correct room').toContain(sharedRoomName);
-      expect(sharedMeetingUrls.patient, 'Patient URL Jitsi domain').toContain('meet.jit.si');
+      expectJitsiDomainInUrl(sharedMeetingUrls.patient!, 'Patient URL Jitsi domain');
       console.log('  E16: Patient meeting URL verified - room: ' + sharedRoomName);
     });
 
@@ -879,7 +894,7 @@ test.describe('Group E - Meeting Server & Clinical Workflow', () => {
 
     await test.step('E24 - Doctor meeting URL format verified', async () => {
       expect(sharedMeetingUrls.doctor, 'Doctor URL exists').toBeTruthy();
-      expect(sharedMeetingUrls.doctor, 'Doctor URL has Jitsi domain').toContain('meet.jit.si');
+      expectJitsiDomainInUrl(sharedMeetingUrls.doctor!, 'Doctor URL has Jitsi domain');
       expect(sharedMeetingUrls.doctor, 'Doctor URL has room name').toContain(sharedRoomName);
       expect(sharedMeetingUrls.doctor, 'Doctor displayName encoded').toContain('userInfo.displayName');
       console.log('  E24: Doctor meeting URL - Jitsi room + displayName verified');
@@ -887,14 +902,14 @@ test.describe('Group E - Meeting Server & Clinical Workflow', () => {
 
     await test.step('E25 - Patient meeting URL format verified', async () => {
       expect(sharedMeetingUrls.patient, 'Patient URL exists').toBeTruthy();
-      expect(sharedMeetingUrls.patient, 'Patient URL has Jitsi domain').toContain('meet.jit.si');
+      expectJitsiDomainInUrl(sharedMeetingUrls.patient!, 'Patient URL has Jitsi domain');
       expect(sharedMeetingUrls.patient, 'Patient URL has room name').toContain(sharedRoomName);
       console.log('  E25: Patient meeting URL - Jitsi room + displayName verified');
     });
 
     await test.step('E26 - Guest meeting URL format verified', async () => {
       expect(sharedMeetingUrls.guest, 'Guest URL exists').toBeTruthy();
-      expect(sharedMeetingUrls.guest, 'Guest URL has Jitsi domain').toContain('meet.jit.si');
+      expectJitsiDomainInUrl(sharedMeetingUrls.guest!, 'Guest URL has Jitsi domain');
       expect(sharedMeetingUrls.guest, 'Guest URL has room name').toContain(sharedRoomName);
       if (!/Guest|userInfo\.displayName/i.test(sharedMeetingUrls.guest)) {
         console.warn('  ⚠ E26: Guest display name not explicit in meeting URL');

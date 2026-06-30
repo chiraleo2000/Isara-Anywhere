@@ -29,7 +29,7 @@
                           │
 ┌─────────────────────────▼────────────────────────────────────┐
 │          PostgreSQL 18 + pgvector (Primary Database)         │
-│   Local: Docker port 5433  │  Cloud: Cloud SQL               │
+│   Local: Docker port 5433  │  Cloud: GCE VM PostgreSQL       │
 └──────────────────────────────────────────────────────────────┘
 ```
 

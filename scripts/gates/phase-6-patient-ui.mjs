@@ -31,5 +31,10 @@ for (const project of [
 }
 
 if (!runScreenshotGate('group-B', 'screenshots-group-B')) bailWithArchive(ROUND, 'screenshots-group-B');
+if (!runScreenshotGate('group-G', 'screenshots-group-G')) bailWithArchive(ROUND, 'screenshots-group-G');
+if (!runScreenshotGate('group-H', 'screenshots-group-H')) bailWithArchive(ROUND, 'screenshots-group-H');
+if (!runScreenshotGate('group-J-jitsi-prejoin', 'screenshots-group-J-jitsi-prejoin')) {
+  bailWithArchive(ROUND, 'screenshots-group-J-jitsi-prejoin');
+}
 if (!runLedgerRound(ROUND)) bailWithArchive(ROUND, 'ledger-round');
 process.exit(0);

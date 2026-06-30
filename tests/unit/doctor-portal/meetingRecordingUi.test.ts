@@ -14,10 +14,13 @@ describe('meetingRecordingUi — host recording UX', () => {
     expect(src).toMatch(/data-testid="recording-indicator"/);
   });
 
-  it('MRI-02 — auto-record called on conference join for host', () => {
-    expect(src).toMatch(/videoConferenceJoined.*handleConferenceJoined|handleConferenceJoined/s);
+  it('MRI-02 — auto-record only when doctor toggles recording (not on conference join)', () => {
+    expect(src).toMatch(/toggleRecording/);
     expect(src).toMatch(/auto-record/);
-    expect(src).toMatch(/setIsRecording\(true\)/);
+    const joinHandlerRe = /const handleConferenceJoined[\s\S]*?}, \[appointmentId/;
+    const joinHandler = joinHandlerRe.exec(src)?.[0] || '';
+    expect(joinHandler).not.toMatch(/auto-record/);
+    expect(joinHandler).not.toMatch(/setIsRecording\(true\)/);
   });
 
   it('MRI-03 — notifyHostPresent on conference joined only (inJitsi), host-absent on leave', () => {

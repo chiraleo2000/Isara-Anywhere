@@ -9,6 +9,7 @@ import { Router, Request, Response } from 'express';
 import { authMiddleware, AuthenticatedRequest } from '../middleware/auth';
 import postgresDataService from '../services/postgresDataService';
 import { errMsg } from '../utils';
+import { mapRowToLivingWillForm, resolveLivingWillAccess } from '../lib/livingWillShare';
 
 const { PHRService, LivingWillService } = postgresDataService;
 const LabOrderService = (postgresDataService as any).LabOrderService;
@@ -829,16 +830,11 @@ router.get('/:patientId/living-will', authMiddleware, async (req: Request, res: 
     const requesterRole = (req as AuthenticatedRequest).user?.role;
     console.log(`[PHR] Getting Living Will for patient: ${patientId}`);
 
-    let livingWill;
-    try {
-      livingWill = await LivingWillService.getLivingWill(patientId);
-    } catch (dbError: unknown) {
-      // Table might not exist yet
-      if (dbError instanceof Error && (dbError as Error & { code?: string }).code === '42P01') {
-        return res.json(null);
-      }
-      throw dbError;
-    }
+    const result = await pool.query(
+      `SELECT * FROM living_wills WHERE patient_id = $1 AND status IN ('active', 'suspended', 'draft') ORDER BY updated_at DESC LIMIT 1`,
+      [patientId]
+    );
+    const livingWill = result.rows[0] || null;
     
     if (!livingWill) {
       return res.json(null);
@@ -846,20 +842,24 @@ router.get('/:patientId/living-will', authMiddleware, async (req: Request, res: 
 
     // If patient is requesting their own data, return full document
     if (requesterId === patientId) {
-      return res.json(livingWill);
+      const form = mapRowToLivingWillForm(livingWill);
+      return res.json(form);
     }
 
-    // For doctors/admin: Check PDPA consent
+    // For doctors/admin: Check per-doctor or all-doctors living_will consent
     if (requesterRole === 'doctor' || requesterRole === 'admin') {
-      const lw = livingWill as any;
-      if (!lw.is_shared_with_doctors) {
-        return res.json({ 
-          exists: true, 
+      const doctorId = (req as AuthenticatedRequest).user?.doctorId || requesterId;
+      const doctorIdStr = typeof doctorId === 'string' ? doctorId : String(requesterId);
+      const access = await resolveLivingWillAccess(pool, patientId, doctorIdStr);
+      if (!access.hasAccess) {
+        return res.json({
+          exists: true,
           isShared: false,
-          message: 'Patient has not shared their Living Will with medical staff' 
+          authorized: false,
+          message: 'Patient has not shared their Living Will with you',
         });
       }
-      return res.json(livingWill);
+      return res.json(mapRowToLivingWillForm(livingWill));
     }
 
     return res.status(403).json({ error: 'Access denied' });
@@ -1099,10 +1099,18 @@ router.delete('/:patientId/living-will/share/:doctorId', authMiddleware, async (
       [patientId]
     );
     if (remaining.rows.length === 0) {
-      await pool.query(
-        `UPDATE living_wills SET is_shared_with_doctors = false, updated_at = NOW() WHERE patient_id = $1`,
+      const broadRemaining = await pool.query(
+        `SELECT id FROM patient_consents
+         WHERE patient_id = $1 AND consent_type = 'living_will' AND doctor_id IS NULL
+           AND status = 'granted' AND revoked_at IS NULL`,
         [patientId]
       );
+      if (broadRemaining.rows.length === 0) {
+        await pool.query(
+          `UPDATE living_wills SET is_shared_with_doctors = false, updated_at = NOW() WHERE patient_id = $1`,
+          [patientId]
+        );
+      }
     }
 
     console.log(`[PHR] Living Will share revoked: patient=${patientId} ✕ doctor=${doctorId}`);

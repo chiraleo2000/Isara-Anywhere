@@ -13,12 +13,23 @@ function isOpaqueSessionToken(token: string): boolean {
 }
 
 describe('sessionAuthCrossPortal', () => {
-  it('SAC01 — doctor and patient Jitsi mount never embed JWT', () => {
+  it('SAC01 — mount JWT only on self-hosted domain via join-config', () => {
     expect(doctorResolveMountJwt()).toBeUndefined();
     expect(patientResolveMountJwt()).toBeUndefined();
+    const privateJwt = 'a'.repeat(48);
+    expect(
+      doctorResolveMountJwt({
+        domain: 'meet.localhost',
+        tokenAuthEnabled: true,
+        jwt: privateJwt,
+      }),
+    ).toBe(privateJwt);
+    expect(
+      doctorResolveMountJwt({ domain: 'meet.jit.si', jwt: privateJwt }),
+    ).toBeUndefined();
   });
 
-  it('SAC02 — meeting server createJitsiRoleJwt returns null', () => {
+  it('SAC02 — meeting server createJitsiRoleJwt null without options', () => {
     expect(createJitsiRoleJwt()).toBeNull();
   });
 
@@ -38,7 +49,8 @@ describe('sessionAuthCrossPortal', () => {
       path.join(__dirname, '../../../Isara-patient-portal/frontend/pages/PatientMeetingRoom.tsx'),
       'utf8',
     );
-    expect(src).toMatch(/lobby\/join/);
+    expect(src).toMatch(/patientMeetingUrl/);
+    expect(src).toMatch(/\/join/);
     expect(src).toMatch(/credentials:\s*'include'/);
   });
 

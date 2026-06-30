@@ -12,6 +12,7 @@ import {
   lobbyAdmitAll,
   isPlaywrightHeadless,
   lobbyParticipantStatus,
+  getPatientAuth,
 } from './helpers/multi-portal';
 import {
   chromiumLaunchArgs,
@@ -84,7 +85,9 @@ async function doctorInMeetingWithLobby(
 
   await patientPage.goto(`${PATIENT_URL}/meeting/${appointmentId}`, { waitUntil: 'domcontentloaded' });
   await joinMeetingToLobby(patientPage, `${label}-patient`, browserName);
-  await expect(patientPage.getByTestId('lobby-waiting-screen')).toBeVisible({ timeout: 60_000 });
+  await expect(
+    patientPage.getByTestId('lobby-waiting-screen').or(patientPage.getByTestId('host-waiting-screen')).first(),
+  ).toBeVisible({ timeout: 60_000 });
 
   const lobbyPanel = doctorPage.getByTestId('lobby-panel');
   if (!(await lobbyPanel.isVisible({ timeout: 8_000 }).catch(() => false))) {
@@ -221,15 +224,8 @@ test.describe('Defect — Meeting lobby admit flow', () => {
     await patient.page.goto(`${PATIENT_URL}/meeting/${appointmentId}`, { waitUntil: 'domcontentloaded' });
     await joinMeetingToLobby(patient.page, 'DM5-patient', portals.patient.browserName);
     await waitForMeetingHostReady(patient.page.request, MEETING_URL, appointmentId, 60_000);
-    const patientLobby = patient.page.getByTestId('lobby-waiting-screen');
-    if (!(await patientLobby.isVisible({ timeout: 10_000 }).catch(() => false))) {
-      const joinBtn = patient.page.getByTestId('join-meeting-btn');
-      if (await joinBtn.isVisible({ timeout: 5_000 }).catch(() => false)) {
-        await joinBtn.click();
-      }
-    }
     await expect(
-      patientLobby.or(patient.page.getByTestId('host-waiting-screen')).first(),
+      patient.page.getByTestId('lobby-waiting-screen').or(patient.page.getByTestId('host-waiting-screen')).first(),
     ).toBeVisible({ timeout: 60_000 });
 
     const headless = isPlaywrightHeadless();
@@ -300,9 +296,17 @@ test.describe('Defect — Meeting lobby admit flow', () => {
     await joinIzaraMeetingInApp(doctor.page, 'DM6-doctor', portals.doctor.browserName);
     await notifyHostPresentAfterJitsi(doctor.page, appointmentId, { bffUrl: DOCTOR_URL, meetingUrl: MEETING_URL });
 
+    const guestInviteResp = await doctor.page.request.post(`${DOCTOR_URL}/api/meetings/${appointmentId}/guest-invite`, {
+      headers: { Authorization: `Bearer ${doctorCtx.token}`, 'Content-Type': 'application/json' },
+      data: { guestName: 'Blocked Guest', guestEmail: 'blocked@test.com', guestType: 'family' },
+    });
+    expect(guestInviteResp.ok()).toBeTruthy();
+    const guestInviteData = await guestInviteResp.json();
+
     const guestJoin = await lobbyJoinUnauth(appointmentId, {
       participantName: 'Blocked Guest',
       role: 'guest',
+      invite: guestInviteData.token,
     });
     const guestId = guestJoin.participantId || 'guest-dm6';
 
@@ -310,7 +314,13 @@ test.describe('Defect — Meeting lobby admit flow', () => {
     await joinMeetingToLobby(patient.page, 'DM6-patient', portals.patient.browserName);
 
     await lobbyReject(doctor.page, appointmentId, guestId, doctorCtx.doctorId, 'E2E deny guest');
-    await lobbyAdmitOne(doctor.page, appointmentId, 'PATIENT-DEMO', doctorCtx.doctorId);
+    const { userId: patientParticipantId } = await getPatientAuth(patient.page);
+    await lobbyAdmitOne(
+      doctor.page,
+      appointmentId,
+      patientParticipantId || 'PATIENT-DEMO',
+      doctorCtx.doctorId,
+    );
 
     await expect(patient.page.getByTestId('jitsi-meeting-container')).toBeVisible({ timeout: 90_000 });
     await snapMeetingStage(patient.page, 'DM6-patient-admitted-alone', 'jitsi-meeting-container', 'group-defect');

@@ -1,0 +1,252 @@
+{
+  "checkedAt": "2026-06-30T06:34:22.874Z",
+  "gitShortHash": "4b7199de",
+  "pass": false,
+  "unitGate": {
+    "pass": false,
+    "checkedAt": "2026-06-30T06:13:18.978Z",
+    "logPath": "reports\\local-unit-gate-2026-06-30T06-10-58.log"
+  },
+  "screenshotAudit": {
+    "pass": true,
+    "checkedAt": "2026-06-30T06:32:18.872Z",
+    "groupCount": 1,
+    "failedGroups": []
+  },
+  "screenshotGlobal": {
+    "pass": true,
+    "duplicateCount": null
+  },
+  "ledgerRounds": [
+    {
+      "file": "reports/local-error-ledger/round-1-2026-06-29T05-07-47-547Z.json",
+      "round": 1,
+      "totalTests": null,
+      "p0Count": 0,
+      "pass": true
+    },
+    {
+      "file": "reports/local-error-ledger/round-1-2026-06-30T05-12-14-935Z.json",
+      "round": 1,
+      "totalTests": null,
+      "p0Count": 0,
+      "pass": true
+    },
+    {
+      "file": "reports/local-error-ledger/round-1-latest.json",
+      "round": 1,
+      "totalTests": null,
+      "p0Count": 0,
+      "pass": true
+    },
+    {
+      "file": "reports/local-error-ledger/round-2-2026-06-29T05-10-39-141Z.json",
+      "round": 2,
+      "totalTests": null,
+      "p0Count": 0,
+      "pass": true
+    },
+    {
+      "file": "reports/local-error-ledger/round-2-2026-06-30T05-54-16-743Z.json",
+      "round": 2,
+      "totalTests": null,
+      "p0Count": 0,
+      "pass": true
+    },
+    {
+      "file": "reports/local-error-ledger/round-2-latest.json",
+      "round": 2,
+      "totalTests": null,
+      "p0Count": 0,
+      "pass": true
+    },
+    {
+      "file": "reports/local-error-ledger/round-3-2026-06-28T17-51-24-559Z.json",
+      "round": 3,
+      "totalTests": null,
+      "p0Count": 0,
+      "pass": true
+    },
+    {
+      "file": "reports/local-error-ledger/round-3-2026-06-29T05-13-31-382Z.json",
+      "round": 3,
+      "totalTests": null,
+      "p0Count": 0,
+      "pass": true
+    },
+    {
+      "file": "reports/local-error-ledger/round-3-2026-06-30T05-18-58-295Z.json",
+      "round": 3,
+      "totalTests": null,
+      "p0Count": 0,
+      "pass": true
+    },
+    {
+      "file": "reports/local-error-ledger/round-3-latest.json",
+      "round": 3,
+      "totalTests": null,
+      "p0Count": 0,
+      "pass": true
+    },
+    {
+      "file": "reports/local-error-ledger/round-4-2026-06-29T05-16-40-508Z.json",
+      "round": 4,
+      "totalTests": null,
+      "p0Count": 0,
+      "pass": true
+    },
+    {
+      "file": "reports/local-error-ledger/round-4-2026-06-30T05-30-50-936Z.json",
+      "round": 4,
+      "totalTests": null,
+      "p0Count": 0,
+      "pass": true
+    },
+    {
+      "file": "reports/local-error-ledger/round-4-latest.json",
+      "round": 4,
+      "totalTests": null,
+      "p0Count": 0,
+      "pass": true
+    },
+    {
+      "file": "reports/local-error-ledger/round-5-2026-06-30T06-15-38-388Z.json",
+      "round": 5,
+      "totalTests": null,
+      "p0Count": 0,
+      "pass": true
+    },
+    {
+      "file": "reports/local-error-ledger/round-5-latest.json",
+      "round": 5,
+      "totalTests": null,
+      "p0Count": 0,
+      "pass": true
+    },
+    {
+      "file": "reports/local-error-ledger/round-6-2026-06-29T05-24-26-956Z.json",
+      "round": 6,
+      "totalTests": null,
+      "p0Count": 0,
+      "pass": true
+    },
+    {
+      "file": "reports/local-error-ledger/round-6-2026-06-30T06-27-33-513Z.json",
+      "round": 6,
+      "totalTests": null,
+      "p0Count": 0,
+      "pass": true
+    },
+    {
+      "file": "reports/local-error-ledger/round-6-latest.json",
+      "round": 6,
+      "totalTests": null,
+      "p0Count": 0,
+      "pass": true
+    },
+    {
+      "file": "reports/local-error-ledger/round-7-2026-06-30T06-34-22-780Z.json",
+      "round": 7,
+      "totalTests": null,
+      "p0Count": 0,
+      "pass": true
+    },
+    {
+      "file": "reports/local-error-ledger/round-7-latest.json",
+      "round": 7,
+      "totalTests": null,
+      "p0Count": 0,
+      "pass": true
+    },
+    {
+      "file": "reports/local-error-ledger/round-9-2026-06-25T06-06-50-930Z.json",
+      "round": 9,
+      "totalTests": null,
+      "p0Count": 0,
+      "pass": true
+    },
+    {
+      "file": "reports/local-error-ledger/round-9-2026-06-26T05-20-50-248Z.json",
+      "round": 9,
+      "totalTests": null,
+      "p0Count": 0,
+      "pass": true
+    },
+    {
+      "file": "reports/local-error-ledger/round-9-2026-06-26T13-58-31-501Z.json",
+      "round": 9,
+      "totalTests": null,
+      "p0Count": 0,
+      "pass": true
+    },
+    {
+      "file": "reports/local-error-ledger/round-9-2026-06-26T14-20-37-945Z.json",
+      "round": 9,
+      "totalTests": null,
+      "p0Count": 0,
+      "pass": true
+    },
+    {
+      "file": "reports/local-error-ledger/round-9-2026-06-29T06-41-07-684Z.json",
+      "round": 9,
+      "totalTests": null,
+      "p0Count": 0,
+      "pass": true
+    },
+    {
+      "file": "reports/local-error-ledger/round-9-2026-06-29T09-19-01-413Z.json",
+      "round": 9,
+      "totalTests": null,
+      "p0Count": 0,
+      "pass": true
+    },
+    {
+      "file": "reports/local-error-ledger/round-9-2026-06-29T10-48-57-342Z.json",
+      "round": 9,
+      "totalTests": null,
+      "p0Count": 0,
+      "pass": true
+    },
+    {
+      "file": "reports/local-error-ledger/round-9-2026-06-29T10-49-14-049Z.json",
+      "round": 9,
+      "totalTests": null,
+      "p0Count": 0,
+      "pass": true
+    },
+    {
+      "file": "reports/local-error-ledger/round-9-latest.json",
+      "round": 9,
+      "totalTests": null,
+      "p0Count": 0,
+      "pass": true
+    },
+    {
+      "file": "reports/local-error-ledger/round-cross-browser-latest.json",
+      "round": "cross-browser-pdpa-content",
+      "totalTests": null,
+      "p0Count": 0,
+      "pass": false
+    }
+  ],
+  "groupPngCounts": {
+    "group-A": 11,
+    "group-B": 11,
+    "group-C": 16,
+    "group-D": 31,
+    "group-defect": 30,
+    "group-E": 25,
+    "group-F": 15,
+    "group-G": 16,
+    "group-H": 13,
+    "group-I": 12,
+    "group-J": 13,
+    "group-J-jitsi-prejoin": 3,
+    "group-J-meeting-jitsi": 2,
+    "group-Q": 13,
+    "group-Q2": 5,
+    "group-S": 8,
+    "group-W": 14
+  },
+  "playwrightReport": "playwright-report/index.html"
+}

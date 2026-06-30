@@ -1,7 +1,23 @@
 # Two-Round Cloud Testing & Screenshot Documentation
 
-**Release tag:** `v1.7.53`  
-**Last updated:** June 24, 2026 (W9 follow-up — D15 auth fix + gate green)
+**Release tag:** `v1.7.54`  
+**Last updated:** June 30, 2026 (Round 6 — self-hosted Jitsi local, cost-opt cloudbuild, LAN blocked)
+
+## Round 6 signoff (2026-06-30) — 7-day local + nginx gate
+
+| Check | Result | Notes |
+|-------|--------|-------|
+| Local pre-deploy gate | **PASS** | `test:local:pre-deploy-gate` exit 0; ledger round 9 **P0=0** |
+| Self-hosted Jitsi local | **PASS** | `meet.localhost:8443`; doctor JWT moderator; Q+R phase:4 |
+| Phases 0–8 | **PASS** | Ledger rounds 1–7 individual domain gates |
+| Unit deep packs ut-02..17 | **PASS** | 154+134+41 Vitest; `reports/unit-gap-matrix.md` |
+| Screenshots distinct | **PASS** | group-Q/D/E lobby≠Jitsi; global SHA256 audit |
+| Process audit | **PASS** | 0 gaps |
+| Cloud cost config | **READY** | `_MIN_INSTANCES=0`, `_MAX_INSTANCES=2` all cloudbuild.yaml |
+| LAN nginx gate | **BLOCKED** | `192.168.10.239` 100% ping loss |
+| Cloud deploy + smoke | **BLOCKED** | Awaiting user approval for `gcloud builds submit` |
+
+See `reports/signoff/round6-local-lan-signoff-2026-06-30.md` and `reports/zero-defect-checklist-2026-06-30.md`.
 
 ## Round 5 signoff (2026-06-24) — W9 cloud deploy + docs (full_gate_fix)
 

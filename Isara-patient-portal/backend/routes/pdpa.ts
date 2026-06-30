@@ -1,9 +1,28 @@
 import { Router, Request, Response } from 'express';
 import { authMiddleware } from '../middleware/auth';
 import postgresDataService from '../services/postgresDataService';
+import {
+  getLivingWillShareState,
+  mapFormToRowFields,
+  mapRowToLivingWillForm,
+  syncLivingWillShares,
+} from '../lib/livingWillShare';
 
-const { pool, LivingWillService } = postgresDataService;
+const { pool } = postgresDataService;
 const router = Router();
+
+/** Map legacy DB consent_type values to UI consent ids */
+const CONSENT_TYPE_ALIASES: Record<string, string> = {
+  dataProcessing: 'health_data',
+  data_processing: 'health_data',
+  research: 'analytics',
+  essential_data: 'essential',
+};
+
+function normalizeConsentType(raw: unknown): string {
+  const key = typeof raw === 'string' ? raw : '';
+  return CONSENT_TYPE_ALIASES[key] || key;
+}
 
 function mapAuditRows(rows: Array<Record<string, unknown>>) {
   return rows.map((row) => {
@@ -18,11 +37,12 @@ function mapAuditRows(rows: Array<Record<string, unknown>>) {
       details = row.details as Record<string, unknown>;
     }
 
-    let action = String(row.action || 'DATA_ACCESSED');
+    let action = typeof row.action === 'string' ? row.action : 'DATA_ACCESSED';
     if (action.startsWith('{')) {
       try {
         const parsed = JSON.parse(action);
-        action = String(parsed.action || parsed.type || 'DATA_ACCESSED');
+        const parsedAction = parsed.action ?? parsed.type;
+        action = typeof parsedAction === 'string' ? parsedAction : 'DATA_ACCESSED';
       } catch {
         action = 'DATA_ACCESSED';
       }
@@ -139,12 +159,11 @@ router.post('/living-will/share', authMiddleware, async (req: Request, res: Resp
     // @ts-ignore - patientId added by authMiddleware
     const patientId = req.patientId || req.userId;
     if (!patientId) return res.status(401).json({ error: 'Not authenticated' });
-    const { doctorId } = req.body;
-    console.log(`[PDPA] Sharing living will for patient ${patientId} with doctor ${doctorId}`);
+    const { doctorId, shareWithEveryone } = req.body;
+    console.log(`[PDPA] Sharing living will for patient ${patientId}`);
 
-    // Check if living will exists
     const lwResult = await pool.query(
-      'SELECT id FROM living_wills WHERE patient_id = $1',
+      `SELECT id FROM living_wills WHERE patient_id = $1 AND status IN ('active', 'suspended')`,
       [patientId]
     );
 
@@ -152,14 +171,16 @@ router.post('/living-will/share', authMiddleware, async (req: Request, res: Resp
       return res.status(404).json({ error: 'No living will found' });
     }
 
-    // Log the share action
+    const sharedWith = doctorId ? [String(doctorId)] : [];
+    await syncLivingWillShares(pool, patientId, sharedWith, Boolean(shareWithEveryone));
+
     await pool.query(
       `INSERT INTO audit_logs (id, patient_id, action, details, created_at)
        VALUES ($1, $2, 'living_will_shared', $3, NOW())`,
-      [`audit_${Date.now()}`, patientId, JSON.stringify({ doctorId, sharedAt: new Date().toISOString() })]
+      [`audit_${Date.now()}`, patientId, JSON.stringify({ doctorId, shareWithEveryone, sharedAt: new Date().toISOString() })]
     ).catch(() => {});
 
-    res.json({ success: true, shared: true, patientId, doctorId });
+    res.json({ success: true, shared: true, patientId, doctorId, shareWithEveryone: Boolean(shareWithEveryone) });
   } catch (error: unknown) {
     console.error('[PDPA] Share living will error:', error);
     res.status(500).json({ error: 'Failed to share living will' });
@@ -276,15 +297,18 @@ router.get('/consents/:patientId', authMiddleware, async (req: Request, res: Res
       [patientId]
     );
 
-    const consents = result.rows.map(row => ({
+    const consents = result.rows
+      .filter((row) => !row.doctor_id && row.consent_type !== 'medical_record_access' && row.consent_type !== 'doctor_access')
+      .map(row => ({
       id: row.id,
       patientId: row.patient_id,
-      type: row.consent_type,
+      type: normalizeConsentType(row.consent_type),
+      consent_type: normalizeConsentType(row.consent_type),
       granted: row.granted,
       doctorId: row.doctor_id,
       doctorName: row.doctor_name,
       dataTypes: row.data_types,
-      grantedAt: row.granted_at,
+      grantedAt: row.granted_at || row.created_at,
       expiresAt: row.expires_at,
       revokedAt: row.revoked_at,
       status: row.status,
@@ -308,26 +332,29 @@ router.put('/consents/:patientId/:consentId', authMiddleware, async (req: Reques
 
     console.log(`[PDPA] Updating consent ${consentId} for patient ${patientId}: granted=${granted}`);
 
-    // Check if consent exists
+    // Check if consent exists (by id or consent_type)
     const existingResult = await pool.query(
-      'SELECT id FROM patient_consents WHERE id = $1 AND patient_id = $2',
-      [consentId, patientId]
+      `SELECT id FROM patient_consents
+       WHERE patient_id = $1 AND (id = $2 OR consent_type = $2)
+       ORDER BY updated_at DESC NULLS LAST
+       LIMIT 1`,
+      [patientId, consentId]
     );
 
     if (existingResult.rows.length === 0) {
-      // Create new consent
+      const rowId = `consent_${patientId}_${consentId}`;
       await pool.query(
         `INSERT INTO patient_consents (id, patient_id, consent_type, granted, granted_at, status, created_at, updated_at)
          VALUES ($1, $2, $3, $4, $5, $6, $7, $7)`,
-        [consentId, patientId, consentId, granted, granted ? now : null, granted ? 'granted' : 'revoked', now]
+        [rowId, patientId, consentId, granted, granted ? now : null, granted ? 'granted' : 'revoked', now]
       );
     } else {
-      // Update existing consent
+      const rowId = existingResult.rows[0].id;
       await pool.query(
         `UPDATE patient_consents 
          SET granted = $1, granted_at = $2, status = $3, updated_at = $4
          WHERE id = $5 AND patient_id = $6`,
-        [granted, granted ? now : null, granted ? 'granted' : 'revoked', now, consentId, patientId]
+        [granted, granted ? now : null, granted ? 'granted' : 'revoked', now, rowId, patientId]
       );
     }
 
@@ -488,13 +515,18 @@ router.get('/living-will/:patientId', authMiddleware, async (req: Request, res: 
     const { patientId } = req.params;
     console.log(`[PDPA] Getting living will for patient: ${patientId}`);
 
-    const livingWill = await LivingWillService.getLivingWill(patientId);
+    const result = await pool.query(
+      `SELECT * FROM living_wills WHERE patient_id = $1 AND status IN ('active', 'suspended', 'draft') ORDER BY updated_at DESC LIMIT 1`,
+      [patientId]
+    );
 
-    if (!livingWill) {
+    if (result.rows.length === 0) {
       return res.json(null);
     }
 
-    res.json(livingWill);
+    const form = mapRowToLivingWillForm(result.rows[0]);
+    const shareState = await getLivingWillShareState(pool, patientId);
+    res.json({ ...form, ...shareState });
   } catch (error: unknown) {
     console.error('[PDPA] Get living will error:', error);
     res.json(null);
@@ -600,88 +632,112 @@ router.post('/living-will/:patientId/rollback/:versionId', authMiddleware, async
   }
 });
 
-// Save/Update living will
+// Save/Update living will (upsert — updates in place; share consents preserved via sync)
 router.post('/living-will/:patientId', authMiddleware, async (req: Request, res: Response) => {
   try {
     const { patientId } = req.params;
     const livingWillData = req.body;
     const now = new Date();
+    const rowFields = mapFormToRowFields(livingWillData);
+    const sharedWith: string[] = Array.isArray(livingWillData.sharedWith) ? livingWillData.sharedWith : [];
+    const shareWithEveryone = Boolean(livingWillData.shareWithEveryone);
 
     console.log(`[PDPA] Saving living will for patient: ${patientId}`);
 
-    // Check if living will already exists
     const existingResult = await pool.query(
       'SELECT * FROM living_wills WHERE patient_id = $1',
       [patientId]
     );
 
+    let savedRow;
+
     if (existingResult.rows.length > 0) {
-      // Save current version to history
       const current = existingResult.rows[0];
       await pool.query(
         `INSERT INTO living_will_versions (id, patient_id, version, data, note, created_at)
          VALUES ($1, $2, $3, $4, $5, $6)`,
-        [`version_${Date.now()}`, patientId, current.version, JSON.stringify(current), 
-         livingWillData.versionNote || 'Previous version', now]
-      );
-
-      // Update existing
-      const result = await pool.query(
-        `UPDATE living_wills SET
-           decisions = $1,
-           witness_info = $2,
-           signature_data = $3,
-           version = version + 1,
-           status = $4,
-           updated_at = $5
-         WHERE patient_id = $6
-         RETURNING *`,
         [
-          JSON.stringify(livingWillData.decisions || {}),
-          JSON.stringify(livingWillData.witnessInfo || {}),
-          livingWillData.signatureData || null,
-          livingWillData.status || 'draft',
+          `version_${Date.now()}`,
+          patientId,
+          current.version,
+          JSON.stringify(current),
+          livingWillData.versionNote || 'Previous version',
           now,
-          patientId
         ]
       );
 
-      // Log the action
+      const result = await pool.query(
+        `UPDATE living_wills SET
+           decisions = $1,
+           representatives = $2,
+           treatments = $3,
+           signature = $4,
+           signature_data = $5,
+           statement = $6,
+           witness_info = $7,
+           version = version + 1,
+           status = $8,
+           signed_at = COALESCE(signed_at, $9),
+           updated_at = $9
+         WHERE patient_id = $10
+         RETURNING *`,
+        [
+          rowFields.decisions,
+          rowFields.representatives,
+          rowFields.treatments,
+          rowFields.signature,
+          rowFields.signature_data,
+          rowFields.statement,
+          JSON.stringify(livingWillData.witnessSignatures || []),
+          rowFields.status,
+          now,
+          patientId,
+        ]
+      );
+      savedRow = result.rows[0];
+
       await pool.query(
         `INSERT INTO audit_logs (id, patient_id, action, details, created_at)
          VALUES ($1, $2, 'LIVING_WILL_UPDATED', $3, $4)`,
-        [`audit_${Date.now()}`, patientId, JSON.stringify({ version: result.rows[0].version }), now]
+        [`audit_${Date.now()}`, patientId, JSON.stringify({ version: savedRow.version }), now]
       );
-
-      return res.json(result.rows[0]);
     } else {
-      // Create new living will
       const livingWillId = `living_will_${Date.now()}`;
-      
       const result = await pool.query(
-        `INSERT INTO living_wills (id, patient_id, decisions, witness_info, signature_data, version, status, created_at, updated_at)
-         VALUES ($1, $2, $3, $4, $5, 1, $6, $7, $7)
+        `INSERT INTO living_wills (
+           id, patient_id, decisions, representatives, treatments, signature,
+           signature_data, statement, witness_info, version, status, signed_at, created_at, updated_at
+         )
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 1, $10, $11, $11, $11)
          RETURNING *`,
         [
           livingWillId,
           patientId,
-          JSON.stringify(livingWillData.decisions || {}),
-          JSON.stringify(livingWillData.witnessInfo || {}),
-          livingWillData.signatureData || null,
-          livingWillData.status || 'draft',
-          now
+          rowFields.decisions,
+          rowFields.representatives,
+          rowFields.treatments,
+          rowFields.signature,
+          rowFields.signature_data,
+          rowFields.statement,
+          JSON.stringify(livingWillData.witnessSignatures || []),
+          rowFields.status,
+          now,
         ]
       );
+      savedRow = result.rows[0];
 
-      // Log the action
       await pool.query(
         `INSERT INTO audit_logs (id, patient_id, action, details, created_at)
          VALUES ($1, $2, 'LIVING_WILL_CREATED', $3, $4)`,
         [`audit_${Date.now()}`, patientId, JSON.stringify({ livingWillId }), now]
       );
-
-      return res.json(result.rows[0]);
     }
+
+    await syncLivingWillShares(pool, patientId, sharedWith, shareWithEveryone);
+
+    const form = mapRowToLivingWillForm(savedRow);
+    const shareState = await getLivingWillShareState(pool, patientId);
+    res.json({ ...form, ...shareState });
   } catch (error: unknown) {
     console.error('[PDPA] Save living will error:', error);
     res.status(500).json({ error: 'Failed to save living will' });
@@ -807,21 +863,34 @@ router.post('/doctor-access', authMiddleware, async (req: Request, res: Response
     const doctorResult = await pool.query('SELECT name FROM users WHERE id = $1', [doctor_id]);
     const doctorName = doctorResult.rows[0]?.name || 'Unknown';
 
-    // Upsert — one row per (patient_id, doctor_id, consent_type)
-    const result = await pool.query(
-      `INSERT INTO patient_consents
-         (id, patient_id, doctor_id, doctor_name, consent_type, granted, status, data_types, granted_at, revoked_at, created_at, updated_at)
-       VALUES ($1, $2, $3, $4, 'medical_record_access', true, 'granted', '["all"]'::jsonb, $5, NULL, $5, $5)
-       ON CONFLICT (patient_id, doctor_id, consent_type) WHERE doctor_id IS NOT NULL
-       DO UPDATE SET
-         granted = true,
-         status = 'granted',
-         granted_at = $5,
-         revoked_at = NULL,
-         updated_at = $5
-       RETURNING *`,
-      [consentId, patientId, doctor_id, doctorName, now]
+    // Upsert — one row per (patient_id, doctor_id, consent_type); no partial unique index required
+    const existing = await pool.query(
+      `SELECT id FROM patient_consents
+       WHERE patient_id = $1 AND doctor_id = $2 AND consent_type = 'medical_record_access'`,
+      [patientId, doctor_id]
     );
+
+    const result =
+      existing.rows.length > 0
+        ? await pool.query(
+            `UPDATE patient_consents SET
+               granted = true,
+               status = 'granted',
+               doctor_name = $1,
+               granted_at = $2,
+               revoked_at = NULL,
+               updated_at = $2
+             WHERE patient_id = $3 AND doctor_id = $4 AND consent_type = 'medical_record_access'
+             RETURNING *`,
+            [doctorName, now, patientId, doctor_id]
+          )
+        : await pool.query(
+            `INSERT INTO patient_consents
+               (id, patient_id, doctor_id, doctor_name, consent_type, granted, status, data_types, granted_at, revoked_at, created_at, updated_at)
+             VALUES ($1, $2, $3, $4, 'medical_record_access', true, 'granted', '["all"]'::jsonb, $5, NULL, $5, $5)
+             RETURNING *`,
+            [consentId, patientId, doctor_id, doctorName, now]
+          );
 
     // Audit log
     await pool.query(

@@ -218,8 +218,8 @@ if (Test-Path $GCP_SA_KEY_PATH) {
 Write-Step "Deploying Meeting Server ($SVC_MEETING)..."
 gcloud run deploy $SVC_MEETING `
     --image=$IMG_MEETING --region=$REGION --platform=managed `
-    --allow-unauthenticated --port=3020 --memory=2Gi --cpu=1 `
-    --min-instances=0 --max-instances=5 --timeout=300 `
+    --allow-unauthenticated --port=3020 --memory=1Gi --cpu=1 `
+    --min-instances=1 --max-instances=3 --concurrency=40 --timeout=600 `
     --set-env-vars="NODE_ENV=production,DB_HOST=$PG_HOST,DB_PORT=5432,DB_NAME=$DB_NAME,DB_USER=$DB_USER,DB_PASSWORD=$DB_PASSWORD,DB_SSL=false,DATABASE_URL=$DATABASE_URL,GEMINI_API_KEY=$GEMINI_API_KEY,GEMINI_MODEL=gemini-3.1-flash-lite,JITSI_DOMAIN=meet.jit.si,JWT_SECRET=$JWT_SECRET,CORS_ORIGINS=*,USE_POSTGRESQL=true,GCP_SERVICE_ACCOUNT_KEY=$GCP_SA_KEY" `
     --quiet
 if ($LASTEXITCODE -ne 0) { Write-Err "Meeting Server deployment failed!"; exit 1 }
@@ -249,7 +249,7 @@ Write-Step "Deploying Patient Portal ($SVC_PATIENT)..."
 gcloud run deploy $SVC_PATIENT `
     --image=$IMG_PATIENT --region=$REGION --platform=managed `
     --allow-unauthenticated --port=3005 --memory=1Gi --cpu=1 `
-    --min-instances=0 --max-instances=3 --timeout=300 `
+    --min-instances=1 --max-instances=3 --concurrency=80 --timeout=300 `
     --set-env-vars="NODE_ENV=production,DATABASE_URL=$DATABASE_URL,DB_HOST=$PG_HOST,DB_PORT=5432,DB_NAME=$DB_NAME,DB_USER=$DB_USER,DB_PASSWORD=$DB_PASSWORD,DB_SSL=false,USE_POSTGRESQL=true,VITE_USE_POSTGRESQL=true,MEETING_SERVER_URL=$MEETING_URL,VITE_MEETING_SERVER_URL=$MEETING_URL,GOOGLE_MAPS_API_KEY=$MAPS_API_KEY,VITE_GOOGLE_MAPS_API_KEY=$MAPS_API_KEY,GEMINI_API_KEY=$GEMINI_API_KEY,GEMINI_MODEL=gemini-3.1-flash-lite,JWT_SECRET=$JWT_SECRET" `
     --quiet
 if ($LASTEXITCODE -ne 0) { Write-Err "Patient Portal deployment failed!"; exit 1 }
@@ -276,14 +276,13 @@ if (-not $SkipBuild) {
 }
 
 Write-Step "Deploying Doctor Portal ($SVC_DOCTOR)..."
-# Matches Cloud Run revision izara-doctor-portal-dev-testing-00104-7zj (2026-05-23)
 gcloud run deploy $SVC_DOCTOR `
     --image=$IMG_DOCTOR --region=$REGION --platform=managed `
     --allow-unauthenticated --port=8080 --memory=1Gi --cpu=1 `
-    --min-instances=0 --max-instances=2 --timeout=300 `
-    --set-env-vars="NODE_ENV=production,USE_POSTGRESQL=true,VITE_USE_POSTGRESQL=true,DB_HOST=$PG_HOST,DB_PORT=5432,DB_NAME=$DB_NAME,DB_USER=$DB_USER,DB_SSL=false,MEETING_SERVER_URL=$MEETING_URL,VITE_MEETING_SERVER_URL=$MEETING_URL,JITSI_DOMAIN=meet.jit.si,GEMINI_MODEL=gemini-3.1-flash-lite,GCP_PROJECT_ID=$PROJECT_ID,IZARA_DEV_TESTING=1,GOOGLE_TOKEN_VERIFIER_FIXTURE=1" `
+    --min-instances=1 --max-instances=3 --concurrency=80 --timeout=300 `
+    --set-env-vars="NODE_ENV=production,USE_POSTGRESQL=true,VITE_USE_POSTGRESQL=true,DB_HOST=$PG_HOST,DB_PORT=5432,DB_NAME=$DB_NAME,DB_USER=$DB_USER,DB_SSL=false,MEETING_SERVER_URL=$MEETING_URL,VITE_MEETING_SERVER_URL=$MEETING_URL,JITSI_DOMAIN=meet.jit.si,GEMINI_MODEL=gemini-3.1-flash-lite,GCP_PROJECT_ID=$PROJECT_ID,IZARA_DEV_TESTING=1,GOOGLE_TOKEN_VERIFIER_FIXTURE=1,NODE_OPTIONS=--max-old-space-size=768" `
     --set-secrets="GEMINI_API_KEY=gemini-api-key:latest,VITE_GEMINI_API_KEY=gemini-api-key:latest,DB_PASSWORD=db-password:latest,DATABASE_URL=database-url:latest,JWT_SECRET=jwt-secret:latest,GOOGLE_CLIENT_ID=google-client-id:latest" `
-    --execution-environment=gen2 --cpu-boost --quiet
+    --quiet
 if ($LASTEXITCODE -ne 0) { Write-Err "Doctor Portal deployment failed!"; exit 1 }
 $DOCTOR_URL = Get-ServiceUrl $SVC_DOCTOR
 Write-OK "Doctor Portal deployed: $DOCTOR_URL"

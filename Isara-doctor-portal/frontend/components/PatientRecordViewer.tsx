@@ -11,8 +11,10 @@ import {
   EMRRecord,
   EHRData,
   LivingWillResponse,
+  isLivingWillNotShared,
   VitalEntry,
-  patientRecordService
+  patientRecordService,
+  PDPAPatientSummary,
 } from '../services/patientRecordService';
 
 interface PatientRecordViewerProps {
@@ -21,7 +23,29 @@ interface PatientRecordViewerProps {
   currentDoctorId?: string;
 }
 
-type RecordTab = 'summary' | 'emr' | 'labs' | 'rx' | 'docs';
+type RecordTab = 'summary' | 'emr' | 'labs' | 'rx' | 'docs' | 'pdpa';
+
+const MEDICAL_TABS = new Set<RecordTab>(['summary', 'emr', 'labs', 'rx', 'docs']);
+
+async function fetchPdpaSummary(patientId: string) {
+  return patientRecordService.getPDPASummary(patientId);
+}
+
+async function fetchPhrBundle(patientId: string) {
+  const [data, lwData] = await Promise.all([
+    patientRecordService.getPHR(patientId),
+    patientRecordService.getLivingWill(patientId),
+  ]);
+  return { data, lwData };
+}
+
+async function fetchEmrRecords(patientId: string) {
+  return patientRecordService.getEMRs(patientId);
+}
+
+async function fetchEhrData(patientId: string) {
+  return patientRecordService.getEHR(patientId);
+}
 
 export const PatientRecordViewer: React.FC<PatientRecordViewerProps> = ({
   patient,
@@ -40,11 +64,13 @@ export const PatientRecordViewer: React.FC<PatientRecordViewerProps> = ({
   const [livingWillData, setLivingWillData] = useState<LivingWillResponse>(null);
   const [emrRecords, setEmrRecords] = useState<EMRRecord[]>([]);
   const [ehrData, setEhrData] = useState<EHRData | null>(null);
+  const [pdpaData, setPdpaData] = useState<PDPAPatientSummary | null>(null);
 
   // Per-tab loading states
   const [loadingPHR, setLoadingPHR] = useState(false);
   const [loadingEMR, setLoadingEMR] = useState(false);
   const [loadingEHR, setLoadingEHR] = useState(false);
+  const [loadingPDPA, setLoadingPDPA] = useState(false);
 
   // Track which tabs have been loaded
   const [loadedTabs, setLoadedTabs] = useState<Set<string>>(new Set());
@@ -55,45 +81,56 @@ export const PatientRecordViewer: React.FC<PatientRecordViewerProps> = ({
   // Refs for scrolling
   const contentRef = useRef<HTMLDivElement>(null);
 
+  const hasMedicalAccess = consentStatus === 'granted' || consentStatus === 'emergency';
+
   // Load tab data on first activation
   const loadTabData = useCallback(async (tab: RecordTab) => {
     if (loadedTabs.has(tab)) return;
     setError(null);
 
     try {
+      if (tab === 'pdpa') {
+        setLoadingPDPA(true);
+        setPdpaData(await fetchPdpaSummary(patient.id));
+        setLoadedTabs(prev => new Set(prev).add('pdpa'));
+        return;
+      }
+      if (!hasMedicalAccess) return;
+
       if (tab === 'summary' || tab === 'rx') {
-        if (!loadedTabs.has('summary') && !loadedTabs.has('rx')) {
-          setLoadingPHR(true);
-          const [data, lwData] = await Promise.all([
-            patientRecordService.getPHR(patient.id),
-            patientRecordService.getLivingWill(patient.id),
-          ]);
-          setPhrData(data);
-          setLivingWillData(lwData);
-          setLoadedTabs(prev => new Set(prev).add('summary').add('rx'));
-        }
-      } else if (tab === 'emr') {
+        if (loadedTabs.has('summary') || loadedTabs.has('rx')) return;
+        setLoadingPHR(true);
+        const { data, lwData } = await fetchPhrBundle(patient.id);
+        setPhrData(data);
+        setLivingWillData(lwData);
+        setLoadedTabs(prev => new Set(prev).add('summary').add('rx'));
+        return;
+      }
+      if (tab === 'emr') {
         setLoadingEMR(true);
-        const data = await patientRecordService.getEMRs(patient.id);
-        setEmrRecords(data);
+        setEmrRecords(await fetchEmrRecords(patient.id));
         setLoadedTabs(prev => new Set(prev).add('emr'));
-      } else if (tab === 'labs' || tab === 'docs') {
-        if (!loadedTabs.has('labs') && !loadedTabs.has('docs')) {
-          setLoadingEHR(true);
-          const data = await patientRecordService.getEHR(patient.id);
-          setEhrData(data);
-          setLoadedTabs(prev => new Set(prev).add('labs').add('docs'));
-        }
+        return;
+      }
+      if (tab === 'labs' || tab === 'docs') {
+        if (loadedTabs.has('labs') || loadedTabs.has('docs')) return;
+        setLoadingEHR(true);
+        setEhrData(await fetchEhrData(patient.id));
+        setLoadedTabs(prev => new Set(prev).add('labs').add('docs'));
       }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Failed to load data';
+      if (msg.includes('PDPA consent')) {
+        setConsentStatus('denied');
+      }
       setError(msg);
     } finally {
       if (tab === 'summary' || tab === 'rx') setLoadingPHR(false);
       if (tab === 'emr') setLoadingEMR(false);
       if (tab === 'labs' || tab === 'docs') setLoadingEHR(false);
+      if (tab === 'pdpa') setLoadingPDPA(false);
     }
-  }, [patient.id, loadedTabs]);
+  }, [patient.id, loadedTabs, hasMedicalAccess]);
 
   // PDPA consent check on mount
   useEffect(() => {
@@ -111,6 +148,7 @@ export const PatientRecordViewer: React.FC<PatientRecordViewerProps> = ({
           }
         } else {
           setConsentStatus('denied');
+          setActiveTab('pdpa');
         }
       } catch {
         if (!cancelled) setConsentStatus('denied');
@@ -120,20 +158,19 @@ export const PatientRecordViewer: React.FC<PatientRecordViewerProps> = ({
     return () => { cancelled = true; };
   }, [patient.id]);
 
-  // Load initial tab (Summary) — only if consent is granted/emergency
+  // Load initial tab — PDPA always; medical tabs only with consent
   useEffect(() => {
-    if (consentStatus === 'granted' || consentStatus === 'emergency') {
+    loadTabData('pdpa');
+    if (hasMedicalAccess) {
       loadTabData('summary');
     }
     return () => { patientRecordService.clearCache(); };
-  }, [patient.id, consentStatus]);
+  }, [patient.id, hasMedicalAccess]);
 
-  // Load tab data when switching (only if consent granted)
+  // Load tab data when switching
   useEffect(() => {
-    if (consentStatus === 'granted' || consentStatus === 'emergency') {
-      loadTabData(activeTab);
-    }
-  }, [activeTab, loadTabData, consentStatus]);
+    loadTabData(activeTab);
+  }, [activeTab, loadTabData]);
 
   // Build timeline navigator dates from EMR + EHR
   const timelineDates = buildTimelineDates(emrRecords, ehrData);
@@ -146,7 +183,18 @@ export const PatientRecordViewer: React.FC<PatientRecordViewerProps> = ({
   const isLoading = (activeTab === 'summary' && loadingPHR) ||
                     (activeTab === 'rx' && loadingPHR) ||
                     (activeTab === 'emr' && loadingEMR) ||
-                    ((activeTab === 'labs' || activeTab === 'docs') && loadingEHR);
+                    ((activeTab === 'labs' || activeTab === 'docs') && loadingEHR) ||
+                    (activeTab === 'pdpa' && loadingPDPA);
+
+  const handleTabChange = (tab: RecordTab) => {
+    if (!hasMedicalAccess && MEDICAL_TABS.has(tab)) {
+      setActiveTab('pdpa');
+      setError('PDPA consent required to access medical records');
+      return;
+    }
+    setError(null);
+    setActiveTab(tab);
+  };
 
   // Handle request access
   const handleRequestAccess = async () => {
@@ -154,56 +202,13 @@ export const PatientRecordViewer: React.FC<PatientRecordViewerProps> = ({
     if (result.success) setRequestSent(true);
   };
 
-  // ── PDPA Consent Gate ──
+  // ── PDPA Consent Gate (checking spinner only) ──
   if (consentStatus === 'checking') {
     return (
       <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
         <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg p-8 text-center">
           <div className="w-12 h-12 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
           <p className="text-gray-600">Checking PDPA consent...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (consentStatus === 'denied') {
-    return (
-      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-        <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg p-8">
-          <div className="text-center">
-            <div className="mx-auto w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-4">
-              <svg className="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                  d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-              </svg>
-            </div>
-            <h3 className="text-xl font-bold text-gray-900 mb-2">PDPA Consent Required</h3>
-            <p className="text-gray-600 mb-1">
-              <strong>{patient.demographics?.name || patient.name || 'This patient'}</strong> has not granted you access to their medical records.
-            </p>
-            <p className="text-sm text-gray-500 mb-6">
-              Under PDPA (Personal Data Protection Act), patient consent is required before accessing health records.
-            </p>
-            {requestSent ? (
-              <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4 mb-4">
-                <p className="text-emerald-700 font-medium">Access request sent</p>
-                <p className="text-sm text-emerald-600">The patient will be notified. You will gain access once they approve.</p>
-              </div>
-            ) : (
-              <button
-                onClick={handleRequestAccess}
-                className="w-full px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium mb-3"
-              >
-                Request Access from Patient
-              </button>
-            )}
-            <button
-              onClick={onClose}
-              className="w-full px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
-            >
-              Close
-            </button>
-          </div>
         </div>
       </div>
     );
@@ -224,7 +229,7 @@ export const PatientRecordViewer: React.FC<PatientRecordViewerProps> = ({
           </button>
         </div>
 
-        {/* Emergency Bypass Banner */}
+        {/* Emergency / consent banners */}
         {consentStatus === 'emergency' && (
           <div className="bg-amber-50 border-b border-amber-200 px-4 py-2 flex items-center gap-2">
             <svg className="w-5 h-5 text-amber-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -237,7 +242,31 @@ export const PatientRecordViewer: React.FC<PatientRecordViewerProps> = ({
           </div>
         )}
 
-        {/* Top Tabs — Summary | EMR | Labs | Rx | Docs */}
+        {consentStatus === 'denied' && (
+          <div className="bg-red-50 border-b border-red-200 px-4 py-2 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <svg className="w-5 h-5 text-red-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                  d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+              </svg>
+              <span className="text-sm text-red-800">
+                PDPA consent required for medical records. Open the PDPA tab to review status or request access.
+              </span>
+            </div>
+            {requestSent ? (
+              <span className="shrink-0 text-sm text-emerald-700 font-medium">Request sent</span>
+            ) : (
+              <button
+                onClick={handleRequestAccess}
+                className="shrink-0 px-3 py-1.5 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700"
+              >
+                Request Access
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* Top Tabs — Summary | EMR | Labs | Rx | Docs | PDPA */}
         <div className="flex border-b border-gray-200 bg-gray-50 overflow-x-auto">
           {([
             { key: 'summary' as const, label: 'Summary' },
@@ -245,16 +274,17 @@ export const PatientRecordViewer: React.FC<PatientRecordViewerProps> = ({
             { key: 'labs' as const, label: 'Labs' },
             { key: 'rx' as const, label: 'Rx' },
             { key: 'docs' as const, label: 'Docs' },
+            { key: 'pdpa' as const, label: 'PDPA' },
           ]).map(tab => (
             <button
               key={tab.key}
               data-testid={`patient-record-tab-${tab.key}`}
-              onClick={() => setActiveTab(tab.key)}
+              onClick={() => handleTabChange(tab.key)}
               className={`px-5 py-3 font-medium transition-colors whitespace-nowrap ${
                 activeTab === tab.key
                   ? 'bg-white text-emerald-600 border-b-2 border-emerald-600'
                   : 'text-gray-600 hover:bg-gray-100'
-              }`}
+              } ${tab.key === 'pdpa' && consentStatus === 'denied' ? 'text-blue-700' : ''}`}
             >
               {tab.label}
             </button>
@@ -300,14 +330,35 @@ export const PatientRecordViewer: React.FC<PatientRecordViewerProps> = ({
                 {(activeTab === 'summary' || activeTab === 'rx') && <PHRSkeleton />}
                 {activeTab === 'emr' && <EMRSkeleton />}
                 {(activeTab === 'labs' || activeTab === 'docs') && <EHRSkeleton />}
+                {activeTab === 'pdpa' && <PDPASkeleton />}
               </>
             ) : (
               <>
-                {activeTab === 'summary' && <PHRView phrData={phrData} livingWillResponse={livingWillData} />}
-                {activeTab === 'emr' && <EMRView emrRecords={emrRecords} currentDoctorId={currentDoctorId} />}
-                {activeTab === 'labs' && <LabsView ehrData={ehrData} />}
-                {activeTab === 'rx' && <RxView phrData={phrData} />}
-                {activeTab === 'docs' && <DocsView ehrData={ehrData} />}
+                {activeTab === 'summary' && hasMedicalAccess && (
+                  <div data-testid="patient-record-phr-summary">
+                    <PHRView phrData={phrData} livingWillResponse={livingWillData} />
+                  </div>
+                )}
+                {activeTab === 'emr' && hasMedicalAccess && <EMRView emrRecords={emrRecords} currentDoctorId={currentDoctorId} />}
+                {activeTab === 'labs' && hasMedicalAccess && <LabsView ehrData={ehrData} />}
+                {activeTab === 'rx' && hasMedicalAccess && <RxView phrData={phrData} />}
+                {activeTab === 'docs' && hasMedicalAccess && <DocsView ehrData={ehrData} />}
+                {activeTab === 'pdpa' && (
+                  <div data-testid="patient-record-pdpa-tab">
+                    <PDPAView
+                      summary={pdpaData}
+                      requestSent={requestSent}
+                      onRequestAccess={handleRequestAccess}
+                    />
+                  </div>
+                )}
+                {!hasMedicalAccess && MEDICAL_TABS.has(activeTab) && (
+                  <ConsentRequiredPanel
+                    patientName={patient.demographics?.name || patient.name || 'This patient'}
+                    requestSent={requestSent}
+                    onRequestAccess={handleRequestAccess}
+                  />
+                )}
               </>
             )}
           </div>
@@ -358,6 +409,183 @@ const EHRSkeleton: React.FC = () => (
   </div>
 );
 
+const PDPASkeleton: React.FC = () => (
+  <div className="space-y-4">
+    <Pulse className="h-24 w-full" />
+    <Pulse className="h-40 w-full" />
+    <Pulse className="h-32 w-full" />
+  </div>
+);
+
+const PRIVACY_CONSENT_LABELS: Record<string, string> = {
+  essential: 'Essential data',
+  health_data: 'Health data',
+  data_sharing: 'Share with project doctors',
+  analytics: 'Analytics',
+  marketing: 'Marketing',
+  dataProcessing: 'Health data',
+  research: 'Analytics',
+};
+
+const ConsentRequiredPanel: React.FC<{
+  patientName: string;
+  requestSent: boolean;
+  onRequestAccess: () => void;
+}> = ({ patientName, requestSent, onRequestAccess }) => (
+  <div className="bg-white rounded-lg border border-red-200 p-8 text-center max-w-lg mx-auto mt-8">
+    <div className="mx-auto w-14 h-14 bg-red-100 rounded-full flex items-center justify-center mb-4">
+      <svg className="w-7 h-7 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+          d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+      </svg>
+    </div>
+    <h3 className="text-lg font-bold text-gray-900 mb-2">PDPA Consent Required</h3>
+    <p className="text-gray-600 mb-4">
+      <strong>{patientName}</strong> has not granted you access to their medical records.
+    </p>
+    {requestSent ? (
+      <p className="text-sm text-emerald-600">Access request sent. The patient will be notified.</p>
+    ) : (
+      <button
+        onClick={onRequestAccess}
+        className="px-6 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
+      >
+        Request Access from Patient
+      </button>
+    )}
+  </div>
+);
+
+function pdpaAccessLabel(summary: PDPAPatientSummary): string {
+  if (!summary.hasAccess) return 'No medical record access';
+  if (summary.isEmergencyBypass) return 'Emergency appointment access';
+  if (summary.isBroadConsent) return 'Broad data-sharing consent';
+  if (summary.isAppointmentBypass) return 'Active appointment access';
+  return 'Direct medical record consent';
+}
+
+function livingWillPrefKey(treatment: { preference?: string } | boolean): string {
+  if (typeof treatment === 'boolean') return treatment ? 'accept' : 'refuse';
+  return treatment.preference || 'conditional';
+}
+
+function PDPAView({
+  summary,
+  requestSent,
+  onRequestAccess,
+}: Readonly<{
+  summary: PDPAPatientSummary | null;
+  requestSent: boolean;
+  onRequestAccess: () => void;
+}>) {
+  if (!summary) {
+    return (
+      <div className="bg-gray-50 rounded-lg p-8 text-center border border-dashed border-gray-300">
+        <p className="text-gray-500">Unable to load PDPA consent information</p>
+      </div>
+    );
+  }
+
+  const accessLabel = pdpaAccessLabel(summary);
+
+  return (
+    <div className="space-y-6">
+      <section className="bg-white rounded-lg shadow-sm p-5 border border-gray-200">
+        <h3 className="text-lg font-bold text-gray-900 mb-3">Your Access Status</h3>
+        <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium ${
+          summary.hasAccess ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'
+        }`}>
+          {summary.hasAccess ? '✓ Access granted' : '✗ Access not granted'}
+        </div>
+        <p className="text-sm text-gray-600 mt-2">{accessLabel}</p>
+        {summary.myAccess?.grantedAt && (
+          <p className="text-xs text-gray-500 mt-1">
+            Granted: {new Date(summary.myAccess.grantedAt).toLocaleString('th-TH')}
+          </p>
+        )}
+        {!summary.hasAccess && (
+          <div className="mt-4">
+            {requestSent ? (
+              <p className="text-sm text-emerald-600">Access request sent to patient.</p>
+            ) : (
+              <button
+                onClick={onRequestAccess}
+                className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700"
+              >
+                Request Access from Patient
+              </button>
+            )}
+          </div>
+        )}
+      </section>
+
+      <section className="bg-white rounded-lg shadow-sm p-5 border border-gray-200">
+        <h3 className="text-lg font-bold text-gray-900 mb-3">Patient Privacy Settings</h3>
+        {summary.privacyConsents.length === 0 ? (
+          <p className="text-sm text-gray-500">No privacy consent records on file.</p>
+        ) : (
+          <ul className="space-y-2">
+            {summary.privacyConsents.map((c) => (
+              <li key={c.type} className="flex items-center justify-between text-sm border-b border-gray-100 pb-2">
+                <span>{PRIVACY_CONSENT_LABELS[c.type] || c.type}</span>
+                <span className={c.granted ? 'text-emerald-600 font-medium' : 'text-gray-400'}>
+                  {c.granted ? 'Granted' : 'Not granted'}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      <section className="bg-white rounded-lg shadow-sm p-5 border border-gray-200">
+        <h3 className="text-lg font-bold text-gray-900 mb-3">Doctors with Medical Record Access</h3>
+        {summary.doctorAccess.length === 0 ? (
+          <p className="text-sm text-gray-500">No per-doctor access grants recorded.</p>
+        ) : (
+          <div className="space-y-2">
+            {summary.doctorAccess.map((d) => (
+              <div key={d.doctorId} className="flex items-center justify-between text-sm p-3 bg-gray-50 rounded-lg">
+                <div>
+                  <p className="font-medium">{d.doctorName}</p>
+                  {d.doctorSpecialty && <p className="text-xs text-gray-500">{d.doctorSpecialty}</p>}
+                </div>
+                <span className={`text-xs px-2 py-1 rounded-full ${
+                  d.granted && d.status === 'granted' ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-200 text-gray-600'
+                }`}>
+                  {d.granted && d.status === 'granted' ? 'Active' : d.status || 'Revoked'}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+
+      <section className="bg-white rounded-lg shadow-sm p-5 border border-gray-200">
+        <h3 className="text-lg font-bold text-gray-900 mb-3">Recent Consent Activity</h3>
+        {summary.recentAudit.length === 0 ? (
+          <p className="text-sm text-gray-500">No audit entries yet.</p>
+        ) : (
+          <ul className="space-y-2 max-h-64 overflow-y-auto">
+            {summary.recentAudit.map((entry, idx) => (
+              <li key={`${entry.timestamp}-${entry.action}-${idx}`} className="text-sm border-b border-gray-100 pb-2">
+                <div className="flex justify-between gap-2">
+                  <span className="font-medium text-gray-800">{entry.action}</span>
+                  <span className="text-xs text-gray-500 shrink-0">
+                    {new Date(entry.timestamp).toLocaleString('th-TH')}
+                  </span>
+                </div>
+                {entry.doctorName && (
+                  <p className="text-xs text-gray-500 mt-0.5">Doctor: {entry.doctorName}</p>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+    </div>
+  );
+}
+
 // ============================================================================
 // LIVING WILL CARD
 // ============================================================================
@@ -404,7 +632,7 @@ const LivingWillCard: React.FC<{ livingWillResponse: LivingWillResponse }> = ({ 
   }
 
   // State 2: Living will exists but NOT shared with this doctor
-  if ('exists' in livingWillResponse && livingWillResponse.authorized === false) {
+  if (isLivingWillNotShared(livingWillResponse)) {
     return (
       <div className="bg-amber-50 rounded-lg shadow-sm p-6 mb-6 border-2 border-amber-300">
         <div className="flex items-center gap-3">
@@ -466,12 +694,11 @@ const LivingWillCard: React.FC<{ livingWillResponse: LivingWillResponse }> = ({ 
         </button>
       </div>
 
-      {/* Quick Summary */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
         {quickItems.map(item => {
-          const treatment = (livingWill.treatments as unknown as Record<string, { preference: string }>)?.[item.key];
-          if (!treatment) return null;
-          const pref = getPreferenceLabel(treatment.preference);
+          const treatment = (livingWill.treatments as unknown as Record<string, { preference?: string } | boolean>)?.[item.key];
+          if (treatment == null) return null;
+          const pref = getPreferenceLabel(livingWillPrefKey(treatment));
           return (
             <div key={item.key} className="text-center p-2 bg-white rounded-lg">
               <div className="text-xs text-gray-500">{item.label}</div>
@@ -489,15 +716,17 @@ const LivingWillCard: React.FC<{ livingWillResponse: LivingWillResponse }> = ({ 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
               {Object.entries(livingWill.treatments).map(([key, treatment]) => {
                 if (key === 'otherTreatments') return null;
-                const t = treatment as { preference: string; conditions?: string };
+                const t = treatment as { preference?: string; conditions?: string } | boolean;
+                const prefKey = livingWillPrefKey(t);
+                const conditions = typeof t === 'boolean' ? undefined : t.conditions;
                 return (
                   <div key={key} className="flex items-center justify-between p-2 bg-white rounded">
                     <span className="text-sm text-gray-700">{treatmentLabels[key] || key}</span>
                     <div className="flex items-center gap-2">
-                      <span className={`px-2 py-0.5 rounded text-xs font-medium ${getPreferenceLabel(t.preference).color}`}>
-                        {getPreferenceLabel(t.preference).text}
+                      <span className={`px-2 py-0.5 rounded text-xs font-medium ${getPreferenceLabel(prefKey).color}`}>
+                        {getPreferenceLabel(prefKey).text}
                       </span>
-                      {t.conditions && <span className="text-xs text-gray-500" title={t.conditions}>📝</span>}
+                      {conditions && <span className="text-xs text-gray-500" title={conditions}>📝</span>}
                     </div>
                   </div>
                 );
@@ -813,7 +1042,7 @@ const VitalsSummarySection: React.FC<{ vitals: VitalEntry[] }> = ({ vitals }) =>
             .slice(0, 5);
           if (entries.length === 0) return null;
           return (
-            <div key={vt.key as string}>
+            <div key={vt.key}>
               <p className="text-sm font-semibold text-gray-700 mb-1">{vt.label}</p>
               <div className="flex gap-3 overflow-x-auto">
                 {entries.map((entry, idx) => {

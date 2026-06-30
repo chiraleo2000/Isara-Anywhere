@@ -23,6 +23,7 @@ import GCSStatusPage from './pages/GCSStatusPage';
 import PatientMeetingRoom from './pages/PatientMeetingRoom';
 import GuestMeetingJoin from './pages/GuestMeetingJoin';
 import FindDoctorsPage from './pages/FindDoctorsPage';
+import ErrorBoundary from './components/common/ErrorBoundary';
 
 // Enhanced Scroll to top on route change - uses useLayoutEffect for immediate scroll
 function ScrollToTop() {
@@ -123,13 +124,15 @@ function AppRoutes() {
 
 export default function App() {
   return (
-    <SettingsProvider>
-      <BrowserRouter>
-        <ScrollToTop />
-        <AuthProvider>
-          <AppRoutes />
-        </AuthProvider>
-      </BrowserRouter>
-    </SettingsProvider>
+    <ErrorBoundary>
+      <SettingsProvider>
+        <BrowserRouter>
+          <ScrollToTop />
+          <AuthProvider>
+            <AppRoutes />
+          </AuthProvider>
+        </BrowserRouter>
+      </SettingsProvider>
+    </ErrorBoundary>
   );
 }

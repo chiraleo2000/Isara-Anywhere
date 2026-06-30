@@ -5,6 +5,13 @@ import React, { createContext, useContext, useState, useEffect, useMemo, useCall
 import { useNavigate, useLocation, Navigate } from 'react-router-dom';
 import { User } from '../../types';
 import { authService, initTokenRefreshTimer } from '../../services/authServices';
+import {
+  getDemoDoctorCredentials,
+  isDemoAutoLoginEnabled,
+  isDoctorMeetingRoute,
+  shouldBypassLoginRedirectForMeeting,
+  shouldSkipDemoAutoLogin,
+} from '../../utils/demoAutoAuth';
 
 interface AuthContextType {
   user: User | null;
@@ -38,6 +45,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const location = useLocation();
 
   const redirectToDashboard = useCallback((currentUser: User) => {
+    if (isDoctorMeetingRoute(location.pathname)) return;
     if (location.pathname === '/login' || location.pathname === '/') {
       const basePath = (currentUser.role === 'doctor' || currentUser.role === 'admin') ? '/doctor' : '/patient';
       navigate(`${basePath}/${currentUser.id}/dashboard`, { replace: true });
@@ -59,7 +67,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       if (!data.valid || !data.user) {
         console.log('⚠️ Session invalid on server, logging out');
         authService.logout();
-        navigate('/login', { replace: true });
+        if (!shouldBypassLoginRedirectForMeeting(location.pathname)) {
+          navigate('/login', { replace: true });
+        }
         return null;
       }
 
@@ -78,7 +88,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       console.warn('⚠️ Session verification failed, using cached user:', verifyError);
       return currentUser;
     }
-  }, [navigate]);
+  }, [navigate, location.pathname]);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -88,8 +98,25 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         const token = authService.getToken();
 
         if (!currentUser || !token) {
+          if (isDemoAutoLoginEnabled() && !shouldSkipDemoAutoLogin()) {
+            const creds = getDemoDoctorCredentials();
+            try {
+              const result = await authService.login({ email: creds.email, password: creds.password });
+              if (result.user) {
+                setUser(result.user);
+                initTokenRefreshTimer();
+                redirectToDashboard(result.user);
+                return;
+              }
+            } catch (demoErr) {
+              console.warn('[Auth] Demo auto-login failed:', demoErr);
+            }
+          }
           setUser(null);
-          if (!location.pathname.startsWith('/login')) {
+          if (
+            !location.pathname.startsWith('/login')
+            && !shouldBypassLoginRedirectForMeeting(location.pathname)
+          ) {
             navigate('/login', { replace: true });
           }
           return;
@@ -98,7 +125,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         const verifiedUser = await verifySessionWithServer(token, currentUser);
         setUser(verifiedUser ?? null);
         if (verifiedUser) {
-          // Restart token refresh timer from stored JWT
           initTokenRefreshTimer();
           redirectToDashboard(verifiedUser);
         }
@@ -224,7 +250,19 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   }
 
   if (!isAuthenticated) {
-    // Save the attempted URL for redirecting after login
+    if (shouldBypassLoginRedirectForMeeting(location.pathname)) {
+      return (
+        <div
+          className="min-h-screen bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50 flex items-center justify-center"
+          data-testid="meeting-auth-starting"
+        >
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-emerald-600 mx-auto mb-4" />
+            <p className="text-gray-600">กำลังเข้าสู่ระบบแพทย์...</p>
+          </div>
+        </div>
+      );
+    }
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 

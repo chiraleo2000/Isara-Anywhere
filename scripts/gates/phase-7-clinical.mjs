@@ -29,5 +29,6 @@ if (
 }
 
 if (!runScreenshotGate('group-E', 'screenshots-group-E')) bailWithArchive(ROUND, 'screenshots-group-E');
+if (!runScreenshotGate('group-F', 'screenshots-group-F')) bailWithArchive(ROUND, 'screenshots-group-F');
 if (!runLedgerRound(ROUND)) bailWithArchive(ROUND, 'ledger-round');
 process.exit(0);

@@ -84,7 +84,7 @@ export function buildMeetingUrls(domain, roomName, participants = {}) {
 
 /** Config passed to JitsiMeetExternalAPI */
 /** Canonical patient-portal guest URLs (single source of truth for invite copy). */
-export function buildGuestPortalUrls({ patientPortalBase, meetingKey, guestName, token }) {
+export function buildGuestPortalUrls({ patientPortalBase, meetingKey, guestName, token, allowAnonymousJoin }) {
   const base = String(patientPortalBase || '').replace(/\/$/, '');
   const key = encodeURIComponent(String(meetingKey || ''));
   const nameQ = guestName ? `?name=${encodeURIComponent(String(guestName))}` : '';
@@ -92,11 +92,15 @@ export function buildGuestPortalUrls({ patientPortalBase, meetingKey, guestName,
   const guestTokenUrl = token
     ? `${base}/guest/join/${encodeURIComponent(String(token))}`
     : undefined;
+  const anonymousAllowed =
+    allowAnonymousJoin === true ||
+    process.env.GUEST_ALLOW_ANONYMOUS_JOIN === '1' ||
+    process.env.GUEST_ALLOW_ANONYMOUS_JOIN === 'true';
   return {
-    guestJoinUrl,
+    guestJoinUrl: anonymousAllowed ? guestJoinUrl : undefined,
     guestTokenUrl,
-    /** Back-compat alias */
-    guestLink: guestTokenUrl || guestJoinUrl,
+    /** Invite copy target — token URL only unless anonymous explicitly allowed */
+    guestLink: guestTokenUrl || (anonymousAllowed ? guestJoinUrl : undefined),
   };
 }
 

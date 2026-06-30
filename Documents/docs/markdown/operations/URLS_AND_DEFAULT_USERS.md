@@ -1,7 +1,7 @@
 # URLs & default users (quick reference)
 
-> Synced from [README.md](../../README.md) · **v1.7.53** · Cloud region `asia-southeast1` · Project `izara-telemedicine`  
-> Verification: **~3200** Vitest · phase gates `npm run phase:0` … `phase:9` · Deploy: [deploy/nginx/DEPLOYMENT.md](../../../deploy/nginx/DEPLOYMENT.md)
+> Synced from [README.md](../../README.md) · **v1.7.54** · Cloud region `asia-southeast1` · Project `izara-telemedicine`  
+> Verification: **~3200** Vitest · phase gates `npm run phase:0` … `phase:9` · LAN video: [LAN_VIDEO_CLIENT_TH.md](LAN_VIDEO_CLIENT_TH.md)
 
 ---
 
@@ -33,7 +33,7 @@
 | PostgreSQL | localhost:5433 |
 | pgAdmin | http://localhost:5050 |
 
-### Mode B — Ubuntu + Nginx (LAN)
+### Mode B — Ubuntu + Nginx (LAN HTTP — `isara.local`)
 
 Requires `hosts` entry on each client PC pointing to the server IP.
 
@@ -45,6 +45,20 @@ Requires `hosts` entry on each client PC pointing to the server IP.
 | pgAdmin | http://dbadmin.isara.local |
 
 **Deploy:** `bash deploy/nginx/deploy.sh` · **Diagnostic:** `bash deploy/nginx/diagnose.sh`
+
+### Mode C — Ubuntu + Nginx (LAN HTTPS — `*.demotoday.net`)
+
+| Service | URL |
+| ------- | --- |
+| Patient login | https://patient.demotoday.net/login |
+| Doctor / Admin login | https://doctor.demotoday.net/login |
+| Meeting API | https://meeting.demotoday.net |
+| Jitsi video | https://meet.demotoday.net |
+| pgAdmin | https://dbadmin.demotoday.net |
+
+**Deploy:** `bash scripts/deploy/ubuntu-lan-remaining.sh` · **Jitsi + API:** [JITSI_MEETING_DEMOTODAY_API.md](JITSI_MEETING_DEMOTODAY_API.md) · **Video (TH):** [LAN_VIDEO_CLIENT_TH.md](LAN_VIDEO_CLIENT_TH.md) · **Windows:** [deploy/nginx/WINDOWS_CLIENT_SETUP.md](../../../deploy/nginx/WINDOWS_CLIENT_SETUP.md)
+
+**Server IP (lab):** `192.168.10.239` — update hosts if your LAN IP differs.
 
 ---
 
@@ -64,10 +78,10 @@ Requires `hosts` entry on each client PC pointing to the server IP.
 
 ### Where to log in
 
-| Role | Cloud login | Local login | LAN login |
-| ---- | ----------- | ------------- | --------- |
-| Patient | https://izara-patient-portal-dev-testing-724889190329.asia-southeast1.run.app/login | http://localhost:3005/login | http://patient.isara.local/login |
-| Doctor / Admin | https://izara-doctor-portal-dev-testing-724889190329.asia-southeast1.run.app/login | http://localhost:3010/login | http://doctor.isara.local/login |
+| Role | Cloud login | Local login | LAN HTTPS (`demotoday.net`) |
+| ---- | ----------- | ------------- | ------------------------- |
+| Patient | https://izara-patient-portal-dev-testing-724889190329.asia-southeast1.run.app/login | http://localhost:3005/login | https://patient.demotoday.net/login |
+| Doctor / Admin | https://izara-doctor-portal-dev-testing-724889190329.asia-southeast1.run.app/login | http://localhost:3010/login | https://doctor.demotoday.net/login |
 
 **Google SSO:** `GOOGLE_CLIENT_ID` in each portal `.env` — SSO email must match a registered account.
 
@@ -75,7 +89,7 @@ Requires `hosts` entry on each client PC pointing to the server IP.
 
 ---
 
-## User guidelines — Word · PowerPoint · PDF (v1.7.33)
+## User guidelines — Word · PowerPoint · PDF (v1.7.54)
 
 | Portal | Word (.docx) | Word PDF | PowerPoint (.pptx) | Slides PDF |
 | ------ | ------------ | -------- | ------------------ | ---------- |
@@ -109,8 +123,14 @@ Meeting:  https://izara-meeting-server-dev-testing-724889190329.asia-southeast1.
 Patient:  http://localhost:3005/login
 Doctor:   http://localhost:3010/login
 Meeting:  http://localhost:3020
+Jitsi:    https://meet.localhost:8443
 
-# Users
+# LAN HTTPS (Ubuntu 192.168.10.239 — hosts file required on Windows)
+Patient:  https://patient.demotoday.net/login
+Doctor:   https://doctor.demotoday.net/login
+Meeting:  https://meeting.demotoday.net
+Jitsi:    https://meet.demotoday.net
+Video guide (TH): Documents/docs/markdown/operations/LAN_VIDEO_CLIENT_TH.md
 demo.test@gmail.com / P@ssw0rd (patient)
 Somchai.Mankong@gmail.com / P@ssw0rd (patient)
 Anan.Khayanrian@gmail.com / P@ssw0rd (patient)

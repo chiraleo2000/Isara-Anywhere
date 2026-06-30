@@ -3,6 +3,7 @@
  */
 import {
   test, expect, assertFullHealth, snap, navPatient,
+  doctorHealthMeetingUrl, DOCTOR_URL,
 } from './helpers/multi-portal';
 import { assertNoHorizontalScroll, assertMainContentVisible } from './helpers/layout-assertions';
 
@@ -35,12 +36,20 @@ test.describe('Group S — Responsive layout stability', () => {
 
   test('S04 — Doctor dashboard deep views', async ({ portals }) => {
     const { doctor } = portals;
+    const doctorId = process.env.TEST_DOCTOR_ID || 'DOC-TEST-001';
     const views = ['schedule', 'patients', 'health-meeting', 'profile'];
     for (const view of views) {
-      await doctor.page.evaluate((v) => {
-        const w = globalThis as unknown as { __doctorNavigate?: (x: string) => void };
-        if (typeof w.__doctorNavigate === 'function') w.__doctorNavigate(v);
-      }, view).catch(() => {});
+      if (view === 'health-meeting') {
+        await doctor.page.goto(doctorHealthMeetingUrl(doctorId), {
+          waitUntil: 'domcontentloaded',
+          timeout: 45_000,
+        });
+      } else {
+        await doctor.page.evaluate((v) => {
+          const w = globalThis as unknown as { __doctorNavigate?: (x: string) => void };
+          if (typeof w.__doctorNavigate === 'function') w.__doctorNavigate(v);
+        }, view).catch(() => {});
+      }
       await doctor.page.waitForTimeout(500);
       await assertNoHorizontalScroll(doctor.page);
     }

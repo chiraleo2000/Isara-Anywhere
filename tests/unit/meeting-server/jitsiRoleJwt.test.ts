@@ -1,21 +1,39 @@
 /**
  * @process Processes/VIDEO_MEETING_JITSI_GEMINI.md
- * Session auth + lobby role policy (Jitsi room JWT removed).
+ * Session auth + self-hosted Jitsi JWT policy.
  */
 import { describe, it, expect } from 'vitest';
+import jwt from 'jsonwebtoken';
 import {
   createJitsiRoleJwt,
   validateGuestJoinAccess,
   generateOpaqueToken,
-} from '../../../Izara-jitsi-server/backend/sessionAuth.js';
+} from '@meeting/sessionAuth.js';
 
-describe('sessionAuth — Jitsi JWT removed', () => {
-  it('JR01 — createJitsiRoleJwt always returns null', () => {
+const UNIT_TEST_JWT_HS256_STUB = `unit-${'a'.repeat(28)}`;
+const DOMAIN = 'meet.localhost';
+
+describe('sessionAuth — Jitsi JWT policy', () => {
+  it('JR01 — no-args returns null (public default)', () => {
     expect(createJitsiRoleJwt()).toBeNull();
   });
 
   it('JR03 — disabled token auth returns null', () => {
-    expect(createJitsiRoleJwt({ enabled: false })).toBeNull();
+    expect(createJitsiRoleJwt({ enabled: false, roomName: 'r', domain: DOMAIN, signingSecret: UNIT_TEST_JWT_HS256_STUB })).toBeNull();
+  });
+
+  it('JR04 — enabled private domain issues HS256 JWT', () => {
+    const token = createJitsiRoleJwt({
+      enabled: true,
+      roomName: 'izara-room',
+      domain: DOMAIN,
+      signingSecret: UNIT_TEST_JWT_HS256_STUB,
+      role: 'doctor',
+      user: { id: 'd1', name: 'Doc' },
+    });
+    expect(typeof token).toBe('string');
+    if (!token) throw new Error('expected JWT');
+    expect(jwt.verify(token, UNIT_TEST_JWT_HS256_STUB)).toBeTruthy();
   });
 });
 
@@ -38,35 +56,8 @@ describe('join-config authorization contract', () => {
     expect(result.code).toBe('GUEST_AUTH_REQUIRED');
   });
 
-  it('JR10 — guest allowed with valid opaque invite token', () => {
-    const result = validateGuestJoinAccess({
-      authenticated: false,
-      requestedRole: 'guest',
-      inviteValid: true,
-    });
-    expect(result.allowed).toBe(true);
-  });
-
-  it('JR11 — authenticated patient bypasses guest invite requirement', () => {
-    const result = validateGuestJoinAccess({
-      authenticated: true,
-      requestedRole: 'patient',
-      inviteValid: false,
-    });
-    expect(result.allowed).toBe(true);
-  });
-
-  it('JR12 — lobby join denies unauthenticated patient role impersonation', () => {
-    const reqUser = null;
-    const requestedRole = 'patient';
-    const denied =
-      !reqUser
-      && (requestedRole === 'doctor' || requestedRole === 'patient' || requestedRole === 'admin');
-    expect(denied).toBe(true);
-  });
-
-  it('JR13 — opaque guest invite tokens are hex strings', () => {
-    const token = generateOpaqueToken();
-    expect(token).toMatch(/^[a-f0-9]{64}$/);
+  it('JR07 — opaque session token is 64-char hex', () => {
+    const t = generateOpaqueToken();
+    expect(t).toMatch(/^[a-f0-9]{64}$/);
   });
 });

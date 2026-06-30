@@ -1,11 +1,16 @@
 # Cloud Build — Izara Doctor Portal (dev-testing)
-# Aligned with Cloud Run revision izara-doctor-portal-dev-testing-00132-ts6 (2026-05-27)
-# Image tag: v1.7.12 · Cloud SQL · nginx :8080 → :3011 auth/ws, :3009 API
+# DB: GCE VM PostgreSQL (NOT Cloud SQL) — aligned with root cloudbuild.yaml
+# AI: gemini-3.1-flash-lite (cost-optimized; 2.5-flash-lite removed — breaks AI)
 
 substitutions:
   _TAG: v1.7.12
-  _CLOUDSQL: "izara-telemedicine:asia-southeast1:izara-postgres-server"
-  _DB_HOST: "/cloudsql/izara-telemedicine:asia-southeast1:izara-postgres-server"
+  _MIN_INSTANCES: "0"
+  _MAX_INSTANCES: "2"
+  _DB_HOST: "35.240.157.230"
+  _DB_PORT: "5432"
+  _DB_NAME: izara_phase1
+  _DB_USER: postgres
+  _GEMINI_MODEL: gemini-3.1-flash-lite
   _MEETING_SERVER_URL: "https://izara-meeting-server-dev-testing-724889190329.asia-southeast1.run.app"
 
 steps:
@@ -44,13 +49,11 @@ steps:
       - "--port=8080"
       - "--memory=1Gi"
       - "--cpu=1"
-      - "--min-instances=1"
-      - "--max-instances=2"
+      - "--min-instances=${_MIN_INSTANCES}"
+      - "--max-instances=${_MAX_INSTANCES}"
+      - "--concurrency=80"
       - "--timeout=300"
-      - "--cpu-boost"
-      - "--execution-environment=gen2"
-      - "--add-cloudsql-instances=${_CLOUDSQL}"
-      - "--set-env-vars=NODE_ENV=production,USE_EMBEDDED_PG=false,CLOUDSQL_INSTANCE=${_CLOUDSQL},DB_HOST=${_DB_HOST},DB_PORT=5432,DB_NAME=izara_phase1,DB_USER=postgres,DB_SSL=true,USE_POSTGRESQL=true,VITE_USE_POSTGRESQL=true,JITSI_DOMAIN=meet.jit.si,GEMINI_MODEL=gemini-3.1-flash-lite,GCP_PROJECT_ID=$PROJECT_ID,MEETING_SERVER_URL=${_MEETING_SERVER_URL},VITE_MEETING_SERVER_URL=${_MEETING_SERVER_URL},IZARA_DEV_TESTING=1,GOOGLE_TOKEN_VERIFIER_FIXTURE=1,NODE_OPTIONS=--max-old-space-size=768 --max-semi-space-size=64,UV_THREADPOOL_SIZE=4,AUTH_NODE_OPTIONS=--max-old-space-size=256 --max-semi-space-size=32,MAIN_NODE_OPTIONS=--max-old-space-size=448 --max-semi-space-size=48"
+      - "--set-env-vars=NODE_ENV=production,DB_HOST=${_DB_HOST},DB_PORT=${_DB_PORT},DB_NAME=${_DB_NAME},DB_USER=${_DB_USER},DB_SSL=false,USE_POSTGRESQL=true,VITE_USE_POSTGRESQL=true,JITSI_DOMAIN=meet.jit.si,GEMINI_MODEL=${_GEMINI_MODEL},VITE_GEMINI_MODEL=${_GEMINI_MODEL},GCP_PROJECT_ID=$PROJECT_ID,MEETING_SERVER_URL=${_MEETING_SERVER_URL},VITE_MEETING_SERVER_URL=${_MEETING_SERVER_URL},IZARA_DEV_TESTING=1,GOOGLE_TOKEN_VERIFIER_FIXTURE=1,NODE_OPTIONS=--max-old-space-size=768"
       - "--set-secrets=GEMINI_API_KEY=gemini-api-key:latest,VITE_GEMINI_API_KEY=gemini-api-key:latest,DB_PASSWORD=db-password:latest,DATABASE_URL=database-url:latest,JWT_SECRET=jwt-secret:latest,GOOGLE_CLIENT_ID=google-client-id:latest,GOOGLE_SPEECH_API_KEY=google-speech-api-key:latest"
 
 images:
@@ -61,4 +64,4 @@ timeout: "1200s"
 
 options:
   logging: CLOUD_LOGGING_ONLY
-  machineType: "E2_HIGHCPU_8"
+  machineType: "E2_MEDIUM"

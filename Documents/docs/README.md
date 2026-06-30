@@ -1,4 +1,4 @@
-# Documentation index (v1.7.53)
+# Documentation index (v1.7.54)
 
 All deliverables under `Documents/docs/` — guides, diagrams, operations markdown, and UI evidence.
 
@@ -48,6 +48,8 @@ Build: `npm run guides:technical`
 ## Markdown — operations
 
 - [markdown/operations/URLS_AND_DEFAULT_USERS.md](markdown/operations/URLS_AND_DEFAULT_USERS.md) — cloud, localhost, **LAN** URLs + demo users
+- [markdown/operations/LAN_VIDEO_CLIENT_TH.md](markdown/operations/LAN_VIDEO_CLIENT_TH.md) — **วิดีโอ LAN** แพทย์/ผู้ป่วย (กล้องจากเครื่องลูกข่าย)
+- [markdown/operations/JITSI_MEETING_DEMOTODAY_API.md](markdown/operations/JITSI_MEETING_DEMOTODAY_API.md) — Ubuntu `*.demotoday.net`: Jitsi + meeting API
 - [markdown/operations/CLOUD_ACCESS_TH.md](markdown/operations/CLOUD_ACCESS_TH.md)
 - [markdown/operations/APPOINTMENT_USER_GUIDE.md](markdown/operations/APPOINTMENT_USER_GUIDE.md)
 - [markdown/operations/PRODUCTION_DEPLOYMENT_AND_TECHNICAL_UPDATE.md](markdown/operations/PRODUCTION_DEPLOYMENT_AND_TECHNICAL_UPDATE.md)
@@ -71,7 +73,7 @@ Build: `npm run guides:technical`
 ## Markdown — ledgers
 
 - [markdown/ledgers/SECURITY_SCANNING_LEDGER.md](markdown/ledgers/SECURITY_SCANNING_LEDGER.md)
-- Runtime JSON: `reports/local-error-ledger/*-latest.json` · `npm run ledger:local`
+- Runtime JSON: `reports/local-error-ledger/*-latest.json` · index: [../../reports/README.md](../../reports/README.md)
 
 ---
 

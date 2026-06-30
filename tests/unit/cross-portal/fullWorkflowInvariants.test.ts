@@ -25,7 +25,7 @@ describe('FULL_WORKFLOW_CONTRACT — global invariants', () => {
       user: { name: 'Patient' },
       roomName: 'izara-room',
     });
-    expect(mount.apiOptions.configOverwrite.moderator).toBeUndefined();
+    expect(mount.apiOptions.configOverwrite.moderator).toBe(false);
     expect(mount.apiOptions.configOverwrite.prejoinPageEnabled).toBe(false);
   });
 
@@ -53,7 +53,7 @@ describe('FULL_WORKFLOW_CONTRACT — global invariants', () => {
       user: { name: 'Patient Test' },
       roomName: 'izara-apt',
     });
-    expect(mount.apiOptions.configOverwrite.moderator).toBeUndefined();
+    expect(mount.apiOptions.configOverwrite.moderator).toBe(false);
     expect(mount.apiOptions.configOverwrite.prejoinPageEnabled).toBe(false);
   });
 

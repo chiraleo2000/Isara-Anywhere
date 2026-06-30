@@ -58,9 +58,39 @@ export function pickJitsiJwt(
 }
 
 /** JWT safe for JitsiMeetExternalAPI on public meet.jit.si (never pass custom JWT). */
-/** JWT removed — Izara lobby + configOverwrite enforce roles. */
-export function resolveMountJwt(): string | undefined {
-  return undefined;
+/** Mount JWT only for self-hosted Jitsi when join-config supplies tokenAuthEnabled. */
+export function resolveMountJwt(
+  cfg?: MeetingJoinConfig | null,
+  explicit?: string | null,
+): string | undefined {
+  return pickJitsiJwt(cfg, explicit);
+}
+
+type JitsiApiLike = {
+  executeCommand?: (command: string, ...args: unknown[]) => void;
+  on?: (event: string, handler: () => void) => void;
+  addListener?: (event: string, handler: () => void) => void;
+};
+
+/** Bypass meet.jit.si prejoin "Join" click — required for headed E2E and demo automation. */
+export function wireJitsiSkipPrejoin(api: JitsiApiLike | null | undefined): void {
+  if (!api) return;
+  const join = () => {
+    try {
+      api.executeCommand?.('joinConference');
+    } catch {
+      /* ignore */
+    }
+    try {
+      api.executeCommand?.('submitDisplayName');
+    } catch {
+      /* ignore */
+    }
+  };
+  api.on?.('prejoinScreenLoaded', join);
+  api.addListener?.('prejoinScreenLoaded', join);
+  globalThis.setTimeout(join, 800);
+  globalThis.setTimeout(join, 2500);
 }
 
 export const JITSI_QUIET_CONFIG = {
@@ -97,6 +127,7 @@ export interface PatientJitsiMountInput {
   cameraOn?: boolean;
   resolvedName?: string;
   urlName?: string | null;
+  storedJwt?: string | null;
 }
 
 /** Build JitsiMeetExternalAPI options for authenticated patient join (no pre-join name prompt). */
@@ -110,7 +141,7 @@ export function buildPatientJitsiMountOptions(input: PatientJitsiMountInput) {
   const domain = joinCfg?.domain || input.domain || resolveJitsiDomain();
   const roomName = joinCfg?.roomName || input.roomName;
   const jitsiOpts = getJitsiExternalApiOptions('patient', displayName);
-  const jwt = resolveMountJwt();
+  const jwt = resolveMountJwt(joinCfg);
 
   const configOverwrite = {
     ...mergeRecord(
@@ -118,6 +149,7 @@ export function buildPatientJitsiMountOptions(input: PatientJitsiMountInput) {
         ...jitsiOpts.configOverwrite,
         prejoinPageEnabled: false,
         requireDisplayName: false,
+        moderator: false,
         startWithAudioMuted: input.micOn === false,
         startWithVideoMuted: input.cameraOn === false,
         subject: 'Izara Consultation',
@@ -126,6 +158,7 @@ export function buildPatientJitsiMountOptions(input: PatientJitsiMountInput) {
     ),
     prejoinPageEnabled: false,
     requireDisplayName: false,
+    moderator: false,
   };
 
   const interfaceConfigOverwrite = mergeRecord(
@@ -161,6 +194,7 @@ export function getJitsiExternalApiOptions(role: JitsiMeetingRole, displayName: 
       ...JITSI_QUIET_CONFIG,
       prejoinPageEnabled: false,
       requireDisplayName: false,
+      prejoinConfig: { enabled: false },
       startWithAudioMuted: !isHost,
       startWithVideoMuted: false,
       enableClosePage: false,
@@ -202,7 +236,10 @@ export async function fetchMeetingJoinConfig(
     if (displayName?.trim()) q.set('name', displayName.trim());
     const headers: Record<string, string> = {};
     if (token) headers.Authorization = `Bearer ${token}`;
-    const res = await fetch(`${meetingServerUrl}/api/meetings/${meetingId}/join-config?${q}`, {
+    const joinPath = meetingServerUrl.startsWith('/api/video-meeting')
+      ? `${meetingServerUrl}/${encodeURIComponent(meetingId)}/join-config?${q}`
+      : `${meetingServerUrl}/api/meetings/${encodeURIComponent(meetingId)}/join-config?${q}`;
+    const res = await fetch(joinPath, {
       headers,
       credentials: 'include',
     });
@@ -243,12 +280,20 @@ export async function fetchMeetingIdentity(
 
 export async function isHostReady(meetingServerUrl: string, meetingId: string): Promise<boolean> {
   try {
-    const res = await fetch(`${meetingServerUrl}/api/meetings/${meetingId}/host-ready`, {
+    const path = meetingServerUrl.startsWith('/api/video-meeting')
+      ? `${meetingServerUrl}/${encodeURIComponent(meetingId)}/host-ready`
+      : `${meetingServerUrl}/api/meetings/${encodeURIComponent(meetingId)}/host-ready`;
+    const res = await fetch(path, {
       credentials: 'include',
     });
     if (!res.ok) return false;
     const data = await res.json();
-    return Boolean(data.ready && data.inJitsi !== false);
+    if (!data.ready || data.inJitsi === false) return false;
+    if (data.at) {
+      const age = Date.now() - new Date(data.at).getTime();
+      if (age < 0 || age > 90_000) return false;
+    }
+    return true;
   } catch {
     return false;
   }
@@ -338,6 +383,7 @@ export async function mountGuestJitsiMeeting(opts: {
     configOverwrite: mergeRecord(
       {
         ...jitsiOpts.configOverwrite,
+        moderator: false,
         startWithAudioMuted: opts.startWithAudio !== true,
         startWithVideoMuted: opts.startWithVideo !== true,
       },

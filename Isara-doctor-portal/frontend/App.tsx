@@ -17,6 +17,7 @@ import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, ProtectedRoute } from './components/common/AuthProvider';
 import { SettingsProvider } from './hooks/useSettings';
+import ErrorBoundary from './components/common/ErrorBoundary';
 import LoginPage from './pages/auth/LoginPage';
 import ResetPasswordPage from './pages/auth/ResetPasswordPage';
 import DoctorPortal from './pages/DoctorPortal';
@@ -39,14 +40,16 @@ const HomeRedirect: React.FC = () => {
 
 const App: React.FC = () => {
   return (
-    <SettingsProvider>
-      <BrowserRouter>
-        <AuthProvider>
-          <Routes>
+    <ErrorBoundary>
+      <SettingsProvider>
+        <BrowserRouter>
+          <AuthProvider>
+            <Routes>
             {/* Public routes */}
             <Route path="/login" element={<LoginPage />} />
             <Route path="/reset-password" element={<ResetPasswordPage />} />
             <Route path="/guest-join/:meetingId" element={<GuestMeetingJoin />} />
+            <Route path="/guest/join/:token" element={<GuestMeetingJoin />} />
             
             {/* Protected doctor routes - accessible by doctors and admins */}
             <Route
@@ -67,6 +70,7 @@ const App: React.FC = () => {
         </AuthProvider>
       </BrowserRouter>
     </SettingsProvider>
+    </ErrorBoundary>
   );
 };
 

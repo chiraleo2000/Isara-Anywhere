@@ -22,6 +22,37 @@ fi
 docker system df 2>/dev/null || true
 echo ""
 
+echo "--- System time (wrong clock → ERR_CERT_DATE_INVALID on clients) ---"
+date -u
+if command -v timedatectl >/dev/null 2>&1; then
+  timedatectl status 2>/dev/null | sed 's/^/  /' || true
+fi
+echo ""
+
+echo "--- TLS certificate ---"
+CERT="/etc/nginx/ssl/isara/izara.pem"
+if [[ -r "${CERT}" ]]; then
+  openssl x509 -in "${CERT}" -noout -dates -subject 2>/dev/null | sed 's/^/  /' || true
+  _nb="$(openssl x509 -in "${CERT}" -noout -startdate 2>/dev/null | cut -d= -f2 || true)"
+  _na="$(openssl x509 -in "${CERT}" -noout -enddate 2>/dev/null | cut -d= -f2 || true)"
+  _now_epoch="$(date -u +%s)"
+  _nb_epoch="$(date -d "${_nb}" -u +%s 2>/dev/null || echo 0)"
+  _na_epoch="$(date -d "${_na}" -u +%s 2>/dev/null || echo 0)"
+  if [[ "${_nb_epoch}" -gt "${_now_epoch}" ]]; then
+    echo "  FAIL: cert not valid yet (server clock was ahead when issued) — run: bash deploy/nginx/fix-tls.sh"
+  elif [[ "${_na_epoch}" -lt "${_now_epoch}" ]]; then
+    echo "  FAIL: cert expired — run: bash deploy/nginx/fix-tls.sh"
+  else
+    echo "  OK: cert currently valid"
+  fi
+else
+  echo "  SKIP: ${CERT} not found (run deploy/nginx/deploy.sh)"
+fi
+if command -v mkcert >/dev/null 2>&1; then
+  echo "  mkcert CA: $(mkcert -CAROOT 2>/dev/null)/rootCA.pem"
+fi
+echo ""
+
 echo "--- Nginx ---"
 systemctl is-active nginx 2>/dev/null || echo "nginx not active"
 sudo nginx -t 2>&1 || true

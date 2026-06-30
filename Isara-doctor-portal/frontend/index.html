@@ -433,6 +433,8 @@
     <!-- Main app container -->
     <div id="root"></div>
     
+    <!-- Runtime env injection (Docker envsubst) — must load before app bundle -->
+    <script src="/env-config.js"></script>
     <!-- Your React app -->
     <script type="module" src="/index.tsx"></script>
 

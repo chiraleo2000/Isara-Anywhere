@@ -9,16 +9,17 @@
     "forceConsistentCasingInFileNames": true,
     "skipLibCheck": true,
     "resolveJsonModule": true,
+    "allowJs": true,
+    "noEmit": true,
     "isolatedModules": true,
-    "types": ["vitest/globals"],
-    "ignoreDeprecations": "5.0",
     "baseUrl": ".",
+    "typeRoots": ["./node_modules/@types"],
     "paths": {
       "@doctor/*": ["../../Isara-doctor-portal/frontend/*"],
       "@patient/*": ["../../Isara-patient-portal/frontend/*"],
       "@meeting/*": ["../../Izara-jitsi-server/backend/*"]
     }
   },
-  "include": ["./**/*.ts"],
+  "include": ["./**/*.ts", "./vitest-env.d.ts"],
   "exclude": ["node_modules"]
 }

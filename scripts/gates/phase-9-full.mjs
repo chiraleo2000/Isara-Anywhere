@@ -34,9 +34,9 @@ if (
   bailWithArchive(ROUND, 'screenshots-all');
 }
 
-const sync = spawnSync('npm', ['run', 'docs:sync-screenshots'], { cwd: root, shell: isWin, stdio: 'inherit' });
+const sync = spawnSync('npm', ['run', 'docs:evidence:local'], { cwd: root, shell: isWin, stdio: 'inherit' });
 if (sync.status !== 0) {
-  console.warn('docs:sync-screenshots skipped or failed (non-fatal if no cloud PNGs)');
+  console.warn('docs:evidence:local skipped or failed (non-fatal if guides build unavailable)');
 }
 
 if (!runLedgerRound(ROUND)) bailWithArchive(ROUND, 'ledger-round');

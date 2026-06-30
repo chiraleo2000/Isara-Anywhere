@@ -171,8 +171,8 @@ async function acceptMeetingConsent(
 }
 
 function meetingShellLocator(page: Page) {
-  return page.locator('[data-testid="meeting-agreement"]')
-    .or(page.getByTestId('pre-join-screen'))
+  return page.getByTestId('lobby-starting-screen')
+    .or(page.getByTestId('host-starting-screen'))
     .or(page.getByTestId('host-waiting-screen'))
     .or(page.getByTestId('lobby-waiting-screen'))
     .or(page.getByTestId('jitsi-meeting-container'))
@@ -191,6 +191,36 @@ export { ROLE_BROWSER_MATRIX, getRoleBrowserSpec } from './browser-matrix';
 
 // ── Constants ────────────────────────────────────────────────────────
 const IS_CLOUD = process.env.TEST_ENV === 'cloud';
+
+function resolveHeadedTimeout(cloudMs: number, headedMs: number, defaultMs: number): number {
+  if (IS_CLOUD) return cloudMs;
+  if (process.env.PW_HEADED === '1') return headedMs;
+  return defaultMs;
+}
+
+function resolveAuthStateFile(authRole: string): string {
+  if (authRole === 'admin') return 'admin.json';
+  if (authRole === 'doctor') return 'doctor.json';
+  return 'patient1.json';
+}
+
+function resolveContentWaitMs(isPublicAuthShell: boolean): number {
+  if (IS_CLOUD) return 25_000;
+  if (isPublicAuthShell) return 90_000;
+  return 10_000;
+}
+
+function resolveFixtureMaxAttempts(lightFixture: boolean): number {
+  if (lightFixture) return 6;
+  if (IS_CLOUD) return 30;
+  return 12;
+}
+
+function resolveWorkerFixtureTimeout(forceHeaded: boolean): number {
+  if (IS_CLOUD) return 3_600_000;
+  if (forceHeaded) return 10_800_000;
+  return 1_800_000;
+}
 
 /** Resolve bearer token from page storage (doctor/patient portals use different keys). */
 export async function readPageBearerToken(page: Page): Promise<string> {
@@ -225,7 +255,7 @@ async function resolveDoctorPortalAuthRole(page: Page): Promise<'admin' | 'docto
     } catch {
       /* fall through */
     }
-    const path = window.location.pathname || '';
+    const path = globalThis.location?.pathname || '';
     if (/ADMIN-TEST|\/admin\b/i.test(path)) return 'admin';
     return 'doctor';
   });
@@ -441,6 +471,27 @@ export function assertNotLogin(page: Page, label: string): void {
   }
 }
 
+/** FAILS if email/password login form is visible on a meeting URL (doctor/patient must use silent auth). */
+export async function assertNoPortalLoginVisible(page: Page, label?: string): Promise<void> {
+  const url = page.url();
+  const isMeetingUrl =
+    /\/meeting\//.test(url) ||
+    /\/doctor\/[^/]+\/meeting\//.test(url) ||
+    /\/patient\/[^/]+\/meeting\//.test(url);
+  if (!isMeetingUrl) return;
+
+  const emailInput = page.locator('input[type="email"], input[name="email"], input[autocomplete="username"]').first();
+  const passwordInput = page.locator('input[type="password"], input[name="password"]').first();
+  const emailVisible = await emailInput.isVisible().catch(() => false);
+  const passwordVisible = await passwordInput.isVisible().catch(() => false);
+  if (emailVisible && passwordVisible) {
+    const prefix = label ? `[${label}] ` : '';
+    throw new Error(
+      `${prefix}Portal login form visible on meeting URL ${url} — doctor/patient must use silent DEMO_AUTO_LOGIN.`,
+    );
+  }
+}
+
 /** FAILS test if page body has < 50 chars (whiteout / blank page) */
 export async function assertNoWhiteout(page: Page, label: string) {
   for (let attempt = 0; attempt < 4; attempt++) {
@@ -606,7 +657,7 @@ export async function waitForPoolAppointment(
   appointmentId: string,
   opts?: { unassignedOnly?: boolean; timeoutMs?: number },
 ): Promise<void> {
-  const timeoutMs = opts?.timeoutMs ?? (IS_CLOUD ? 45_000 : (process.env.PW_HEADED === '1' ? 60_000 : 45_000));
+  const timeoutMs = opts?.timeoutMs ?? resolveHeadedTimeout(45_000, 60_000, 45_000);
   const deadline = Date.now() + timeoutMs;
   let authRetried = false;
   let lastSnapshot: { status: number; count: number; ids: string[]; statuses: string[] } | null = null;
@@ -619,7 +670,7 @@ export async function waitForPoolAppointment(
     }).catch(() => null);
     if (!detail?.ok()) return false;
     const row = await detail.json().catch(() => null);
-    if (!row || row.id !== appointmentId) return false;
+    if (!row?.id || row.id !== appointmentId) return false;
     if (!opts?.unassignedOnly) return true;
     return poolRowDoctorId(row) == null;
   }
@@ -1003,7 +1054,7 @@ export async function assertNotificationTypePoll(
   opts?: { authKey?: 'token' | 'auth_token'; timeoutMs?: number; appointmentId?: string },
 ): Promise<void> {
   const authKey = opts?.authKey ?? 'token';
-  const timeoutMs = opts?.timeoutMs ?? (IS_CLOUD ? 45_000 : (process.env.PW_HEADED === '1' ? 30_000 : 15_000));
+  const timeoutMs = opts?.timeoutMs ?? resolveHeadedTimeout(45_000, 30_000, 15_000);
   const deadline = Date.now() + timeoutMs;
   const authRetries = { count: 0 };
 
@@ -1019,7 +1070,7 @@ export async function assertNotificationTypePoll(
   expect(findNotificationOfType(list, type, opts?.appointmentId), `Expected notification type ${type}`).toBeTruthy();
 }
 
-/** Consent + pre-join + join; stop in lobby (before HOST admit). Used by Group Q01c. */
+/** Auto-consent + auto-lobby; stop in lobby (before HOST admit). Used by Group Q01c. */
 export async function joinMeetingToLobby(
   page: Page,
   label: string,
@@ -1035,25 +1086,20 @@ export async function joinMeetingToLobby(
       timeout: scaleTimeoutByBrowser(IS_CLOUD ? 120_000 : 60_000, browserName),
     });
   }
-  await acceptMeetingConsent(page, label, browserName);
-  const preJoin = page.getByTestId('pre-join-screen');
-  if (await preJoin.isVisible({ timeout: scaleTimeoutByBrowser(IS_CLOUD ? 30_000 : 15_000, browserName) }).catch(() => false)) {
-    await expect(preJoin, `[${label}] pre-join before lobby`).toBeVisible({
-      timeout: scaleTimeoutByBrowser(IS_CLOUD ? 30_000 : 15_000, browserName),
+  const lobbyStarting = page.getByTestId('lobby-starting-screen');
+  if (await lobbyStarting.isVisible({ timeout: 5_000 }).catch(() => false)) {
+    await expect(lobbyStarting, `[${label}] patient auto-lobby start`).toBeHidden({
+      timeout: scaleTimeoutByBrowser(IS_CLOUD ? 90_000 : 45_000, browserName),
     });
-  }
-  const joinBtn = page.getByTestId('join-meeting-btn');
-  if (await joinBtn.isVisible({ timeout: 15_000 }).catch(() => false)) {
-    await safeBrowserClick(joinBtn, browserName);
   }
   await expect(
     page.getByTestId('lobby-waiting-screen').or(page.getByTestId('host-waiting-screen')).first(),
-    `[${label}] lobby waiting after join`,
+    `[${label}] lobby waiting after auto-join`,
   ).toBeVisible({ timeout: scaleTimeoutByBrowser(IS_CLOUD ? 90_000 : 45_000, browserName) });
 }
 
 /**
- * Join Izara in-app MeetingRoom (consent → pre-join → Jitsi iframe).
+ * Join Izara in-app MeetingRoom (auto-start for doctor/patient; Jitsi iframe after lobby admit).
  * Display name is pre-filled from Izara auth — no manual Jitsi name prompt.
  */
 export async function joinIzaraMeetingInApp( // NOSONAR S3776 — multi-step meeting join with consent, lobby, and Jitsi iframe
@@ -1064,7 +1110,10 @@ export async function joinIzaraMeetingInApp( // NOSONAR S3776 — multi-step mee
   const routeTimeout = scaleTimeoutByBrowser(IS_CLOUD ? 60_000 : 30_000, browserName);
   const initTimeout = scaleTimeoutByBrowser(IS_CLOUD ? 120_000 : 60_000, browserName);
   const lobbyTimeout = scaleTimeoutByBrowser(IS_CLOUD ? 120_000 : 90_000, browserName);
-  const iframeTimeout = scaleTimeoutByBrowser(IS_CLOUD ? 120_000 : 60_000, browserName);
+  const iframeTimeout = scaleTimeoutByBrowser(
+    resolveHeadedTimeout(120_000, 120_000, 60_000),
+    browserName,
+  );
 
   await expect(page, `[${label}] must be on meeting route`).toHaveURL(/\/meeting\//, {
     timeout: routeTimeout,
@@ -1076,6 +1125,25 @@ export async function joinIzaraMeetingInApp( // NOSONAR S3776 — multi-step mee
   }
 
   const jitsiContainer = page.getByTestId('jitsi-meeting-container');
+
+  const isDoctorMeeting = /\/doctor\/[^/]+\/meeting\//.test(page.url());
+  if (isDoctorMeeting) {
+    const hostStarting = page.getByTestId('host-starting-screen');
+    if (await hostStarting.isVisible({ timeout: 5_000 }).catch(() => false)) {
+      await expect(hostStarting, `[${label}] doctor host auto-start`).toBeHidden({ timeout: lobbyTimeout });
+    }
+    await expect(
+      jitsiContainer.or(page.getByTestId('end-meeting-btn')).first(),
+      `[${label}] Jitsi after doctor auto-start`,
+    ).toBeVisible({ timeout: iframeTimeout });
+    return;
+  }
+
+  const lobbyStarting = page.getByTestId('lobby-starting-screen');
+  if (await lobbyStarting.isVisible({ timeout: 5_000 }).catch(() => false)) {
+    await expect(lobbyStarting, `[${label}] patient auto-lobby start`).toBeHidden({ timeout: lobbyTimeout });
+  }
+
   const jitsiFrame = page.locator('[data-testid="jitsi-meeting-container"] iframe').first();
   if (await jitsiFrame.isVisible({ timeout: 5_000 }).catch(() => false)) {
     return;
@@ -1099,7 +1167,7 @@ export async function joinIzaraMeetingInApp( // NOSONAR S3776 — multi-step mee
   const shellTimeout = scaleTimeoutByBrowser(IS_CLOUD ? 90_000 : 45_000, browserName);
   await expect(
     meetingShellLocator(page),
-    `[${label}] agreement, pre-join, lobby, host-waiting, or Jitsi after init`,
+    `[${label}] lobby-starting, lobby, host-waiting, or Jitsi after init`,
   ).toBeVisible({ timeout: shellTimeout });
 
   if (await jitsiContainer.isVisible({ timeout: 3_000 }).catch(() => false)) {
@@ -1115,47 +1183,11 @@ export async function joinIzaraMeetingInApp( // NOSONAR S3776 — multi-step mee
     return;
   }
 
-  const agreement = page.locator('[data-testid="meeting-agreement"]');
-  if (await agreement.isVisible({ timeout: 5_000 }).catch(() => false)) {
-    await acceptMeetingConsent(page, label, browserName);
-    await expect(page.getByTestId('pre-join-screen'), `[${label}] pre-join after consent`).toBeVisible({
-      timeout: scaleTimeoutByBrowser(IS_CLOUD ? 30_000 : 15_000, browserName),
-    });
-  }
-
   const lobbyWaiting = page.getByTestId('lobby-waiting-screen');
   if (await lobbyWaiting.isVisible({ timeout: 3_000 }).catch(() => false)) {
     await expect(lobbyWaiting, `[${label}] lobby waiting until HOST admits`).toBeHidden({ timeout: lobbyTimeout });
     await expect(jitsiContainer, `[${label}] Jitsi after lobby`).toBeVisible({ timeout: iframeTimeout });
     return;
-  }
-
-  const preJoinVisible = await page.getByTestId('pre-join-screen').isVisible({ timeout: 3_000 }).catch(() => false);
-  if (!preJoinVisible && await jitsiContainer.isVisible({ timeout: 3_000 }).catch(() => false)) {
-    return;
-  }
-
-  await expect(
-    page.getByTestId('pre-join-screen'),
-    `[${label}] pre-join screen`,
-  ).toBeVisible({ timeout: scaleTimeoutByBrowser(IS_CLOUD ? 90_000 : 45_000, browserName) });
-
-  const displayNameEl = page.getByTestId('patient-display-name');
-  if (await displayNameEl.first().isVisible({ timeout: 5_000 }).catch(() => false)) {
-    const autoName = (await displayNameEl.first().innerText()).trim();
-    expect(autoName.length, `[${label}] Izara auth display name`).toBeGreaterThan(0);
-    expect(/enter your name|type your name|กรอกชื่อ/i.test(autoName)).toBe(false);
-  }
-
-  const joinBtn = page.getByTestId('join-meeting-btn');
-  await expect(joinBtn, `[${label}] join meeting button`).toBeVisible({ timeout: 15_000 });
-  await safeBrowserClick(joinBtn, browserName);
-
-  const waitingLobby = page.getByTestId('lobby-waiting-screen');
-  if (await waitingLobby.isVisible({ timeout: 3_000 }).catch(() => false)) {
-    await expect(waitingLobby, `[${label}] lobby waiting until HOST admits`).toBeHidden({
-      timeout: lobbyTimeout,
-    });
   }
 
   const waitingHost = page.getByTestId('host-waiting-screen');
@@ -1165,25 +1197,29 @@ export async function joinIzaraMeetingInApp( // NOSONAR S3776 — multi-step mee
     });
   }
 
+  const displayNameEl = page.getByTestId('patient-display-name');
+  if (await displayNameEl.first().isVisible({ timeout: 5_000 }).catch(() => false)) {
+    const autoName = (await displayNameEl.first().innerText()).trim();
+    expect(autoName.length, `[${label}] Izara auth display name`).toBeGreaterThan(0);
+    expect(/enter your name|type your name|กรอกชื่อ/i.test(autoName)).toBe(false);
+  }
+
   const jitsiContainerFinal = page.getByTestId('jitsi-meeting-container');
   const hostShellEarly = page.getByTestId('end-meeting-btn');
-  const preJoinEarly = page.getByTestId('pre-join-screen');
   await expect(
-    jitsiContainerFinal.or(hostShellEarly).or(preJoinEarly).first(),
+    jitsiContainerFinal.or(hostShellEarly).or(lobbyWaiting).or(waitingHost).first(),
     `[${label}] Izara meeting shell must render`,
   ).toBeVisible({ timeout: scaleTimeoutByBrowser(IS_CLOUD ? 60_000 : 90_000, browserName) });
 
   const iframeInContainer = page.locator('[data-testid="jitsi-meeting-container"] iframe').first();
   const hostControls = page.getByTestId('end-meeting-btn');
-  const meetingAgreement = page.locator('[data-testid="meeting-agreement"]');
   const lobbyWaitingShell = page.getByTestId('lobby-waiting-screen');
   await expect(
     iframeInContainer
       .or(hostControls)
       .or(jitsiContainerFinal)
-      .or(preJoinEarly)
-      .or(meetingAgreement)
       .or(lobbyWaitingShell)
+      .or(waitingHost)
       .first(),
     `[${label}] Jitsi iframe, container shell, or host meeting controls`,
   ).toBeVisible({ timeout: iframeTimeout });
@@ -1277,7 +1313,7 @@ export async function waitForContent(
 ) {
   await page.waitForTimeout(WAIT_AFTER_NAV);
   const reloadTimeout = IS_CLOUD ? 30_000 : 10_000;
-  const stateFile = authRole === 'admin' ? 'admin.json' : authRole === 'doctor' ? 'doctor.json' : 'patient1.json';
+  const stateFile = resolveAuthStateFile(authRole);
   const deadline = Date.now() + timeoutMs;
   while (Date.now() < deadline) {
     let len = 0;
@@ -1415,6 +1451,28 @@ function extractOriginFromUrl(url: string, fallback: string): string {
   return m?.[1] ?? fallback;
 }
 
+/** Doctor Health Meeting URL — tests default stayOnQueue=1 to keep queue UI visible. */
+export function doctorHealthMeetingUrl(
+  doctorId: string,
+  baseUrl = DOCTOR_URL,
+  opts?: { stayOnQueue?: boolean },
+): string {
+  const origin = baseUrl.replace(/\/$/, '');
+  const stay = opts?.stayOnQueue !== false;
+  const q = stay ? '?stayOnQueue=1' : '';
+  return `${origin}/doctor/${doctorId}/health-meeting${q}`;
+}
+
+async function ensureHealthMeetingStayOnQueue(page: Page): Promise<void> {
+  const url = page.url();
+  if (!/\/health-meeting/.test(url) || url.includes('stayOnQueue=1')) return;
+  const doctorId = extractDoctorIdFromUrl(url);
+  if (!doctorId) return;
+  const dest = doctorHealthMeetingUrl(doctorId, extractOriginFromUrl(url, DOCTOR_URL));
+  await page.goto(dest, { waitUntil: 'domcontentloaded', timeout: NAV_TIMEOUT });
+  await page.waitForTimeout(WAIT_AFTER_NAV);
+}
+
 async function isFirefoxPage(page: Page): Promise<boolean> {
   const browser = page.context().browser();
   return browser?.browserType().name() === 'firefox';
@@ -1448,12 +1506,39 @@ export async function navDoctor(page: Page, target: string | RegExp, label: stri
     }
   }
 
+  const wantsHealthMeeting =
+    navKey === 'health-meeting'
+    || (typeof target === 'string' && /health-meeting|health meeting/i.test(target))
+    || (target instanceof RegExp && /health-meeting|health meeting/i.test(target.source));
+
+  // Health Meeting: direct goto with stayOnQueue=1 — avoids autostart race on sidebar click
+  if (wantsHealthMeeting) {
+    const doctorId = extractDoctorIdFromUrl(page.url());
+    if (doctorId) {
+      const origin = extractOriginFromUrl(page.url(), DOCTOR_URL);
+      const dest = doctorHealthMeetingUrl(doctorId, origin);
+      if (!page.url().includes('stayOnQueue=1')) {
+        try {
+          await page.goto(dest, { waitUntil: 'domcontentloaded', timeout: NAV_TIMEOUT });
+        } catch {
+          await page.goto(dest, { waitUntil: 'domcontentloaded', timeout: NAV_TIMEOUT });
+        }
+      }
+      await page.waitForTimeout(WAIT_AFTER_NAV);
+      await waitForContent(page, label);
+      assertNotLogin(page, label);
+      return;
+    }
+  }
+
   // Firefox: Playwright force-click on sidebar buttons often hangs — use direct route navigation.
   if (navKey && DOCTOR_NAV_PATH[navKey] && (await isFirefoxPage(page))) {
     const doctorId = extractDoctorIdFromUrl(page.url());
     if (doctorId) {
       const origin = extractOriginFromUrl(page.url(), DOCTOR_URL);
-      const dest = `${origin}/doctor/${doctorId}/${DOCTOR_NAV_PATH[navKey]}`;
+      const dest = navKey === 'health-meeting'
+        ? doctorHealthMeetingUrl(doctorId, origin)
+        : `${origin}/doctor/${doctorId}/${DOCTOR_NAV_PATH[navKey]}`;
       if (!page.url().includes(`/${DOCTOR_NAV_PATH[navKey]}`)) {
         try {
           await page.goto(dest, { waitUntil: 'domcontentloaded', timeout: NAV_TIMEOUT });
@@ -1500,6 +1585,13 @@ export async function navDoctor(page: Page, target: string | RegExp, label: stri
     await btn.click({ force: true, timeout: clickTimeout });
   }
   await page.waitForTimeout(WAIT_AFTER_NAV);
+  if (
+    navKey === 'health-meeting'
+    || (typeof target === 'string' && /health-meeting|health meeting/i.test(target))
+    || (target instanceof RegExp && /health-meeting|health meeting/i.test(target.source))
+  ) {
+    await ensureHealthMeetingStayOnQueue(page);
+  }
   await waitForContent(page, label);
   assertNotLogin(page, label);
 }
@@ -1794,14 +1886,22 @@ async function warmupPortalSessions(
   }
 }
 
+const PUBLIC_AUTH_PATH_RE = /\/(register|reset-password|login|forgot-password)(\/|$|\?)/i;
+
 /** Navigate with retry — cloud DNS/network flake (ERR_NETWORK_CHANGED, timeouts). */
 export async function gotoCloudWithRetry(
   page: Page,
   url: string,
   label: string,
-  timeoutMs = resolveE2eTimeoutMs(90_000, 60_000, 30_000),
+  timeoutMs?: number,
 ): Promise<void> {
-  await gotoWithRetry(page, url, timeoutMs, '', label, IS_CLOUD ? 4 : 3);
+  const isPublicAuthShell = PUBLIC_AUTH_PATH_RE.test(url);
+  const resolvedTimeout =
+    timeoutMs ??
+    (isPublicAuthShell
+      ? resolveE2eTimeoutMs(180_000, 120_000, 90_000)
+      : resolveE2eTimeoutMs(90_000, 60_000, 30_000));
+  await gotoWithRetry(page, url, resolvedTimeout, '', label, IS_CLOUD ? 4 : 3);
 }
 
 /** Navigate a page with retry — handles redirect-to-login by re-injecting auth */
@@ -1816,10 +1916,12 @@ async function gotoWithRetry( // NOSONAR S3776 — navigation retry with auth re
 ): Promise<void> {
   const t0 = Date.now();
   let lastError: Error | undefined;
+  const isPublicAuthShell = PUBLIC_AUTH_PATH_RE.test(url);
+  const primaryWaitUntil = isPublicAuthShell ? 'commit' : 'domcontentloaded';
 
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
-      await page.goto(url, { waitUntil: 'domcontentloaded', timeout });
+      await page.goto(url, { waitUntil: primaryWaitUntil, timeout });
       lastError = undefined;
       break;
     } catch (err: unknown) {
@@ -1862,7 +1964,10 @@ async function gotoWithRetry( // NOSONAR S3776 — navigation retry with auth re
     }
   }
 
-  const contentWait = scaleTimeout(IS_CLOUD ? 25_000 : 10_000, role);
+  const contentWait = scaleTimeout(
+    resolveContentWaitMs(isPublicAuthShell),
+    role,
+  );
   const deadline = Date.now() + contentWait;
   while (Date.now() < deadline) {
     const len = await page.evaluate(() => document.body?.innerText?.trim().length ?? 0).catch(() => 0);
@@ -1871,7 +1976,6 @@ async function gotoWithRetry( // NOSONAR S3776 — navigation retry with auth re
   }
 
   // On cloud: blank page after wait → re-navigate once (handles cold-start blank renders)
-  const isPublicAuthShell = /\/(register|reset-password|login|forgot-password)(\/|$|\?)/i.test(url);
   if (IS_CLOUD && !isPublicAuthShell) {
     console.warn(`  ⚠️ ${label} content sparse after ${contentWait / 1000}s — re-navigating...`);
     if (fs.existsSync(storageStatePath)) {
@@ -1991,7 +2095,7 @@ export const test = base.extend<{}, { portals: Portals }>({
             { name: 'Meeting Server', baseUrl: MEETING_URL, healthPath: '/health' },
           ],
           {
-            maxAttempts: lightFixture ? 6 : IS_CLOUD ? 30 : 12,
+            maxAttempts: resolveFixtureMaxAttempts(lightFixture),
             strict: true,
             requestTimeoutMs: IS_CLOUD ? 30_000 : 12_000,
           },
@@ -2090,7 +2194,7 @@ export const test = base.extend<{}, { portals: Portals }>({
   }, {
     scope: 'worker',
     // Must cover full headed gate (A→K + Defect); align with playwright globalTimeout (2h local headed)
-    timeout: IS_CLOUD ? 3_600_000 : FORCE_HEADED ? 10_800_000 : 1_800_000,
+    timeout: resolveWorkerFixtureTimeout(FORCE_HEADED),
   }],
   _authSync: [async ({ portals }, use) => {
     const now = Date.now();

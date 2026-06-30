@@ -21,6 +21,7 @@ import {
   Users,
 } from 'lucide-react';
 import MiniMapWidget from './MiniMapWidget';
+import RouteErrorBoundary from './common/RouteErrorBoundary';
 import { appointmentService } from '../lib/services';
 import { useState, useLayoutEffect, useEffect } from 'react';
 
@@ -343,7 +344,9 @@ export default function MainLayout() {
           data-testid="main-content"
           className={`flex-1 p-4 lg:p-6 overflow-y-auto overflow-x-hidden max-w-full min-w-0 pb-20 lg:pb-6 ${tc.mainBg}`}
         >
-          <Outlet />
+          <RouteErrorBoundary name="patient-main">
+            <Outlet />
+          </RouteErrorBoundary>
         </main>
 
         <nav

@@ -31,7 +31,12 @@ import AdminDoctorManagement from './admin/AdminDoctorManagement';
 import AdminAppointmentManagement from './admin/AdminAppointmentManagement';
 import AppointmentPoolManagement from './admin/AppointmentPoolManagement';
 import DoctorProfilePage from './DoctorProfilePage';
+import RouteErrorBoundary from '../components/common/RouteErrorBoundary';
 // DoctorAvailabilitySettings removed as per requirements
+
+function GuardedRoute({ name, children }: Readonly<{ name: string; children: React.ReactNode }>) {
+  return <RouteErrorBoundary name={name}>{children}</RouteErrorBoundary>;
+}
 
 const DoctorPortal: React.FC = () => {
   const { userId } = useParams<{ userId: string }>();
@@ -48,6 +53,12 @@ const DoctorPortal: React.FC = () => {
   const [showMeeting, setShowMeeting] = useState(false);
   const [showLabOrders, setShowLabOrders] = useState(false);
   const [showPatientRecord, setShowPatientRecord] = useState(false);
+  const [patientRecordKey, setPatientRecordKey] = useState(0);
+
+  const openPatientRecord = () => {
+    setPatientRecordKey((k) => k + 1);
+    setShowPatientRecord(true);
+  };
 
   // Verify user access - allow doctors and admins
   useEffect(() => {
@@ -122,8 +133,8 @@ const DoctorPortal: React.FC = () => {
   if (isMeetingBreakout) {
     return (
       <Routes>
-        <Route path="meeting/:appointmentId" element={<MeetingRoom />} />
-        <Route path="meeting/:appointmentId/results" element={<MeetingResultsPage />} />
+        <Route path="meeting/:appointmentId" element={<GuardedRoute name="meeting"><MeetingRoom /></GuardedRoute>} />
+        <Route path="meeting/:appointmentId/results" element={<GuardedRoute name="meeting-results"><MeetingResultsPage /></GuardedRoute>} />
       </Routes>
     );
   }
@@ -137,6 +148,7 @@ const DoctorPortal: React.FC = () => {
     >
       <Routes>
         <Route path="dashboard" element={
+          <GuardedRoute name="dashboard">
           <DoctorDashboard
             doctor={user}
             onStartConsultation={() => setShowMeeting(true)}
@@ -150,11 +162,13 @@ const DoctorPortal: React.FC = () => {
             onCreatePrescription={() => setShowPrescribing(true)}
             onOrderLab={() => setShowLabOrders(true)}
           />
+          </GuardedRoute>
         } />
 
-        <Route path="schedule" element={<CompleteSchedule doctor={user} />} />
+        <Route path="schedule" element={<GuardedRoute name="schedule"><CompleteSchedule doctor={user} /></GuardedRoute>} />
         
         <Route path="patients" element={
+          <GuardedRoute name="patients">
           <PatientManagement
             doctor={user}
             onSelectPatient={(patient) => {
@@ -176,30 +190,33 @@ const DoctorPortal: React.FC = () => {
               setShowPrescribing(true);
             }}
           />
+          </GuardedRoute>
         } />
 
         <Route path="patients/:patientId" element={
+          <GuardedRoute name="patient-detail">
           <PatientDetailView
             patients={patients}
             selectedPatient={selectedPatient}
             setSelectedPatient={setSelectedPatient}
             onBack={() => navigate(`/doctor/${userId}/patients`)}
-            onShowPatientRecord={() => setShowPatientRecord(true)}
+            onShowPatientRecord={openPatientRecord}
             onCreateEMR={() => setShowEMREditor(true)}
             onCreatePrescription={() => setShowPrescribing(true)}
             onOrderLab={() => setShowLabOrders(true)}
             onStartConsultation={() => setShowMeeting(true)}
           />
+          </GuardedRoute>
         } />
 
         {/* New Routes - Doctors, Medical Content, Health Meeting (Combined with Queue) */}
         {/* Phase 1: Medical Consultants route disabled — to be rebuilt in Phase 2. */}
         <Route path="medical-consultants" element={<Navigate to={`/doctor/${userId}/dashboard`} replace />} />
         <Route path="doctors" element={<DoctorsManagement />} />
-        <Route path="medical-content" element={<MedicalContent />} />
-        <Route path="health-meeting" element={<HealthMeeting doctor={user} />} />
-        <Route path="appointment-pool" element={<AppointmentPoolManagement />} />
-        <Route path="emr/:appointmentId" element={<EmrAppointmentPage />} />
+        <Route path="medical-content" element={<GuardedRoute name="medical-content"><MedicalContent /></GuardedRoute>} />
+        <Route path="health-meeting" element={<GuardedRoute name="health-meeting"><HealthMeeting doctor={user} /></GuardedRoute>} />
+        <Route path="appointment-pool" element={<GuardedRoute name="appointment-pool"><AppointmentPoolManagement /></GuardedRoute>} />
+        <Route path="emr/:appointmentId" element={<GuardedRoute name="emr-appointment"><EmrAppointmentPage /></GuardedRoute>} />
         {/* virtual-meeting route removed — all consultations use the real Jitsi /meeting/:id flow */}
 
         {/* Admin Only Routes */}
@@ -212,7 +229,7 @@ const DoctorPortal: React.FC = () => {
 
         {/* Doctor Availability Settings - REMOVED as per requirements */}
 
-        <Route path="clinical-resources" element={<ClinicalResources />} />
+        <Route path="clinical-resources" element={<GuardedRoute name="clinical-resources"><ClinicalResources /></GuardedRoute>} />
         <Route path="profile" element={<DoctorProfilePage onBack={() => navigate(`/doctor/${userId}/dashboard`)} />} />
         {import.meta.env.DEV && (
           <Route path="test-ui" element={<TestHarness doctor={user} patients={patients} />} />
@@ -297,6 +314,7 @@ const DoctorPortal: React.FC = () => {
 
       {showPatientRecord && selectedPatient && (
         <PatientRecordViewer
+          key={patientRecordKey}
           patient={selectedPatient}
           onClose={() => setShowPatientRecord(false)}
         />

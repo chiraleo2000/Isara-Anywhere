@@ -138,7 +138,12 @@ export function chromiumLaunchArgs(headless = false): string[] {
     '--use-fake-ui-for-media-stream',
   ];
   if (headless) {
-    return ['--no-sandbox', ...media];
+    return [
+      '--no-sandbox',
+      ...media,
+      '--host-resolver-rules=MAP meet.localhost 127.0.0.1',
+      '--ignore-certificate-errors',
+    ];
   }
   // Headed: fake media on installed Chrome (Windows); grantPermissions alone is not enough for MediaRecorder
   return [
@@ -146,6 +151,8 @@ export function chromiumLaunchArgs(headless = false): string[] {
     '--window-size=1440,900',
     '--use-fake-device-for-media-capture',
     '--use-fake-ui-for-media-stream',
+    '--host-resolver-rules=MAP meet.localhost 127.0.0.1',
+    '--ignore-certificate-errors',
   ];
 }
 

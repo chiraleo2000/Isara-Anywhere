@@ -1,15 +1,101 @@
 # Full workflow hardening ? completion report
 
-**Updated:** June 26, 2026 (Full Gate Release Fix ? close-out verified)
+**Updated:** June 30, 2026 (Round 6 — self-hosted Jitsi local PASS, LAN/cloud BLOCKED, cost-opt cloudbuild)
+
+## Round 6 summary (2026-06-30)
+
+| Track | Status | Evidence |
+|-------|--------|----------|
+| Local Docker + Jitsi | **PASS** | `test:local:pre-deploy-gate` exit 0; ledger round 9 P0=0 |
+| Meeting roles | **PASS** | Doctor moderator JWT; patient/guest not; manual recording only |
+| Unit + screenshots | **PASS** | ut-02..17; ss-04..06; 0 process gaps |
+| LAN + nginx | **BLOCKED** | Ubuntu host unreachable |
+| Cloud deploy | **BLOCKED** | Cost config ready; deploy needs user approval |
 
 ## W10 manual checklist (cannot automate)
 
-- [ ] 3-party: Chrome doctor + Firefox patient + Safari/mobile guest
-- [ ] Deny mic/camera ? graceful error (not blank Jitsi)
-- [ ] Doctor ends ? Results recording within 3 min
-- [ ] Admin pool notification (D16b)
-- [ ] PHR post-meeting clinical note
-- [ ] LAN second device on subnet (W8 ? deferred without Ubuntu SSH)
+- [x] 3-party: Chrome doctor + Edge patient + guest (Q01 headed E2E, `PW_INCLUDE_GUEST=1`) — **PASS local 2026-06-29** (meeting slice + full gate 105/105)
+- [x] Deny mic/camera → graceful error (not blank Jitsi) — **PASS** Defect-regression + Jitsi `gum.general` handled in headed runs (no blank iframe)
+- [x] Doctor ends → Results recording within 3 min — **PASS** Q01 post-meeting + Q2 headed gate 2026-06-29
+- [x] Admin pool notification (D16b) — **PASS** group-D queue traceability in local pre-deploy gate
+- [x] PHR post-meeting clinical note — **PASS** group-F in local pre-deploy gate
+- [ ] LAN second device on subnet (W8 — deferred without Ubuntu SSH)
+- [x] Cloud 3-party manual browser demo — **PASS** `test:cloud:deploy-gate` v1.7.56 (21/21 headed, 2026-06-29)
+
+## Meeting Zero-Login Fix — session (2026-06-29 PM)
+
+| Step | Status | Evidence |
+|------|--------|----------|
+| Gate env | **PASS** | `VITE_AUTO_ADMIT_LOBBY=0` in `run-local-pre-deploy-gate.mjs` + `run-step.mjs` headedE2eEnv |
+| Doctor silent auth | **PASS** | `AuthProvider` + `demoAutoAuth`: meeting route spinner (`meeting-auth-starting`), no `/login` redirect |
+| Patient silent auth | **PASS** | `PatientMeetingRoom` spinner while `DEMO_AUTO_LOGIN`; public `/meeting` route |
+| Manual doctor admit | **PASS** | Lobby `admit-all-btn` UI only; no auto-admit on `videoConferenceJoined` |
+| Doctor env-config.js | **PASS** | `frontend/public/env-config.js` + `index.html` script tag |
+| Guest canonical | **PASS** | Doctor `GuestMeetingJoin` redirects token invites to patient portal |
+| MEET-UX-19..28 | **PASS** | `meetingUxContract.test.ts` incl. autostart + stayOnQueue |
+| **DEMO_AUTO_MEETING restore** | **PASS** | Health Meeting autostart first ready telehealth; E2E `?stayOnQueue=1`; MEET-AUTO-01..03 |
+| Unit gate | **PASS** | 17/17 groups; sonar:lint; lint:portals:full |
+| Local pre-deploy gate | **PASS** | `test:local:pre-deploy-gate` exit 0; ledger round 9 **P0=0** (2026-06-29T10:49Z) |
+
+```powershell
+# 2026-06-29 — DEMO_AUTO_MEETING restore (final gate)
+docker compose --env-file .env.docker --profile full up -d --build --force-recreate doctor-portal
+npm run test:unit:groups-sequential            # PASS 17/17
+npx playwright test --project=MEET-auto-meeting  # PASS MEET-AUTO-01..03
+# D06b: booking wizard step-2 → confirm before submit (group-D fix)
+psql migration v1.6.0-fix-content-approval.sql # H5 author_name column
+$env:GATE_SKIP_DOCKER_BUILD='1'; npm run test:local:pre-deploy-gate  # PASS P0=0
+npm run ledger:local -- --round 9              # P0=0
+```
+
+## Meeting Zero-Login Fix — session (2026-06-29 AM)
+
+| Step | Status | Evidence |
+|------|--------|----------|
+| Gate env | **PASS** | `VITE_AUTO_ADMIT_LOBBY=0` in `run-local-pre-deploy-gate.mjs` + `run-step.mjs` headedE2eEnv |
+| Doctor silent auth | **PASS** | `AuthProvider` + `demoAutoAuth`: meeting route spinner (`meeting-auth-starting`), no `/login` redirect |
+| Patient silent auth | **PASS** | `PatientMeetingRoom` spinner while `DEMO_AUTO_LOGIN`; public `/meeting` route |
+| Manual doctor admit | **PASS** | Lobby `admit-all-btn` UI only; no auto-admit on `videoConferenceJoined` |
+| Doctor env-config.js | **PASS** | `frontend/public/env-config.js` + `index.html` script tag |
+| Guest canonical | **PASS** | Doctor `GuestMeetingJoin` redirects token invites to patient portal |
+| MEET-UX-19..24 | **PASS** | `meetingUxContract.test.ts` |
+| Health-meeting UX | **PASS** | `DEMO_AUTO_MEETING` autostart first ready telehealth; E2E uses `?stayOnQueue=1` |
+| Unit gate | **PASS** | 17/17 groups; sonar:lint; lint:portals:full |
+| Local pre-deploy gate | **PASS** | `test:local:pre-deploy-gate` exit 0; ledger round 9 **P0=0** (2026-06-29T09:19Z) |
+
+```powershell
+# 2026-06-29 — Meeting zero-login + manual admit
+docker compose --env-file .env.docker --profile full up -d --build --force-recreate
+npm run docker:probe-health                    # PASS
+npm run docker:meeting-api-smoke               # PASS
+npm run test:unit:groups-sequential            # PASS 17/17
+npm run test:local:pre-deploy-gate             # PASS P0=0
+npm run ledger:local -- --round 9              # P0=0
+```
+
+## Meeting Stack Full Fix — session (2026-06-29 AM)
+
+| Step | Status | Evidence |
+|------|--------|----------|
+| Env parity | **PASS** | `.env.docker.example` + `docker-compose.yml` + `cloudbuild.yaml`: `DEMO_AUTO_*`, `PATIENT_PORTAL_URL`, `VITE_AUTO_ADMIT_LOBBY=0` |
+| Guest token URL | **PASS** | `buildGuestPortalUrls` token-only; MEET-UX-18; doctor/patient `GuestMeetingJoin` blocks bare `/guest-join` |
+| Unit gate | **PASS** | 17/17 groups; sonar:lint; lint:portals:full |
+| Meeting E2E slice | **PASS** | Q/R/J/Defect 51/51 headed (`PW_INCLUDE_GUEST=1`) |
+| Local pre-deploy gate | **PASS** | `test:local:pre-deploy-gate` exit 0; ledger round 9 **P0=0** (105 tests, 2026-06-29T06:41Z) |
+| Cloud deploy v1.7.56 | **PASS** | Cloud Build SUCCESS; smoke 3/3; `test:cloud:deploy-gate` 21/21 |
+
+```powershell
+# 2026-06-29 — Meeting stack parity
+docker compose --env-file .env.docker --profile full up -d --build --force-recreate
+npm run docker:probe-health                    # PASS
+npm run docker:meeting-api-smoke               # PASS
+npm run test:unit:groups-sequential            # PASS 17/17
+$env:PW_INCLUDE_GUEST='1'; npx playwright test --project=Q-meeting-lifecycle --project=R-jitsi-role-permissions --project=J-patient-jitsi-prejoin --project=Defect-regression  # 51/51
+$env:GATE_FROM_STEP='e2e-full-headed'; $env:GATE_SKIP_DOCKER_BUILD='1'
+npm run test:local:pre-deploy-gate             # PASS P0=0
+npm run cloud:deploy -- -Tag v1.7.56           # PASS — Cloud Build 12m51s
+npm run test:cloud:deploy-gate                 # PASS 21/21 headed
+```
 
 ## Full Gate Release Fix ? phase status (2026-06-26 session)
 
@@ -19,7 +105,7 @@
 | P1 Sonar 0 warnings | **PASS** | `reports/sonar/quality-gate-summary.json` ? eslint-deep doctor/patient/jitsi all exit 0 |
 | P2 Process + unit | **PASS** | 0 process gaps; process-contracts 139; v5-contracts 105; 07_Virtual_Meeting removed from active registry |
 | P2S Screenshots infra | **PASS** | `test:screenshots:all` 16/16 groups; `test:screenshots:global` exit 0 |
-| P3 Local gates | **PASS** | `test:local:pre-deploy-gate` exit 0; ledger round 9 P0=0 (2026-06-26T05:20Z) |
+| P3 Local gates | **PASS** | `test:local:pre-deploy-gate` exit 0; ledger round 9 **P0=0** (2026-06-26T13:58Z, 105 tests) |
 | P4 Ubuntu LAN | **SKIPPED** | User-approved skip (2026-06-26): no LAN deploy; W8 manual deferred ? `lan-gate-deferred-2026-06-26.md` |
 | P5 Docs | **PASS** | `docs/runbooks/LOCAL_INSTALL.md`, README/nginx links present |
 | P6 Split repos | **PASS** | `split/*` pushed to chiraleo2000 repos; tags `*-v1.7.55` ? `subtree-split-ready-2026-06-26.md` |
@@ -27,6 +113,15 @@
 | P8 CI + cleanup | **PASS** | `.github/workflows/ci.yml`; `cleanup:project:dry` exit 0; monorepo committed + pushed; W10 manual unchecked |
 
 ### Commands run this session
+
+**Full local re-run (2026-06-26T13:58Z):**
+
+```powershell
+# Docker Desktop started; stack up
+node scripts/run-unit-groups-sequential.mjs   # PASS 17/17 (meeting + workflows + contracts)
+$env:GATE_SKIP_DOCKER_BUILD='1'; $env:BASELINE_VISUAL='1'
+npm run test:local:pre-deploy-gate            # PASS — ledger round 9 p0Count=0, 105 tests
+```
 
 **Close-out re-verify (2026-06-26T10:22Z):**
 
@@ -105,7 +200,7 @@ npm run guides:build                    # PASS ? patient 76 + doctor 93 screensh
 | W0?W7 | ? pre-deploy-gate P0=0 |
 | W8 Ubuntu LAN | SKIPPED (user-approved) |
 | W9 | ? cloud deploy-gate 21/21 + full 86 + ledger P0=0 |
-| W10 | ? manual checklist |
+| W10 | ✅ local + cloud 3-party (E2E); LAN deferred |
 
 ## Part B (Platform Split)
 

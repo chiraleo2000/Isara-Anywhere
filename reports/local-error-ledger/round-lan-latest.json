@@ -1,0 +1,20 @@
+{
+  "round": "lan",
+  "timestamp": "2026-06-30T08:06:54.166Z",
+  "immutable": true,
+  "environment": {
+    "testEnv": "local",
+    "patientUrl": "https://patient.demotoday.net",
+    "doctorUrl": "https://doctor.demotoday.net",
+    "meetingUrl": "https://meeting.demotoday.net"
+  },
+  "stats": {
+    "expected": 0,
+    "unexpected": 0,
+    "skipped": 0,
+    "durationMs": 0
+  },
+  "failures": [],
+  "p0Count": 0,
+  "p1Count": 0
+}

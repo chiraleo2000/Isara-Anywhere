@@ -21,13 +21,14 @@ scripts/cloud-run/
 The database schema is now centralized in `scripts/database/izara-database.sql`.
 
 
-### For Cloud SQL Deployment
+### For GCE VM PostgreSQL (production dev-testing)
 
 ```bash
-
-# Connect and initialize
-gcloud sql connect izara-instance --user=postgres --database=izara_phase1 < scripts/database/izara-database.sql
+# Connect from Cloud Build migrate step or local psql
+psql "postgresql://postgres@35.240.157.230:5432/izara_phase1" -f scripts/database/izara-database.sql
 ```
+
+> **Not used:** Cloud SQL — removed from deploy configs to avoid duplicate DB billing.
 
 
 ### For Docker (Cloud Run Emulation)

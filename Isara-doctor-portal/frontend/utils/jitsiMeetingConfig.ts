@@ -60,9 +60,39 @@ export function pickJitsiJwt(
   return token && String(token).length > 10 ? String(token) : undefined;
 }
 
-/** JWT removed — Izara lobby + configOverwrite enforce roles. */
-export function resolveMountJwt(): string | undefined {
-  return undefined;
+/** Mount JWT only for self-hosted Jitsi when join-config supplies tokenAuthEnabled. */
+export function resolveMountJwt(
+  cfg?: MeetingJoinConfig | null,
+  explicit?: string | null,
+): string | undefined {
+  return pickJitsiJwt(cfg, explicit);
+}
+
+type JitsiApiLike = {
+  executeCommand?: (command: string, ...args: unknown[]) => void;
+  on?: (event: string, handler: () => void) => void;
+  addListener?: (event: string, handler: () => void) => void;
+};
+
+/** Bypass meet.jit.si prejoin "Join" click — required for headed E2E and demo automation. */
+export function wireJitsiSkipPrejoin(api: JitsiApiLike | null | undefined): void {
+  if (!api) return;
+  const join = () => {
+    try {
+      api.executeCommand?.('joinConference');
+    } catch {
+      /* ignore */
+    }
+    try {
+      api.executeCommand?.('submitDisplayName');
+    } catch {
+      /* ignore */
+    }
+  };
+  api.on?.('prejoinScreenLoaded', join);
+  api.addListener?.('prejoinScreenLoaded', join);
+  globalThis.setTimeout(join, 800);
+  globalThis.setTimeout(join, 2500);
 }
 
 /**
@@ -79,6 +109,50 @@ async function waitForLayoutPaint(): Promise<void> {
   await new Promise<void>((resolve) => setTimeout(resolve, 0));
 }
 
+/** Wait until React commits the meeting shell + iframe container (host_starting → ready). */
+async function waitForMeetingContainer(
+  getContainer: () => HTMLElement | null,
+  maxMs = 4000,
+): Promise<HTMLElement | null> {
+  const start = Date.now();
+  while (Date.now() - start < maxMs) {
+    const el = getContainer();
+    if (el) return el;
+    await waitForLayoutPaint();
+    await new Promise<void>((resolve) => setTimeout(resolve, 50));
+  }
+  return getContainer();
+}
+
+export function jitsiReachabilityHint(domain: string): string {
+  return (
+    `Cannot reach Jitsi at https://${domain}. ` +
+    'On LAN: add meet.demotoday.net to your Windows hosts file (192.168.10.239) and trust the mkcert CA — see deploy/nginx/WINDOWS_CLIENT_SETUP.md'
+  );
+}
+
+/** Preflight — fails fast when meet.* DNS/hosts is missing (common LAN mistake). */
+export async function verifyJitsiDomainReachable(domain = resolveJitsiDomain()): Promise<void> {
+  const url = `https://${domain}/external_api.js`;
+  const ctrl = new AbortController();
+  const timer = globalThis.setTimeout(() => ctrl.abort(), 12_000);
+  try {
+    const res = await fetch(url, { method: 'GET', mode: 'cors', credentials: 'omit', signal: ctrl.signal });
+    if (!res.ok) {
+      throw new Error(`Jitsi returned HTTP ${res.status}`);
+    }
+  } catch (err: unknown) {
+    const msg =
+      err instanceof Error ? err.message : typeof err === 'string' ? err : 'Jitsi reachability check failed';
+    if (msg.includes('abort')) {
+      throw new Error(jitsiReachabilityHint(domain));
+    }
+    throw new Error(jitsiReachabilityHint(domain));
+  } finally {
+    globalThis.clearTimeout(timer);
+  }
+}
+
 export async function prepareLayoutThenMount(
   setStatus: (status: string) => void,
   getContainer: () => HTMLElement | null,
@@ -92,7 +166,8 @@ export async function prepareLayoutThenMount(
   if (layoutDelayMs > 0) {
     await new Promise<void>((resolve) => setTimeout(resolve, layoutDelayMs));
   }
-  if (!getContainer()) {
+  const container = await waitForMeetingContainer(getContainer);
+  if (!container) {
     setStatus(preJoinStatus);
     return { ok: false, error: 'Meeting container not ready — please try again' };
   }
@@ -120,7 +195,7 @@ export function buildDoctorJitsiMountOptions(input: {
   const joinCfg = input.joinCfg;
   const domain = joinCfg?.domain || input.domain || resolveJitsiDomain();
   const roomName = joinCfg?.roomName || input.roomName;
-  const jwt = resolveMountJwt();
+  const jwt = resolveMountJwt(joinCfg, input.storedJwt);
   const jitsiOpts = getJitsiExternalApiOptions('doctor', displayName);
 
   const configOverwrite = mergeRecord(
@@ -181,6 +256,7 @@ export function getJitsiExternalApiOptions(role: JitsiMeetingRole, displayName: 
       ...JITSI_QUIET_CONFIG,
       prejoinPageEnabled: false,
       requireDisplayName: false,
+      prejoinConfig: { enabled: false },
       ...(isHost ? { moderator: true } : {}),
       startWithAudioMuted: !isHost,
       startWithVideoMuted: false,
@@ -190,6 +266,7 @@ export function getJitsiExternalApiOptions(role: JitsiMeetingRole, displayName: 
       enableWelcomePage: false,
       enableInsecureRoomNameWarning: false,
       disableThirdPartyRequests: true,
+      disableInitialGUM: false,
       enableLobby: false,
       lobbyModeEnabled: false,
       enableLobbyChat: false,
@@ -272,6 +349,21 @@ export async function notifyHostAbsent(
   } catch { /* silent */ }
 }
 
+const HOST_READY_MAX_AGE_MS = 90_000;
+
+export function isHostReadyPayload(data: {
+  ready?: boolean;
+  inJitsi?: boolean;
+  at?: string | null;
+}): boolean {
+  if (!data.ready || data.inJitsi === false) return false;
+  if (data.at) {
+    const age = Date.now() - new Date(data.at).getTime();
+    if (age < 0 || age > HOST_READY_MAX_AGE_MS) return false;
+  }
+  return true;
+}
+
 export async function isHostReady(meetingServerUrl: string, meetingId: string): Promise<boolean> {
   try {
     const res = await fetch(`${meetingServerUrl}/api/meetings/${meetingId}/host-ready`, {
@@ -279,7 +371,7 @@ export async function isHostReady(meetingServerUrl: string, meetingId: string): 
     });
     if (!res.ok) return false;
     const data = await res.json();
-    return Boolean(data.ready && data.inJitsi !== false);
+    return isHostReadyPayload(data);
   } catch {
     return false;
   }
@@ -292,7 +384,10 @@ export async function waitForHostReady(
 ): Promise<boolean> {
   const start = Date.now();
   while (Date.now() - start < maxMs) {
-    if (await isHostReady(meetingServerUrl, meetingId)) return true;
+    if (await isHostReady(meetingServerUrl, meetingId)) {
+      await new Promise<void>((r) => setTimeout(r, 400));
+      if (await isHostReady(meetingServerUrl, meetingId)) return true;
+    }
     await new Promise<void>(r => setTimeout(r, 2000));
   }
   return false;
@@ -322,14 +417,14 @@ export function loadJitsiExternalApiScript(domain = resolveJitsiDomain()): Promi
         return;
       }
       existing.addEventListener('load', () => resolve());
-      existing.addEventListener('error', () => reject(new Error('Failed to load Jitsi')));
+      existing.addEventListener('error', () => reject(new Error(jitsiReachabilityHint(domain))));
       return;
     }
     const script = document.createElement('script');
     script.src = expectedSrc;
     script.async = true;
     script.onload = () => resolve();
-    script.onerror = () => reject(new Error('Failed to load Jitsi'));
+    script.onerror = () => reject(new Error(jitsiReachabilityHint(domain)));
     document.head.appendChild(script);
   });
 }

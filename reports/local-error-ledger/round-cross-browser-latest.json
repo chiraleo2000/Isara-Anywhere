@@ -1,0 +1,47 @@
+{
+  "round": "cross-browser-pdpa-content",
+  "generatedAt": "2026-06-29T00:00:00.000Z",
+  "p0Count": 0,
+  "implementation": {
+    "pdpaConsentHelper": "Isara-doctor-portal/backend/lib/pdpaConsent.cjs",
+    "contentVisibility": "Isara-doctor-portal/backend/lib/contentVisibility.cjs",
+    "errorBoundaries": ["doctor App.tsx", "patient App.tsx", "DoctorPortal GuardedRoute", "MainLayout Outlet"]
+  },
+  "fullPortalScan": {
+    "medicalContentCanonical": "pages/content/MedicalContent.tsx",
+    "clinicalResourcesAuth": true,
+    "legacyApiMedicalContent": "role-aware",
+    "appointmentsUtils": "formatLocalDateYmd + mediaRecording",
+    "healthMeetingDates": "todayLocalYmd testids",
+    "audioRecorderCrossBrowser": true,
+    "duplicateAppointmentPages": "re-export canonical"
+  },
+  "gates": {
+    "unitContracts": {
+      "pdpaConsentContract": "PASS",
+      "contentVisibilityContract": "PASS",
+      "errorBoundaryContract": "PASS",
+      "appointmentUxContract": "PASS"
+    },
+    "static": {
+      "test:guards:static": "PASS",
+      "test:lint:portals:full": "PASS",
+      "sonar:lint": "PASS"
+    }
+  },
+  "browsers": {
+    "chromium": { "W-core": "INTEGRATED_IN_PRE_DEPLOY", "D-appointments": "INTEGRATED_IN_PRE_DEPLOY" },
+    "firefox": { "W-core": "INTEGRATED_IN_PRE_DEPLOY", "D-appointments": "INTEGRATED_IN_PRE_DEPLOY" },
+    "webkit": { "W-core": "INTEGRATED_IN_PRE_DEPLOY", "D-appointments": "OPTIONAL" }
+  },
+  "pdpaContentE2E": {
+    "G15": "ADDED",
+    "G16": "ADDED",
+    "H-approval": "ADDED"
+  },
+  "environments": {
+    "local": "REQUIRES_DOCKER_GATE_RUN",
+    "cloud": "REQUIRES_v1.7.57_DEPLOY"
+  },
+  "whiteScreenRoutes": []
+}

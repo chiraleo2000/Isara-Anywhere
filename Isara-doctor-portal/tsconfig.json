@@ -21,11 +21,8 @@
     "noUnusedLocals": false,
     "noUnusedParameters": false,
     "noFallthroughCasesInSwitch": true,
-    "forceConsistentCasingInFileNames": true,
-
-    /* Types */
-    "types": ["vite/client"]
+    "forceConsistentCasingInFileNames": true
   },
-  "include": ["frontend", "frontend/**/*.ts", "frontend/**/*.tsx"],
+  "include": ["frontend", "frontend/**/*.ts", "frontend/**/*.tsx", "frontend/vite-env.d.ts"],
   "exclude": ["node_modules", "dist", "scripts"]
 }

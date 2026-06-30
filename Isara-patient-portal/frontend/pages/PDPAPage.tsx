@@ -45,10 +45,19 @@ interface AuditLogEntry {
   consentId?: string;
 }
 
+function coerceDbString(value: unknown, fallback = ''): string {
+  if (typeof value === 'string') return value;
+  if (value == null) return fallback;
+  if (typeof value === 'number' || typeof value === 'boolean' || typeof value === 'bigint') {
+    return String(value);
+  }
+  return fallback;
+}
+
 function pickTimestamp(row: Record<string, unknown>): string | undefined {
   const raw = row.timestamp ?? row.created_at ?? row.createdAt ?? row.updated_at ?? row.updatedAt;
   if (raw == null || raw === '') return undefined;
-  const iso = raw instanceof Date ? raw.toISOString() : String(raw);
+  const iso = raw instanceof Date ? raw.toISOString() : coerceDbString(raw);
   return parseValidDate(iso) ? iso : undefined;
 }
 
@@ -62,11 +71,11 @@ function normalizeAuditEntry(row: Record<string, unknown>): AuditLogEntry {
     }
   }
 
-  let action = String(row.action || 'DATA_ACCESSED');
+  let action = coerceDbString(row.action, 'DATA_ACCESSED');
   if (action.startsWith('{')) {
     try {
       const parsed = JSON.parse(action) as Record<string, unknown>;
-      action = String(parsed.action || parsed.type || 'DATA_ACCESSED');
+      action = coerceDbString(parsed.action ?? parsed.type, 'DATA_ACCESSED');
     } catch {
       action = 'DATA_ACCESSED';
     }
@@ -85,10 +94,25 @@ function normalizeAuditEntry(row: Record<string, unknown>): AuditLogEntry {
   };
 }
 
+function formatGrantedAt(grantedAtRaw: unknown, fallback?: string): string | undefined {
+  if (grantedAtRaw == null) return fallback;
+  const asString =
+    grantedAtRaw instanceof Date ? grantedAtRaw.toISOString() : coerceDbString(grantedAtRaw);
+  return parseValidDate(asString) ? asString : fallback;
+}
+
 function mergeConsentsWithDefaults(apiRows: Array<Record<string, unknown>>, defaults: Consent[]): Consent[] {
+  const TYPE_ALIASES: Record<string, string> = {
+    dataProcessing: 'health_data',
+    data_processing: 'health_data',
+    research: 'analytics',
+    essential_data: 'essential',
+  };
+
   const byKey = new Map<string, Record<string, unknown>>();
   for (const row of apiRows) {
-    const key = String(row.type || row.consent_type || row.id || '');
+    const raw = coerceDbString(row.type ?? row.consent_type ?? row.id);
+    const key = TYPE_ALIASES[raw] || raw;
     if (key) byKey.set(key, row);
   }
 
@@ -96,14 +120,14 @@ function mergeConsentsWithDefaults(apiRows: Array<Record<string, unknown>>, defa
     const row =
       byKey.get(def.id) ||
       byKey.get(def.type) ||
-      [...byKey.values()].find((r) => String(r.consent_type || r.type) === def.id);
+      [...byKey.values()].find((r) => {
+        const t = coerceDbString(r.consent_type ?? r.type);
+        return t === def.id || TYPE_ALIASES[t] === def.id;
+      });
     if (!row) return def;
 
     const grantedAtRaw = row.grantedAt ?? row.granted_at ?? row.updatedAt ?? row.updated_at;
-    const grantedAt =
-      grantedAtRaw != null && parseValidDate(String(grantedAtRaw))
-        ? String(grantedAtRaw instanceof Date ? grantedAtRaw.toISOString() : grantedAtRaw)
-        : def.grantedAt;
+    const grantedAt = formatGrantedAt(grantedAtRaw, def.grantedAt);
 
     return {
       ...def,
@@ -254,8 +278,43 @@ interface ConsentsTabProps {
 }
 
 function ConsentsTab({ consents, saving, handleToggleConsent, labels, language, cls, formatDate }: Readonly<ConsentsTabProps>) {
+  const lastUpdated = consents.reduce<string | undefined>((latest, c) => {
+    if (!c.grantedAt || !parseValidDate(c.grantedAt)) return latest;
+    if (!latest || new Date(c.grantedAt) > new Date(latest)) return c.grantedAt;
+    return latest;
+  }, undefined);
+
   return (
     <div className="space-y-4">
+      <div className={`rounded-2xl border p-5 ${cls.infoBanner}`} data-testid="pdpa-current-consent-snapshot">
+        <h3 className={`font-bold mb-2 flex items-center gap-2 ${cls.infoTitle}`}>
+          <Info className="w-5 h-5" />
+          {tl(language, 'สถานะความยินยอมปัจจุบัน', 'Current Consent Status')}
+        </h3>
+        <p className={`text-sm mb-3 ${cls.infoDesc}`}>
+          {tl(language,
+            'แสดงการตั้งค่าล่าสุดที่บันทึกไว้ — ไม่ต้องตั้งค่าใหม่หากไม่ต้องการเปลี่ยนแปลง',
+            'Shows your latest saved settings — no need to reconfigure unless you want to change something')}
+        </p>
+        {lastUpdated && (
+          <p className={`text-xs mb-3 ${cls.mutedText}`}>
+            {tl(language, 'อัปเดตล่าสุด: ', 'Last updated: ')}{formatDate(lastUpdated)}
+          </p>
+        )}
+        <ul className="space-y-1.5 text-sm">
+          {consents.map((c) => (
+            <li key={c.id} className="flex items-center justify-between gap-3">
+              <span className={cls.bodyText}>{c.title}</span>
+              <span className={c.granted ? 'text-emerald-600 font-medium' : cls.mutedText}>
+                {c.granted
+                  ? tl(language, 'ยินยอมแล้ว', 'Granted')
+                  : tl(language, 'ยังไม่ยินยอม', 'Not granted')}
+              </span>
+            </li>
+          ))}
+        </ul>
+      </div>
+
       <div className={`rounded-2xl border overflow-hidden divide-y ${cls.cardBgDivide}`}>
         {consents.map((consent) => (
           <div key={consent.id} className="p-5">
@@ -506,8 +565,8 @@ function DoctorsTab({ consents, saving, handleToggleConsent, labels, language, c
               } catch {
                 data = {};
               }
-              const doctorName = String(data.doctor_name || data.doctorName || '');
-              const doctorId = String(data.doctor_id || data.doctorId || '');
+              const doctorName = coerceDbString(data.doctor_name ?? data.doctorName);
+              const doctorId = coerceDbString(data.doctor_id ?? data.doctorId);
               return (
                 <div key={req.id} className="p-4 flex items-center justify-between gap-4">
                   <div className="flex-1">
@@ -551,6 +610,7 @@ function DoctorsTab({ consents, saving, handleToggleConsent, labels, language, c
           </h3>
           <button
             onClick={onGrantDoctorAccess}
+            data-testid="pdpa-grant-doctor-access-btn"
             className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-1"
           >
             <span>+</span> {tl(language, 'ให้สิทธิ์แพทย์', 'Grant Access')}
@@ -564,7 +624,11 @@ function DoctorsTab({ consents, saving, handleToggleConsent, labels, language, c
         ) : (
           <div className="divide-y divide-gray-100 dark:divide-gray-700">
             {doctorAccessList.map((dc) => (
-              <div key={dc.id} className="p-4 flex items-center justify-between gap-4">
+              <div
+                key={dc.id}
+                data-testid={`pdpa-doctor-access-row-${dc.doctorId}`}
+                className="p-4 flex items-center justify-between gap-4"
+              >
                 <div className="flex-1">
                   <p className={`font-medium ${cls.heading}`}>{dc.doctorName}</p>
                   {dc.doctorSpecialty && <p className={`text-sm ${cls.subtitle}`}>{dc.doctorSpecialty}</p>}
@@ -722,7 +786,6 @@ export default function PDPAPage() {
   
   const [activeTab, setActiveTab] = useState<'consents' | 'doctors' | 'audit'>('consents');
   const [consents, setConsents] = useState<Consent[]>([]);
-  const [doctorConsents, setDoctorConsents] = useState<DoctorConsent[]>([]);
   const [auditLog, setAuditLog] = useState<AuditLogEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState<string | null>(null);
@@ -733,11 +796,7 @@ export default function PDPAPage() {
   // Grant consent modal state
   const [showGrantModal, setShowGrantModal] = useState(false);
   const [doctors, setDoctors] = useState<Doctor[]>([]);
-  const [searchQuery] = useState('');
-  const [selectedDoctor, setSelectedDoctor] = useState<Doctor | null>(null);
-  const [selectedDataTypes, setSelectedDataTypes] = useState<string[]>([]);
-  const [consentPurpose, setConsentPurpose] = useState('');
-  const [expiryDays, setExpiryDays] = useState(365);
+  const [searchQuery, setSearchQuery] = useState('');
   const [grantingConsent, setGrantingConsent] = useState(false);
 
   useEffect(() => {
@@ -751,9 +810,8 @@ export default function PDPAPage() {
       const patientId = user.patientId || user.id;
 
       // Load all data in parallel
-      const [consentsData, doctorConsentsData, auditData, doctorsData, doctorAccessData, pendingRequestsData] = await Promise.all([
+      const [consentsData, auditData, doctorsData, doctorAccessData, pendingRequestsData] = await Promise.all([
         pdpaService.getConsents(patientId).catch((err: unknown) => { console.error('[PDPA] Consents fetch failed:', err); return { consents: [] }; }),
-        pdpaService.getDoctorConsents(patientId).catch((err: unknown) => { console.error('[PDPA] Doctor consents fetch failed:', err); return []; }),
         pdpaService.getAuditLog(patientId).catch((err: unknown) => { console.error('[PDPA] Audit log fetch failed:', err); return []; }),
         doctorService.getAll().catch((err: unknown) => { console.error('[PDPA] Doctors fetch failed:', err); return []; }),
         pdpaService.getDoctorAccess().catch((err: unknown) => { console.error('[PDPA] Doctor access fetch failed:', err); return []; }),
@@ -766,7 +824,6 @@ export default function PDPAPage() {
         setConsents(getDefaultConsents());
       }
 
-      setDoctorConsents(doctorConsentsData || []);
       const auditRows = Array.isArray(auditData) ? auditData : [];
       setAuditLog(auditRows.map((row) => normalizeAuditEntry(row as Record<string, unknown>)));
       setDoctors(doctorsData || []);
@@ -847,68 +904,6 @@ export default function PDPAPage() {
     }
   };
 
-  // Grant consent handler for modal
-  const handleGrantDoctorConsent = async () => {
-    if (!user?.id || !selectedDoctor || selectedDataTypes.length === 0) return;
-
-    setGrantingConsent(true);
-    try {
-      const patientId = user.patientId || user.id;
-      const expiresAt = new Date();
-      expiresAt.setDate(expiresAt.getDate() + expiryDays);
-
-      const consentData = {
-        doctorId: selectedDoctor.id,
-        doctorName: selectedDoctor.name,
-        doctorSpecialty: selectedDoctor.specialty,
-        hospitalName: selectedDoctor.hospital,
-        dataTypes: selectedDataTypes,
-        purpose: consentPurpose || 'การรักษาพยาบาล',
-        expiresAt: expiresAt.toISOString(),
-      };
-
-      await pdpaService.grantConsent(patientId, consentData);
-
-      // Refresh doctor consents
-      const updatedConsents = await pdpaService.getDoctorConsents(patientId);
-      setDoctorConsents(updatedConsents || []);
-
-      // Reset modal
-      setShowGrantModal(false);
-      setSelectedDoctor(null);
-      setSelectedDataTypes([]);
-      setConsentPurpose('');
-      setExpiryDays(365);
-    } catch (e) {
-      console.error('Failed to grant consent:', e);
-      alert('เกิดข้อผิดพลาด กรุณาลองใหม่');
-    } finally {
-      setGrantingConsent(false);
-    }
-  };
-
-  // Revoke consent handler
-  const handleRevokeConsent = async (consentId: string) => {
-    if (!user?.id || !confirm('ต้องการเพิกถอนการยินยอมนี้หรือไม่?')) return;
-
-    try {
-      const patientId = user.patientId || user.id;
-      await pdpaService.revokeConsent(patientId, consentId, 'ผู้ใช้เพิกถอน');
-
-      // Update local state
-      setDoctorConsents((prev) =>
-        prev.map((c) =>
-          c.id === consentId
-            ? { ...c, status: 'revoked' as const, revokedAt: new Date().toISOString() }
-            : c
-        )
-      );
-    } catch (e) {
-      console.error('Failed to revoke consent:', e);
-      alert(labels.error[language]);
-    }
-  };
-
   // Filtered doctors for search
   const filteredDoctors = doctors.filter(
     (d) =>
@@ -917,12 +912,9 @@ export default function PDPAPage() {
       d.hospital?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  // Toggle data type selection
-  const toggleDataType = (type: string) => {
-    setSelectedDataTypes((prev) =>
-      prev.includes(type) ? prev.filter((t) => t !== type) : [...prev, type]
-    );
-  };
+  const availableDoctorsForGrant = filteredDoctors.filter(
+    (d) => !doctorAccessList.some((dc) => dc.doctorId === d.id && dc.status === 'granted' && dc.granted)
+  );
 
   // Per-doctor access: revoke medical_record_access
   const handleRevokeDoctorAccess = async (doctorId: string) => {
@@ -945,15 +937,18 @@ export default function PDPAPage() {
   // Per-doctor access: grant to selected doctor from modal
   const handleGrantDoctorAccessConfirm = async (doctorId: string) => {
     if (!user?.id) return;
+    setGrantingConsent(true);
     try {
       await pdpaService.grantDoctorAccess(doctorId);
       const updated = await pdpaService.getDoctorAccess();
       setDoctorAccessList(updated || []);
       setShowGrantModal(false);
-      setSelectedDoctor(null);
+      setSearchQuery('');
     } catch (e) {
       console.error('Failed to grant doctor access:', e);
       alert(labels.error[language]);
+    } finally {
+      setGrantingConsent(false);
     }
   };
 
@@ -988,15 +983,19 @@ export default function PDPAPage() {
         <table><thead><tr><th>Date</th><th>Action</th><th>Details</th></tr></thead><tbody>
         ${entries.map((e: any) => `<tr><td>${new Date(e.created_at).toLocaleString('th-TH')}</td><td>${e.action}</td><td>${typeof e.details === 'string' ? e.details : JSON.stringify(e.details || {})}</td></tr>`).join('')}
         </tbody></table></body></html>`;
-      const w = window.open('', '_blank');
-      if (w) { w.document.write(html); w.document.close(); w.print(); }
+      const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+      const blobUrl = URL.createObjectURL(blob);
+      const w = window.open(blobUrl, '_blank');
+      if (w) {
+        w.addEventListener('load', () => {
+          w.print();
+          URL.revokeObjectURL(blobUrl);
+        }, { once: true });
+      }
     } catch (e) {
       console.error('Failed to download consent history:', e);
     }
   };
-
-  // Log unused variables for linter satisfaction (these will be used when modal is fully implemented)
-  console.debug('Grant modal state:', { showGrantModal, grantingConsent, doctorConsents, filteredDoctors, handleGrantDoctorConsent, handleRevokeConsent, toggleDataType, handleGrantDoctorAccessConfirm });
 
   const formatDate = (dateStr: string | undefined) =>
     formatLocaleDateTime(dateStr, language);
@@ -1108,6 +1107,68 @@ export default function PDPAPage() {
           cls={cls}
           formatDate={formatDate}
         />
+      )}
+
+      {showGrantModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" data-testid="pdpa-grant-doctor-modal">
+          <div className={`w-full max-w-lg rounded-2xl shadow-2xl border ${cls.cardBg} max-h-[85vh] flex flex-col`}>
+            <div className={`px-6 py-4 border-b flex items-center justify-between ${cls.sharingHeader}`}>
+              <h3 className={`font-bold ${cls.heading}`}>
+                {tl(language, 'ให้สิทธิ์แพทย์เข้าถึงเวชระเบียน', 'Grant Doctor Medical Record Access')}
+              </h3>
+              <button
+                onClick={() => { setShowGrantModal(false); setSearchQuery(''); }}
+                className={`p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 ${cls.mutedText}`}
+                aria-label={labels.close[language]}
+              >
+                ✕
+              </button>
+            </div>
+            <div className="p-4 border-b">
+              <input
+                type="search"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder={tl(language, 'ค้นหาแพทย์ ชื่อ หรือสาขา...', 'Search doctor name or specialty...')}
+                className={`w-full px-4 py-2.5 rounded-xl border text-sm ${cls.surfaceBg} ${cls.heading}`}
+                data-testid="pdpa-grant-doctor-search"
+              />
+            </div>
+            <div className="flex-1 overflow-y-auto p-2">
+              {availableDoctorsForGrant.length === 0 ? (
+                <p className={`p-6 text-center text-sm ${cls.mutedText}`}>
+                  {tl(language, 'ไม่พบแพทย์ที่สามารถให้สิทธิ์ได้', 'No doctors available to grant access')}
+                </p>
+              ) : (
+                <ul className="divide-y divide-gray-100 dark:divide-gray-700">
+                  {availableDoctorsForGrant.map((doctor) => (
+                    <li key={doctor.id}>
+                      <button
+                        type="button"
+                        disabled={grantingConsent}
+                        onClick={() => handleGrantDoctorAccessConfirm(doctor.id)}
+                        data-testid={`pdpa-grant-doctor-option-${doctor.id}`}
+                        className={`w-full text-left p-4 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors disabled:opacity-50`}
+                      >
+                        <p className={`font-medium ${cls.heading}`}>{doctor.name}</p>
+                        {doctor.specialty && <p className={`text-sm ${cls.subtitle}`}>{doctor.specialty}</p>}
+                        {doctor.hospital && <p className={`text-xs ${cls.mutedText}`}>{doctor.hospital}</p>}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+            <div className="p-4 border-t flex justify-end">
+              <button
+                onClick={() => { setShowGrantModal(false); setSearchQuery(''); }}
+                className={`px-4 py-2 rounded-lg border text-sm ${cls.tabInactive}`}
+              >
+                {labels.cancel[language]}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

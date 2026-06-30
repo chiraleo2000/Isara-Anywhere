@@ -10,7 +10,6 @@ import {
   snap,
   lobbyAdmitAll,
   joinIzaraMeetingInApp,
-  readPageBearerToken,
   PATIENT_URL,
   DOCTOR_URL,
   MEETING_URL,
@@ -22,12 +21,12 @@ import {
   assertNoJitsiPrejoinNameForm,
   assertJitsiMediaActive,
   assertJitsiRoleFlagsOnPage,
-  waitForMeetingHostReady,
   notifyHostPresentAfterJitsi,
   assertNoJitsiModeratorGate,
   overrideBrowserMeetingServerUrl,
   proxyLocalMeetingServer,
   ensureJitsiMountSpy,
+  holdWithMediaChecks,
 } from './helpers/meeting-lifecycle-fixture';
 
 const IS_CLOUD = process.env.TEST_ENV === 'cloud';
@@ -39,9 +38,8 @@ test.describe('Group J — Patient Jitsi prejoin bypass', () => {
   test.describe.configure({ mode: 'serial' });
 
 let appointmentId = '';
-let meetingKey = '';
 
-  test('JPRE01 — auth name on pre-join, Jitsi mounts without name prompt', async ({ portals }) => {
+  test('JPRE01 — auth name on auto-lobby, Jitsi mounts without name prompt', async ({ portals }) => {
     const { patient, admin, doctor } = portals;
 
     await test.step('JPRE01a — Book, assign, confirm telehealth appointment', async () => {
@@ -104,7 +102,7 @@ let meetingKey = '';
       expect(resp.ok()).toBeTruthy();
       const body = await resp.json();
       const meeting = body.meeting || body;
-      meetingKey = meeting.id || meeting.meetingId || appointmentId;
+      expect(meeting.id || meeting.meetingId || appointmentId).toBeTruthy();
     });
 
     await test.step('JPRE01c — Doctor HOST opens meeting before patient pre-join', async () => {
@@ -125,7 +123,7 @@ let meetingKey = '';
       });
     });
 
-    await test.step('JPRE01d — Patient pre-join shows auth display name (not empty)', async () => {
+    await test.step('JPRE01d — Patient auto-lobby shows auth display name (not empty)', async () => {
       await overrideBrowserMeetingServerUrl(patient.page, MEETING_URL);
       await proxyLocalMeetingServer(patient.page, MEETING_URL);
       await installJitsiMountSpy(patient.page);
@@ -139,34 +137,25 @@ let meetingKey = '';
         await expect(loading).toBeHidden({ timeout: IS_CLOUD ? 120_000 : 60_000 });
       }
 
-      const agreement = patient.page.locator('[data-testid="meeting-agreement"]');
-      await expect(agreement).toBeVisible({ timeout: 30_000 });
-      for (const id of ['consent-recording', 'consent-transcript', 'consent-data-sharing']) {
-        const row = patient.page.locator(`[data-testid="${id}"]`);
-        if (await row.isVisible({ timeout: 2_000 }).catch(() => false)) {
-          const input = row.locator('input[type="checkbox"]').first();
-          if (await input.isVisible().catch(() => false) && !(await input.isChecked().catch(() => false))) {
-            await input.check({ force: true });
-          }
-        }
+      const lobbyStarting = patient.page.getByTestId('lobby-starting-screen');
+      if (await lobbyStarting.isVisible({ timeout: 5_000 }).catch(() => false)) {
+        const displayNameOnStart = patient.page.getByTestId('patient-display-name');
+        await expect(displayNameOnStart, 'JPRE01d: patient display name during auto-lobby').toBeVisible({
+          timeout: IS_CLOUD ? 45_000 : 30_000,
+        });
+        const displayName = (await displayNameOnStart.innerText()).trim();
+        expect(displayName.length, 'JPRE01d: auth display name must not be empty').toBeGreaterThan(0);
+        expect(/enter your name|type your name|กรอกชื่อ/i.test(displayName)).toBe(false);
+        await expect(lobbyStarting).toBeHidden({ timeout: IS_CLOUD ? 90_000 : 60_000 });
       }
-      await patient.page.getByTestId('agree-continue-btn').click();
-      await expect(patient.page.getByTestId('pre-join-screen')).toBeVisible({ timeout: 20_000 });
 
-      const displayNameEl = patient.page.locator(
-        '[data-testid="patient-display-name"], [data-testid="pre-join-screen"] .font-medium',
-      ).first();
-      await expect(displayNameEl, 'JPRE01d: patient display name on pre-join').toBeVisible({
-        timeout: IS_CLOUD ? 45_000 : 30_000,
-      });
-      const displayName = (await displayNameEl.innerText()).trim();
-      expect(displayName.length, 'JPRE01d: auth display name must not be empty').toBeGreaterThan(0);
-      expect(displayName, 'JPRE01d: fallback Patient when auth empty').not.toBe('');
-      expect(/enter your name|type your name|กรอกชื่อ/i.test(displayName)).toBe(false);
+      await expect(
+        patient.page.getByTestId('lobby-waiting-screen').or(patient.page.getByTestId('host-waiting-screen')).first(),
+      ).toBeVisible({ timeout: IS_CLOUD ? 60_000 : 45_000 });
       await snap(patient.page, 'JPRE01d-patient-prejoin-autoname', 'group-J-jitsi-prejoin');
     });
 
-    await test.step('JPRE01e — Patient joins lobby; doctor admits; Jitsi bypasses name prompt', async () => {
+    await test.step('JPRE01e — Patient auto-lobby; doctor admits; Jitsi bypasses name prompt', async () => {
       await ensureJitsiMountSpy(patient.page);
       const postJoinVisible = patient.page
         .getByTestId('lobby-waiting-screen')
@@ -174,24 +163,8 @@ let meetingKey = '';
         .or(patient.page.getByTestId('jitsi-meeting-container'))
         .first();
 
-      const clickJoinAndWaitLobby = async () => {
-        await expect(patient.page.getByTestId('join-meeting-btn')).toBeVisible({ timeout: 20_000 });
-        await patient.page.getByTestId('join-meeting-btn').click();
-        await expect(postJoinVisible).toBeVisible({ timeout: IS_CLOUD ? 60_000 : 45_000 });
-      };
+      await expect(postJoinVisible).toBeVisible({ timeout: IS_CLOUD ? 60_000 : 45_000 });
 
-      try {
-        await clickJoinAndWaitLobby();
-      } catch {
-        // Lobby join API can fail transiently — UI reverts to agreement; retry once.
-        const onAgreement = await patient.page.getByTestId('meeting-agreement').isVisible({ timeout: 8_000 }).catch(() => false);
-        if (!onAgreement) throw new Error('JPRE01e: join did not reach lobby and agreement screen not shown');
-        await patient.page.getByTestId('agree-continue-btn').click();
-        await expect(patient.page.getByTestId('pre-join-screen')).toBeVisible({ timeout: 20_000 });
-        await clickJoinAndWaitLobby();
-      }
-
-      const doctorToken = await readPageBearerToken(doctor.page);
       await lobbyAdmitAll(doctor.page, appointmentId, DOCTOR_ID);
       await joinIzaraMeetingInApp(patient.page, 'JPRE01e-patient', portals.patient.browserName);
 
@@ -228,6 +201,7 @@ let meetingKey = '';
 
       await assertNoJitsiPrejoinNameForm(patient.page, 'patient');
       await assertJitsiMediaActive(patient.page, 'patient');
+      await holdWithMediaChecks([{ page: patient.page, label: 'patient' }], 3_000, 1);
       await snap(patient.page, 'JPRE01e-patient-in-jitsi-canvas', 'group-J-jitsi-prejoin');
     });
   });

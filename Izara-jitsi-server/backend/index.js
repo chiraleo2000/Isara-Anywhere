@@ -153,7 +153,8 @@ const JITSI_APP_ID = process.env.JITSI_APP_ID || process.env.JITSI_ISS || '';
 const JITSI_AUTH_SECRET = process.env.JITSI_JWT_SECRET || process.env.JITSI_APP_SECRET || '';
 const JITSI_SIGNING_SECRET = JITSI_AUTH_SECRET || '';
 const JITSI_TOKEN_ISSUER = JITSI_APP_ID || process.env.JWT_ISSUER || 'izara-telemedicine';
-const JITSI_TOKEN_AUTH_ENABLED = false;
+const JITSI_TOKEN_AUTH_ENABLED =
+  !JITSI_IS_PUBLIC_SAAS && Boolean(JITSI_SIGNING_SECRET);
 
 function buildJitsiRoleJwt(roomName, user = {}, role = 'guest') {
   return createJitsiRoleJwt({
@@ -345,6 +346,77 @@ async function validateMeetingRefs({ appointmentId, doctorId, patientId }) {
     }
   }
   return { ok: missing.length === 0, missing };
+}
+
+/** Auto-provision meeting_records from appointments when doctor/patient open /meeting/:id before create. */
+async function ensureMeetingRecordForAppointment(appointmentId) {
+  if (!appointmentId || !dbAvailable) return null;
+  try {
+    const existing = await pool.query(
+      `SELECT * FROM meeting_records
+       WHERE appointment_id = $1 OR id::text = $1
+       ORDER BY created_at DESC LIMIT 1`,
+      [appointmentId],
+    );
+    if (existing.rows.length > 0) {
+      const m = existing.rows[0];
+      registerMeetingLobbyAliases(m.id, m.appointment_id || appointmentId);
+      return m;
+    }
+
+    const aptRes = await pool.query(
+      'SELECT id, patient_id, doctor_id FROM appointments WHERE id = $1 LIMIT 1',
+      [appointmentId],
+    );
+    if (aptRes.rows.length === 0) return null;
+
+    const apt = aptRes.rows[0];
+    const meetingId = uuidv4();
+    const roomName = `izara-${String(appointmentId).substring(0, 12)}-meeting`;
+    const urls = buildMeetingUrls(JITSI_DOMAIN, roomName, {
+      language: 'th',
+      doctor: { name: 'Doctor' },
+      patient: { name: 'Patient' },
+      guest: { name: 'Guest' },
+    });
+
+    const result = await pool.query(
+      `INSERT INTO meeting_records (
+        id, appointment_id, doctor_id, patient_id, room_name, jitsi_domain,
+        meeting_url, doctor_url, patient_url, guest_url, status, meeting_config, created_at
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, NOW())
+      RETURNING *`,
+      [
+        meetingId,
+        apt.id,
+        apt.doctor_id || null,
+        apt.patient_id || null,
+        roomName,
+        JITSI_DOMAIN,
+        urls.patient,
+        urls.doctor,
+        urls.patient,
+        urls.guest,
+        'scheduled',
+        JSON.stringify({ lobbyEnabled: true, autoProvisioned: true }),
+      ],
+    );
+    const row = result.rows[0];
+    registerMeetingLobbyAliases(row.id, row.appointment_id || appointmentId);
+    activeMeetings.set(row.id, {
+      meetingId: row.id,
+      appointmentId: row.appointment_id || appointmentId,
+      doctorId: row.doctor_id,
+      patientId: row.patient_id,
+      roomName: row.room_name,
+      status: 'scheduled',
+    });
+    console.log(`[Meeting] auto-provisioned meeting ${row.id} for appointment ${appointmentId}`);
+    return row;
+  } catch (err) {
+    console.warn('[Meeting] ensureMeetingRecordForAppointment:', err.message);
+    return null;
+  }
 }
 
 /** Map PG error codes to a clean HTTP response shape for meeting endpoints. */
@@ -804,9 +876,17 @@ function getHostPresence(meetingId) {
   return null;
 }
 
+const HOST_READY_TTL_MS = Number(process.env.HOST_READY_TTL_MS) || 90_000;
+
+function isHostPresenceFresh(presence) {
+  if (!presence?.at) return false;
+  const age = Date.now() - new Date(presence.at).getTime();
+  return age >= 0 && age <= HOST_READY_TTL_MS;
+}
+
 function isHostReadyForMeeting(meetingId) {
   const presence = getHostPresence(meetingId);
-  return Boolean(presence?.ready && presence?.inJitsi);
+  return Boolean(presence?.ready && presence?.inJitsi && isHostPresenceFresh(presence));
 }
 
 function markHostOnline(meetingId, { inJitsi = false } = {}) {
@@ -1578,6 +1658,7 @@ app.get('/api/meetings/:id/consents', optionalAuth, (req, res) => {
 // Participant requests to join (enters lobby)
 app.post('/api/meetings/:id/lobby/join', optionalAuth, async (req, res) => { // NOSONAR S3776 — lobby join with role validation, duplicate detection, socket notify
   const { id } = req.params;
+  await ensureMeetingRecordForAppointment(id);
   const lobbyKey = await resolveLobbyKey(id);
   const { email } = req.body;
   // Auto-generate participantId if not provided (for guests)
@@ -1828,12 +1909,14 @@ app.post('/api/meetings/:id/lobby/reject', authenticateToken, async (req, res) =
 app.get('/api/meetings/:id/host-ready', async (req, res) => {
   const { id } = req.params;
   const lobbyKey = resolveLobbyKeySync(id);
-  const ready = isHostReadyForMeeting(id);
   const presence = getHostPresence(id);
+  const ready = isHostReadyForMeeting(id);
   res.json({
     success: true,
     ready: !!ready,
     inJitsi: Boolean(presence?.inJitsi),
+    at: presence?.at || null,
+    fresh: isHostPresenceFresh(presence),
     meetingId: id,
     lobbyKey: lobbyKey || id,
     roomIds: meetingSocketRoomIds(id),
@@ -1884,6 +1967,7 @@ app.get('/api/meetings/:id/join-config', optionalAuth, async (req, res) => {
     const idCheck = sanitizeRouteId(req.params.id);
     if (!idCheck.ok) return sendValidationError(res, idCheck);
     const { id } = { id: idCheck.id };
+    await ensureMeetingRecordForAppointment(id);
     const requestedRole = String(req.query.role || 'guest').toLowerCase();
 
     if (
@@ -1915,10 +1999,31 @@ app.get('/api/meetings/:id/join-config', optionalAuth, async (req, res) => {
 
     const identity = await resolveMeetingParticipant(req, id, requestedRole);
     let { displayName, email, participantId, role } = identity;
+    let isHost = role === 'doctor' || role === 'admin' || role === 'host';
+
+    if (isHost && role === 'doctor' && req.user && dbAvailable) {
+      try {
+        const hostCheck = await pool.query(
+          `SELECT doctor_id FROM meeting_records
+           WHERE appointment_id = $1 OR id::text = $1
+           ORDER BY created_at DESC LIMIT 1`,
+          [id],
+        );
+        const appointedDoctorId = hostCheck.rows[0]?.doctor_id;
+        const requestDoctorId = req.user.id || req.user.doctorId || req.user.userId || req.user.sub;
+        if (appointedDoctorId && requestDoctorId && appointedDoctorId !== requestDoctorId) {
+          isHost = false;
+          role = 'guest';
+        }
+      } catch (hostErr) {
+        console.warn('[Meeting] join-config host check:', hostErr.message);
+      }
+    }
+
     if (guestInvite?.guestName && requestedRole === 'guest') {
       displayName = String(guestInvite.guestName).trim().substring(0, 100) || displayName;
     }
-    const isHost = role === 'doctor' || role === 'admin' || role === 'host';
+    // isHost may have been downgraded when doctor is not appointed to this meeting
 
     let roomName = `izara-${String(id).substring(0, 12)}-meeting`;
     try {
@@ -1933,6 +2038,12 @@ app.get('/api/meetings/:id/join-config', optionalAuth, async (req, res) => {
 
     const apiCfg = externalApiConfig(isHost ? 'doctor' : role, displayName);
     const jitsiDomain = isHost ? JITSI_DOMAIN : JITSI_GUEST_DOMAIN;
+    const jwtRole = isHost ? 'doctor' : role;
+    const roleJwt = buildJitsiRoleJwt(roomName, {
+      id: participantId,
+      name: displayName,
+      email,
+    }, jwtRole);
 
     res.json({
       success: true,
@@ -1945,9 +2056,9 @@ app.get('/api/meetings/:id/join-config', optionalAuth, async (req, res) => {
       email,
       participantId,
       registered: identity.registered,
-      jwt: null,
+      jwt: roleJwt,
       useIzaraLobbyOnly: true,
-      tokenAuthEnabled: false,
+      tokenAuthEnabled: JITSI_TOKEN_AUTH_ENABLED,
       hostReady: isHostReadyForMeeting(id),
       meetingServerUrl: process.env.MEETING_SERVER_PUBLIC_URL || '',
       noJitsiLoginRequired: true,

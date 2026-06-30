@@ -10,6 +10,11 @@
 const { Pool } = require('pg');
 const bcrypt = require('bcrypt');
 const crypto = require('node:crypto');
+const {
+  buildMedicalContentVisibilityQuery,
+  buildClinicalResourceVisibilityQuery,
+  canViewMedicalContent,
+} = require('../lib/contentVisibility.cjs');
 
 // Database Configuration - parse DATABASE_URL if available
 const isDevelopment = process.env.NODE_ENV !== 'production';
@@ -1062,7 +1067,7 @@ const LabOrderService = {
 
 const ContentService = {
   /**
-   * Get all medical content
+   * Get all medical content (legacy — prefer getContentForRole)
    */
   async getAllContent(status) {
     let query = `
@@ -1084,6 +1089,57 @@ const ContentService = {
 
     const result = await pool.query(query, params);
     return result.rows;
+  },
+
+  /**
+   * Role-aware medical content list
+   * @param {{ userId?: string, role?: string, isAdmin?: boolean, status?: string, mine?: boolean }} opts
+   */
+  async getContentForRole(opts = {}) {
+    const { whereClause, params } = buildMedicalContentVisibilityQuery(opts);
+    const query = `
+      SELECT mc.*, u.name as author_name,
+             mc.title_thai as title, mc.title_english,
+             mc.content_thai as content, mc.content_english,
+             mc.image_url
+      FROM medical_content mc
+      LEFT JOIN users u ON mc.author_id = u.id
+      WHERE ${whereClause}
+      ORDER BY mc.updated_at DESC`;
+    const result = await pool.query(query, params);
+    return result.rows;
+  },
+
+  /**
+   * Fetch single article and verify viewer may read it
+   */
+  async getContentByIdForRole(id, viewer = {}) {
+    const result = await pool.query(
+      `SELECT mc.*, u.name as author_name,
+              mc.title_thai as title, mc.title_english,
+              mc.content_thai as content, mc.content_english,
+              mc.image_url
+       FROM medical_content mc
+       LEFT JOIN users u ON mc.author_id = u.id
+       WHERE mc.id = $1`,
+      [id]
+    );
+    const article = result.rows[0];
+    if (!article || !canViewMedicalContent(article, viewer)) return null;
+    return article;
+  },
+
+  /**
+   * Submit draft/rejected article for admin review
+   */
+  async submitContentForReview(contentId, authorId) {
+    const result = await pool.query(
+      `UPDATE medical_content SET status = 'pending', updated_at = NOW()
+       WHERE id = $1 AND author_id = $2 AND status IN ('draft', 'rejected')
+       RETURNING *`,
+      [contentId, authorId]
+    );
+    return result.rows[0] || null;
   },
 
   /**
@@ -1133,7 +1189,7 @@ const ContentService = {
   },
 
   /**
-   * Get clinical resources
+   * Get clinical resources (legacy — prefer getClinicalResourcesForRole)
    */
   async getClinicalResources(status) {
     let query = `
@@ -1152,6 +1208,24 @@ const ContentService = {
 
     const result = await pool.query(query, params);
     // Merge author_name from join if column doesn't exist
+    return result.rows.map(r => ({
+      ...r,
+      author_name: r.author_name || r.author_name_joined
+    }));
+  },
+
+  /**
+   * Role-aware clinical resources list
+   */
+  async getClinicalResourcesForRole(opts = {}) {
+    const { whereClause, params } = buildClinicalResourceVisibilityQuery(opts);
+    const query = `
+      SELECT cr.*, u.name as author_name_joined
+      FROM clinical_resources cr
+      LEFT JOIN users u ON cr.author_id = u.id
+      WHERE ${whereClause}
+      ORDER BY cr.updated_at DESC`;
+    const result = await pool.query(query, params);
     return result.rows.map(r => ({
       ...r,
       author_name: r.author_name || r.author_name_joined

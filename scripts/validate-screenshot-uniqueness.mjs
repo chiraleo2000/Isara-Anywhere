@@ -119,6 +119,15 @@ const GROUP_MANIFESTS = {
       'J05-timeline.png',
     ],
   },
+  'group-J-jitsi-prejoin': {
+    minUnique: 2,
+    required: [
+      'JPRE01d-patient-prejoin-autoname.png',
+      'JPRE01e-patient-in-jitsi-canvas.png',
+    ],
+    lobbyOnly: ['JPRE01d-patient-prejoin-autoname.png'],
+    jitsiStages: ['JPRE01e-patient-in-jitsi-canvas.png'],
+  },
   'group-R': {
     minUnique: 2,
     required: [
@@ -156,6 +165,7 @@ const GROUP_MANIFESTS = {
 };
 
 const MIN_BYTES = Number.parseInt(process.env.SCREENSHOT_MIN_BYTES || '15000', 10);
+const JITSI_MIN_BYTES = Number.parseInt(process.env.SCREENSHOT_JITSI_MIN_BYTES || '8000', 10);
 const MAX_SIMILARITY = Number.parseFloat(process.env.SCREENSHOT_MAX_SIMILARITY || '0.92');
 
 function parseGroups() {
@@ -203,7 +213,7 @@ function resolveDir(groupName, manifest) {
   return path.join(root, 'tests', 'output', 'screenshots', 'chromium', groupName);
 }
 
-function collectRequiredFiles(dir, required, errors, files) {
+function collectRequiredFiles(dir, required, errors, files, manifest) {
   for (const name of required) {
     const filePath = path.join(dir, name);
     if (!fs.existsSync(filePath)) {
@@ -213,8 +223,11 @@ function collectRequiredFiles(dir, required, errors, files) {
     const stat = fs.statSync(filePath);
     const hash = sha256(filePath);
     files[name] = { bytes: stat.size, sha256: hash };
-    if (stat.size < MIN_BYTES) {
-      errors.push(`${name}: too small (${stat.size} < ${MIN_BYTES}) — blank/error page`);
+    const minForFile = manifest?.jitsiStages?.includes(name)
+      ? JITSI_MIN_BYTES
+      : manifest?.minBytes ?? MIN_BYTES;
+    if (stat.size < minForFile) {
+      errors.push(`${name}: too small (${stat.size} < ${minForFile}) — blank/error page`);
     }
   }
 }
@@ -267,7 +280,7 @@ function validateGroup(groupName) {
     return { groupName, errors: [`Missing directory ${dir}`], files, pass: false };
   }
 
-  collectRequiredFiles(dir, manifest.required, errors, files);
+  collectRequiredFiles(dir, manifest.required, errors, files, manifest);
   errors.push(
     ...collectHashErrors(files, manifest.minUnique),
     ...collectSimilarityErrors(dir, files, manifest),

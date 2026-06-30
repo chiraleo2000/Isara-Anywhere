@@ -53,6 +53,8 @@ try {
 console.log('[MAIN-API] express loaded');
 const cors = require('cors');
 const emailService = require('./emailService.cjs');
+const { resolveMedicalRecordConsent, resolveDoctorId } = require('./lib/pdpaConsent.cjs');
+const { resolveLivingWillAccess, mapLivingWillRowToDoctorView } = require('./lib/livingWillAccess.cjs');
 console.log('[MAIN-API] cors loaded');
 const http = require('node:http');
 const { Server } = require('socket.io');
@@ -692,6 +694,65 @@ async function authenticateToken(req, res, next) {
   }
 }
 
+/** Sets req.user when a valid session token is present; continues anonymously otherwise. */
+async function optionalAuthenticateToken(req, res, next) {
+  const token = resolveSessionTokenFromRequest(req);
+  if (!token || !PostgresDataService?.pool) {
+    return next();
+  }
+  try {
+    const row = await validateSessionToken(PostgresDataService.pool, token);
+    if (row) {
+      req.user = sessionRowToReqUser(row);
+      req.sessionToken = token;
+    }
+  } catch (error) {
+    console.warn('[AUTH] Optional session check failed:', error.message);
+  }
+  return next();
+}
+
+function contentViewerFromReq(req) {
+  const user = req.user;
+  if (!user) return { role: 'anonymous' };
+  return {
+    userId: user.id || user.userId,
+    role: user.role,
+    isAdmin: user.role === 'admin' || user.isAdmin,
+  };
+}
+
+function formatMedicalArticle(a) {
+  let summary = '';
+  if (a.content_thai) {
+    summary = a.content_thai.substring(0, 200);
+  } else if (a.content) {
+    summary = a.content.substring(0, 200);
+  }
+  return {
+    id: a.id,
+    title: a.title_thai || a.title || a.title_english || '',
+    titleThai: a.title_thai || a.title || '',
+    titleEnglish: a.title_english || '',
+    content: a.content_thai || a.content || a.content_english || '',
+    contentThai: a.content_thai || a.content || '',
+    contentEnglish: a.content_english || '',
+    summary,
+    category: a.category,
+    tags: typeof a.tags === 'string' ? JSON.parse(a.tags || '[]') : (a.tags || []),
+    author: { id: a.author_id, name: a.author_name || 'Unknown' },
+    createdBy: a.author_id,
+    status: a.status,
+    viewCount: a.view_count || 0,
+    likeCount: a.like_count || 0,
+    imageUrl: a.image_url || null,
+    thumbnail: a.image_url || null,
+    createdAt: a.created_at,
+    updatedAt: a.updated_at,
+    publishedAt: a.published_at,
+  };
+}
+
 // ============================================================================
 // PDPA CONSENT VALIDATION MIDDLEWARE
 // ============================================================================
@@ -702,7 +763,7 @@ async function authenticateToken(req, res, next) {
  * Must be used AFTER authenticateToken middleware.
  */
 async function validateDoctorPatientAccess(req, res, next) {
-  const doctorId = req.user?.id;
+  const doctorId = resolveDoctorId(req);
   const { patientId } = req.params;
 
   if (!doctorId || !patientId) {
@@ -710,36 +771,15 @@ async function validateDoctorPatientAccess(req, res, next) {
   }
 
   try {
-    // 1. Check patient_consents table for active consent
-    const consentResult = await PostgresDataService.pool.query(
-      `SELECT id FROM patient_consents
-       WHERE patient_id = $1 AND doctor_id = $2
-         AND granted = true AND status = 'active'
-         AND (expires_at IS NULL OR expires_at > NOW())
-       LIMIT 1`,
-      [patientId, doctorId]
-    );
+    const access = await resolveMedicalRecordConsent(PostgresDataService.pool, patientId, doctorId);
 
-    if (consentResult.rows.length > 0) {
-      req.pdpaSource = 'consent';
+    if (access.hasAccess) {
+      req.pdpaSource = access.source || 'consent';
+      if (access.appointmentId) req.pdpaAppointmentId = access.appointmentId;
       return next();
     }
 
-    // 2. Fallback: check for active/completed appointment between doctor and patient
-    const appointmentResult = await PostgresDataService.pool.query(
-      `SELECT id FROM appointments
-       WHERE patient_id = $1 AND doctor_id = $2
-         AND status IN ('confirmed', 'in_progress', 'completed')
-       LIMIT 1`,
-      [patientId, doctorId]
-    );
-
-    if (appointmentResult.rows.length > 0) {
-      req.pdpaSource = 'appointment';
-      return next();
-    }
-
-    // 3. No access — log the denied attempt and return 403
+    // No access — log the denied attempt and return 403
     await logAuditAccessPG({
       user_id: doctorId,
       patient_id: patientId,
@@ -1338,34 +1378,20 @@ app.get('/api/patients/:patientId/phr', authenticateToken, validateDoctorPatient
     // 3. Last 25 vital sign records (we'll group last 5 per type client-side, but send plenty)
     const vitals = await PostgresDataService.PatientService.getPatientVitalSigns(patientId, 25);
 
-    // 4. Living Will (only if shared)
+    // 4. Living Will (only if this doctor is authorized)
     let livingWill = null;
     try {
-      const lwResult = await PostgresDataService.pool.query(
-        `SELECT * FROM living_wills WHERE patient_id = $1 AND status IN ('active','suspended') AND is_shared_with_doctors = true LIMIT 1`,
-        [patientId]
-      );
-      if (lwResult.rows.length > 0) {
-        const lw = lwResult.rows[0];
-        livingWill = {
-          id: lw.id,
-          patientId: lw.patient_id,
-          patientName: patient?.name || patient?.name_thai || `Patient ${patientId}`,
-          version: lw.version || 1,
-          status: lw.status,
-          effectiveDate: lw.signed_at || lw.created_at,
-          treatments: typeof lw.treatments === 'string' ? JSON.parse(lw.treatments) : (lw.treatments || {}),
-          personalStatement: lw.statement,
-          additionalInstructions: lw.decisions?.additionalInstructions || null,
-          mainRepresentative: (() => {
-            const reps = typeof lw.representatives === 'string' ? JSON.parse(lw.representatives) : (lw.representatives || []);
-            const main = Array.isArray(reps) ? reps.find(r => r.isMainRepresentative) : null;
-            return main ? { name: main.name, relationship: main.relationship, phone: main.phone, email: main.email } : null;
-          })(),
-          isSharedByPatient: true,
-          sharedAt: lw.updated_at,
-          lastUpdated: lw.updated_at,
-        };
+      const doctorId = resolveDoctorId(req);
+      const access = await resolveLivingWillAccess(PostgresDataService.pool, patientId, doctorId);
+      if (access.hasAccess) {
+        const lwResult = await PostgresDataService.pool.query(
+          `SELECT * FROM living_wills WHERE patient_id = $1 AND status IN ('active','suspended') ORDER BY updated_at DESC LIMIT 1`,
+          [patientId]
+        );
+        if (lwResult.rows.length > 0) {
+          const patientName = patient?.name || patient?.name_thai || `Patient ${patientId}`;
+          livingWill = mapLivingWillRowToDoctorView(lwResult.rows[0], patientName, access);
+        }
       }
     } catch (lwErr) {
       console.warn('[PHR] Living will fetch failed:', lwErr.message);
@@ -2163,84 +2189,50 @@ app.get('/api/patients/:patientId/health-logs', authenticateToken, async (req, r
 // LIVING WILL (E-Living) - PDPA Compliant Endpoint
 // ============================================================================
 
-// GET - Get patient's Living Will (respects PDPA consent)
+// GET - Get patient's Living Will (PostgreSQL + per-doctor / all-doctors consent)
 app.get('/api/patients/:patientId/living-will', authenticateToken, async (req, res) => {
   try {
     const { patientId } = req.params;
-    const requesterId = req.user?.doctorId || req.user?.id;
-    const requesterRole = req.user?.role || 'doctor';
+    const doctorId = resolveDoctorId(req);
 
-    // Read Living Will from GCS
-    const livingWillPath = `patients/${patientId}/living-will.json`;
-    let livingWill;
-    try {
-      livingWill = await fetchFromGCS(BUCKETS.patient, livingWillPath);
-    } catch (fetchErr) {
-      // No Living Will exists
-      console.debug('[LivingWill] fetch failed (expected when no living-will):', fetchErr.message);
+    const access = await resolveLivingWillAccess(PostgresDataService.pool, patientId, doctorId);
+    if (!access.exists) {
       return res.json(null);
     }
 
-    if (!livingWill) {
-      return res.json(null);
-    }
-
-    // Check PDPA consent - critical for compliance
-    if (!livingWill.pdpaConsent?.isSharedWithDoctors) {
-      console.log(`🔒 Living Will exists for patient ${patientId} but not shared with doctors`);
-      return res.json({ 
-        exists: true, 
+    if (!access.hasAccess) {
+      return res.json({
+        exists: true,
         isShared: false,
-        message: 'Patient has not shared their Living Will with medical staff' 
+        authorized: false,
+        message: 'Patient has not shared their Living Will with you',
       });
     }
 
-    // Only return active or suspended Living Wills (not draft or revoked)
-    if (livingWill.status === 'draft' || livingWill.status === 'revoked') {
+    const lwResult = await PostgresDataService.pool.query(
+      `SELECT * FROM living_wills
+       WHERE patient_id = $1 AND status IN ('active', 'suspended')
+       ORDER BY updated_at DESC LIMIT 1`,
+      [patientId]
+    );
+
+    if (lwResult.rows.length === 0) {
       return res.json(null);
     }
 
-    // Add audit log entry for doctor view
-    if (!livingWill.auditLog) livingWill.auditLog = [];
-    livingWill.auditLog.push({
-      id: `audit-${Date.now()}`,
-      action: 'viewed',
-      performedBy: requesterRole,
-      performedById: requesterId,
-      timestamp: new Date().toISOString(),
-    });
+    const patient = await PostgresDataService.PatientService.getPatientById(patientId);
+    const patientName = patient?.name || patient?.name_thai || `Patient ${patientId}`;
+    const doctorView = mapLivingWillRowToDoctorView(lwResult.rows[0], patientName, access);
 
-    // Save updated audit log
-    await writeToGCS(BUCKETS.patient, livingWillPath, livingWill);
-
-    // Get patient info for the response
-    const patients = await fetchFromGCS(BUCKETS.patient, 'patients.json') || [];
-    const patient = patients.find(p => p.id === patientId);
-    const patientName = patient?.fullName || patient?.demographics?.fullName || `Patient ${patientId}`;
-
-    // Build doctor view response
-    const mainRep = livingWill.representatives?.find(r => r.isMainRepresentative);
-    
-    const doctorView = {
-      id: livingWill.id,
-      patientId: livingWill.patientId,
-      patientName,
-      version: livingWill.version,
-      status: livingWill.status,
-      effectiveDate: livingWill.effectiveDate,
-      treatments: livingWill.treatments,
-      personalStatement: livingWill.personalStatement,
-      additionalInstructions: livingWill.additionalInstructions,
-      mainRepresentative: mainRep ? {
-        name: mainRep.name,
-        relationship: mainRep.relationship,
-        phone: mainRep.phone,
-        email: mainRep.email,
-      } : undefined,
-      isSharedByPatient: true,
-      sharedAt: livingWill.pdpaConsent?.consentedAt,
-      lastUpdated: livingWill.updatedAt,
-    };
+    await PostgresDataService.pool.query(
+      `INSERT INTO audit_logs (id, patient_id, action, details, created_at)
+       VALUES ($1, $2, 'living_will_viewed', $3, NOW())`,
+      [
+        `audit_${Date.now()}`,
+        patientId,
+        JSON.stringify({ doctorId, source: access.source }),
+      ]
+    ).catch(() => {});
 
     res.json(doctorView);
   } catch (error) {
@@ -6794,25 +6786,29 @@ app.put('/api/notifications/doctor/:doctorId/read-all', authenticateToken, async
 // MEDICAL CONTENT Routes (Health Articles) - PostgreSQL Only
 // ============================================================================
 
-app.get('/api/medical-content', async (req, res) => {
+app.get('/api/medical-content', optionalAuthenticateToken, async (req, res) => {
   try {
     const { status, category, authorId } = req.query;
-    console.log('📚 Fetching medical content from PostgreSQL...');
-    
-    const content = await PostgresDataService.ContentService.getAllContent(status);
-    let filteredContent = content || [];
-    
-    // Filter by category
+    const viewer = contentViewerFromReq(req);
+    console.log('📚 Fetching medical content from PostgreSQL...', viewer.role);
+
+    let content = await PostgresDataService.ContentService.getContentForRole({
+      ...viewer,
+      status: typeof status === 'string' ? status : undefined,
+    });
+
     if (category) {
-      filteredContent = filteredContent.filter(c => c.category === category);
+      content = content.filter(c => c.category === category);
     }
-    
-    // Filter by author
     if (authorId) {
-      filteredContent = filteredContent.filter(c => c.author_id === authorId);
+      content = content.filter(c => c.author_id === authorId);
     }
-    
-    res.json({ success: true, articles: filteredContent, count: filteredContent.length });
+
+    res.json({
+      success: true,
+      articles: (content || []).map(formatMedicalArticle),
+      count: content?.length || 0,
+    });
   } catch (error) {
     console.error('❌ Medical content fetch error:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -6824,7 +6820,7 @@ app.post('/api/medical-content', authenticateToken, async (req, res) => {
     const contentData = req.body;
     const userId = req.user?.userId || req.user?.id;
     console.log('📝 Creating medical content in PostgreSQL:', contentData.title);
-    
+
     const newArticle = await PostgresDataService.ContentService.createContent({
       title: contentData.title,
       title_thai: contentData.titleThai,
@@ -6833,11 +6829,11 @@ app.post('/api/medical-content', authenticateToken, async (req, res) => {
       category: contentData.category,
       tags: contentData.tags,
       author_id: userId,
-      status: 'pending'
+      status: contentData.status === 'pending' ? 'pending' : 'draft',
     });
-    
+
     console.log(`✅ Medical content created: ${newArticle.id}`);
-    res.json({ success: true, article: newArticle });
+    res.json({ success: true, article: formatMedicalArticle(newArticle) });
   } catch (error) {
     console.error('❌ Create medical content error:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -6846,11 +6842,22 @@ app.post('/api/medical-content', authenticateToken, async (req, res) => {
 
 app.get('/api/medical-content/pending', authenticateToken, async (req, res) => {
   try {
+    const viewer = contentViewerFromReq(req);
+    if (!viewer.isAdmin) {
+      return res.status(403).json({ error: 'Admin access required' });
+    }
     console.log('📚 Fetching pending medical content from PostgreSQL...');
-    
-    const pendingArticles = await PostgresDataService.ContentService.getAllContent('pending');
-    
-    res.json({ success: true, articles: pendingArticles || [], count: pendingArticles?.length || 0 });
+
+    const pendingArticles = await PostgresDataService.ContentService.getContentForRole({
+      ...viewer,
+      status: 'pending',
+    });
+
+    res.json({
+      success: true,
+      articles: (pendingArticles || []).map(formatMedicalArticle),
+      count: pendingArticles?.length || 0,
+    });
   } catch (error) {
     console.error('❌ Pending content fetch error:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -6902,81 +6909,57 @@ app.put('/api/medical-content/:contentId/reject', authenticateToken, async (req,
 // These routes match what the MedicalContent.tsx frontend expects
 // ============================================================================
 
-app.get('/api/content/medical', async (req, res) => {
+app.get('/api/content/medical', optionalAuthenticateToken, async (req, res) => {
   try {
-    const { status } = req.query;
-    console.log('📚 [Content API] Fetching medical content from PostgreSQL...');
-    
-    const articles = await PostgresDataService.ContentService.getAllContent(status || 'published');
-    
-    // Transform to match frontend expected format - prioritize Thai content
-    const formattedArticles = (articles || []).map(a => {
-      let summary = '';
-      if (a.content_thai) {
-        summary = a.content_thai.substring(0, 200);
-      } else if (a.content) {
-        summary = a.content.substring(0, 200);
-      }
+    const { status, mine } = req.query;
+    const viewer = contentViewerFromReq(req);
+    console.log('📚 [Content API] Fetching medical content from PostgreSQL...', viewer.role);
 
-      return {
-        id: a.id,
-        title: a.title_thai || a.title || a.title_english || '',
-        titleThai: a.title_thai || a.title || '',
-        titleEnglish: a.title_english || '',
-        content: a.content_thai || a.content || a.content_english || '',
-        contentThai: a.content_thai || a.content || '',
-        contentEnglish: a.content_english || '',
-        summary,
-        category: a.category,
-        tags: typeof a.tags === 'string' ? JSON.parse(a.tags || '[]') : (a.tags || []),
-        author: {
-          id: a.author_id,
-          name: a.author_name || 'Unknown'
-        },
-        status: a.status,
-        viewCount: a.view_count || 0,
-        likeCount: a.like_count || 0,
-        imageUrl: a.image_url || null,
-        thumbnail: a.image_url || null,  // Alias for frontend compatibility
-        createdAt: a.created_at,
-        updatedAt: a.updated_at,
-        publishedAt: a.published_at
-      };
+    const articles = await PostgresDataService.ContentService.getContentForRole({
+      ...viewer,
+      status: typeof status === 'string' ? status : undefined,
+      mine: mine === '1' || mine === 'true',
     });
-    
-    // Return in format expected by frontend: { articles: [...] }
-    res.json({ articles: formattedArticles });
+
+    res.json({ articles: (articles || []).map(formatMedicalArticle) });
   } catch (error) {
     console.error('❌ [Content API] Error:', error);
-    // Return empty array instead of 500 error for graceful fallback
     res.json({ articles: [] });
   }
 });
 
 app.get('/api/content/medical/pending', authenticateToken, async (req, res) => {
   try {
+    const viewer = contentViewerFromReq(req);
+    if (!viewer.isAdmin) {
+      return res.status(403).json({ error: 'Admin access required' });
+    }
     console.log('📚 [Content API] Fetching pending medical content...');
-    const articles = await PostgresDataService.ContentService.getAllContent('pending');
-    res.json(articles);
+    const articles = await PostgresDataService.ContentService.getContentForRole({
+      ...viewer,
+      status: 'pending',
+    });
+    res.json({ articles: (articles || []).map(formatMedicalArticle) });
   } catch (error) {
     console.error('❌ [Content API] Error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
 
-app.get('/api/content/medical/:id', async (req, res) => {
+app.get('/api/content/medical/:id', optionalAuthenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
+    if (id === 'pending') return res.status(404).json({ error: 'Article not found' });
     console.log(`📚 [Content API] Fetching article ${id}...`);
-    
-    const articles = await PostgresDataService.ContentService.getAllContent();
-    const article = articles.find(a => a.id === id);
-    
+
+    const viewer = contentViewerFromReq(req);
+    const article = await PostgresDataService.ContentService.getContentByIdForRole(id, viewer);
+
     if (!article) {
       return res.status(404).json({ error: 'Article not found' });
     }
-    
-    res.json(article);
+
+    res.json(formatMedicalArticle(article));
   } catch (error) {
     console.error('❌ [Content API] Error:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -6986,17 +6969,17 @@ app.get('/api/content/medical/:id', async (req, res) => {
 app.post('/api/content/medical', authenticateToken, async (req, res) => {
   try {
     const data = req.body;
-    
-    // Validate required fields
+
     if (!data.title && !data.titleThai) {
       return res.status(400).json({ error: 'Title (title or titleThai) is required' });
     }
     if (!data.content && !data.contentThai) {
       return res.status(400).json({ error: 'Content (content or contentThai) is required' });
     }
-    
+
     console.log('📚 [Content API] Creating medical content...');
-    
+
+    const requestedStatus = data.status === 'pending' ? 'pending' : 'draft';
     const article = await PostgresDataService.ContentService.createContent({
       title: data.title,
       title_thai: data.titleThai,
@@ -7006,14 +6989,33 @@ app.post('/api/content/medical', authenticateToken, async (req, res) => {
       tags: data.tags,
       author_id: req.user?.id || data.authorId,
       author_name: req.user?.name || data.authorName || null,
-      status: 'pending',
-      image_url: data.thumbnail || data.imageUrl || null
+      status: requestedStatus,
+      image_url: data.thumbnail || data.imageUrl || null,
     });
-    
-    res.status(201).json({ success: true, article });
+
+    res.status(201).json({ success: true, article: formatMedicalArticle(article) });
     emitDataChange(SOCKET_EVENTS.CONTENT_UPDATED, { table: 'medical_content', id: article.id, status: article.status }, { broadcast: true });
   } catch (error) {
     console.error('❌ [Content API] Error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+app.post('/api/content/medical/:id/submit', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const authorId = req.user?.id;
+    if (!authorId) {
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
+    const article = await PostgresDataService.ContentService.submitContentForReview(id, authorId);
+    if (!article) {
+      return res.status(404).json({ error: 'Article not found or not submittable' });
+    }
+    res.json({ success: true, article: formatMedicalArticle(article) });
+    emitDataChange(SOCKET_EVENTS.CONTENT_UPDATED, { table: 'medical_content', id, status: 'pending' }, { broadcast: true });
+  } catch (error) {
+    console.error('❌ [Content API] Submit error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -7023,9 +7025,23 @@ app.put('/api/content/medical/:id', authenticateToken, async (req, res) => {
     const { id } = req.params;
     const data = req.body;
     console.log(`📚 [Content API] Updating article ${id}...`);
-    
-    // Use raw query with correct schema column names: title_thai, title_english
+
     const { pool } = PostgresDataService;
+    const existing = await pool.query('SELECT status, author_id FROM medical_content WHERE id = $1', [id]);
+    if (existing.rowCount === 0) {
+      return res.status(404).json({ error: 'Article not found' });
+    }
+    const prev = existing.rows[0];
+    const viewer = contentViewerFromReq(req);
+    if (!viewer.isAdmin && prev.author_id !== viewer.userId) {
+      return res.status(403).json({ error: 'Not authorized to edit this article' });
+    }
+
+    let nextStatus = data.status || prev.status;
+    if (prev.status === 'published' && !viewer.isAdmin) {
+      nextStatus = 'pending';
+    }
+
     const result = await pool.query(
       `UPDATE medical_content SET
         title_thai = COALESCE($2, title_thai),
@@ -7034,14 +7050,14 @@ app.put('/api/content/medical/:id', authenticateToken, async (req, res) => {
         content_english = COALESCE($5, content_english),
         category = COALESCE($6, category),
         tags = COALESCE($7, tags),
-        status = COALESCE($8, status),
+        status = $8,
         image_url = COALESCE($9, image_url),
         updated_at = NOW()
        WHERE id = $1
        RETURNING *`,
-      [id, data.titleThai || data.title, data.titleEnglish || data.title, 
-       data.contentThai || data.content, data.contentEnglish || data.content, 
-       data.category, JSON.stringify(data.tags || []), data.status, data.thumbnail || data.imageUrl]
+      [id, data.titleThai || data.title, data.titleEnglish || data.title,
+       data.contentThai || data.content, data.contentEnglish || data.content,
+       data.category, JSON.stringify(data.tags || []), nextStatus, data.thumbnail || data.imageUrl]
     );
     
     if (result.rowCount === 0) {
@@ -7130,26 +7146,18 @@ app.get('/api/content/tags/medical', async (req, res) => {
 // These routes match what the ClinicalResources.tsx frontend expects
 // ============================================================================
 
-app.get('/api/content/clinical', async (req, res) => {
+app.get('/api/content/clinical', optionalAuthenticateToken, async (req, res) => {
   try {
     const { status, category } = req.query;
-    console.log('📚 [Content API] Fetching clinical resources from PostgreSQL...');
-    
-    // Accept both 'approved' and 'published' as valid published statuses
-    let effectiveStatus = status;
-    if (!status) {
-      effectiveStatus = null; // No filter - get published/approved
-    }
-    
-    const resources = await PostgresDataService.ContentService.getClinicalResources(effectiveStatus);
+    const viewer = contentViewerFromReq(req);
+    console.log('📚 [Content API] Fetching clinical resources from PostgreSQL...', viewer.role);
+
+    const resources = await PostgresDataService.ContentService.getClinicalResourcesForRole({
+      ...viewer,
+      status: typeof status === 'string' ? status : undefined,
+    });
     let filteredResources = resources || [];
-    
-    // If no status filter, show approved and published
-    if (!status) {
-      filteredResources = filteredResources.filter(r => r.status === 'approved' || r.status === 'published');
-    }
-    
-    // Filter by category if provided
+
     if (category) {
       filteredResources = filteredResources.filter(r => r.category === category);
     }
@@ -7209,9 +7217,16 @@ app.get('/api/content/clinical', async (req, res) => {
 
 app.get('/api/content/clinical/pending', authenticateToken, async (req, res) => {
   try {
+    const viewer = contentViewerFromReq(req);
+    if (!viewer.isAdmin) {
+      return res.status(403).json({ error: 'Admin access required' });
+    }
     console.log('📚 [Content API] Fetching pending clinical resources...');
-    const resources = await PostgresDataService.ContentService.getClinicalResources('pending');
-    res.json(resources || []);
+    const resources = await PostgresDataService.ContentService.getClinicalResourcesForRole({
+      ...viewer,
+      status: 'pending',
+    });
+    res.json({ resources: resources || [] });
   } catch (error) {
     console.error('❌ [Content API] Error:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -7413,8 +7428,12 @@ app.get('/api/clinical-resources', authenticateToken, async (req, res) => {
   try {
     const { status, category } = req.query;
     console.log('📚 Fetching clinical resources from PostgreSQL...');
-    
-    const resources = await PostgresDataService.ContentService.getClinicalResources(status);
+
+    const viewer = contentViewerFromReq(req);
+    const resources = await PostgresDataService.ContentService.getClinicalResourcesForRole({
+      ...viewer,
+      status: typeof status === 'string' ? status : undefined,
+    });
     let filteredResources = resources || [];
     
     // Filter by category
@@ -9139,7 +9158,7 @@ app.delete('/api/connections/:serviceType', authenticateToken, async (req, res) 
 app.get('/api/pdpa/check/:patientId', authenticateToken, async (req, res) => {
   try {
     const { patientId } = req.params;
-    const doctorId = req.user?.doctorId || req.user?.id;
+    const doctorId = resolveDoctorId(req);
 
     if (!doctorId) {
       return res.status(401).json({ error: 'Not authenticated' });
@@ -9147,67 +9166,147 @@ app.get('/api/pdpa/check/:patientId', authenticateToken, async (req, res) => {
 
     console.log(`[PDPA] Checking consent: doctor=${doctorId}, patient=${patientId}`);
 
-    // 1. Check for active medical_record_access consent
-    const consentResult = await pool.query(
-      `SELECT * FROM patient_consents
-       WHERE patient_id = $1 AND doctor_id = $2
-         AND consent_type = 'medical_record_access'
-         AND granted = true AND revoked_at IS NULL
-         AND (expires_at IS NULL OR expires_at > NOW())`,
-      [patientId, doctorId]
-    );
+    const access = await resolveMedicalRecordConsent(pool, patientId, doctorId);
 
-    if (consentResult.rows.length > 0) {
-      return res.json({ hasConsent: true, consent: consentResult.rows[0] });
+    if (!access.hasAccess) {
+      return res.json({ hasConsent: false });
     }
 
-    // 2. Check for broad data_sharing consent (all-or-nothing toggle)
-    const broadResult = await pool.query(
-      `SELECT * FROM patient_consents
-       WHERE patient_id = $1 AND consent_type = 'data_sharing'
-         AND granted = true AND revoked_at IS NULL
-         AND (expires_at IS NULL OR expires_at > NOW())`,
-      [patientId]
-    );
-
-    if (broadResult.rows.length > 0) {
-      return res.json({ hasConsent: true, consent: broadResult.rows[0], isBroadConsent: true });
-    }
-
-    // 3. Emergency bypass — active appointment with status 'in_progress'
-    const appointmentResult = await pool.query(
-      `SELECT id, status, patient_id, doctor_id FROM appointments
-       WHERE patient_id = $1 AND doctor_id = $2 AND status = 'in_progress'
-       LIMIT 1`,
-      [patientId, doctorId]
-    );
-
-    if (appointmentResult.rows.length > 0) {
-      const appointment = appointmentResult.rows[0];
-
-      // Log emergency bypass to access_audit
+    if (access.source === 'emergency' && access.appointmentId) {
       try {
         await pool.query(
           `INSERT INTO access_audit (doctor_id, patient_id, access_type, reason, appointment_id, granted_at, created_at)
            VALUES ($1, $2, 'emergency_bypass', 'Active in_progress appointment', $3, NOW(), NOW())`,
-          [doctorId, patientId, appointment.id]
+          [doctorId, patientId, access.appointmentId]
         );
       } catch (auditErr) {
         console.error('[PDPA] Access audit insert failed (non-blocking):', auditErr.message);
       }
-
       return res.json({
         hasConsent: true,
         isEmergencyBypass: true,
-        appointmentId: appointment.id,
+        appointmentId: access.appointmentId,
       });
     }
 
-    // 4. No consent found
-    return res.json({ hasConsent: false });
+    if (access.source === 'broad_consent') {
+      return res.json({ hasConsent: true, consent: access.consent, isBroadConsent: true });
+    }
+
+    if (access.source === 'appointment') {
+      return res.json({
+        hasConsent: true,
+        isAppointmentBypass: true,
+        appointmentId: access.appointmentId,
+      });
+    }
+
+    return res.json({ hasConsent: true, consent: access.consent });
   } catch (error) {
     console.error('[PDPA] Check consent error:', error);
     return res.json({ hasConsent: false, error: 'Consent check failed' });
+  }
+});
+
+// GET /api/pdpa/patient/:patientId/summary — PDPA consent summary for doctor patient record tab
+app.get('/api/pdpa/patient/:patientId/summary', authenticateToken, async (req, res) => {
+  try {
+    const { patientId } = req.params;
+    const doctorId = resolveDoctorId(req);
+
+    if (!doctorId) {
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
+
+    const access = await resolveMedicalRecordConsent(pool, patientId, doctorId);
+
+    const privacyResult = await pool.query(
+      `SELECT consent_type, granted, granted_at, status, updated_at
+       FROM patient_consents
+       WHERE patient_id = $1 AND doctor_id IS NULL
+         AND consent_type NOT IN ('medical_record_access', 'doctor_access')
+       ORDER BY updated_at DESC NULLS LAST`,
+      [patientId]
+    );
+
+    const doctorAccessResult = await pool.query(
+      `SELECT pc.doctor_id, pc.doctor_name, pc.granted, pc.status, pc.granted_at, pc.revoked_at,
+              u.specialty AS doctor_specialty
+       FROM patient_consents pc
+       LEFT JOIN users u ON pc.doctor_id = u.id
+       WHERE pc.patient_id = $1 AND pc.consent_type = 'medical_record_access'
+       ORDER BY pc.granted_at DESC NULLS LAST`,
+      [patientId]
+    );
+
+    const myAccessRow = doctorAccessResult.rows.find((r) => r.doctor_id === doctorId);
+
+    const auditResult = await pool.query(
+      `SELECT action, details, created_at
+       FROM audit_logs
+       WHERE patient_id = $1
+       ORDER BY created_at DESC
+       LIMIT 30`,
+      [patientId]
+    );
+
+    const privacyConsents = privacyResult.rows.map((row) => ({
+      type: row.consent_type,
+      granted: row.granted,
+      grantedAt: row.granted_at,
+      status: row.status,
+      updatedAt: row.updated_at,
+    }));
+
+    const doctorAccess = doctorAccessResult.rows.map((row) => ({
+      doctorId: row.doctor_id,
+      doctorName: row.doctor_name || 'Unknown',
+      doctorSpecialty: row.doctor_specialty || null,
+      granted: row.granted,
+      status: row.status,
+      grantedAt: row.granted_at,
+      revokedAt: row.revoked_at,
+    }));
+
+    const recentAudit = auditResult.rows.map((row) => {
+      let details = row.details;
+      if (typeof details === 'string') {
+        try {
+          details = JSON.parse(details);
+        } catch {
+          details = null;
+        }
+      }
+      return {
+        action: row.action,
+        timestamp: row.created_at,
+        doctorName: details?.doctorName || details?.doctor_name || null,
+        details,
+      };
+    });
+
+    return res.json({
+      hasAccess: access.hasAccess,
+      accessSource: access.source || null,
+      isEmergencyBypass: access.source === 'emergency',
+      isBroadConsent: access.source === 'broad_consent',
+      isAppointmentBypass: access.source === 'appointment',
+      appointmentId: access.appointmentId || null,
+      privacyConsents,
+      doctorAccess,
+      myAccess: myAccessRow
+        ? {
+            granted: myAccessRow.granted,
+            status: myAccessRow.status,
+            grantedAt: myAccessRow.granted_at,
+            revokedAt: myAccessRow.revoked_at,
+          }
+        : null,
+      recentAudit,
+    });
+  } catch (error) {
+    console.error('[PDPA] Patient summary error:', error);
+    return res.status(500).json({ error: 'Failed to load PDPA summary' });
   }
 });
 

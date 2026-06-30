@@ -89,4 +89,24 @@ router.post('/:appointmentId/summarize', authMiddleware, (req, res) =>
 router.get('/:appointmentId/consultation-result', authMiddleware, (req, res) =>
   proxy(req, res, `/api/meetings/${req.params.appointmentId}/consultation-result`, 'GET'));
 
+router.get('/:appointmentId/join-config', authMiddleware, (req, res) => {
+  const qs = new URLSearchParams(req.query as Record<string, string>).toString();
+  const path = `/api/meetings/${req.params.appointmentId}/join-config${qs ? `?${qs}` : ''}`;
+  proxy(req, res, path, 'GET');
+});
+
+router.get('/:appointmentId/host-ready', (req, res) =>
+  proxy(req, res, `/api/meetings/${req.params.appointmentId}/host-ready`, 'GET'));
+
+router.post('/:appointmentId/consent', authMiddleware, (req, res) =>
+  proxy(req, res, `/api/meetings/${req.params.appointmentId}/consent`, 'POST'));
+
+router.get('/:appointmentId/lobby/status/:participantId', (req, res) =>
+  proxy(
+    req,
+    res,
+    `/api/meetings/${req.params.appointmentId}/lobby/status/${encodeURIComponent(req.params.participantId)}`,
+    'GET',
+  ));
+
 export default router;

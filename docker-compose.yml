@@ -23,6 +23,10 @@
 #   - Doctor Portal:  http://localhost:3010
 #   - Meeting Server: http://localhost:3020
 #   - pgAdmin:        http://localhost:5050
+# Self-hosted Jitsi (optional profile jitsi):
+#   node scripts/jitsi/setup-local-jitsi.mjs --sync-docker-env
+#   docker compose --env-file .env.docker -f docker-compose.yml -f deploy/jitsi/docker-compose.jitsi.yml --profile full --profile jitsi up -d --build
+#   https://meet.localhost:8443/about/health
 # LAN via Nginx: see deploy/nginx/DEPLOYMENT.md
 #   patient.isara.local | doctor.isara.local | meeting.isara.local | dbadmin.isara.local
 # ============================================================================
@@ -157,6 +161,10 @@ services:
       # E2E / dev: Google SSO fixture tokens (Group N Playwright)
       IZARA_DEV_TESTING: "1"
       GOOGLE_TOKEN_VERIFIER_FIXTURE: "1"
+      DEMO_AUTO_LOGIN: ${DEMO_AUTO_LOGIN:-1}
+      DEMO_AUTO_MEETING: ${DEMO_AUTO_MEETING:-1}
+      DEMO_PATIENT_EMAIL: ${DEMO_PATIENT_EMAIL:-demo.test@gmail.com}
+      DEMO_PATIENT_PASSWORD: ${DEMO_PATIENT_PASSWORD:-P@ssw0rd}
     volumes:
       - izara_uploads:/app/uploads
       - ./scripts/env:/scripts/env:ro
@@ -239,6 +247,11 @@ services:
       IZARA_DEV_TESTING: "1"
       GOOGLE_TOKEN_VERIFIER_FIXTURE: "1"
       E2E_ALLOW_PARALLEL_SESSIONS: ${E2E_ALLOW_PARALLEL_SESSIONS:-1}
+      DEMO_AUTO_LOGIN: ${DEMO_AUTO_LOGIN:-1}
+      DEMO_AUTO_MEETING: ${DEMO_AUTO_MEETING:-1}
+      DEMO_DOCTOR_EMAIL: ${DEMO_DOCTOR_EMAIL:-doctor.test@izara.com}
+      DEMO_DOCTOR_PASSWORD: ${DEMO_DOCTOR_PASSWORD:-IzaraDoctor@2024}
+      VITE_AUTO_ADMIT_LOBBY: ${VITE_AUTO_ADMIT_LOBBY:-0}
     volumes:
       - izara_uploads:/app/uploads
       - ./scripts/env:/scripts/env:ro
@@ -298,6 +311,8 @@ services:
 
       # CORS — extend via .env.docker (include LAN subdomains when using Nginx)
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3005,http://localhost:3010,http://localhost:3020,http://127.0.0.1:3005,http://127.0.0.1:3010,http://127.0.0.1:3020,http://patient.isara.local,http://doctor.isara.local,http://meeting.isara.local}
+      PATIENT_PORTAL_URL: ${PATIENT_PORTAL_URL:-http://127.0.0.1:3005}
+      DOCTOR_PORTAL_URL: ${DOCTOR_PORTAL_URL:-http://127.0.0.1:3010}
       RECORDINGS_DIR: /app/recordings
       UPLOAD_DIR: /app/uploads
       IZARA_DEV_TESTING: "1"

@@ -55,8 +55,25 @@ describe('Meeting API contracts', () => {
       guestName: 'Family Guest',
       token: 'jwt-token',
     });
-    assert.equal(urls.guestJoinUrl, 'https://patient.example.com/guest-join/apt-123?name=Family%20Guest');
+    assert.equal(urls.guestJoinUrl, undefined);
     assert.equal(urls.guestTokenUrl, 'https://patient.example.com/guest/join/jwt-token');
     assert.equal(urls.guestLink, urls.guestTokenUrl);
+  });
+
+  it('buildGuestPortalUrls allows bare guest-join only when GUEST_ALLOW_ANONYMOUS_JOIN=1', () => {
+    const prev = process.env.GUEST_ALLOW_ANONYMOUS_JOIN;
+    process.env.GUEST_ALLOW_ANONYMOUS_JOIN = '1';
+    try {
+      const urls = buildGuestPortalUrls({
+        patientPortalBase: 'https://patient.example.com',
+        meetingKey: 'apt-123',
+        guestName: 'Family Guest',
+      });
+      assert.equal(urls.guestJoinUrl, 'https://patient.example.com/guest-join/apt-123?name=Family%20Guest');
+      assert.equal(urls.guestLink, urls.guestJoinUrl);
+    } finally {
+      if (prev === undefined) delete process.env.GUEST_ALLOW_ANONYMOUS_JOIN;
+      else process.env.GUEST_ALLOW_ANONYMOUS_JOIN = prev;
+    }
   });
 });

@@ -1,13 +1,16 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
-import { Link, useParams, useNavigate } from 'react-router-dom';
+import { Link, useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useSettings } from '../contexts/SettingsContext';
 import { appointmentService, doctorService, googleService, notificationService } from '../lib/services';
 import { Appointment, Doctor, AppointmentStatus } from '../types';
+import { isDemoAutoMeetingEnabled } from '../utils/demoAutoAuth';
 import { Calendar, Clock, Video, MapPin, Plus, ChevronLeft, CalendarPlus, FileText, AlertCircle, Activity, Pill, Stethoscope, CheckCircle2, Info, Mic, Image, Play } from 'lucide-react';
 import SymptomInputStep from '../components/SymptomInputStep';
 import { useRealtimeSync } from '../lib/useRealtimeSync';
 import { buildCalendarEventUrl } from '../utils/buildCalendarEventUrl';
+import { formatLocalDateYmd } from '../utils/formatLocalDateYmd';
+import { resolveRecordingMimeType } from '../utils/mediaRecording';
 
 const ACTIVE_QUEUE_STATUSES = new Set<string>([
   'pending',
@@ -473,8 +476,15 @@ export function BookAppointmentPage() {
   // Audio Recording Functions
   const startRecording = async () => {
     try {
+      const mimeType = resolveRecordingMimeType();
+      if (!mimeType) {
+        alert(language === 'th'
+          ? 'เบราว์เซอร์นี้ไม่รองรับการบันทึกเสียง กรุณาใช้ Chrome, Edge หรือ Firefox'
+          : 'Voice recording is not supported in this browser. Try Chrome, Edge, or Firefox.');
+        return;
+      }
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+      const mediaRecorder = new MediaRecorder(stream, { mimeType });
       mediaRecorderRef.current = mediaRecorder;
       audioChunksRef.current = [];
 
@@ -485,7 +495,7 @@ export function BookAppointmentPage() {
       };
 
       mediaRecorder.onstop = () => {
-        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        const audioBlob = new Blob(audioChunksRef.current, { type: mimeType });
         const audioUrl = URL.createObjectURL(audioBlob);
         setForm(prev => ({ ...prev, audioBlob, audioUrl }));
         stream.getTracks().forEach(track => track.stop());
@@ -545,10 +555,20 @@ export function BookAppointmentPage() {
     if (!files) return;
 
     const validFiles = Array.from(files).filter(file => {
-      const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+      const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/heic', 'image/heif'];
+      const ext = file.name.split('.').pop()?.toLowerCase();
+      const isHeic = ext === 'heic' || ext === 'heif';
       const maxSize = 10 * 1024 * 1024; // 10MB
-      return validTypes.includes(file.type) && file.size <= maxSize;
+      const typeOk = validTypes.includes(file.type) || isHeic || file.type === '';
+      return typeOk && file.size <= maxSize;
     });
+
+    if (validFiles.length === 0 && files.length > 0) {
+      alert(language === 'th'
+        ? 'รองรับเฉพาะ JPG, PNG, GIF, WebP, HEIC (สูงสุด 10MB)'
+        : 'Only JPG, PNG, GIF, WebP, HEIC up to 10MB are supported');
+      return;
+    }
 
     if (validFiles.length + form.images.length > 5) {
       alert('สามารถอัปโหลดรูปภาพได้สูงสุด 5 รูป');
@@ -735,8 +755,8 @@ export function BookAppointmentPage() {
 
       // Create appointment request - Use field names that match the backend route
       const preferredDate = form.preferredDates[0]
-        ? new Date(form.preferredDates[0]).toISOString().split('T')[0]
-        : new Date().toISOString().split('T')[0];
+        ? formatLocalDateYmd(new Date(form.preferredDates[0]))
+        : formatLocalDateYmd(new Date());
       const preferredTime = timeSlotTimeValues[form.preferredTimeSlot];
 
       await appointmentService.create({
@@ -943,7 +963,7 @@ export function BookAppointmentPage() {
                   {Array.from({ length: 14 }, (_, i) => {
                     const date = new Date();
                     date.setDate(date.getDate() + i + 1);
-                    const dateStr = date.toISOString().split('T')[0];
+                    const dateStr = formatLocalDateYmd(date);
                     const dayName = date.toLocaleDateString('th-TH', { weekday: 'short' });
                     const dayNum = date.getDate();
                     const monthName = date.toLocaleDateString('th-TH', { month: 'short' });
@@ -958,6 +978,7 @@ export function BookAppointmentPage() {
                       <button
                         key={dateStr}
                         type="button"
+                        data-testid={`appointment-date-${dateStr}`}
                         onClick={() => setForm({ ...form, preferredDates: toggleArrayItem(form.preferredDates, dateStr) })}
                         className={`p-2 rounded-xl border-2 transition-all text-center ${getDateButtonClass()}`}
                       >
@@ -1382,6 +1403,7 @@ async function resolveAppointmentCalendarUrl(
 export function AppointmentDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { user } = useAuth();
   const { theme, language } = useSettings();
   const isDark = theme === 'dark';
@@ -1413,6 +1435,19 @@ export function AppointmentDetailPage() {
   useEffect(() => {
     if (id) loadAppointment();
   }, [id]);
+
+  // Docker/E2E: skip "Join Meeting" click — go straight to in-app lobby
+  useEffect(() => {
+    const autoMeeting = isDemoAutoMeetingEnabled() || searchParams.get('automeeting') === '1';
+    if (!autoMeeting || !appointment || loading || !id) return;
+    const isTelehealth =
+      appointment.type === 'telehealth'
+      || (appointment as { appointmentType?: string }).appointmentType === 'telehealth';
+    const hasMeeting = Boolean(meetLink || appointment.meetingLink || appointment.patientMeetingUrl);
+    if (appointment.status === 'confirmed' && isTelehealth && hasMeeting) {
+      navigate(`/meeting/${id}`, { replace: true });
+    }
+  }, [appointment, meetLink, loading, id, navigate, searchParams]);
 
   const loadAppointment = async () => {
     if (!id) return;

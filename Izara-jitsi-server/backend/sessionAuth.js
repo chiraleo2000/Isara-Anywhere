@@ -2,6 +2,7 @@
  * Session-based API auth for meeting server (replaces jwtPolicy access tokens).
  */
 import crypto from 'node:crypto';
+import jwt from 'jsonwebtoken';
 
 const SESSION_VALIDATE_SQL = `
   SELECT s.*, u.id AS uid, u.email, u.role, u.name, u.name_thai, u.is_admin,
@@ -132,7 +133,48 @@ export function validateGuestJoinAccess({ authenticated, requestedRole, inviteVa
   };
 }
 
-/** Jitsi room JWT removed — roles enforced via Izara lobby + configOverwrite.moderator. */
-export function createJitsiRoleJwt() {
-  return null;
+/**
+ * Jitsi room JWT for self-hosted Prosody (docker-jitsi-meet).
+ * Returns null on public meet.jit.si or when token auth is disabled.
+ */
+export function createJitsiRoleJwt(options = {}) {
+  const {
+    roomName,
+    user = {},
+    role = 'guest',
+    domain,
+    signingSecret,
+    issuer = 'izara-telemedicine',
+    enabled = false,
+  } = options;
+
+  if (!enabled || !signingSecret || !roomName || !domain) return null;
+  const normalizedDomain = String(domain).trim().replace(/^https?:\/\//, '').replace(/\/$/, '');
+  if (normalizedDomain === 'meet.jit.si' || normalizedDomain.endsWith('.jit.si')) return null;
+
+  const normalizedRole = String(role || '').toLowerCase();
+  const isModerator = ['doctor', 'host', 'moderator', 'admin'].includes(normalizedRole);
+  const now = Math.floor(Date.now() / 1000);
+
+  return jwt.sign(
+    {
+      aud: 'jitsi',
+      iss: issuer,
+      sub: normalizedDomain,
+      room: roomName,
+      nbf: now - 10,
+      exp: now + 4 * 60 * 60,
+      context: {
+        user: {
+          id: user.id || '',
+          name: user.name || 'Guest',
+          email: user.email || '',
+          affiliation: isModerator ? 'owner' : 'member',
+          moderator: isModerator,
+        },
+      },
+    },
+    signingSecret,
+    { algorithm: 'HS256' },
+  );
 }

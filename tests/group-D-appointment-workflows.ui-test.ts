@@ -26,6 +26,7 @@ import {
   refreshPageAuth,
   ensureDoctorPortalAuthenticated,
   confirmAppointmentApiWithRetry,
+  doctorHealthMeetingUrl,
   PATIENT_URL, DOCTOR_URL,
 } from './helpers/multi-portal';
 import { refreshAuthStorageStates, reinjectAuthFromStorageFile } from './helpers/auth-refresh';
@@ -117,6 +118,17 @@ test.describe('Group D — Appointment Workflows', () => {
       console.log('  ✅ D04: Symptom form filled');
     });
 
+    await test.step('D04b — Select preferred date from calendar grid', async () => {
+      const dateBtn = patient.page.locator('[data-testid^="appointment-date-"]').first();
+      if (await dateBtn.isVisible({ timeout: 8_000 }).catch(() => false)) {
+        await dateBtn.click();
+        await patient.page.waitForTimeout(400);
+        console.log('  ✅ D04b: Preferred date selected from grid');
+      } else {
+        console.log('  ⚠ D04b: Date grid not visible (may be on later step)');
+      }
+    });
+
     await test.step('D05 — Advance to next step', async () => {
       const nextBtn = patient.page.locator('button').filter({
         hasText: /Next|ถัดไป|Continue|ต่อไป|เลือกแพทย์|Select Doctor/i,
@@ -131,22 +143,47 @@ test.describe('Group D — Appointment Workflows', () => {
     });
 
     await test.step('D06 — Select doctor or skip to pool', async () => {
-      const skipBtn = patient.page.locator('button, label, [role="radio"]').filter({
-        hasText: /skip|ข้าม|any doctor|แพทย์คนไหนก็ได้|pool|ไม่ระบุ/i,
-      }).first();
-      const doctorCard = patient.page.locator('[class*="card"], [class*="doctor"], [class*="item"]').filter({
-        hasText: /doctor|แพทย์|Dr\.|นพ\.|พญ\./i,
-      }).first();
+      const skipCheckbox = patient.page.locator('#skip-doctor-selection');
+      if (await skipCheckbox.isVisible({ timeout: 5_000 }).catch(() => false)) {
+        await skipCheckbox.check();
+        console.log('  ✅ D06: Checked skip-doctor-selection (pool)');
+      } else {
+        const skipBtn = patient.page.locator('button, label, [role="radio"]').filter({
+          hasText: /skip|ข้าม|any doctor|แพทย์คนไหนก็ได้|pool|ไม่ระบุ/i,
+        }).first();
+        const doctorCard = patient.page.locator('[class*="card"], [class*="doctor"], [class*="item"]').filter({
+          hasText: /doctor|แพทย์|Dr\.|นพ\.|พญ\./i,
+        }).first();
 
-      if (await skipBtn.isVisible({ timeout: 3_000 }).catch(() => false)) {
-        await skipBtn.click();
-        console.log('  ✅ D06: Skipped doctor selection (pool)');
-      } else if (await doctorCard.isVisible({ timeout: 5_000 }).catch(() => false)) {
-        await doctorCard.click();
-        console.log('  ✅ D06: Selected first available doctor');
+        if (await skipBtn.isVisible({ timeout: 3_000 }).catch(() => false)) {
+          await skipBtn.click();
+          console.log('  ✅ D06: Skipped doctor selection (pool)');
+        } else if (await doctorCard.isVisible({ timeout: 5_000 }).catch(() => false)) {
+          await doctorCard.click();
+          console.log('  ✅ D06: Selected first available doctor');
+        }
       }
       await patient.page.waitForTimeout(1_000);
       await snap(patient.page, 'D06-doctor-selected', 'group-D');
+    });
+
+    await test.step('D06b — Select date and advance to confirmation step', async () => {
+      const dateBtn = patient.page.locator('[data-testid^="appointment-date-"]').first();
+      if (await dateBtn.isVisible({ timeout: 8_000 }).catch(() => false)) {
+        await dateBtn.click();
+        await patient.page.waitForTimeout(400);
+        console.log('  ✅ D06b: Preferred date selected on step 2');
+      }
+      const confirmStepBtn = patient.page.locator('button').filter({
+        hasText: /ถัดไป.*ยืนยัน|ตรวจสอบและยืนยัน|Next.*Confirm/i,
+      }).first();
+      await expect(confirmStepBtn, 'Step 2 → confirmation button must be enabled').toBeEnabled({
+        timeout: 10_000,
+      });
+      await confirmStepBtn.click();
+      await patient.page.waitForTimeout(500);
+      await waitForContent(patient.page, 'D06b-confirm');
+      console.log('  ✅ D06b: Advanced to confirmation step');
     });
 
     await test.step('D07 — Submit appointment request (pool — no doctor assigned)', async () => {
@@ -189,8 +226,8 @@ test.describe('Group D — Appointment Workflows', () => {
         }
       }
 
-      // GUARANTEED fallback: create POOL appointment via API (NO doctorId — admin assigns later)
-      if (!appointmentCreated) {
+      // API fallback only when explicitly allowed (masks UI regressions otherwise)
+      if (!appointmentCreated && process.env.ALLOW_API_FALLBACK === '1') {
         let data: { id?: string; status?: string } | null = null;
         for (let attempt = 0; attempt < 3; attempt++) {
           await refreshPageAuth(patient.page, PATIENT_URL);
@@ -356,7 +393,7 @@ test.describe('Group D — Appointment Workflows', () => {
 
     await test.step('D09 — Navigate to Health Meeting', async () => {
       const doctorId = process.env.TEST_DOCTOR_ID || 'DOC-TEST-001';
-      await doctor.page.goto(`${DOCTOR_URL}/doctor/${doctorId}/health-meeting`, {
+      await doctor.page.goto(doctorHealthMeetingUrl(doctorId), {
         waitUntil: 'domcontentloaded',
         timeout: IS_CLOUD ? 90_000 : 45_000,
       });

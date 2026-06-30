@@ -226,7 +226,7 @@ test.describe('Group Q - Meeting Lifecycle (3-party)', () => {
         doctor.page
           .getByTestId('jitsi-meeting-container')
           .or(doctor.page.getByTestId('end-meeting-btn'))
-          .or(doctor.page.getByTestId('pre-join-screen'))
+          .or(doctor.page.getByTestId('host-starting-screen'))
           .first(),
       ).toBeVisible({ timeout: 120_000 });
       await expect(
@@ -291,7 +291,7 @@ test.describe('Group Q - Meeting Lifecycle (3-party)', () => {
       await snapMeetingStageAny(
         patient.page,
         'Q01c-patient-lobby-waiting',
-        ['lobby-waiting-screen', 'host-waiting-screen'],
+        ['lobby-waiting-screen', 'host-waiting-screen', 'lobby-starting-screen'],
         'group-Q',
       );
     });

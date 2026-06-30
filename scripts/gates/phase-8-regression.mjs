@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 /** Phase 8 — regression + quality */
 import path from 'node:path';
+import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { npmStep, runSteps } from './lib/run-step.mjs';
 import { runHeadedE2e } from './lib/run-headed-e2e.mjs';
@@ -23,6 +24,9 @@ for (const project of ['Defect-regression', 'K-accessibility', 'S-phone-sm']) {
 }
 
 if (!runScreenshotGate('group-S', 'screenshots-group-S')) bailWithArchive(ROUND, 'screenshots-group-S');
+if (!runScreenshotGate('group-defect', 'screenshots-group-defect')) {
+  bailWithArchive(ROUND, 'screenshots-group-defect');
+}
 
 const { pass } = runSteps(
   [
@@ -36,4 +40,14 @@ const { pass } = runSteps(
 if (!pass) bailWithArchive(ROUND, 'quality-gates');
 
 if (!runLedgerRound(ROUND)) bailWithArchive(ROUND, 'ledger-round');
+
+const agg = spawnSync('node', ['scripts/aggregate-ux-ui-gate.mjs'], {
+  cwd: root,
+  stdio: 'inherit',
+  shell: process.platform === 'win32',
+});
+if (agg.status !== 0) {
+  console.warn('⚠️ aggregate-ux-ui-gate reported incomplete evidence (non-fatal after phase 8 E2E)');
+}
+
 process.exit(0);

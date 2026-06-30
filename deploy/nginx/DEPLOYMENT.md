@@ -116,7 +116,7 @@ Options: `--skip-build` · `--docker-only` · `--pull` · `--prune` · `--diagno
 On every Windows PC on the LAN, add to `C:\Windows\System32\drivers\etc\hosts` (Notepad **as Administrator**):
 
 ```text
-192.168.10.239   patient.demotoday.net doctor.demotoday.net meeting.demotoday.net dbadmin.demotoday.net
+192.168.10.239   patient.demotoday.net doctor.demotoday.net meeting.demotoday.net meet.demotoday.net dbadmin.demotoday.net
 ```
 
 Full steps: [WINDOWS_CLIENT_SETUP.md](WINDOWS_CLIENT_SETUP.md)
@@ -128,7 +128,10 @@ Full steps: [WINDOWS_CLIENT_SETUP.md](WINDOWS_CLIENT_SETUP.md)
 | Patient | https://patient.demotoday.net/login | `demo.test@gmail.com` / `P@ssw0rd` |
 | Doctor | https://doctor.demotoday.net/login | `admin.test@izara.com` / `IzaraAdmin@2024` |
 | Meeting | https://meeting.demotoday.net/health | API |
+| Jitsi | https://meet.demotoday.net | Video (via join-config) |
 | pgAdmin | https://dbadmin.demotoday.net | see `.env.docker` |
+
+**Jitsi + meeting API:** [Documents/docs/markdown/operations/JITSI_MEETING_DEMOTODAY_API.md](../../Documents/docs/markdown/operations/JITSI_MEETING_DEMOTODAY_API.md)
 
 ### 6. Trust TLS on client PCs
 
@@ -157,6 +160,8 @@ bash deploy/nginx/diagnose.sh
 | ------- | --- |
 | 502 Bad Gateway | `bash deploy/nginx/diagnose.sh` — Docker not on :3005/:3010 |
 | Doctor URL shows patient login | Wrong nginx `server_name` — run `bash deploy/nginx/deploy.sh` |
+| **ERR_CERT_DATE_INVALID** (Chrome/Edge) | `bash deploy/nginx/fix-tls.sh` on Ubuntu; sync Windows clock; install mkcert CA — [WINDOWS_CLIENT_SETUP.md](WINDOWS_CLIENT_SETUP.md) |
+| ERR_CERT_AUTHORITY_INVALID | Install `deploy/nginx/isara-mkcert-rootCA.pem` on Windows (`install-mkcert-ca-windows.ps1`) |
 | Login 401/500 CORS | `CORS_ORIGINS` must include `https://doctor.demotoday.net` |
 | `vite: Permission denied` on build | Use root `.dockerignore`; do not copy Windows `node_modules` |
 | Postgres auth failed | `POSTGRES_PASSWORD=postgres` in `.env.docker`; redeploy |

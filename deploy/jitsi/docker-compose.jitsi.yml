@@ -1,0 +1,17 @@
+# Izara wrapper — self-hosted Jitsi via official docker-jitsi-meet vendor.
+# Profile: jitsi (use with --profile jitsi alongside --profile full)
+#
+# Setup:
+#   node scripts/jitsi/setup-local-jitsi.mjs --sync-docker-env
+#   docker compose --env-file .env.docker --profile jitsi up -d
+#
+# LAN: set PUBLIC_URL=https://meet.demotoday.net in deploy/jitsi/.env
+
+include:
+  - path: deploy/jitsi/docker-jitsi-meet/docker-compose.yml
+    env_file: deploy/jitsi/.env
+
+networks:
+  default:
+    name: isara-anywhere_izara-network
+    external: true

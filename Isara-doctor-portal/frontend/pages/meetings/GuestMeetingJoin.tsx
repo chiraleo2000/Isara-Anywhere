@@ -1,7 +1,7 @@
 /**
  * GuestMeetingJoin.tsx — Public guest join page (Doctor Portal)
- * Patient, family, or admin may join as guest (camera/mic) after host admits.
- * Route: /guest-join/:meetingId  (public, outside ProtectedRoute)
+ * Guests must use an invite token from the host (/guest/join/:token).
+ * Bare /guest-join/:meetingId without token is blocked (parity with patient portal).
  */
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
@@ -13,6 +13,7 @@ import {
   resolveJitsiDomain,
 } from '../../utils/jitsiMeetingConfig';
 import { resolveMeetingServerUrl } from '../../utils/resolveMeetingServerUrl';
+import { resolveEnv } from '../../utils/resolveEnv';
 
 const meetingServerBase = () => resolveMeetingServerUrl();
 
@@ -35,14 +36,17 @@ function guestHeaderStatusLabel(
 }
 
 const GuestMeetingJoin: React.FC = () => {
-  const { meetingId } = useParams<{ meetingId: string }>();
+  const { meetingId, token } = useParams<{ meetingId?: string; token?: string }>();
   const [searchParams] = useSearchParams();
   const guestRoleLabel = searchParams.get('guestType') || searchParams.get('role') || 'guest';
   const nameFromUrl = searchParams.get('name') || '';
+  const openGuestJoinBlocked = Boolean(meetingId && !token);
   const [guestName, setGuestName] = useState(nameFromUrl);
-  const [status, setStatus] = useState<GuestStatus>('form');
+  const [status, setStatus] = useState<GuestStatus>(openGuestJoinBlocked ? 'error' : 'form');
   const [participantId, setParticipantId] = useState<string | null>(null);
-  const [errorMsg, setErrorMsg] = useState('');
+  const [errorMsg, setErrorMsg] = useState(
+    openGuestJoinBlocked ? 'Anonymous guest access is disabled — use the invite link from your host' : '',
+  );
   const [roomName, setRoomName] = useState('');
   const [waitSeconds, setWaitSeconds] = useState(0);
   const [connectingVideo, setConnectingVideo] = useState(false);
@@ -56,6 +60,15 @@ const GuestMeetingJoin: React.FC = () => {
   const jitsiApiRef = useRef<any>(null);
   const waitTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const autoJoinFromUrlRef = useRef(false);
+
+  // Canonical guest flow lives on patient portal — redirect token invites
+  useEffect(() => {
+    if (!token) return;
+    const patientBase = resolveEnv('PATIENT_PORTAL_URL', 'http://127.0.0.1:3005').replace(/\/$/, '');
+    const qs = searchParams.toString();
+    const dest = `${patientBase}/guest/join/${encodeURIComponent(token)}${qs ? `?${qs}` : ''}`;
+    globalThis.location.replace(dest);
+  }, [token, searchParams]);
 
   useEffect(() => {
     if (!meetingId) return;
@@ -301,13 +314,20 @@ const GuestMeetingJoin: React.FC = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-emerald-950 to-gray-900 flex items-center justify-center p-4">
       <div className="bg-gray-800 rounded-2xl shadow-2xl p-8 max-w-md w-full border border-emerald-700/30" data-testid="guest-join-form">
+        {status === 'error' && (
+          <div className="text-center py-6" data-testid="guest-access-denied">
+            <p className="text-red-300">{errorMsg || 'Unable to join meeting'}</p>
+          </div>
+        )}
+        {status !== 'error' && (
+        <>
         <div className="text-center mb-6">
           <div className="w-16 h-16 bg-emerald-900/50 rounded-full flex items-center justify-center mx-auto mb-4 border border-emerald-600/30">
             <span className="text-3xl">🏥</span>
           </div>
           <h1 className="text-2xl font-bold text-white">เข้าร่วมประชุม</h1>
           <p className="text-gray-400 mt-1 text-sm">Join Meeting as Guest</p>
-          <p className="text-xs text-gray-500 mt-2 font-mono">Meeting: {meetingId.substring(0, 8)}...</p>
+          <p className="text-xs text-gray-500 mt-2 font-mono">Meeting: {(meetingId || '').substring(0, 8)}...</p>
         </div>
 
         {status === 'form' && (
@@ -364,14 +384,7 @@ const GuestMeetingJoin: React.FC = () => {
             </button>
           </div>
         )}
-
-        {status === 'error' && (
-          <div className="text-center py-6">
-            <p className="text-red-400 mb-4">{errorMsg}</p>
-            <button onClick={() => setStatus('form')} className="bg-emerald-600 text-white px-6 py-2 rounded-lg">
-              Retry
-            </button>
-          </div>
+        </>
         )}
       </div>
     </div>

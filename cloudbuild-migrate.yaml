@@ -4,7 +4,7 @@
 #   gcloud builds submit . --config=cloudbuild-migrate.yaml --project=izara-telemedicine
 #
 # Auth: uses DATABASE_URL secret (same one Cloud Run services use, known to be valid).
-# This avoids drift between db-password and the actual Cloud SQL user/credentials.
+# This avoids drift between db-password and the actual GCE VM PostgreSQL credentials.
 
 steps:
   - id: apply-google-sub-migration

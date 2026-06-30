@@ -1,7 +1,7 @@
 # Documents — Izara Anywhere documentation hub
 
 > **Layout version:** June 2026 · **App release:** v1.7.54  
-> **Gates:** `npm run phase:0` … `phase:9` · LAN: [deploy/nginx/DEPLOYMENT.md](../deploy/nginx/DEPLOYMENT.md)
+> **Gates:** `npm run phase:0` … `phase:9` · LAN: [deploy/nginx/DEPLOYMENT.md](../deploy/nginx/DEPLOYMENT.md) · Video (TH): [docs/markdown/operations/LAN_VIDEO_CLIENT_TH.md](docs/markdown/operations/LAN_VIDEO_CLIENT_TH.md)
 
 รวมเอกสารทั้งหมดของโปรเจกต์ภายใต้โฟลเดอร์เดียว `Documents/`
 
@@ -92,7 +92,7 @@ python scripts/build-appendix-process-steps.py
 
 ---
 
-## การทดสอบ (v1.7.53)
+## การทดสอบ (v1.7.54)
 
 | คำสั่ง | ความหมาย |
 |--------|----------|
@@ -107,7 +107,7 @@ python scripts/build-appendix-process-steps.py
 | `bash deploy/nginx/compose.sh` | Docker Compose wrapper (V2 หรือ `docker-compose` V1) |
 | `npm run cleanup:project` | ลบ log/cache/regenerable artifacts |
 
-คู่มือ LAN: [deploy/nginx/DEPLOYMENT.md](../deploy/nginx/DEPLOYMENT.md) · สัญญา workflow: [Processes/FULL_WORKFLOW_CONTRACT.md](../Processes/FULL_WORKFLOW_CONTRACT.md)
+คู่มือ LAN: [deploy/nginx/DEPLOYMENT.md](../deploy/nginx/DEPLOYMENT.md) · วิดีโอ LAN: [docs/markdown/operations/LAN_VIDEO_CLIENT_TH.md](docs/markdown/operations/LAN_VIDEO_CLIENT_TH.md) · รายงาน: [reports/README.md](../reports/README.md)
 
 **Registry:** `tests/unit/cross-portal/processWorkflowRegistry.ts` · matrix: [tests/PROCESS_COVERAGE_MATRIX.md](../tests/PROCESS_COVERAGE_MATRIX.md)
 

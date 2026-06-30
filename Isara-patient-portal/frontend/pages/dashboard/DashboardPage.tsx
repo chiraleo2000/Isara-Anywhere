@@ -47,7 +47,7 @@ function AppointmentCard({ apt, isDarkMode, isEnglish, formatDate, getStatusBadg
         <div className="flex items-center gap-3">
           <img
             src={apt.doctorAvatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(apt.doctorId)}`}
-            alt={apt.doctorName}
+            alt={apt.doctorName || 'แพทย์'}
             className="w-10 h-10 rounded-full"
           />
           <div>

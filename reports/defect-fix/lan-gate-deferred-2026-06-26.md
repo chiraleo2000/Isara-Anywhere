@@ -1,8 +1,10 @@
-# P4 Ubuntu LAN — SKIPPED (2026-06-26)
+# P4 Ubuntu LAN — SKIPPED (2026-06-26) → **DEPLOYED** (2026-06-30)
 
-## Status: **SKIPPED** (user-approved)
+## Status: **DEPLOYED** on `192.168.10.239`
 
-**Skip reason:** Full Gate Release close-out approved skipping P4 entirely — no LAN deploy, no ping retries. Re-run when Ubuntu host `192.168.10.239` is on subnet.
+LAN HTTPS (`*.demotoday.net`) + self-hosted Jitsi (`meet.demotoday.net`) are live. Sign-off: [round6-local-lan-signoff-2026-06-30.md](../signoff/round6-local-lan-signoff-2026-06-30.md). Video guide (TH): [LAN_VIDEO_CLIENT_TH.md](../../Documents/docs/markdown/operations/LAN_VIDEO_CLIENT_TH.md).
+
+**Original skip (2026-06-26):** Full Gate Release close-out approved skipping P4 — host was unreachable (100% ping loss). Re-run when Ubuntu host `192.168.10.239` is on subnet.
 
 ## Prior environment blockers (for reference)
 

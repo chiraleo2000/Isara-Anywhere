@@ -28,6 +28,30 @@ const IS_CLOUD = process.env.TEST_ENV === 'cloud';
 test.describe('Group A — Auth & Access Verification', () => {
   test.describe.configure({ mode: 'serial' });
 
+  /* ── A2b — Patient register + reset-password (before tri-browser fixture) ─ */
+  test('A2b — Patient register and reset-password UI', async ({ browser }) => {
+    test.setTimeout(600_000);
+    const ctx = await browser.newContext();
+    const page = await ctx.newPage();
+    try {
+      await gotoCloudWithRetry(page, `${PATIENT_URL}/register`, 'A2b/register');
+      await expect(page.locator('#register-email')).toBeVisible({ timeout: 120_000 });
+      await assertFullHealth(page, 'A2b/register');
+
+      await gotoCloudWithRetry(page, `${PATIENT_URL}/reset-password`, 'A2b/reset-password');
+      await page.waitForLoadState('domcontentloaded');
+      await page.locator('#root').waitFor({ state: 'attached', timeout: 15_000 }).catch(() => {});
+      await assertFullHealth(page, 'A2b/reset-password');
+      await expect(
+        page.getByText(/โทเค็น|รีเซ็ตรหัสผ่าน|reset password/i).first(),
+      ).toBeVisible({ timeout: 10_000 });
+
+      await snap(page, 'A2b-auth-registration', 'group-A');
+    } finally {
+      await ctx.close().catch(() => {});
+    }
+  });
+
   /* ── A01 — All 3 dashboards are healthy ──────────────────────────── */
   test('A01 — All 3 portals loaded healthy after auth', async ({ portals }) => {
     const { patient, doctor, admin } = portals;
@@ -125,6 +149,12 @@ test.describe('Group A — Auth & Access Verification', () => {
   /* ── A04 — Admin sidebar has extra admin-only items ──────────────── */
   test('A04 — Admin sidebar has doctor-management items', async ({ portals }) => {
     const { admin } = portals;
+    await refreshPageAuth(admin.page, DOCTOR_URL);
+    await admin.page.goto(`${DOCTOR_URL}/doctor/${admin.userId}/dashboard`, {
+      waitUntil: 'commit',
+      timeout: 60_000,
+    });
+    await waitForContent(admin.page, 'A04-admin-dashboard', 8_000, 'admin');
     const adminPatterns = [
       /จัดการแพทย์|Manage Doctor/i,
       /อนุมัติ.*แพทย์|Doctor Approval/i,
@@ -133,7 +163,7 @@ test.describe('Group A — Auth & Access Verification', () => {
     const found: string[] = [];
     for (const pattern of adminPatterns) {
       const btn = admin.page.locator('nav button, aside button, nav a, aside a').filter({ hasText: pattern }).first();
-      if (await btn.isVisible({ timeout: 3_000 }).catch(() => false)) {
+      if (await btn.isVisible({ timeout: 8_000 }).catch(() => false)) {
         found.push(pattern.source.split('|')[0]);
       }
     }
@@ -354,29 +384,6 @@ test.describe('Group A — Auth & Access Verification', () => {
     }
     expect(saw429, 'Expected 429 after 5+ reset requests per hour per IP').toBe(true);
     console.log('  A12: Password reset rate limit enforced');
-  });
-
-  /* ── A2b — Patient register + reset-password shells (no 5xx) ───── */
-  test('A2b — Patient register and reset-password UI', async ({ browser }) => {
-    const ctx = await browser.newContext();
-    const page = await ctx.newPage();
-    try {
-      await gotoCloudWithRetry(page, `${PATIENT_URL}/register`, 'A2b/register');
-      await assertFullHealth(page, 'A2b/register');
-      await expect(page.locator('#register-email')).toBeVisible({ timeout: 10_000 });
-
-      await gotoCloudWithRetry(page, `${PATIENT_URL}/reset-password`, 'A2b/reset-password');
-      await page.waitForLoadState('domcontentloaded');
-      await page.locator('#root').waitFor({ state: 'attached', timeout: 15_000 }).catch(() => {});
-      await assertFullHealth(page, 'A2b/reset-password');
-      await expect(
-        page.getByText(/โทเค็น|รีเซ็ตรหัสผ่าน|reset password/i).first(),
-      ).toBeVisible({ timeout: 10_000 });
-
-      await snap(page, 'A2b-auth-registration', 'group-A');
-    } finally {
-      await ctx.close().catch(() => {});
-    }
   });
 
   /* ── A10 — DB health endpoints return connected status ─────────── */

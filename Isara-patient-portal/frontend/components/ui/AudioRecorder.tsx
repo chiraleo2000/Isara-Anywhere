@@ -1,5 +1,6 @@
 import React, { useState, useRef, useCallback } from 'react';
 import { Mic, Square, Play, Pause, Trash2, Upload, AlertCircle } from 'lucide-react';
+import { resolveRecordingMimeType } from '../../utils/mediaRecording';
 
 interface AudioRecorderProps {
   onRecordingComplete: (audioBlob: Blob, duration: number) => void;
@@ -38,9 +39,13 @@ export const AudioRecorder: React.FC<AudioRecorderProps> = ({
       });
       
       streamRef.current = stream;
-      const mediaRecorder = new MediaRecorder(stream, {
-        mimeType: MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : 'audio/mp4'
-      });
+      const mimeType = resolveRecordingMimeType();
+      if (!mimeType) {
+        onError?.('Voice recording is not supported in this browser');
+        stream.getTracks().forEach((t) => t.stop());
+        return;
+      }
+      const mediaRecorder = new MediaRecorder(stream, { mimeType });
       
       mediaRecorderRef.current = mediaRecorder;
       audioChunksRef.current = [];
@@ -52,7 +57,7 @@ export const AudioRecorder: React.FC<AudioRecorderProps> = ({
       };
       
       mediaRecorder.onstop = () => {
-        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        const audioBlob = new Blob(audioChunksRef.current, { type: mimeType });
         const url = URL.createObjectURL(audioBlob);
         setAudioUrl(url);
         onRecordingComplete(audioBlob, duration);
