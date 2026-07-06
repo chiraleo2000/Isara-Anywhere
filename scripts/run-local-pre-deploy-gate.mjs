@@ -7,19 +7,27 @@ import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { resolveGateWorkers, isParallelGate } from './gates/lib/resolve-gate-workers.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(__dirname, '..');
 const isWin = process.platform === 'win32';
+const gateWorkers = resolveGateWorkers();
+const isStrict = process.env.GATE_STRICT === '1' || process.env.GATE_STRICT === 'true';
 
 const gateEnv = {
   ...process.env,
   PW_SKIP_LIVE_GEMINI: '1',
   PW_HEADED: '1',
-  PW_WORKERS: '1',
+  PW_WORKERS: gateWorkers,
+  PW_NO_CHROME: process.env.PW_NO_CHROME || '1',
   BASELINE_VISUAL: '1',
-  PW_SKIP_FIREFOX_JROLE: '1',
-  PW_SKIP_DEFECT_DM5: '1',
+  ...(isStrict
+    ? {}
+    : {
+        PW_SKIP_FIREFOX_JROLE: '1',
+        PW_SKIP_DEFECT_DM5: '1',
+      }),
   E2E_ALLOW_PARALLEL_SESSIONS: '1',
   PATIENT_URL: 'http://127.0.0.1:3005',
   DOCTOR_URL: 'http://127.0.0.1:3010',
@@ -63,6 +71,50 @@ function npmStep(name, script) {
   return { name, cmd: 'npm', args: ['run', script], cwd: root };
 }
 
+function browserCoreSteps() {
+  const workerArg = `--workers=${gateWorkers}`;
+  if (isParallelGate()) {
+    return [
+      {
+        name: 'browser-core-multibrowser',
+        cmd: 'npx',
+        args: [
+          'playwright', 'test', '--headed',
+          '--project=W-core-firefox',
+          '--project=W-core-webkit',
+          '--project=D-appointments',
+          workerArg,
+        ],
+        cwd: root,
+      },
+    ];
+  }
+  return [
+    {
+      name: 'browser-core-firefox',
+      cmd: 'npx',
+      args: ['playwright', 'test', '--headed', '--project=W-core-firefox', '--workers=1'],
+      cwd: root,
+    },
+    {
+      name: 'browser-core-webkit',
+      cmd: 'npx',
+      args: ['playwright', 'test', '--headed', '--project=W-core-webkit', '--workers=1'],
+      cwd: root,
+    },
+    {
+      name: 'browser-appointments-firefox',
+      cmd: 'npx',
+      args: ['playwright', 'test', '--headed', '--project=D-appointments', '--workers=1'],
+      cwd: root,
+    },
+  ];
+}
+
+const e2eScript = isStrict
+  ? (isParallelGate() ? 'test:local:e2e-strict-parallel' : 'test:local:e2e-strict')
+  : (isParallelGate() ? 'test:local:e2e-parallel' : 'test:local:e2e-full');
+
 const gateSteps = [
   ...(isWin || process.env.GATE_SKIP_VERIFY_DEPS === '1'
     ? []
@@ -91,9 +143,25 @@ const gateSteps = [
   {
     name: 'docker-compose',
     cmd: 'docker',
-    args: process.env.GATE_SKIP_DOCKER_BUILD === '1'
-      ? ['compose', '--env-file', '.env.docker', '--profile', 'full', 'up', '-d']
-      : ['compose', '--env-file', '.env.docker', '--profile', 'full', 'up', '-d', '--build'],
+    args: (() => {
+      const base = [
+        'compose',
+        '--env-file',
+        '.env.docker',
+        '-f',
+        'docker-compose.yml',
+        '-f',
+        'deploy/jitsi/docker-compose.jitsi.yml',
+        '--profile',
+        'full',
+        '--profile',
+        'jitsi',
+        'up',
+        '-d',
+      ];
+      if (process.env.GATE_SKIP_DOCKER_BUILD !== '1') base.push('--build');
+      return base;
+    })(),
     cwd: root,
   },
   npmStep('docker-probe', 'docker:probe-health'),
@@ -103,25 +171,8 @@ const gateSteps = [
     args: ['run', 'verify:gate0:local'],
     cwd: root,
   },
-  {
-    name: 'browser-core-firefox',
-    cmd: 'npx',
-    args: ['playwright', 'test', '--headed', '--project=W-core-firefox', '--workers=1'],
-    cwd: root,
-  },
-  {
-    name: 'browser-core-webkit',
-    cmd: 'npx',
-    args: ['playwright', 'test', '--headed', '--project=W-core-webkit', '--workers=1'],
-    cwd: root,
-  },
-  {
-    name: 'browser-appointments-firefox',
-    cmd: 'npx',
-    args: ['playwright', 'test', '--headed', '--project=D-appointments', '--workers=1'],
-    cwd: root,
-  },
-  npmStep('e2e-full-headed', 'test:local:e2e-full'),
+  ...browserCoreSteps(),
+  npmStep('e2e-full-headed', e2eScript),
   npmStep('screenshots-all', 'test:screenshots:all'),
   npmStep('screenshots-group-e', 'test:screenshots:group-e'),
   npmStep('screenshots-group-s', 'test:screenshots:group-s'),

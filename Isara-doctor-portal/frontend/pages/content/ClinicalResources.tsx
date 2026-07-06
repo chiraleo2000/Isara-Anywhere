@@ -245,7 +245,11 @@ export const ClinicalResources: React.FC = () => {
   const fetchResources = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await fetch(`${API_BASE}/api/content/clinical`, {
+      const params = new URLSearchParams({
+        userId: user?.id || '',
+        isAdmin: isAdmin ? 'true' : 'false',
+      });
+      const response = await fetch(`${API_BASE}/api/content/clinical?${params}`, {
         headers: getAuthHeaders(),
         credentials: 'include',
       });

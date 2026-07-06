@@ -15,12 +15,20 @@
  */
 import {
   test, expect, assertFullHealth, snap,
-  navPatient,
+  navPatient, ensurePatientPortalAuthenticated,
 } from './helpers/multi-portal';
 import { assertAiMountOnlyWhenSkipped } from './helpers/ai-gate-fixture';
 
+const IS_CLOUD = process.env.TEST_ENV === 'cloud';
+
 test.describe('Group J — AI Doctor, Timeline, Map & Find Doctors', () => {
   test.describe.configure({ mode: 'serial' });
+
+  test.beforeEach(async ({ portals }) => {
+    if (IS_CLOUD) {
+      await ensurePatientPortalAuthenticated(portals.patient.page, 'J-patient-auth');
+    }
+  });
 
   /* ═════════════════════════════════════════════════════════════════
      J1 — Patient: AI Doctor → type symptom → submit → read response
@@ -33,8 +41,8 @@ test.describe('Group J — AI Doctor, Timeline, Map & Find Doctors', () => {
       await navPatient(patient.page, '/ai-doctor', 'J01');
       await assertFullHealth(patient.page, 'J01');
       const skipLive = await assertAiMountOnlyWhenSkipped(patient.page, {
-        selectors: ['textarea', 'input[type="text"]'],
-        bodyPattern: /AI|Doctor|หมอ|chat|ถาม|symptom|อาการ/i,
+        selectors: ['input[type="text"]', 'textarea', '[role="textbox"]'],
+        bodyPattern: /AI|Doctor|หมอ|chat|ถาม|symptom|อาการ|Health Assistant/i,
         label: 'J1 AI Doctor',
       });
       if (skipLive) {

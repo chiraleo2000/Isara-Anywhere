@@ -43,6 +43,14 @@ const vitest = spawnSync(
 if (vitest.status !== 0) bailWithArchive(ROUND, 'vitest-post-meeting');
 
 resetDatabaseBaseline();
+const authRefresh = spawnSync(
+  process.execPath,
+  [path.join(root, 'scripts', 'docker', 'refresh-e2e-auth.mjs')],
+  { cwd: root, stdio: 'inherit', env: process.env },
+);
+if (authRefresh.status !== 0) {
+  console.warn('[phase-3] Auth refresh before headed E2E failed (exit', authRefresh.status, ')');
+}
 if (!runHeadedE2e(['Q-meeting-lifecycle', 'Q2-post-meeting-doctor'], 'e2e-Q-post-meeting')) {
   bailWithArchive(ROUND, 'e2e-Q-post-meeting');
 }

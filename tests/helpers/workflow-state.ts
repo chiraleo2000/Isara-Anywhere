@@ -57,7 +57,24 @@ export function loadWorkflowState(): WorkflowState {
 }
 
 export function saveWorkflowState(patch: WorkflowState): WorkflowState {
-  const next = { ...loadWorkflowState(), ...patch };
+  const disk = readDiskState();
+  const next = { ...disk, ...patch };
+  if (patch.recordingUrl === '' || patch.recordingUrl === null) {
+    delete next.recordingUrl;
+  }
+  // Keep Q lifecycle keys when D patches only offline/symptom fields after a meeting ran.
+  if (
+    disk.meetingId &&
+    disk.recordingUrl &&
+    !patch.meetingId &&
+    !patch.recordingUrl &&
+    (patch.offlineAppointmentId || patch.symptomText || (patch.appointmentId && patch.appointmentId !== disk.appointmentId))
+  ) {
+    next.meetingId = disk.meetingId;
+    next.recordingUrl = disk.recordingUrl;
+    next.appointmentId = disk.appointmentId;
+    if (disk.roomName) next.roomName = disk.roomName;
+  }
   memoryCache = next;
   writeDiskState(next);
   return next;

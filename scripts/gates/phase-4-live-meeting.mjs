@@ -9,7 +9,7 @@ import { runScreenshotGate } from './lib/run-screenshot-gate.mjs';
 import { runLedgerRound } from './lib/run-ledger-round.mjs';
 import { runPrePhaseSmoke } from './lib/run-pre-phase-smoke.mjs';
 import { bailWithArchive } from './lib/archive-failure.mjs';
-import { resetDatabaseBaseline } from '../docker/e2eDockerCommon.mjs';
+import { resetDatabaseBaseline, restartMeetingServerForE2e } from '../docker/e2eDockerCommon.mjs';
 
 const ROUND = 3;
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
@@ -48,6 +48,7 @@ const socketTest = spawnSync(
 if (socketTest.status !== 0) bailWithArchive(ROUND, 'socket-lobby-integration');
 
 resetDatabaseBaseline();
+restartMeetingServerForE2e();
 if (!runHeadedE2e(['Q-meeting-lifecycle', 'R-jitsi-role-permissions'], 'e2e-Q-R')) {
   bailWithArchive(ROUND, 'e2e-Q-R');
 }

@@ -2,11 +2,11 @@
 
 **Document type:** Deployment & Operations Handoff (final)  
 **Product:** Isara Telemedicine — Patient Portal, Doctor Portal, Meeting Server  
-**Release track:** `v1.7.54` (self-hosted Jitsi LAN + local gates)  
+**Release track:** `v1.7.58` (cloud CSP Jitsi fix + headed parallel E2E)  
 **Target environment:** Google Cloud Run (`asia-southeast1`) + PostgreSQL + **Ubuntu LAN** (`*.demotoday.net`)  
 **Classification:** Internal — Operations & Engineering  
-**Last updated:** 2026-06-30  
-**Verification:** v1.7.54 — unit **~3200** + meeting contracts **85**; `test:local:pre-deploy-gate` PASS; LAN Jitsi on `meet.demotoday.net`
+**Last updated:** 2026-07-02  
+**Verification:** v1.7.58 — cloud deploy + `test:cloud:release-gate`
 
 ### Document typography (มาตรฐานรายงานภาษาไทย)
 

@@ -64,9 +64,13 @@ test.describe('Defect — AI new chat and language', () => {
     } else {
       await chatInput.press('Enter');
     }
-    await patient.page.waitForTimeout(8000);
-
-    const body = await patient.page.locator('body').innerText();
+    const deadline = Date.now() + 30_000;
+    let body = '';
+    while (Date.now() < deadline) {
+      body = await patient.page.locator('body').innerText().catch(() => '');
+      if (/[a-zA-Z]{4,}/.test(body)) break;
+      await patient.page.waitForTimeout(1_500);
+    }
     await snap(patient.page, 'DA2-english-reply', 'group-defect');
     expect(/[a-zA-Z]{4,}/.test(body)).toBe(true);
   });

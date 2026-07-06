@@ -40,3 +40,14 @@ gcloud builds submit --config=cloudbuild.yaml --substitutions=_MIN_INSTANCES=0,_
 ```
 
 **Status:** config committed locally; **deploy not run** in Round 6 (local gate green first).
+
+## Round 7 local verification — 2026-07-03
+
+- **Date:** 2026-07-03 (Asia/Bangkok)
+- **VM izara-postgres-dev-testing:** RUNNING (`asia-southeast1-b`) — stop when idle to save cost
+- **cloudbuild.yaml:** `_MIN_INSTANCES=0`, `_MAX_INSTANCES=2` confirmed
+- **patch-cloud-run-cost.ps1:** executed 2026-07-03; all 3 dev-testing services patched (min 0 / max 2)
+- **Optional stray service:** `izara-pgadmin-dev-testing` still listed — consider delete if unused
+- **Local gate:** Waves 0–5 PASS; phase 9 parallel in progress
+- **Wave 8:** `cloud:deploy` skipped (approval); smoke/gates run against existing Cloud Run URLs only
+

@@ -13,6 +13,11 @@ import {
   isPlaywrightHeadless,
   lobbyParticipantStatus,
   getPatientAuth,
+  readPageBearerToken,
+  waitForLobbyWaitingParticipant,
+  waitForDoctorLobbyAdmitControls,
+  ensureDoctorLobbyPanelOpen,
+  waitForDoctorLobbyRejectControl,
 } from './helpers/multi-portal';
 import {
   chromiumLaunchArgs,
@@ -30,6 +35,13 @@ import { chromium } from '@playwright/test';
 
 const MEETING_URL = process.env.MEETING_URL || 'http://127.0.0.1:3020';
 const PATIENT_PORTAL = process.env.PATIENT_URL || 'http://127.0.0.1:3005';
+
+function resolveHostReadyTimeoutMs(): number {
+  const workers = Number.parseInt(process.env.PW_WORKERS || '1', 10);
+  if (workers <= 1) return 60_000;
+  const headed = process.env.PW_HEADED === '1' || process.env.PW_HEADED === 'true';
+  return headed ? 120_000 : 90_000;
+}
 
 async function createDefectMeeting(
   doctorPage: import('@playwright/test').Page,
@@ -89,11 +101,16 @@ async function doctorInMeetingWithLobby(
     patientPage.getByTestId('lobby-waiting-screen').or(patientPage.getByTestId('host-waiting-screen')).first(),
   ).toBeVisible({ timeout: 60_000 });
 
-  const lobbyPanel = doctorPage.getByTestId('lobby-panel');
-  if (!(await lobbyPanel.isVisible({ timeout: 8_000 }).catch(() => false))) {
-    await doctorPage.getByTestId('lobby-toggle-btn').click();
-  }
-  await expect(lobbyPanel).toBeVisible({ timeout: 60_000 });
+  const hostReadyTimeout = resolveHostReadyTimeoutMs();
+  await waitForMeetingHostReady(patientPage.request, MEETING_URL, appointmentId, hostReadyTimeout);
+  const { userId: patientParticipantId } = await getPatientAuth(patientPage);
+  const doctorToken = await readPageBearerToken(doctorPage);
+  await waitForLobbyWaitingParticipant(doctorPage, appointmentId, {
+    authToken: doctorToken,
+    participantId: patientParticipantId || 'PATIENT-DEMO',
+  });
+  await ensureDoctorLobbyPanelOpen(doctorPage);
+  await waitForDoctorLobbyAdmitControls(doctorPage);
 }
 
 test.describe('Defect — Meeting lobby admit flow', () => {
@@ -125,8 +142,6 @@ test.describe('Defect — Meeting lobby admit flow', () => {
       portals.doctor.browserName,
     );
 
-    const admitBtn = doctor.page.getByTestId('admit-btn').or(doctor.page.getByTestId('admit-all-btn'));
-    await expect(admitBtn.first()).toBeVisible({ timeout: 30_000 });
     await snapMeetingStage(doctor.page, 'DM2-admit-button-visible', 'lobby-panel', 'group-defect');
   });
 
@@ -164,8 +179,10 @@ test.describe('Defect — Meeting lobby admit flow', () => {
       portals.doctor.browserName,
     );
 
+    await waitForDoctorLobbyRejectControl(doctor.page);
+
     const rejectBtn = doctor.page.getByTestId('reject-btn').first();
-    await expect(rejectBtn).toBeVisible({ timeout: 30_000 });
+    const { userId: patientParticipantId } = await getPatientAuth(patient.page);
     const rejectResp = patient.page.waitForResponse(
       (r) => r.url().includes('/lobby/reject') && r.request().method() === 'POST',
       { timeout: 45_000 },
@@ -174,8 +191,9 @@ test.describe('Defect — Meeting lobby admit flow', () => {
     await rejectResp;
     const rejectDeadline = Date.now() + 45_000;
     let lobbyRejected = false;
+    const statusParticipantId = patientParticipantId || 'PATIENT-DEMO';
     while (Date.now() < rejectDeadline) {
-      const status = await lobbyParticipantStatus(patient.page, appointmentId, 'PATIENT-DEMO').catch(() => 'unknown');
+      const status = await lobbyParticipantStatus(patient.page, appointmentId, statusParticipantId).catch(() => 'unknown');
       if (status === 'rejected') {
         lobbyRejected = true;
         break;
@@ -184,10 +202,10 @@ test.describe('Defect — Meeting lobby admit flow', () => {
     }
     const rejected = patient.page.getByTestId('lobby-rejected-screen');
     const leftLobby = patient.page.getByTestId('lobby-waiting-screen');
-    if (!lobbyRejected) {
-      await expect(rejected.or(leftLobby).first()).toBeVisible({ timeout: 30_000 });
-    } else {
+    if (lobbyRejected) {
       await expect(rejected).toBeVisible({ timeout: 30_000 });
+    } else {
+      await expect(rejected.or(leftLobby).first()).toBeVisible({ timeout: 30_000 });
     }
     if (await rejected.isVisible({ timeout: 3_000 }).catch(() => false)) {
       await snapMeetingStage(patient.page, 'DM4-patient-lobby-rejected', 'lobby-rejected-screen', 'group-defect');

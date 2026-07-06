@@ -1,7 +1,7 @@
 # 🏗️ Izara Telemedicine — System Architecture Overview
 
-**Version:** 1.6.0
-**Last Updated:** April 1, 2026
+**Version:** 1.7.57
+**Last Updated:** July 2, 2026
 **Status:** ✅ Phase 1 Complete — Web Platform
 
 ---
@@ -541,7 +541,7 @@ CI/CD Pipeline:
 Cloud Run Services:
   ├── izara-patient-portal  (1 CPU, 1 GB, 0-2 instances, 300s timeout)
   ├── izara-doctor-portal   (1 CPU, 1 GB, 0-2 instances, 300s timeout)
-  └── izara-meeting-server  (1 CPU, 2 GB, 0-2 instances, 600s timeout)
+  └── izara-meeting-server  (1 CPU, 1 Gi, 0-2 instances, 600s timeout)
 
 Database:
   └── PostgreSQL VM (GCE) 35.240.157.230:5432 (NOT Cloud SQL)

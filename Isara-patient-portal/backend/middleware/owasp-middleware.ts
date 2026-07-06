@@ -128,7 +128,7 @@ export function securityHeaders() {
     res.setHeader('Content-Security-Policy', 
       "default-src 'self' https:; " +
       "script-src 'self' 'unsafe-inline' https://apis.google.com https://maps.googleapis.com https://accounts.google.com https://meet.jit.si https://meet.localhost:8443 https://unpkg.com; " +
-      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com; " +
+      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://accounts.google.com https://unpkg.com; " +
       "font-src 'self' https://fonts.gstatic.com; " +
       "img-src 'self' data: https: blob:; " +
       "connect-src 'self' http://localhost:* ws://localhost:* wss://localhost:* http://127.0.0.1:* ws://127.0.0.1:* wss://127.0.0.1:* http://host.docker.internal:* ws://host.docker.internal:* wss://host.docker.internal:* http://meeting.isara.local https://meeting.isara.local http://patient.isara.local https://patient.isara.local http://doctor.isara.local https://doctor.isara.local http://meeting.local https://meeting.local https://*.googleapis.com https://maps.googleapis.com https://meet.jit.si wss://meet.jit.si https://meet.localhost:8443 wss://meet.localhost:8443 https://*.run.app wss://*.run.app; " +

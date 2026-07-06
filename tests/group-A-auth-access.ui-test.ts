@@ -21,6 +21,7 @@ import {
   readPageBearerToken,
   refreshPageAuth,
 } from './helpers/multi-portal';
+import { refreshAuthStorageStateForRole, reinjectAuthFromStorageFile } from './helpers/auth-refresh';
 import { resetScreenshotSession } from './helpers/screenshot-distinct';
 
 const IS_CLOUD = process.env.TEST_ENV === 'cloud';
@@ -28,29 +29,7 @@ const IS_CLOUD = process.env.TEST_ENV === 'cloud';
 test.describe('Group A — Auth & Access Verification', () => {
   test.describe.configure({ mode: 'serial' });
 
-  /* ── A2b — Patient register + reset-password (before tri-browser fixture) ─ */
-  test('A2b — Patient register and reset-password UI', async ({ browser }) => {
-    test.setTimeout(600_000);
-    const ctx = await browser.newContext();
-    const page = await ctx.newPage();
-    try {
-      await gotoCloudWithRetry(page, `${PATIENT_URL}/register`, 'A2b/register');
-      await expect(page.locator('#register-email')).toBeVisible({ timeout: 120_000 });
-      await assertFullHealth(page, 'A2b/register');
-
-      await gotoCloudWithRetry(page, `${PATIENT_URL}/reset-password`, 'A2b/reset-password');
-      await page.waitForLoadState('domcontentloaded');
-      await page.locator('#root').waitFor({ state: 'attached', timeout: 15_000 }).catch(() => {});
-      await assertFullHealth(page, 'A2b/reset-password');
-      await expect(
-        page.getByText(/โทเค็น|รีเซ็ตรหัสผ่าน|reset password/i).first(),
-      ).toBeVisible({ timeout: 10_000 });
-
-      await snap(page, 'A2b-auth-registration', 'group-A');
-    } finally {
-      await ctx.close().catch(() => {});
-    }
-  });
+  /* A2b lives in group-A2b-public-auth.ui-test.ts (no tri-browser worker fixture). */
 
   /* ── A01 — All 3 dashboards are healthy ──────────────────────────── */
   test('A01 — All 3 portals loaded healthy after auth', async ({ portals }) => {
@@ -88,11 +67,17 @@ test.describe('Group A — Auth & Access Verification', () => {
   /* ── A02 — Patient sidebar has all expected nav items ────────────── */
   test('A02 — Patient portal sidebar complete', async ({ portals }) => {
     const { patient } = portals;
+    await refreshAuthStorageStateForRole('patient1');
+    await reinjectAuthFromStorageFile(patient.page, 'patient1');
     await refreshPatientSession(patient.page);
-    await patient.page.goto(`${PATIENT_URL}/`, {
-      waitUntil: 'domcontentloaded',
-      timeout: IS_CLOUD ? 90_000 : 45_000,
-    });
+    if (IS_CLOUD) {
+      await gotoCloudWithRetry(patient.page, `${PATIENT_URL}/`, 'A02-patient', 90_000);
+    } else {
+      await patient.page.goto(`${PATIENT_URL}/`, {
+        waitUntil: 'domcontentloaded',
+        timeout: 45_000,
+      });
+    }
     await waitForContent(patient.page, 'A02', IS_CLOUD ? 20_000 : 8_000);
     await assertFullHealth(patient.page, 'A02-patient');
     const expectedLinks = [
@@ -149,12 +134,15 @@ test.describe('Group A — Auth & Access Verification', () => {
   /* ── A04 — Admin sidebar has extra admin-only items ──────────────── */
   test('A04 — Admin sidebar has doctor-management items', async ({ portals }) => {
     const { admin } = portals;
-    await refreshPageAuth(admin.page, DOCTOR_URL);
-    await admin.page.goto(`${DOCTOR_URL}/doctor/${admin.userId}/dashboard`, {
-      waitUntil: 'commit',
-      timeout: 60_000,
-    });
-    await waitForContent(admin.page, 'A04-admin-dashboard', 8_000, 'admin');
+    await refreshAuthStorageStateForRole('admin');
+    await reinjectAuthFromStorageFile(admin.page, 'admin');
+    const adminDash = `${DOCTOR_URL}/doctor/ADMIN-TEST-001/dashboard`;
+    if (IS_CLOUD) {
+      await gotoCloudWithRetry(admin.page, adminDash, 'A04-admin-dashboard', 90_000);
+    } else {
+      await admin.page.goto(adminDash, { waitUntil: 'commit', timeout: 60_000 });
+    }
+    await waitForContent(admin.page, 'A04-admin-dashboard', IS_CLOUD ? 15_000 : 8_000, 'admin');
     const adminPatterns = [
       /จัดการแพทย์|Manage Doctor/i,
       /อนุมัติ.*แพทย์|Doctor Approval/i,
@@ -339,27 +327,20 @@ test.describe('Group A — Auth & Access Verification', () => {
     });
   });
 
-  /* ── A11 — Multi-party browser matrix (Chrome / Edge / Firefox or Edge admin locally) ─ */
+  /* ── A11 — Multi-party browser matrix (Patient=Chrome, Doctor=Edge, Admin=Firefox) ─ */
   test('A11 — Cross-browser fixture uses role-specific engines', async ({ portals }) => {
     expect(getRoleBrowserSpec('patient').browserName).toBe('chrome');
     expect(getRoleBrowserSpec('doctor').browserName).toBe('edge');
-    const adminSpec = getRoleBrowserSpec('admin');
-    const localHeadedAdmin = !IS_CLOUD && adminSpec.browserName === 'edge';
-    if (localHeadedAdmin) {
-      expect(adminSpec.engine).toBe('chromium');
-    } else {
-      expect(adminSpec.browserName).toBe('firefox');
-      expect(adminSpec.engine).toBe('firefox');
-    }
+    expect(getRoleBrowserSpec('admin').browserName).toBe('firefox');
+    expect(getRoleBrowserSpec('admin').engine).toBe('firefox');
 
     expect(portals.patient.browserName).toBe('chrome');
-    // Runtime browserName is Chromium-family label, even when channel is Edge.
-    expect(portals.doctor.browserName).toBe('chrome');
-    expect(['firefox', 'edge', 'chrome']).toContain(portals.admin.browserName);
+    expect(portals.doctor.browserName).toBe('edge');
+    expect(portals.admin.browserName).toBe('firefox');
 
     expect(portals.patient.browser.browserType().name()).toBe('chromium');
     expect(portals.doctor.browser.browserType().name()).toBe('chromium');
-    expect(portals.admin.browser.browserType().name()).toBe(localHeadedAdmin ? 'chromium' : 'firefox');
+    expect(portals.admin.browser.browserType().name()).toBe('firefox');
 
     const matrixRoles = Object.keys(ROLE_BROWSER_MATRIX);
     expect(matrixRoles).toEqual(['patient', 'doctor', 'admin']);

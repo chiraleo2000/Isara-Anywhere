@@ -163,8 +163,13 @@ export default defineConfig({
   projects: [
     /* ── AUTH GATE (runs first) ──────────────────────────────────── */
     {
+      name: 'A2b-public-auth',
+      testMatch: 'group-A2b-public-auth.ui-test.ts',
+    },
+    {
       name: 'A-auth',
       testMatch: 'group-A-auth-access.ui-test.ts',
+      dependencies: ['A2b-public-auth'],
     },
 
     /* ── PARALLEL GROUPS (B, C, G, H, I, J) ─────────────────────── */

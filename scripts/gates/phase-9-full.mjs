@@ -8,12 +8,18 @@ import { runScreenshotGate } from './lib/run-screenshot-gate.mjs';
 import { runLedgerRound } from './lib/run-ledger-round.mjs';
 import { runPrePhaseSmoke } from './lib/run-pre-phase-smoke.mjs';
 import { bailWithArchive } from './lib/archive-failure.mjs';
+import { isParallelGate, resolveGateWorkers } from './lib/resolve-gate-workers.mjs'; // NOSONAR S1128 — resolveGateWorkers used below
 
 const ROUND = 9;
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const isWin = process.platform === 'win32';
+const gateWorkers = resolveGateWorkers();
 
 if (!runPrePhaseSmoke()) bailWithArchive(ROUND, 'pre-phase-smoke');
+
+if (isParallelGate()) {
+  console.log(`\n⚡ Parallel gate — Playwright workers=${gateWorkers} (B/C/G/H/I/J ∥, D→Q→E→F serial via deps)\n`);
+}
 
 if (
   !runStep({
@@ -21,15 +27,18 @@ if (
     cmd: 'node',
     args: ['scripts/run-local-pre-deploy-gate.mjs'],
     cwd: root,
-    env: { ...process.env, PW_WORKERS: '1' },
+    env: { ...process.env, PW_WORKERS: gateWorkers },
   })
 ) {
   bailWithArchive(ROUND, 'pre-deploy-gate-core');
 }
 
-/** Align with package.json test:screenshots:all (A,B,D,E,Q,Q2,S) */
+/** Align with package.json test:screenshots:all */
 if (
-  !runScreenshotGate('group-A,group-B,group-D,group-E,group-Q,group-Q2,group-S', 'screenshots-all')
+  !runScreenshotGate(
+    'group-A,group-B,group-C,group-D,group-E,group-F,group-G,group-H,group-I,group-J,group-J-jitsi-prejoin,group-L,group-Q,group-Q2,group-R,group-S,group-defect',
+    'screenshots-all',
+  )
 ) {
   bailWithArchive(ROUND, 'screenshots-all');
 }

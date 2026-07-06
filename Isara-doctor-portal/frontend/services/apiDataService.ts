@@ -123,9 +123,9 @@ export async function confirmAppointment(
   confirmedDate?: string, 
   confirmedTime?: string,
   notes?: string
-): Promise<{ success: boolean; appointment: any; meetingLink: string }> {
+): Promise<{ success: boolean; appointment: any; meetingLink: string; calendarEventUrl?: string }> {
   console.log(`[API] Confirming appointment ${appointmentId}...`);
-  return fetchAPI<{ success: boolean; appointment: any; meetingLink: string }>(
+  return fetchAPI<{ success: boolean; appointment: any; meetingLink: string; calendarEventUrl?: string }>(
     `/api/appointments/${appointmentId}/confirm`,
     {
       method: 'POST',

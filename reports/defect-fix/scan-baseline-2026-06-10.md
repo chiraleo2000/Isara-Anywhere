@@ -1,6 +1,6 @@
 # Local Pre-Deploy Gate Baseline (v5.2)
 
-Date: 2026-06-30T06:49:55.741Z
+Date: 2026-07-06T06:34:25.645Z
 
 | Step | Process doc | Result |
 |------|-------------|--------|
@@ -28,9 +28,7 @@ Date: 2026-06-30T06:49:55.741Z
 | docker-compose | Processes/ENV_AND_STACK_CHECK.md | PASS |
 | docker-probe | Processes/ENV_AND_STACK_CHECK.md | PASS |
 | gate0-local | Processes/GATE0_IMPLEMENTATION_STATUS.md | PASS |
-| browser-core-firefox | — | PASS |
-| browser-core-webkit | — | PASS |
-| browser-appointments-firefox | — | PASS |
+| browser-core-multibrowser | — | PASS |
 | e2e-full-headed | tests/PROCESS_COVERAGE_MATRIX.md | PASS |
 | screenshots-all | — | PASS |
 | screenshots-group-e | — | PASS |

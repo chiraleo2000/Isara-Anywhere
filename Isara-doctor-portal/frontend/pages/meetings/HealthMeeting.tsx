@@ -333,13 +333,6 @@ const HealthMeeting: React.FC<HealthMeetingProps> = ({ doctor }) => {
   const [confirmDate, setConfirmDate] = useState(''); // For admin/doctor to set/change date
   const [confirmTime, setConfirmTime] = useState(''); // For admin/doctor to set/change time
 
-  // Email recipient selection state
-  const [emailRecipients, setEmailRecipients] = useState({
-    sendToPatient: true,
-    sendToDoctor: true,
-    additionalEmails: '' // Comma-separated additional emails
-  });
-
   // Admin-only state: All Appointments (removed patientPool - merged into pendingQueue)
   const [allAppointments, setAllAppointments] = useState<AppointmentRequest[]>([]);
   const [availableDoctors, setAvailableDoctors] = useState<DoctorOption[]>();
@@ -1061,93 +1054,6 @@ const HealthMeeting: React.FC<HealthMeetingProps> = ({ doctor }) => {
     };
   };
 
-  // Send confirmation email (opens mailto or calls backend)
-  const sendConfirmationEmail = async (appointment: any, meetingDetails: any) => {
-    const patientEmail = appointment.patientEmail || appointment.email;
-    const doctorEmail = doctor.email;
-
-    const appointmentDate = appointment.appointmentDate || appointment.date;
-    const appointmentTime = appointment.appointmentTime || appointment.time || '10:00';
-
-    const subject = `Appointment Confirmed - ${appointmentDate} at ${appointmentTime}`;
-
-    // Use patient-specific URL if available, otherwise use generic meetLink
-    const patientMeetingLink = meetingDetails.patientUrl || meetingDetails.meetLink;
-
-    const body = `
-Dear ${appointment.patientName || 'Patient'},
-
-Your appointment has been confirmed by Dr. ${doctor.name || 'Doctor'}.
-
-APPOINTMENT DETAILS:
-━━━━━━━━━━━━━━━━━━━━━━
-Date: ${appointmentDate}
-Time: ${appointmentTime}
-Doctor: Dr. ${doctor.name}
-Type: Telehealth Video Consultation
-
-YOUR MEETING LINK (Jitsi Meet):
-━━━━━━━━━━━━━━━━━━━━━━
-${patientMeetingLink}
-
-IMPORTANT: The doctor will start the meeting first. Please wait to be admitted.
-
-Please click the link above at the scheduled time to join the video consultation.
-No account needed - works directly in your browser!
-
-PREPARATION:
-━━━━━━━━━━━━━━━━━━━━━━
-• Ensure you have a stable internet connection
-• Test your camera and microphone before the appointment
-• Have your medical records ready if needed
-• Be in a quiet, private location
-• Allow browser access to camera/microphone when prompted
-
-${confirmNotes ? `DOCTOR'S NOTES:\n${confirmNotes}\n` : ''}
-
-If you need to reschedule or cancel, please contact us at least 24 hours in advance.
-
-Best regards,
-Izara Telehealth Team
-    `.trim();
-
-    // Build recipient list based on selection
-    const recipients: string[] = [];
-    let ccList: string[] = [];
-
-    // Primary recipient - patient
-    if (emailRecipients.sendToPatient && patientEmail) {
-      recipients.push(patientEmail);
-    }
-
-    // CC - doctor
-    if (emailRecipients.sendToDoctor && doctorEmail) {
-      ccList.push(doctorEmail);
-    }
-
-    // Additional recipients
-    if (emailRecipients.additionalEmails.trim()) {
-      const additionalList = emailRecipients.additionalEmails
-        .split(',')
-        .map(e => e.trim())
-        .filter(e => e?.includes('@'));
-      ccList = [...ccList, ...additionalList];
-    }
-
-    // If no recipients selected, use patient as default
-    const toField = recipients.length > 0 ? recipients.join(',') : patientEmail;
-    const ccField = ccList.length > 0 ? ccList.join(',') : '';
-
-    // Open mailto link to send email
-    const ccParam = ccField ? 'cc=' + ccField + '&' : '';
-    const mailtoLink = `mailto:${toField}?${ccParam}subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-
-    // Open in new window/tab
-    window.open(mailtoLink, '_blank');
-
-    return { sent: true, method: 'mailto', recipients: toField, cc: ccField };
-  };
-
   const handleConfirmAppointment = async () => {
     if (!selectedAppointment) return;
     if (!confirmDate || !confirmTime) {
@@ -1185,7 +1091,7 @@ Izara Telehealth Team
       const calendarDescription = `Video consultation via Izara Telehealth (Jitsi Meet)\n\nDOCTOR LINK (Click to join as HOST):\n${meetingDetails.doctorUrl}\n\nPatient Link:\n${meetingDetails.patientUrl}\n\nReason: ${selectedAppointment.reason || 'General Consultation'}${confirmNotes ? '\n\nDoctor Notes: ' + confirmNotes : ''}`;
 
       const formatDateForCalendar = (date: Date) => date.toISOString().replaceAll('-', '').replaceAll(':', '').replace('.000', '');
-      const googleCalendarUrl = `https://calendar.google.com/calendar/event?action=TEMPLATE&text=${encodeURIComponent(calendarTitle)}&details=${encodeURIComponent(calendarDescription)}&dates=${formatDateForCalendar(startDateTime)}/${formatDateForCalendar(endDateTime)}&location=${encodeURIComponent(meetingDetails.doctorUrl)}`;
+      const fallbackCalendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(calendarTitle)}&details=${encodeURIComponent(calendarDescription)}&dates=${formatDateForCalendar(startDateTime)}/${formatDateForCalendar(endDateTime)}&location=${encodeURIComponent(meetingDetails.doctorUrl)}`;
 
       // Step 4: Confirm appointment via PostgreSQL API
       const doctorIdentifier = doctor.id || doctor.email || 'unknown-doctor';
@@ -1199,6 +1105,8 @@ Izara Telehealth Team
       if (!confirmResult?.success) {
         throw new Error('Failed to confirm appointment via API');
       }
+
+      const calendarEventUrl = confirmResult.calendarEventUrl || fallbackCalendarUrl;
 
       // Step 5b: Register meeting with the meeting server (so patient can look up room name)
       let meetingServerRegistered = false;
@@ -1242,7 +1150,7 @@ Izara Telehealth Team
               guestMeetingUrl: meetingDetails.guestUrl,
               jitsiRoomName: meetingDetails.meetCode,
               meetCode: meetingDetails.meetCode,
-              calendarEventUrl: googleCalendarUrl,
+              calendarEventUrl,
               scheduledDate: appointmentDate,
               scheduledTime: appointmentTime,
               scheduledStartTime: startDateTime.toISOString(),
@@ -1269,10 +1177,8 @@ Izara Telehealth Team
       // All meeting data is already saved in the appointment record above
       // No need for separate writeToGCS calls - PostgreSQL handles everything
 
-      // Step 6: Send confirmation email
-      console.log('📧 Sending confirmation email...');
-      await sendConfirmationEmail(selectedAppointment, meetingDetails);
-      console.log('✅ Email triggered');
+      // Step 6: Backend sends confirmation email + in-app notifications
+      console.log('📧 Confirmation email sent by backend API');
 
       // Step 7: Reset UI state FIRST
       setShowConfirmModal(false);
@@ -1280,7 +1186,6 @@ Izara Telehealth Team
       setConfirmNotes('');
       setConfirmDate('');
       setConfirmTime('');
-      setEmailRecipients({ sendToPatient: true, sendToDoctor: true, additionalEmails: '' });
 
       // No need for cache clearing or delays - PostgreSQL is instant
 
@@ -1294,11 +1199,13 @@ Izara Telehealth Team
       }
 
       setSuccessMessage(
-        `Appointment confirmed. Host link ready — patient link sent. Add to calendar?`,
+        `Appointment confirmed. Patient notified by email with meeting link. Add to calendar?`,
       );
       setQueueToast(`Confirmed ${selectedAppointment.id} — moved to scheduled meetings`);
       scheduleToastClear(setQueueToast);
-      window.open(googleCalendarUrl, '_blank');
+      if (calendarEventUrl) {
+        window.open(calendarEventUrl, '_blank', 'noopener,noreferrer');
+      }
       setTimeout(() => setSuccessMessage(null), 8000);
 
       console.log('🎉 Appointment confirmation complete!');
@@ -2420,44 +2327,16 @@ Izara Telehealth Team
               />
             </div>
 
-            {/* Email Recipients Selection */}
+            {/* Email notification info */}
             <div className="mb-4 bg-blue-50 rounded-lg p-4">
-              <h4 className="font-medium text-blue-700 mb-3 flex items-center gap-2">
-                📧 Email Notification Recipients
+              <h4 className="font-medium text-blue-700 mb-2 flex items-center gap-2">
+                📧 Email Notification
               </h4>
-              <div className="space-y-3">
-                <label className="flex items-center gap-2 text-sm">
-                  <input
-                    type="checkbox"
-                    checked={emailRecipients.sendToPatient}
-                    onChange={(e) => setEmailRecipients({ ...emailRecipients, sendToPatient: e.target.checked })}
-                    className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
-                  />
-                  <span className="text-gray-700">Send to Patient</span>
-                  <span className="text-gray-400 text-xs">({selectedAppointment.patientEmail || selectedAppointment.email || 'N/A'})</span>
-                </label>
-                <label className="flex items-center gap-2 text-sm">
-                  <input
-                    type="checkbox"
-                    checked={emailRecipients.sendToDoctor}
-                    onChange={(e) => setEmailRecipients({ ...emailRecipients, sendToDoctor: e.target.checked })}
-                    className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
-                  />
-                  <span className="text-gray-700">CC Doctor</span>
-                  <span className="text-gray-400 text-xs">({doctor.email})</span>
-                </label>
-                <div>
-                  <label htmlFor="additional-emails" className="block text-sm text-gray-700 mb-1">Additional Recipients (comma-separated)</label>
-                  <input
-                    id="additional-emails"
-                    type="text"
-                    value={emailRecipients.additionalEmails}
-                    onChange={(e) => setEmailRecipients({ ...emailRecipients, additionalEmails: e.target.value })}
-                    placeholder="e.g., family@example.com, nurse@clinic.com"
-                    className="w-full px-3 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-              </div>
+              <p className="text-sm text-gray-700">
+                The system will automatically email the patient at{' '}
+                <span className="font-medium">{selectedAppointment.patientEmail || selectedAppointment.email || 'N/A'}</span>{' '}
+                with the appointment details and meeting link.
+              </p>
             </div>
 
             <div className="flex justify-end gap-3">
@@ -2468,7 +2347,6 @@ Izara Telehealth Team
                   setConfirmNotes('');
                   setConfirmDate('');
                   setConfirmTime('');
-                  setEmailRecipients({ sendToPatient: true, sendToDoctor: true, additionalEmails: '' });
                 }}
                 className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
               >

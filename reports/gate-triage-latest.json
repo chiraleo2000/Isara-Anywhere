@@ -1,0 +1,15 @@
+{
+  "triagedAt": "2026-07-02T06:02:26.515Z",
+  "failedStep": "e2e-full-headed",
+  "allFailedSteps": [],
+  "step": "e2e-full-headed",
+  "fixScope": "tests/group-*.ui-test.ts (see playwright-report for project)",
+  "rerunCommand": "npm run test:local:e2e-parallel",
+  "resumeCommand": "$env:GATE_FROM_STEP=\"e2e-full-headed\"; npm run test:local:gate-parallel-resume",
+  "agentPrompt": "Read playwright-report + test-results/full-coverage-results.json; fix failing Playwright group; re-run isolated project with --workers=1 if flaky.",
+  "artifactsPath": null,
+  "baselineReport": "C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-Anywhere\\reports\\defect-fix\\scan-baseline-2026-06-10.md",
+  "playwrightFailures": [],
+  "playwrightReport": "C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-Anywhere\\playwright-report\\index.html",
+  "parallelResume": "cross-env GATE_PARALLEL=1 PW_WORKERS=4 PW_NO_CHROME=1 GATE_SKIP_DOCKER_BUILD=1 npm run test:local:gate-parallel-resume"
+}

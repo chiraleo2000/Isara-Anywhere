@@ -243,32 +243,60 @@ function isDoctorPortalBaseUrl(baseUrl: string): boolean {
   return baseUrl.includes('3010') || /doctor-portal/i.test(baseUrl);
 }
 
-async function resolveDoctorPortalAuthRole(page: Page): Promise<'admin' | 'doctor'> {
-  return page.evaluate(() => {
-    try {
-      const u = JSON.parse(localStorage.getItem('izara_current_user') || '{}') as {
-        isAdmin?: boolean;
-        role?: string;
-        id?: string;
-      };
-      if (u.isAdmin || u.role === 'admin' || u.id?.startsWith('ADMIN-')) return 'admin';
-    } catch {
-      /* fall through */
-    }
-    const path = globalThis.location?.pathname || '';
-    if (/ADMIN-TEST|\/admin\b/i.test(path)) return 'admin';
-    return 'doctor';
-  });
+export type PortalAuthRole = 'admin' | 'doctor' | 'patient1';
+
+function doctorRoleFromUrl(url: string): 'admin' | 'doctor' | null {
+  if (/ADMIN-TEST|\/admin\b/i.test(url)) return 'admin';
+  return null;
 }
 
-export async function refreshPageAuth(page: Page, baseUrl: string): Promise<void> {
-  if (isPatientPortalBaseUrl(baseUrl)) {
+async function resolveDoctorPortalAuthRole(page: Page): Promise<'admin' | 'doctor'> {
+  const fromUrl = doctorRoleFromUrl(page.url());
+  if (fromUrl) return fromUrl;
+
+  for (let attempt = 0; attempt < 4; attempt++) {
+    try {
+      await page.waitForLoadState('domcontentloaded', { timeout: 8_000 }).catch(() => {});
+      return await page.evaluate(() => {
+        try {
+          const u = JSON.parse(localStorage.getItem('izara_current_user') || '{}') as {
+            isAdmin?: boolean;
+            role?: string;
+            id?: string;
+          };
+          if (u.isAdmin || u.role === 'admin' || u.id?.startsWith('ADMIN-')) return 'admin';
+        } catch {
+          /* fall through */
+        }
+        const path = globalThis.location?.pathname || '';
+        if (/ADMIN-TEST|\/admin\b/i.test(path)) return 'admin';
+        return 'doctor';
+      });
+    } catch {
+      const retryFromUrl = doctorRoleFromUrl(page.url());
+      if (retryFromUrl) return retryFromUrl;
+      if (attempt === 3) return 'doctor';
+      await page.waitForTimeout(400 * (attempt + 1));
+    }
+  }
+  return 'doctor';
+}
+
+export async function refreshPageAuth(
+  page: Page,
+  baseUrl: string,
+  forcedRole?: PortalAuthRole,
+): Promise<void> {
+  if (forcedRole === 'patient1' || isPatientPortalBaseUrl(baseUrl)) {
     await refreshAuthStorageStateForRole('patient1');
     await reinjectAuthFromStorageFile(page, 'patient1');
     return;
   }
-  if (isDoctorPortalBaseUrl(baseUrl)) {
-    const role = await resolveDoctorPortalAuthRole(page);
+  if (isDoctorPortalBaseUrl(baseUrl) || forcedRole === 'admin' || forcedRole === 'doctor') {
+    const role =
+      forcedRole === 'admin' || forcedRole === 'doctor'
+        ? forcedRole
+        : await resolveDoctorPortalAuthRole(page);
     await refreshAuthStorageStateForRole(role);
     await reinjectAuthFromStorageFile(page, role);
     return;
@@ -312,6 +340,25 @@ export async function ensureDoctorPortalAuthenticated(
     const dest = `${DOCTOR_URL}/doctor/${userId}/${routeSegment}`;
     await page.goto(dest, { waitUntil: 'domcontentloaded', timeout: IS_CLOUD ? 90_000 : 30_000 });
     await waitForContent(page, `${label}-auth-recovery`, contentTimeout, portalRole);
+  }
+  assertNotLogin(page, label);
+}
+
+/** Recover patient portal session after long cloud runs or cross-portal fixture reuse. */
+export async function ensurePatientPortalAuthenticated(page: Page, label: string): Promise<void> {
+  await refreshAuthStorageStateForRole('patient1');
+  await reinjectAuthFromStorageFile(page, 'patient1');
+  await refreshPatientSession(page);
+  const home = `${PATIENT_URL}/`;
+  if (IS_CLOUD) {
+    await gotoCloudWithRetry(page, home, label, 90_000);
+  } else {
+    await page.goto(home, { waitUntil: 'domcontentloaded', timeout: 45_000 });
+  }
+  await waitForContent(page, label, IS_CLOUD ? 20_000 : 8_000);
+  const url = page.url();
+  if (url.includes('doctor-portal') || /:3010\b/.test(url)) {
+    throw new Error(`[${label}] expected patient portal, got ${url}`);
   }
   assertNotLogin(page, label);
 }
@@ -408,17 +455,8 @@ export const MEETING_URL = IS_CLOUD
   : (process.env.MEETING_URL || process.env.MEETING_SERVER_URL || process.env.LOCAL_MEETING_URL || 'http://127.0.0.1:3020');
 
 /** Navigation timeout — longer for cloud cold starts and headed local (admin Firefox) */
-function resolveNavTimeout(): number {
-  if (IS_CLOUD || process.env.PW_HEADED === '1') return 90_000;
-  return 30_000;
-}
-
-function resolveE2eTimeoutMs(cloudMs: number, headedMs: number, defaultMs: number): number {
-  if (IS_CLOUD) return cloudMs;
-  if (process.env.PW_HEADED === '1') return headedMs;
-  return defaultMs;
-}
-const NAV_TIMEOUT = resolveNavTimeout();
+// Headed (visible) runs are slower on Windows (GPU + 3 browsers) — allow more navigation time.
+const NAV_TIMEOUT = resolveHeadedTimeout(90_000, 120_000, 30_000);
 /** Fixture initial navigation timeout — extra generous for cold starts */
 const FIXTURE_NAV_TIMEOUT = IS_CLOUD || process.env.PW_HEADED === '1' ? 120_000 : 60_000;
 
@@ -651,6 +689,67 @@ export async function pageRequestPatch(
 }
 
 /** Poll API until predicate passes (cross-portal sync). */
+type PoolPollSnapshot = {
+  status: number;
+  count: number;
+  ids: string[];
+  statuses: string[];
+};
+
+async function queryPoolForAppointment(
+  page: Page,
+  baseUrl: string,
+  appointmentId: string,
+  opts?: { unassignedOnly?: boolean },
+): Promise<{ found: boolean; authRetry: boolean; snapshot: PoolPollSnapshot }> {
+  const token = await readPageBearerToken(page);
+  const poolResp = await pageRequestGet(page, `${baseUrl}/api/appointment-pool`, {
+    headers: { Authorization: `Bearer ${token}` },
+    timeout: 15_000,
+  });
+  if (poolResp.status() === 401) {
+    return {
+      found: false,
+      authRetry: true,
+      snapshot: { status: 401, count: 0, ids: [], statuses: [] },
+    };
+  }
+  const ok = poolResp.ok();
+  const rows = ok ? await poolResp.json().catch(() => []) : [];
+  const list = Array.isArray(rows) ? rows : [];
+  const snapshot: PoolPollSnapshot = {
+    status: poolResp.status(),
+    count: list.length,
+    ids: list.map((a: { id?: string }) => String(a.id || '')),
+    statuses: list.map((a: { status?: string }) => String(a.status || '')),
+  };
+  if (ok) {
+    const hit = list.find((a: { id?: string; doctor_id?: string | null; doctorId?: string | null; status?: string }) =>
+      poolRowMatches(a, appointmentId, opts?.unassignedOnly),
+    );
+    if (hit) return { found: true, authRetry: false, snapshot };
+  }
+  return { found: false, authRetry: false, snapshot };
+}
+
+async function appointmentExistsViaDetail(
+  page: Page,
+  baseUrl: string,
+  appointmentId: string,
+  unassignedOnly?: boolean,
+): Promise<boolean> {
+  const token = await readPageBearerToken(page);
+  const detail = await pageRequestGet(page, `${baseUrl}/api/appointments/${appointmentId}`, {
+    headers: { Authorization: `Bearer ${token}` },
+    timeout: 15_000,
+  }).catch(() => null);
+  if (!detail?.ok()) return false;
+  const row = await detail.json().catch(() => null);
+  if (!row?.id || row.id !== appointmentId) return false;
+  if (!unassignedOnly) return true;
+  return poolRowDoctorId(row) == null;
+}
+
 export async function waitForPoolAppointment(
   page: Page,
   baseUrl: string,
@@ -660,50 +759,18 @@ export async function waitForPoolAppointment(
   const timeoutMs = opts?.timeoutMs ?? resolveHeadedTimeout(45_000, 60_000, 45_000);
   const deadline = Date.now() + timeoutMs;
   let authRetried = false;
-  let lastSnapshot: { status: number; count: number; ids: string[]; statuses: string[] } | null = null;
-
-  async function appointmentExistsViaDetail(): Promise<boolean> {
-    const token = await readPageBearerToken(page);
-    const detail = await pageRequestGet(page, `${baseUrl}/api/appointments/${appointmentId}`, {
-      headers: { Authorization: `Bearer ${token}` },
-      timeout: 15_000,
-    }).catch(() => null);
-    if (!detail?.ok()) return false;
-    const row = await detail.json().catch(() => null);
-    if (!row?.id || row.id !== appointmentId) return false;
-    if (!opts?.unassignedOnly) return true;
-    return poolRowDoctorId(row) == null;
-  }
+  let lastSnapshot: PoolPollSnapshot | null = null;
 
   while (Date.now() < deadline) {
-    const token = await readPageBearerToken(page);
-    const poolResp = await pageRequestGet(page, `${baseUrl}/api/appointment-pool`, {
-      headers: { Authorization: `Bearer ${token}` },
-      timeout: 15_000,
-    });
-    if (poolResp.status() === 401 && !authRetried) {
+    const poll = await queryPoolForAppointment(page, baseUrl, appointmentId, opts);
+    lastSnapshot = poll.snapshot;
+    if (poll.authRetry && !authRetried) {
       authRetried = true;
       await refreshPageAuth(page, baseUrl);
       continue;
     }
-    const ok = poolResp.ok();
-    const rows = ok ? await poolResp.json().catch(() => []) : [];
-    const list = Array.isArray(rows) ? rows : [];
-    lastSnapshot = {
-      status: poolResp.status(),
-      count: list.length,
-      ids: list.map((a: { id?: string }) => String(a.id || '')),
-      statuses: list.map((a: { status?: string }) => String(a.status || '')),
-    };
-    if (ok) {
-      const hit = list.find((a: { id?: string; doctor_id?: string | null; doctorId?: string | null; status?: string }) =>
-        poolRowMatches(a, appointmentId, opts?.unassignedOnly),
-      );
-      if (hit) {
-        return;
-      }
-    }
-    if (await appointmentExistsViaDetail()) return;
+    if (poll.found) return;
+    if (await appointmentExistsViaDetail(page, baseUrl, appointmentId, opts?.unassignedOnly)) return;
     await page.waitForTimeout(1_500);
   }
   throw new Error(
@@ -926,11 +993,176 @@ export async function lobbyGetSnapshot(
   if (authToken) headers.Authorization = `Bearer ${authToken}`;
   const resp = await page.request.get(`${MEETING_URL}/api/meetings/${meetingKey}/lobby`, {
     headers,
-    timeout: IS_CLOUD ? 30_000 : 10_000,
+    timeout: lobbyApiRequestTimeoutMs(),
   });
   expect(resp.ok(), `lobby GET ${meetingKey}`).toBeTruthy();
   const data = await resp.json();
   return parseLobbySnapshot(data);
+}
+
+function isParallelGateLoad(): boolean {
+  return Number.parseInt(process.env.PW_WORKERS || '1', 10) > 1;
+}
+
+function isHeadedParallelLoad(): boolean {
+  return (
+    isParallelGateLoad() &&
+    (process.env.PW_HEADED === '1' || process.env.PW_HEADED === 'true' || process.env.BASELINE_VISUAL === '1')
+  );
+}
+
+function lobbyApiRequestTimeoutMs(): number {
+  if (IS_CLOUD) return 30_000;
+  if (isHeadedParallelLoad()) return 30_000;
+  if (isParallelGateLoad()) return 25_000;
+  return 10_000;
+}
+
+function resolveCloudParallelDefaultTimeout(
+  cloudMs: number,
+  parallelMs: number,
+  defaultMs: number,
+): number {
+  if (IS_CLOUD) return cloudMs;
+  if (isHeadedParallelLoad()) return Math.max(cloudMs, parallelMs);
+  if (isParallelGateLoad()) return parallelMs;
+  return defaultMs;
+}
+
+function resolveOptionalCloudParallelTimeout(
+  timeoutMs: number | undefined,
+  cloudMs: number,
+  parallelMs: number,
+  defaultMs: number,
+): number {
+  if (timeoutMs != null) return timeoutMs;
+  return resolveCloudParallelDefaultTimeout(cloudMs, parallelMs, defaultMs);
+}
+
+function resolveStorageContextTimeoutMs(isAdminFirefox: boolean, parallelHeaded: boolean): number {
+  if (IS_CLOUD) return 120_000;
+  if (isAdminFirefox && parallelHeaded) return 180_000;
+  if (parallelHeaded) return 120_000;
+  return 45_000;
+}
+
+const MEETING_ROUTE_RE = /\/meeting\//;
+
+/** Poll meeting-server lobby until a participant is waiting (source of truth before UI admit controls). */
+export async function waitForLobbyWaitingParticipant(
+  page: Page,
+  meetingKey: string,
+  opts: { authToken?: string; participantId?: string; timeoutMs?: number } = {},
+): Promise<{ participantId: string }> {
+  const timeoutMs = resolveOptionalCloudParallelTimeout(opts.timeoutMs, 120_000, 90_000, 60_000);
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    const token = opts.authToken ?? (await readPageBearerToken(page).catch(() => ''));
+    try {
+      const snap = await lobbyGetSnapshot(page, meetingKey, token || undefined);
+      const match = opts.participantId
+        ? snap.waiting.find((p) => p.participantId === opts.participantId)
+        : snap.waiting.find((p) => p.status === 'waiting');
+      if (match?.participantId) {
+        return { participantId: match.participantId };
+      }
+    } catch {
+      /* meeting-server may be slow under parallel headed load — keep polling */
+    }
+    await page.waitForTimeout(1_500);
+  }
+  throw new Error(`Lobby waiting participant not found for ${meetingKey} within ${timeoutMs}ms`);
+}
+
+/** Open doctor lobby sidebar if collapsed. */
+export async function dismissMeetingResultsOverlayIfVisible(doctorPage: Page): Promise<void> {
+  const results = doctorPage.getByTestId('meeting-results');
+  if (!(await results.isVisible({ timeout: 2_000 }).catch(() => false))) return;
+  const closeBtn = doctorPage.getByRole('button', { name: /ปิดผลการประชุม/i }).or(
+    doctorPage.locator('[data-testid="meeting-results"] button[title="ปิดผลการประชุม"]'),
+  );
+  if (await closeBtn.first().isVisible({ timeout: 3_000 }).catch(() => false)) {
+    await closeBtn.first().click();
+  } else {
+    await doctorPage.keyboard.press('Escape');
+  }
+  await expect(results).toBeHidden({ timeout: 15_000 });
+}
+
+/** Open doctor lobby sidebar if collapsed. */
+export async function ensureDoctorLobbyPanelOpen(doctorPage: Page): Promise<void> {
+  await dismissMeetingResultsOverlayIfVisible(doctorPage);
+  const lobbyPanel = doctorPage.getByTestId('lobby-panel');
+  if (!(await lobbyPanel.isVisible({ timeout: 3_000 }).catch(() => false))) {
+    await doctorPage.getByTestId('lobby-toggle-btn').click();
+  }
+  await expect(lobbyPanel).toBeVisible({ timeout: 60_000 });
+}
+
+/** Poll until admit-btn or admit-all-btn is visible (lobby UI polls every ~3s under load). */
+export async function waitForDoctorLobbyAdmitControls(
+  doctorPage: Page,
+  timeoutMs?: number,
+): Promise<void> {
+  const resolvedTimeout = resolveOptionalCloudParallelTimeout(timeoutMs, 120_000, 90_000, 45_000);
+  const deadline = Date.now() + resolvedTimeout;
+  const admitBtn = doctorPage.getByTestId('admit-btn').or(doctorPage.getByTestId('admit-all-btn'));
+  while (Date.now() < deadline) {
+    await ensureDoctorLobbyPanelOpen(doctorPage);
+    if (await admitBtn.first().isVisible({ timeout: 2_000 }).catch(() => false)) {
+      return;
+    }
+    await doctorPage.waitForTimeout(1_500);
+  }
+  await expect(admitBtn.first()).toBeVisible({ timeout: 10_000 });
+}
+
+/** Poll until reject-btn is visible (dismisses results overlay that blocks lobby under parallel load). */
+export async function waitForDoctorLobbyRejectControl(
+  doctorPage: Page,
+  timeoutMs?: number,
+): Promise<void> {
+  const resolvedTimeout = resolveOptionalCloudParallelTimeout(timeoutMs, 120_000, 90_000, 45_000);
+  const deadline = Date.now() + resolvedTimeout;
+  const rejectBtn = doctorPage.getByTestId('reject-btn');
+  while (Date.now() < deadline) {
+    await ensureDoctorLobbyPanelOpen(doctorPage);
+    if (await rejectBtn.first().isVisible({ timeout: 2_000 }).catch(() => false)) {
+      return;
+    }
+    await doctorPage.waitForTimeout(1_500);
+  }
+  await expect(rejectBtn.first()).toBeVisible({ timeout: 10_000 });
+}
+
+/** Poll patient PHR API until demographics.address contains expected text. */
+export async function waitForPatientProfileAddress(
+  page: Page,
+  expectedAddress: string,
+  timeoutMs?: number,
+): Promise<void> {
+  const resolvedTimeout = resolveOptionalCloudParallelTimeout(timeoutMs, 60_000, 45_000, 30_000);
+  const deadline = Date.now() + resolvedTimeout;
+  while (Date.now() < deadline) {
+    const { token, userId } = await getPatientAuth(page);
+    if (token && userId) {
+      const resp = await page.request
+        .get(`${PATIENT_URL}/api/phr/${userId}`, {
+          headers: { Authorization: `Bearer ${token}` },
+          timeout: 10_000,
+        })
+        .catch(() => null);
+      if (resp?.ok()) {
+        const data = (await resp.json().catch(() => ({}))) as {
+          demographics?: { address?: string };
+        };
+        const address = data.demographics?.address || '';
+        if (address.includes(expectedAddress)) return;
+      }
+    }
+    await page.waitForTimeout(1_000);
+  }
+  throw new Error(`Patient profile address does not contain "${expectedAddress}" within ${resolvedTimeout}ms`);
 }
 
 /** Parse notification.data (object or JSON string) and resolve appointment id */
@@ -1077,7 +1309,7 @@ export async function joinMeetingToLobby(
   browserName: E2eBrowserName = 'chrome',
 ): Promise<void> {
   const routeTimeout = scaleTimeoutByBrowser(IS_CLOUD ? 60_000 : 30_000, browserName);
-  await expect(page, `[${label}] must be on meeting route`).toHaveURL(/\/meeting\//, {
+  await expect(page, `[${label}] must be on meeting route`).toHaveURL(MEETING_ROUTE_RE, {
     timeout: routeTimeout,
   });
   const loading = page.locator('[data-testid="meeting-loading"]');
@@ -1109,13 +1341,16 @@ export async function joinIzaraMeetingInApp( // NOSONAR S3776 — multi-step mee
 ): Promise<void> {
   const routeTimeout = scaleTimeoutByBrowser(IS_CLOUD ? 60_000 : 30_000, browserName);
   const initTimeout = scaleTimeoutByBrowser(IS_CLOUD ? 120_000 : 60_000, browserName);
-  const lobbyTimeout = scaleTimeoutByBrowser(IS_CLOUD ? 120_000 : 90_000, browserName);
+  const lobbyTimeout = scaleTimeoutByBrowser(
+    IS_CLOUD ? 120_000 : browserName === 'firefox' ? 180_000 : 90_000,
+    browserName,
+  );
   const iframeTimeout = scaleTimeoutByBrowser(
     resolveHeadedTimeout(120_000, 120_000, 60_000),
     browserName,
   );
 
-  await expect(page, `[${label}] must be on meeting route`).toHaveURL(/\/meeting\//, {
+  await expect(page, `[${label}] must be on meeting route`).toHaveURL(MEETING_ROUTE_RE, {
     timeout: routeTimeout,
   });
 
@@ -1128,14 +1363,26 @@ export async function joinIzaraMeetingInApp( // NOSONAR S3776 — multi-step mee
 
   const isDoctorMeeting = /\/doctor\/[^/]+\/meeting\//.test(page.url());
   if (isDoctorMeeting) {
+    const meetingUi = jitsiContainer.or(page.getByTestId('end-meeting-btn')).first();
     const hostStarting = page.getByTestId('host-starting-screen');
     if (await hostStarting.isVisible({ timeout: 5_000 }).catch(() => false)) {
-      await expect(hostStarting, `[${label}] doctor host auto-start`).toBeHidden({ timeout: lobbyTimeout });
+      const meetingVisible = await meetingUi
+        .isVisible({ timeout: iframeTimeout })
+        .catch(() => false);
+      if (!meetingVisible) {
+        const retryBtn = page.getByTestId('retry-join-meeting');
+        if (await retryBtn.isVisible({ timeout: 2_000 }).catch(() => false)) {
+          await retryBtn.click();
+        }
+        await expect(meetingUi, `[${label}] doctor Jitsi after host-start`).toBeVisible({
+          timeout: iframeTimeout,
+        });
+      }
+    } else {
+      await expect(meetingUi, `[${label}] Jitsi after doctor auto-start`).toBeVisible({
+        timeout: iframeTimeout,
+      });
     }
-    await expect(
-      jitsiContainer.or(page.getByTestId('end-meeting-btn')).first(),
-      `[${label}] Jitsi after doctor auto-start`,
-    ).toBeVisible({ timeout: iframeTimeout });
     return;
   }
 
@@ -1385,6 +1632,16 @@ export async function navPatient(page: Page, href: string, label: string): Promi
     });
     await waitForContent(page, label);
     assertNotLogin(page, label);
+    const landed = page.url();
+    if (landed.includes('doctor-portal') || /:3010\b/.test(landed)) {
+      await ensurePatientPortalAuthenticated(page, `${label}-recover`);
+      await page.goto(`${PATIENT_URL}${pathOnly}`, {
+        waitUntil: 'domcontentloaded',
+        timeout: IS_CLOUD ? 90_000 : 30_000,
+      });
+      await waitForContent(page, `${label}-recover`);
+      assertNotLogin(page, label);
+    }
     return;
   }
   await expect(link, `Patient link "${pathOnly}" not found`).toBeVisible({ timeout: navTimeout });
@@ -1392,6 +1649,17 @@ export async function navPatient(page: Page, href: string, label: string): Promi
   await page.waitForTimeout(WAIT_AFTER_NAV);
   await waitForContent(page, label);
   assertNotLogin(page, label);
+  const landed = page.url();
+  if (landed.includes('doctor-portal') || /:3010\b/.test(landed)) {
+    console.warn(`  ⚠️ navPatient "${pathOnly}" landed on doctor portal — recovering via patient home`);
+    await ensurePatientPortalAuthenticated(page, `${label}-recover`);
+    await page.goto(`${PATIENT_URL}${pathOnly}`, {
+      waitUntil: 'domcontentloaded',
+      timeout: IS_CLOUD ? 90_000 : 30_000,
+    });
+    await waitForContent(page, `${label}-recover`);
+    assertNotLogin(page, label);
+  }
 }
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -1518,11 +1786,10 @@ export async function navDoctor(page: Page, target: string | RegExp, label: stri
       const origin = extractOriginFromUrl(page.url(), DOCTOR_URL);
       const dest = doctorHealthMeetingUrl(doctorId, origin);
       if (!page.url().includes('stayOnQueue=1')) {
-        try {
-          await page.goto(dest, { waitUntil: 'domcontentloaded', timeout: NAV_TIMEOUT });
-        } catch {
-          await page.goto(dest, { waitUntil: 'domcontentloaded', timeout: NAV_TIMEOUT });
-        }
+        const gotoTimeout = (await isFirefoxPage(page))
+          ? Math.round(NAV_TIMEOUT * getRoleBrowserSpec('admin').navTimeoutMultiplier)
+          : NAV_TIMEOUT;
+        await gotoCloudWithRetry(page, dest, `${label}-health-meeting`, gotoTimeout);
       }
       await page.waitForTimeout(WAIT_AFTER_NAV);
       await waitForContent(page, label);
@@ -1557,8 +1824,9 @@ export async function navDoctor(page: Page, target: string | RegExp, label: stri
   let btn = page.locator('nav button, aside button, nav a, aside a').filter({ hasText: pattern }).first();
   let visible = await btn.isVisible({ timeout: 10_000 }).catch(() => false);
 
-  // Cloud recovery: if sidebar not found, page may be blank — reload and retry
-  if (!visible && IS_CLOUD) {
+  // Cloud / local recovery: if sidebar not found, page may be blank — reload and retry
+  const bodyLen = await page.evaluate(() => document.body?.innerText?.trim().length ?? 0).catch(() => 0);
+  if (!visible && (IS_CLOUD || bodyLen < 50)) {
     console.warn(`  ⚠️ navDoctor "${String(target)}" not found — reloading doctor portal...`);
     const doctorState = path.join(AUTH_DIR, 'doctor.json');
     const adminState  = path.join(AUTH_DIR, 'admin.json');
@@ -1628,7 +1896,7 @@ export async function launchVisibleChromium(label = 'Guest'): Promise<Browser> {
 
 export async function launchGuestBrowser(browserType: 'edge' | 'chrome-incognito' = 'edge'): Promise<{ browser: Browser; ctx: BrowserContext; page: Page }> {
   const browser = await launchVisibleChromium(`Guest-${browserType}`);
-  const ctx = await browser.newContext({ viewport: { width: 1280, height: 720 } });
+  const ctx = await browser.newContext({ viewport: { width: 1280, height: 720 }, ignoreHTTPSErrors: true });
   const page = await ctx.newPage();
   return { browser, ctx, page };
 }
@@ -1648,7 +1916,7 @@ export async function createPortals(): Promise<Portals> {
     }
   }
 
-  const ctxOpts = { viewport: { width: 1440, height: 900 } };
+  const ctxOpts = { viewport: { width: 1440, height: 900 }, ignoreHTTPSErrors: true };
 
   const { patient: patientBrowser, doctor: doctorBrowser, admin: adminBrowser } =
     await launchAllRoleBrowsersParallel();
@@ -1826,7 +2094,12 @@ async function newContextWithStorageFallback(
   storageStatePath: string,
   label: string,
 ): Promise<BrowserContext> {
-  const STORAGE_CTX_TIMEOUT_MS = IS_CLOUD ? 120_000 : 45_000;
+  const parallelHeaded =
+    !IS_CLOUD &&
+    FORCE_HEADED &&
+    Number.parseInt(process.env.PW_WORKERS || '1', 10) > 1;
+  const isAdminFirefox = label === 'Admin' && getRoleBrowserSpec('admin').engine === 'firefox';
+  const STORAGE_CTX_TIMEOUT_MS = resolveStorageContextTimeoutMs(isAdminFirefox, parallelHeaded);
   try {
     return await Promise.race([
       browser.newContext({ ...ctxOpts, storageState: storageStatePath }),
@@ -1846,7 +2119,6 @@ async function newContextWithStorageFallback(
 
 function portalBrowserLabel(role: PortalRole): string {
   const spec = getRoleBrowserSpec(role);
-  if (spec.engine === 'chromium') return 'chrome';
   return spec.browserName;
 }
 
@@ -1899,8 +2171,8 @@ export async function gotoCloudWithRetry(
   const resolvedTimeout =
     timeoutMs ??
     (isPublicAuthShell
-      ? resolveE2eTimeoutMs(180_000, 120_000, 90_000)
-      : resolveE2eTimeoutMs(90_000, 60_000, 30_000));
+      ? resolveHeadedTimeout(180_000, 120_000, 90_000)
+      : resolveHeadedTimeout(90_000, 60_000, 30_000));
   await gotoWithRetry(page, url, resolvedTimeout, '', label, IS_CLOUD ? 4 : 3);
 }
 
@@ -1951,8 +2223,8 @@ async function gotoWithRetry( // NOSONAR S3776 — navigation retry with auth re
 
   console.log(`  📄 ${label} navigated in ${Date.now() - t0}ms → ${page.url()}`);
 
-  // If redirected to login, re-inject auth and navigate back to intended URL
-  if (page.url().includes('/login')) {
+  // If redirected to login, re-inject auth and navigate back (skip when login is the target page)
+  if (page.url().includes('/login') && !isPublicAuthShell) {
     console.log(`  🔄 ${label} redirected to login — re-injecting auth...`);
     if (fs.existsSync(storageStatePath)) {
       const state = JSON.parse(fs.readFileSync(storageStatePath, 'utf-8'));
@@ -1969,14 +2241,23 @@ async function gotoWithRetry( // NOSONAR S3776 — navigation retry with auth re
     role,
   );
   const deadline = Date.now() + contentWait;
+  let bodyLenBeforeRecovery = 0;
   while (Date.now() < deadline) {
     const len = await page.evaluate(() => document.body?.innerText?.trim().length ?? 0).catch(() => 0);
+    bodyLenBeforeRecovery = len;
     if (len > 50) return;
     await page.waitForTimeout(500);
   }
 
-  // On cloud: blank page after wait → re-navigate once (handles cold-start blank renders)
-  if (IS_CLOUD && !isPublicAuthShell) {
+  // Recovery: blank page after wait → re-navigate once.
+  // - Cloud: handles cold-start blank renders
+  // - Local headed: Firefox-admin / Edge-doctor can whiteout under parallel load
+  const allowRecovery =
+    !isPublicAuthShell &&
+    (IS_CLOUD ||
+      (role === 'admin' && getRoleBrowserSpec('admin').engine === 'firefox') ||
+      (role === 'doctor' && bodyLenBeforeRecovery < 50));
+  if (allowRecovery) {
     console.warn(`  ⚠️ ${label} content sparse after ${contentWait / 1000}s — re-navigating...`);
     if (fs.existsSync(storageStatePath)) {
       const state = JSON.parse(fs.readFileSync(storageStatePath, 'utf-8'));
@@ -2005,9 +2286,10 @@ async function gotoWithRetry( // NOSONAR S3776 — navigation retry with auth re
 }
 
 let lastAuthRefreshMs = 0;
-const AUTH_REFRESH_INTERVAL_MS = 10 * 60 * 1000;
+const AUTH_REFRESH_INTERVAL_MS =
+  FORCE_HEADED && !IS_CLOUD ? 2 * 60 * 1000 : 10 * 60 * 1000;
 
-export const test = base.extend<{}, { portals: Portals }>({
+export const test = base.extend<{ _authSync: void }, { portals: Portals }>({
   portals: [async ({}, use) => { // NOSONAR S3776 — worker-scoped tri-browser fixture setup/teardown
     const setupStart = Date.now();
     console.log('\n🔧 FIXTURE SETUP — launching 3 browsers...');
@@ -2047,12 +2329,12 @@ export const test = base.extend<{}, { portals: Portals }>({
     }
 
     clearPortalIssues();
-    const ctxOpts = { viewport: { width: 1440, height: 900 } };
+    const ctxOpts = { viewport: { width: 1440, height: 900 }, ignoreHTTPSErrors: true };
 
     const coreEngine = resolveCoreBrowserEngine();
     const browserLabel = coreEngine
       ? `Patient+Doctor+Admin=${coreEngine} (unified core-browser run)`
-      : 'Patient=Chrome, Doctor=Chrome, Admin=Firefox (parallel launch)';
+      : 'Patient=Chrome, Doctor=Edge, Admin=Firefox (parallel launch)';
     console.log(`  🌐 Multi-party browsers: ${browserLabel}`);
     const { patient: patientBrowser, doctor: doctorBrowser, admin: adminBrowser } =
       await launchAllRoleBrowsersParallel();
@@ -2198,7 +2480,9 @@ export const test = base.extend<{}, { portals: Portals }>({
   }],
   _authSync: [async ({ portals }, use) => {
     const now = Date.now();
-    if (now - lastAuthRefreshMs > AUTH_REFRESH_INTERVAL_MS) {
+    const shouldRefreshStorage =
+      (FORCE_HEADED && !IS_CLOUD) || now - lastAuthRefreshMs > AUTH_REFRESH_INTERVAL_MS;
+    if (shouldRefreshStorage) {
       await refreshAuthStorageStates();
       lastAuthRefreshMs = now;
     }

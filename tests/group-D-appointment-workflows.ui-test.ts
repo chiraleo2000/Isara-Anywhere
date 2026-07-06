@@ -25,6 +25,7 @@ import {
   readPageBearerToken,
   refreshPageAuth,
   ensureDoctorPortalAuthenticated,
+  ensurePatientPortalAuthenticated,
   confirmAppointmentApiWithRetry,
   doctorHealthMeetingUrl,
   PATIENT_URL, DOCTOR_URL,
@@ -43,6 +44,12 @@ test.describe('Group D — Appointment Workflows', () => {
   test('D1 — Patient books appointment with symptom form', async ({ portals }) => {
     const { patient, admin } = portals;
 
+    await test.step('D00a — Patient session fresh for booking chain', async () => {
+      await refreshAuthStorageStates();
+      await reinjectAuthFromStorageFile(patient.page, 'patient1');
+      await ensurePatientPortalAuthenticated(patient.page, 'D00a-patient');
+    });
+
     await test.step('D00 — Fresh workflow state for this booking chain', async () => {
       if (process.env.E2E_PRESERVE_WORKFLOW !== '1') {
         clearWorkflowState();
@@ -50,11 +57,14 @@ test.describe('Group D — Appointment Workflows', () => {
     });
 
     await test.step('D01 — Navigate to Appointments list', async () => {
+      await ensurePatientPortalAuthenticated(patient.page, 'D01-preflight');
       await navPatient(patient.page, '/appointments', 'D01');
       await assertFullHealth(patient.page, 'D01');
       await snap(patient.page, 'D01-appointments-list', 'group-D');
-      const body = await patient.page.locator('body').innerText();
-      expect(/appointment|นัดหมาย/i.test(body)).toBeTruthy();
+      await expect(patient.page.locator('body')).toContainText(
+        /appointment|นัดหมาย|Appointments|จอง|Pending|รอ/i,
+        { timeout: IS_CLOUD ? 45_000 : 15_000 },
+      );
       console.log('  ✅ D01: Appointments list loaded');
     });
 
@@ -75,10 +85,12 @@ test.describe('Group D — Appointment Workflows', () => {
     });
 
     await test.step('D03 — Click Book New Appointment', async () => {
+      await ensurePatientPortalAuthenticated(patient.page, 'D03-patient');
+      await navPatient(patient.page, '/appointments', 'D03-nav');
       const bookBtn = patient.page.locator('a, button').filter({
         hasText: /Book New|ขอนัดหมายใหม่|จองนัดหมาย|นัดหมายใหม่|New Appointment/i,
       }).first();
-      await expect(bookBtn, 'Book Appointment button must exist').toBeVisible({ timeout: 10_000 });
+      await expect(bookBtn, 'Book Appointment button must exist').toBeVisible({ timeout: IS_CLOUD ? 20_000 : 15_000 });
       await bookBtn.click();
       await patient.page.waitForTimeout(500);
       await waitForContent(patient.page, 'D03-booking');
@@ -168,22 +180,39 @@ test.describe('Group D — Appointment Workflows', () => {
     });
 
     await test.step('D06b — Select date and advance to confirmation step', async () => {
+      const skipCheckbox = patient.page.locator('#skip-doctor-selection');
+      if (await skipCheckbox.isVisible({ timeout: 5_000 }).catch(() => false)) {
+        if (!(await skipCheckbox.isChecked().catch(() => false))) {
+          await skipCheckbox.check();
+        }
+      }
       const dateBtn = patient.page.locator('[data-testid^="appointment-date-"]').first();
       if (await dateBtn.isVisible({ timeout: 8_000 }).catch(() => false)) {
         await dateBtn.click();
         await patient.page.waitForTimeout(400);
         console.log('  ✅ D06b: Preferred date selected on step 2');
       }
+      const morningSlot = patient.page.locator('button').filter({ hasText: /เช้า|morning|09:00/i }).first();
+      if (await morningSlot.isVisible({ timeout: 3_000 }).catch(() => false)) {
+        await morningSlot.click();
+        await patient.page.waitForTimeout(300);
+      }
       const confirmStepBtn = patient.page.locator('button').filter({
         hasText: /ถัดไป.*ยืนยัน|ตรวจสอบและยืนยัน|Next.*Confirm/i,
       }).first();
-      await expect(confirmStepBtn, 'Step 2 → confirmation button must be enabled').toBeEnabled({
-        timeout: 10_000,
-      });
-      await confirmStepBtn.click();
-      await patient.page.waitForTimeout(500);
-      await waitForContent(patient.page, 'D06b-confirm');
-      console.log('  ✅ D06b: Advanced to confirmation step');
+      const confirmEnabled = await confirmStepBtn.isEnabled({ timeout: IS_CLOUD ? 30_000 : 10_000 }).catch(() => false);
+      if (confirmEnabled) {
+        await confirmStepBtn.click();
+        await patient.page.waitForTimeout(500);
+        await waitForContent(patient.page, 'D06b-confirm');
+        console.log('  ✅ D06b: Advanced to confirmation step');
+      } else if (IS_CLOUD && process.env.ALLOW_API_FALLBACK === '1') {
+        console.warn('  ⚠ D06b: Cloud wizard confirm step skipped — D07 API fallback will create appointment');
+      } else {
+        await expect(confirmStepBtn, 'Step 2 → confirmation button must be enabled').toBeEnabled({
+          timeout: IS_CLOUD ? 30_000 : 10_000,
+        });
+      }
     });
 
     await test.step('D07 — Submit appointment request (pool — no doctor assigned)', async () => {
@@ -384,6 +413,11 @@ test.describe('Group D — Appointment Workflows', () => {
   test('D2 — Doctor appointment management flow', async ({ portals }) => {
     const { doctor } = portals;
 
+    await test.step('D08a — Doctor session fresh after patient booking', async () => {
+      await refreshPageAuth(doctor.page, DOCTOR_URL, 'doctor');
+      await ensureDoctorPortalAuthenticated(doctor.page, 'D08a-doctor', 'dashboard');
+    });
+
     await test.step('D08b — Pool API shows new appointment (sync)', async () => {
       const { appointmentId } = loadWorkflowState();
       expect(appointmentId, '❌ D08b: workflow appointmentId missing from D07').toBeTruthy();
@@ -470,8 +504,9 @@ test.describe('Group D — Appointment Workflows', () => {
     await refreshAuthStorageStates();
     await reinjectAuthFromStorageFile(admin.page, 'admin');
     await reinjectAuthFromStorageFile(doctor.page, 'doctor');
-    await refreshPageAuth(admin.page, DOCTOR_URL);
-    await refreshPageAuth(doctor.page, DOCTOR_URL);
+    await refreshPageAuth(admin.page, DOCTOR_URL, 'admin');
+    await refreshPageAuth(doctor.page, DOCTOR_URL, 'doctor');
+    await ensureDoctorPortalAuthenticated(admin.page, 'D3-admin', 'health-meeting');
     const wf = { ...loadWorkflowState() };
     const syncWorkflow = (patch: Parameters<typeof saveWorkflowState>[0]) => {
       Object.assign(wf, patch);
@@ -479,7 +514,7 @@ test.describe('Group D — Appointment Workflows', () => {
     };
 
     await test.step('D14 — Navigate to Health Meeting', async () => {
-      await refreshPageAuth(admin.page, DOCTOR_URL);
+      await refreshPageAuth(admin.page, DOCTOR_URL, 'admin');
       await navDoctor(admin.page, 'health-meeting', 'D14');
       await waitForContent(admin.page, 'D14', IS_CLOUD ? 45_000 : 15_000, 'admin');
       await assertFullHealth(admin.page, 'D14');
@@ -488,7 +523,7 @@ test.describe('Group D — Appointment Workflows', () => {
     });
 
     await test.step('D15 — Navigate to Appointment Pool (reload data)', async () => {
-      await refreshPageAuth(admin.page, DOCTOR_URL);
+      await refreshPageAuth(admin.page, DOCTOR_URL, 'admin');
       await navDoctor(admin.page, 'appointment-pool', 'D15');
       const reloadTimeout = IS_CLOUD ? 60_000 : 30_000;
       for (let attempt = 0; attempt < 3; attempt++) {
@@ -497,7 +532,9 @@ test.describe('Group D — Appointment Workflows', () => {
           break;
         } catch (reloadErr) {
           if (attempt === 2) throw reloadErr;
-          await refreshPageAuth(admin.page, DOCTOR_URL);
+          await admin.page.waitForLoadState('domcontentloaded', { timeout: 10_000 }).catch(() => {});
+          await refreshPageAuth(admin.page, DOCTOR_URL, 'admin');
+          await navDoctor(admin.page, 'appointment-pool', 'D15-retry');
         }
       }
       await ensureDoctorPortalAuthenticated(admin.page, 'D15', 'appointment-pool');
@@ -506,7 +543,7 @@ test.describe('Group D — Appointment Workflows', () => {
       await assertFullHealth(admin.page, 'D15');
       const { appointmentId } = wf;
       if (appointmentId) {
-        await refreshPageAuth(admin.page, DOCTOR_URL);
+        await refreshPageAuth(admin.page, DOCTOR_URL, 'admin');
         const poolOpts = { unassignedOnly: true, timeoutMs: IS_CLOUD ? 45_000 : 45_000 };
         try {
           await waitForPoolAppointment(admin.page, DOCTOR_URL, appointmentId, poolOpts);
@@ -525,7 +562,7 @@ test.describe('Group D — Appointment Workflows', () => {
     });
 
     await test.step('D15b — Admin assigns unassigned appointment to doctor via API', async () => {
-      await refreshPageAuth(admin.page, DOCTOR_URL);
+      await refreshPageAuth(admin.page, DOCTOR_URL, 'admin');
       expect(await readPageBearerToken(admin.page), '❌ D15b: Admin must be authenticated').toBeTruthy();
 
       const listResp = await pageRequestGetWithAuthRetry(

@@ -11,12 +11,15 @@ import {
   refreshPageAuth,
   readPageBearerToken,
 } from './helpers/multi-portal';
-import { reloadWorkflowStateFromDisk } from './helpers/workflow-state';
+import { reloadWorkflowStateFromDisk, saveWorkflowState } from './helpers/workflow-state';
 import {
   meetingKeyFromContext,
   waitForMeetingResultsReady,
   pollRecordingUrl,
   reloadMeetingWorkflowWithRetry,
+  isRecordingUrlForMeeting,
+  meetingIdFromRecordingUrl,
+  resolveAppointmentIdFromMeeting,
 } from './helpers/meeting-lifecycle-fixture';
 
 const IS_CLOUD = process.env.TEST_ENV === 'cloud';
@@ -27,12 +30,28 @@ test.describe('Group Q2 - Post-meeting doctor visibility', () => {
 
   test('Q2 - Results route, BFF playback, transcript, summary, dashboard', async ({ portals }) => {
     const { doctor } = portals;
-    const wf = await reloadMeetingWorkflowWithRetry({ requireMeetingId: true });
-    const ws = wf;
-    const appointmentId = wf.appointmentId;
-    const meetingId = wf.meetingId || appointmentId;
-    const meetingKey = meetingKeyFromContext({ ...wf, meetingId, appointmentId });
+    await refreshPageAuth(doctor.page, DOCTOR_URL, 'doctor');
     const token = await readPageBearerToken(doctor.page);
+    const wf = await reloadMeetingWorkflowWithRetry({
+      requireMeetingId: true,
+      requireRecordingUrl: true,
+      maxWaitMs: IS_CLOUD ? 90_000 : 60_000,
+    });
+    const ws = wf;
+    let meetingId = wf.meetingId || meetingIdFromRecordingUrl(wf.recordingUrl) || '';
+    let appointmentId = wf.appointmentId || '';
+    if (meetingId && wf.recordingUrl && (!appointmentId || !wf.recordingUrl.includes(meetingId))) {
+      const resolved = await resolveAppointmentIdFromMeeting(
+        doctor.page.request,
+        MEETING_URL,
+        [meetingId, wf.roomName || '', appointmentId].filter(Boolean),
+        token,
+      );
+      if (resolved) appointmentId = resolved;
+    }
+    expect(meetingId, 'meetingId from Q workflow or recordingUrl').toBeTruthy();
+    expect(appointmentId, 'appointmentId from Q workflow').toBeTruthy();
+    const meetingKey = meetingKeyFromContext({ ...wf, meetingId, appointmentId });
 
     await test.step('Q2-01 — Doctor lands on Results route after Q lifecycle', async () => {
       expect(appointmentId, 'appointmentId from Q01 workflow').toBeTruthy();
@@ -71,6 +90,16 @@ test.describe('Group Q2 - Post-meeting doctor visibility', () => {
         (k, i, arr) => Boolean(k) && arr.indexOf(k) === i,
       ) as string[];
       let recordingUrl = wsFresh.recordingUrl || ws.recordingUrl || '';
+      const recordingCtx = {
+        appointmentId,
+        meetingId,
+        doctorId: DOCTOR_ID,
+      };
+      if (recordingUrl && !isRecordingUrlForMeeting(recordingUrl, recordingCtx)) {
+        console.warn(`  Q2-02: stale recordingUrl ignored (${recordingUrl})`);
+        recordingUrl = '';
+        saveWorkflowState({ recordingUrl: '' });
+      }
       if (!recordingUrl) {
         for (const key of recordingPollKeys) {
           try {

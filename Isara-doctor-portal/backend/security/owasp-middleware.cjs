@@ -111,11 +111,11 @@ function securityHeaders() {
     // Content Security Policy
     res.setHeader('Content-Security-Policy',
       "default-src 'self' https:; " +
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://apis.google.com https://maps.googleapis.com https://meet.jit.si https://8x8.vc; " +
-      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://apis.google.com https://maps.googleapis.com https://accounts.google.com https://meet.jit.si https://8x8.vc; " +
+      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://accounts.google.com; " +
       "font-src 'self' https://fonts.gstatic.com; " +
       "img-src 'self' data: https: blob:; " +
-      "connect-src 'self' http://localhost:* ws://localhost:* wss://localhost:* https://*.googleapis.com https://*.run.app wss://*.run.app wss://meet.jit.si; " +
+      "connect-src 'self' http://localhost:* ws://localhost:* wss://localhost:* https://*.googleapis.com https://*.run.app wss://*.run.app https://meet.jit.si wss://meet.jit.si; " +
       "frame-src 'self' https://meet.jit.si https://8x8.vc https://meet.google.com https://calendar.google.com; " +
       "media-src 'self' blob: https: mediastream:; " +
       "worker-src 'self' blob:;"
@@ -298,8 +298,9 @@ function decryptData(encryptedObj, key = process.env.ENCRYPTION_KEY) {
     decrypted += decipher.final('utf8');
 
     return JSON.parse(decrypted);
-  } catch (e) {
-    throw new Error('Decryption failed - data may be corrupted or tampered with');
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : String(error);
+    throw new Error(`Decryption failed - data may be corrupted or tampered with: ${detail}`);
   }
 }
 
@@ -362,48 +363,72 @@ const INJECTION_CHECK_SKIP_FIELDS = new Set([
   'clientSecret',
 ]);
 
+function logInjectionAttempt(patternName, key, req) {
+  securityAuditLog({
+    event: 'INJECTION_ATTEMPT',
+    severity: 'HIGH',
+    type: patternName,
+    field: key,
+    ip: getClientIP(req),
+    path: req.path,
+  });
+}
+
+function findInjectionPatternName(value) {
+  for (const [patternName, pattern] of Object.entries(SANITIZATION_PATTERNS)) {
+    if (pattern.test(value)) {
+      return patternName;
+    }
+  }
+  return null;
+}
+
+function rejectIfInjection(value, key, req, res) {
+  const patternName = findInjectionPatternName(value);
+  if (!patternName) {
+    return false;
+  }
+  logInjectionAttempt(patternName, key, req);
+  res.status(400).json({
+    error: 'Invalid input detected',
+    code: 'INVALID_INPUT',
+  });
+  return true;
+}
+
+function sanitizeSingleBodyField(key, value, allowedFields) {
+  if (allowedFields.length > 0 && !allowedFields.includes(key)) {
+    return { omit: true };
+  }
+  if (typeof value !== 'string') {
+    return { sanitized: value };
+  }
+  if (INJECTION_CHECK_SKIP_FIELDS.has(key)) {
+    return { sanitized: value.trim() };
+  }
+  return { sanitized: sanitizeInput(value), checkInjection: true, raw: value };
+}
+
 function sanitizeRequestBody(allowedFields = []) {
   return (req, res, next) => {
-    if (req.body && typeof req.body === 'object') {
-      const sanitizedBody = {};
-
-      for (const [key, value] of Object.entries(req.body)) {
-        // Only allow specified fields
-        if (allowedFields.length > 0 && !allowedFields.includes(key)) {
-          continue;
-        }
-
-        // Sanitize based on value type
-        if (typeof value === 'string') {
-          if (INJECTION_CHECK_SKIP_FIELDS.has(key)) {
-            sanitizedBody[key] = value.trim();
-            continue;
-          }
-          // Check for injection attempts
-          for (const [patternName, pattern] of Object.entries(SANITIZATION_PATTERNS)) {
-            if (pattern.test(value)) {
-              securityAuditLog({
-                event: 'INJECTION_ATTEMPT',
-                severity: 'HIGH',
-                type: patternName,
-                field: key,
-                ip: getClientIP(req),
-                path: req.path
-              });
-              return res.status(400).json({
-                error: 'Invalid input detected',
-                code: 'INVALID_INPUT'
-              });
-            }
-          }
-          sanitizedBody[key] = sanitizeInput(value);
-        } else {
-          sanitizedBody[key] = value;
-        }
-      }
-
-      req.body = sanitizedBody;
+    if (!req.body || typeof req.body !== 'object') {
+      next();
+      return;
     }
+
+    const sanitizedBody = {};
+    for (const [key, value] of Object.entries(req.body)) {
+      const result = sanitizeSingleBodyField(key, value, allowedFields);
+      if (result.omit) {
+        continue;
+      }
+      if (result.checkInjection && rejectIfInjection(result.raw, key, req, res)) {
+        return;
+      }
+      sanitizedBody[key] = result.sanitized;
+    }
+
+    req.body = sanitizedBody;
     next();
   };
 }
@@ -613,6 +638,7 @@ function validateSession(fetchFromGCS, BUCKETS) {
 
       next();
     } catch (error) {
+      console.error('Session validation error:', error instanceof Error ? error.message : error);
       return res.status(401).json({
         error: 'Session validation failed',
         code: 'SESSION_ERROR'
@@ -752,7 +778,8 @@ async function flushAuditLog() {
     if (fs.existsSync(logFile)) {
       try {
         existingLogs = JSON.parse(fs.readFileSync(logFile, 'utf8'));
-      } catch (e) {
+      } catch (error) {
+        console.warn('Corrupt security audit log — resetting file:', error instanceof Error ? error.message : error);
         existingLogs = [];
       }
     }
@@ -901,7 +928,10 @@ function asyncHandler(fn) {
 function safeJsonParse(str, defaultValue = null) {
   try {
     return JSON.parse(str);
-  } catch (e) {
+  } catch (error) {
+    if (process.env.NODE_ENV !== 'production') {
+      console.debug('safeJsonParse failed:', error instanceof Error ? error.message : error);
+    }
     return defaultValue;
   }
 }

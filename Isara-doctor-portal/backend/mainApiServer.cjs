@@ -52,7 +52,7 @@ try {
 }
 console.log('[MAIN-API] express loaded');
 const cors = require('cors');
-const emailService = require('./emailService.cjs');
+const { emailService } = require('./emailService.cjs');
 const { resolveMedicalRecordConsent, resolveDoctorId } = require('./lib/pdpaConsent.cjs');
 const { resolveLivingWillAccess, mapLivingWillRowToDoctorView } = require('./lib/livingWillAccess.cjs');
 console.log('[MAIN-API] cors loaded');
@@ -2267,7 +2267,6 @@ app.post('/api/notifications/emr-signed', authenticateToken, async (req, res) =>
     
     // Send email notification (secondary channel - non-blocking)
     try {
-      const emailService = require('./emailService.cjs');
       const patientName = notification.title.includes('/') ? 'Patient' : 'ผู้ป่วย';
       
       const emailHtml = `
@@ -2315,8 +2314,7 @@ app.post('/api/notifications/emr-signed', authenticateToken, async (req, res) =>
         </html>
       `;
       
-      await emailService.sendEmail({
-        to: patientEmail,
+      await emailService.sendEmail(patientEmail, {
         subject: `📋 เวชระเบียนพร้อมแล้ว - ${doctorName} (${new Date(encounterDate).toLocaleDateString('th-TH')})`,
         text: `เวชระเบียนจากการพบแพทย์ ${doctorName} เมื่อวันที่ ${new Date(encounterDate).toLocaleDateString('th-TH')} พร้อมให้ดูแล้ว รหัสเวชระเบียน: ${emrId}`,
         html: emailHtml
@@ -5613,7 +5611,8 @@ function resolveEffectiveDoctorId(appointment, doctorId, reqUser) {
 }
 
 function isTelehealthAppointmentType(appointmentType) {
-  return appointmentType === 'telehealth' || appointmentType === 'Telehealth';
+  const normalized = String(appointmentType || 'telehealth').toLowerCase();
+  return normalized === 'telehealth' || normalized === 'online' || normalized === 'video_consultation';
 }
 
 function resolveConfirmMeetingLinks(appointment, appointmentId) {
@@ -5658,6 +5657,12 @@ function buildConfirmCalendarUrl(appointment, appointmentId, meetingLink, confir
 }
 
 async function sendAppointmentConfirmEmail(appointment, { confirmedDate, confirmedTime, meetingLink }) {
+  const patientEmail = appointment.patient_email;
+  if (!patientEmail) {
+    console.warn('Skipping confirmation email: no patient email on appointment');
+    return;
+  }
+
   const appointmentDateFormatted = confirmedDate || appointment.scheduled_date;
   const appointmentTimeFormatted = confirmedTime || appointment.scheduled_time;
   const patientName = appointment.patient_name_thai || appointment.patient_name || 'Patient';
@@ -5693,7 +5698,7 @@ async function sendAppointmentConfirmEmail(appointment, { confirmedDate, confirm
                 <p><strong>📅 วันที่:</strong> ${appointmentDateFormatted}</p>
                 <p><strong>🕐 เวลา:</strong> ${appointmentTimeFormatted}</p>
                 <p><strong>👨‍⚕️ แพทย์:</strong> ${doctorName}</p>
-                <p><strong>📍 รูปแบบ:</strong> ${appointment.appointment_type === 'Telehealth' ? '📹 ออนไลน์ (Telehealth)' : '🏥 ที่โรงพยาบาล'}</p>
+                <p><strong>📍 รูปแบบ:</strong> ${isTelehealthAppointmentType(appointment.appointment_type) ? '📹 ออนไลน์ (Telehealth)' : '🏥 ที่โรงพยาบาล'}</p>
               </div>
 
               ${meetingLink ? `
@@ -5714,13 +5719,12 @@ async function sendAppointmentConfirmEmail(appointment, { confirmedDate, confirm
         </html>
       `;
       
-  await emailService.sendEmail({
-    to: appointment.patient_email,
+  await emailService.sendEmail(patientEmail, {
     subject: `✅ นัดหมายยืนยันแล้ว - ${appointmentDateFormatted} เวลา ${appointmentTimeFormatted}`,
     text: `นัดหมายของคุณได้รับการยืนยันแล้ว\n\nวันที่: ${appointmentDateFormatted}\nเวลา: ${appointmentTimeFormatted}\nแพทย์: ${doctorName}${meetingLink ? '\nลิงก์เข้าประชุม: ' + meetingLink : ''}`,
     html: emailHtml,
   });
-  console.log(`📧 Confirmation email sent to ${appointment.patient_email}`);
+  console.log(`📧 Confirmation email sent to ${patientEmail}`);
 }
 
 async function createAppointmentConfirmNotifications(ctx) {
@@ -5852,8 +5856,14 @@ app.post('/api/appointments/:appointmentId/confirm', authenticateToken, async (r
       confirmedTime,
     );
 
+    const patientMeetingLink = patientMeetingUrl || meetingLink;
+
     try {
-      await sendAppointmentConfirmEmail(appointment, { confirmedDate, confirmedTime, meetingLink });
+      await sendAppointmentConfirmEmail(appointment, {
+        confirmedDate,
+        confirmedTime,
+        meetingLink: patientMeetingLink,
+      });
     } catch (emailError) {
       console.warn('Failed to send confirmation email:', emailError.message);
     }
@@ -5863,7 +5873,7 @@ app.post('/api/appointments/:appointmentId/confirm', authenticateToken, async (r
         appointment,
         appointmentId,
         effectiveDoctorId,
-        meetingLink,
+        meetingLink: patientMeetingLink,
         calendarEventUrl,
         resolvedConfirmDate,
         resolvedConfirmTime,
@@ -5938,8 +5948,7 @@ app.post('/api/appointments/:appointmentId/decline', authenticateToken, async (r
     
     // Send email notification (non-blocking)
     try {
-      await emailService.sendEmail({
-        to: 'admin.test@izara.com',
+      await emailService.sendEmail('admin.test@izara.com', {
         subject: 'Appointment Returned to Pool',
         text: `Doctor declined appointment ${appointmentId}. Reason: ${reason || 'Not specified'}. Item returned to pool for reassignment.`,
         html: `<p>Doctor declined appointment <strong>${appointmentId}</strong>.</p><p>Reason: ${reason || 'Not specified'}</p><p>Returned to appointment pool.</p>`
@@ -9416,6 +9425,13 @@ async function startServer() {
   const { startPgNotifyListener } = require('./pgNotifyListener.cjs');
   const { attachRedisAdapter } = require('./socketRedisAdapter.cjs');
   attachRedisAdapter(io).catch((err) => console.warn('[WS] Redis adapter init:', err.message));
+
+  emailService.initialize().then(() => {
+    console.log('📧 Email service initialized');
+  }).catch((emailError) => {
+    console.warn('⚠️  Email service initialization failed:', emailError.message);
+    console.warn('   Emails will be simulated in development mode\n');
+  });
 
   // Start listening immediately for faster startup
   server.listen(PORT, '0.0.0.0', () => {

@@ -652,7 +652,9 @@ const PatientMeetingRoom: React.FC = () => { // NOSONAR
             </div>
             <h1 className="text-2xl font-bold mb-2">กำลังเชื่อมต่อห้องประชุม</h1>
             <p className="text-gray-400 text-sm mb-6">รอแพทย์เข้าห้องก่อน — ไม่ต้องล็อกอิน Jitsi</p>
-            <p className="text-blue-400 text-sm animate-pulse">ชื่อของคุณ: {patientName}</p>
+            <p className="text-blue-400 text-sm animate-pulse">
+              ชื่อของคุณ: <span data-testid="patient-display-name">{patientName}</span>
+            </p>
           </div>
         </div>
       )}

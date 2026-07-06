@@ -1,18 +1,18 @@
 {
   "round": 6,
-  "timestamp": "2026-06-30T06:27:33.514Z",
+  "timestamp": "2026-07-01T07:59:34.440Z",
   "immutable": true,
   "environment": {
     "testEnv": "local",
-    "patientUrl": "http://localhost:3005",
-    "doctorUrl": "http://localhost:3010",
-    "meetingUrl": "http://localhost:3020"
+    "patientUrl": "http://127.0.0.1:3005",
+    "doctorUrl": "http://127.0.0.1:3010",
+    "meetingUrl": "http://127.0.0.1:3020"
   },
   "stats": {
-    "expected": 36,
+    "expected": 35,
     "unexpected": 0,
     "skipped": 0,
-    "durationMs": 223046.039
+    "durationMs": 687352.1579999999
   },
   "failures": [],
   "p0Count": 0,

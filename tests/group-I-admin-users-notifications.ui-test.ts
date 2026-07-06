@@ -17,8 +17,11 @@ import {
   test, expect, assertFullHealth, snap,
   navDoctor, navPatient, waitForContent, assertHasData,
   PATIENT_URL, DOCTOR_URL,
-  refreshPatientSession,
+  refreshPatientSession, refreshPageAuth,
+  gotoCloudWithRetry,
 } from './helpers/multi-portal';
+
+const IS_CLOUD = process.env.TEST_ENV === 'cloud';
 
 test.describe('Group I — Admin, Users & Notifications', () => {
   test.describe.configure({ mode: 'serial' });
@@ -39,6 +42,10 @@ test.describe('Group I — Admin, Users & Notifications', () => {
      ═════════════════════════════════════════════════════════════════ */
   test('I1 — Admin doctor management workflow', async ({ portals }) => {
     const { admin } = portals;
+
+    if (IS_CLOUD) {
+      await refreshPageAuth(admin.page, DOCTOR_URL, 'admin');
+    }
 
     await test.step('I01 — Admin → Dashboard', async () => {
       await navDoctor(admin.page, 'dashboard', 'I01');
@@ -211,7 +218,7 @@ test.describe('Group I — Admin, Users & Notifications', () => {
 
     await test.step('I13 — All 3 portals authenticated', async () => {
       await refreshPatientSession(patient.page);
-      await patient.page.goto(PATIENT_URL, { waitUntil: 'domcontentloaded', timeout: 30_000 });
+      await gotoCloudWithRetry(patient.page, PATIENT_URL, 'I13/patient-root', 90_000);
 
       const readToken = async (page: typeof patient.page, keys: string[]) =>
         page.evaluate((k) => k.map((key) => localStorage.getItem(key)).find(Boolean) || null, keys);

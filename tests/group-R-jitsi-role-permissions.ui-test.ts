@@ -212,7 +212,7 @@ async function runJitsiRoleParityFlow(
       timeout: IS_CLOUD ? 90_000 : 45_000,
     });
     await ensureJitsiMountSpy(doctorPage);
-    await joinIzaraMeetingInApp(doctorPage, `${label}-doctor`, browserName);
+    await joinIzaraMeetingInApp(doctorPage, `${label}-doctor`, 'chrome');
 
     await notifyHostPresentAfterJitsi(doctorPage, appointmentId, {
       bffUrl: DOCTOR_URL,
@@ -317,18 +317,35 @@ async function launchDualBrowserPair(
     return { browser, doctorPage, patientPage, adminPage, browserName: 'chrome' };
   }
 
-  const browser = await firefox.launch({ headless, ...FIREFOX_LAUNCH_OPTIONS });
-  const [doctorCtx, patientCtx, adminCtx] = await Promise.all([
-    browser.newContext({ ...ctxOpts, storageState: doctorState }),
-    browser.newContext({ ...ctxOpts, storageState: patientState }),
-    browser.newContext({ ...ctxOpts, storageState: adminState }),
-  ]);
-  const [doctorPage, patientPage, adminPage] = await Promise.all([
-    doctorCtx.newPage(),
-    patientCtx.newPage(),
-    adminCtx.newPage(),
-  ]);
-  return { browser, doctorPage, patientPage, adminPage, browserName: 'firefox' };
+  if (engine === 'firefox') {
+    // Doctor HOST on Edge — Firefox headed cannot complete Jitsi External API host mount on Windows.
+    // Patient + admin on Firefox preserves cross-browser parity for attendee flows.
+    const doctorBrowser = await chromium.launch({
+      headless,
+      channel: 'msedge',
+      args: chromiumLaunchArgs(headless),
+    });
+    const patientBrowser = await firefox.launch({ headless, ...FIREFOX_LAUNCH_OPTIONS });
+    const adminBrowser = await firefox.launch({ headless, ...FIREFOX_LAUNCH_OPTIONS });
+    const doctorCtx = await doctorBrowser.newContext({ ...ctxOpts, storageState: doctorState });
+    const patientCtx = await patientBrowser.newContext({ ...ctxOpts, storageState: patientState });
+    const adminCtx = await adminBrowser.newContext({ ...ctxOpts, storageState: adminState });
+    await doctorCtx.grantPermissions([...CHROMIUM_MEDIA_PERMISSIONS]);
+    const patientOrigin = new URL(PATIENT_URL).origin;
+    await patientCtx.grantPermissions(['camera', 'microphone'], { origin: patientOrigin }).catch(() => {});
+    const [doctorPage, patientPage, adminPage] = await Promise.all([
+      doctorCtx.newPage(),
+      patientCtx.newPage(),
+      adminCtx.newPage(),
+    ]);
+    const closeAll = async () => {
+      await Promise.all([doctorBrowser.close(), patientBrowser.close(), adminBrowser.close()].map((p) => p.catch(() => {})));
+    };
+    (doctorPage as Page & { __closeBrowsers?: () => Promise<void> }).__closeBrowsers = closeAll;
+    return { browser: patientBrowser, doctorPage, patientPage, adminPage, browserName: 'firefox' };
+  }
+
+  throw new Error(`Unsupported engine: ${engine}`);
 }
 
 test.describe('Group R — Jitsi role permissions (doctor HOST / patient participant)', () => {
@@ -351,10 +368,12 @@ test.describe('Group R — Jitsi role permissions (doctor HOST / patient partici
       test.skip(true, 'PW_SKIP_FIREFOX_JROLE=1 (local full-gate resource recovery)');
     }
     const { browser, doctorPage, patientPage, adminPage, browserName } = await launchDualBrowserPair('firefox');
+    const closeBrowsers = (doctorPage as Page & { __closeBrowsers?: () => Promise<void> }).__closeBrowsers;
     try {
       await runJitsiRoleParityFlow(doctorPage, patientPage, adminPage, browserName, 'JROLE02-firefox');
     } finally {
-      await browser.close().catch(() => {});
+      if (closeBrowsers) await closeBrowsers();
+      else await browser.close().catch(() => {});
     }
   });
 });

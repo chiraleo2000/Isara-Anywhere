@@ -1100,11 +1100,10 @@ app.post('/api/meetings/create', authenticateToken, async (req, res) => { // NOS
     let safeDoctorId = doctorId || null;
     let safePatientId = patientId || null;
     if (!refCheck.ok && !refCheck.degraded) {
-      console.warn(`[Meeting:${requestId}] FK refs not found — nullifying missing refs:`, refCheck.missing);
+      console.warn(`[Meeting:${requestId}] FK refs not found — nullifying missing appointment ref only:`, refCheck.missing);
       for (const m of refCheck.missing) {
         if (m.startsWith('appointment:')) safeAppointmentId = null;
-        if (m.startsWith('doctor:')) safeDoctorId = null;
-        if (m.startsWith('patient:')) safePatientId = null;
+        // Keep doctorId/patientId strings for recording paths + ACL even when users FK is soft
       }
     }
 
@@ -1116,7 +1115,18 @@ app.post('/api/meetings/create', authenticateToken, async (req, res) => { // NOS
           [appointmentId]
         );
         if (existing.rows.length > 0) {
-          const m = existing.rows[0];
+          let m = existing.rows[0];
+          if ((!m.doctor_id || m.doctor_id === 'unknown-doctor') && doctorId && dbAvailable) {
+            try {
+              const patched = await pool.query(
+                'UPDATE meeting_records SET doctor_id = $1 WHERE id = $2 RETURNING *',
+                [doctorId, m.id],
+              );
+              if (patched.rows[0]) m = patched.rows[0];
+            } catch (patchErr) {
+              console.warn(`[Meeting:${requestId}] doctor_id backfill skipped:`, patchErr.message);
+            }
+          }
           // Reset transient lobby/host state when reusing an idempotent meeting.
           resetMeetingSessionState(m.id, m.appointment_id || appointmentId);
           registerMeetingLobbyAliases(m.id, m.appointment_id || appointmentId);
@@ -1287,11 +1297,9 @@ app.post('/api/meeting/create', authenticateToken, async (req, res) => { // NOSO
     let safeDoctorId = doctorId || null;
     let safePatientId = patientId || null;
     if (!refCheck.ok && !refCheck.degraded) {
-      console.warn(`[Meeting:${requestId}] alias — FK refs not found, nullifying:`, refCheck.missing);
+      console.warn(`[Meeting:${requestId}] alias — FK refs not found, nullifying appointment only:`, refCheck.missing);
       for (const m of refCheck.missing) {
         if (m.startsWith('appointment:')) safeAppointmentId = null;
-        if (m.startsWith('doctor:')) safeDoctorId = null;
-        if (m.startsWith('patient:')) safePatientId = null;
       }
     }
 
@@ -1505,7 +1513,8 @@ app.get('/api/meetings/:id/participants', async (req, res) => {
     try {
       const result = await pool.query(
         `SELECT mr.doctor_id, mr.patient_id, 
-                u_doc.display_name as doctor_name, u_pat.display_name as patient_name
+                COALESCE(u_doc.name_thai, u_doc.name) as doctor_name,
+                COALESCE(u_pat.name_thai, u_pat.name) as patient_name
          FROM meeting_records mr
          LEFT JOIN users u_doc ON mr.doctor_id = u_doc.id
          LEFT JOIN users u_pat ON mr.patient_id = u_pat.id
@@ -1951,6 +1960,90 @@ app.post('/api/meetings/:id/host-absent', optionalAuth, (req, res) => {
  * Role-specific Jitsi join config for External API (doctor = host JWT when self-hosted Jitsi configured).
  * Patients/guests never get moderator JWT — Izara lobby admits them after doctor is ready.
  */
+const SECURED_JOIN_ROLES = new Set(['doctor', 'patient', 'admin', 'host']);
+
+function joinConfigAuthRequired(requestedRole, authenticated) {
+  return JITSI_TOKEN_AUTH_ENABLED && !authenticated && SECURED_JOIN_ROLES.has(requestedRole);
+}
+
+async function resolveJoinConfigHostState(req, id, identity) {
+  let { displayName, email, participantId, role } = identity;
+  let isHost = role === 'doctor' || role === 'admin' || role === 'host';
+
+  if (!(isHost && role === 'doctor' && req.user && dbAvailable)) {
+    return { displayName, email, participantId, role, isHost };
+  }
+
+  try {
+    const hostCheck = await pool.query(
+      `SELECT doctor_id FROM meeting_records
+       WHERE appointment_id = $1 OR id::text = $1
+       ORDER BY created_at DESC LIMIT 1`,
+      [id],
+    );
+    const appointedDoctorId = hostCheck.rows[0]?.doctor_id;
+    const requestDoctorId = req.user.id || req.user.doctorId || req.user.userId || req.user.sub;
+    if (appointedDoctorId && requestDoctorId && appointedDoctorId !== requestDoctorId) {
+      isHost = false; // downgraded when doctor is not appointed
+      role = 'guest';
+    }
+  } catch (hostErr) {
+    console.warn('[Meeting] join-config host check:', hostErr.message);
+  }
+
+  return { displayName, email, participantId, role, isHost };
+}
+
+async function lookupMeetingRoomName(meetingId) {
+  let roomName = `izara-${String(meetingId).substring(0, 12)}-meeting`;
+  try {
+    const existing = await pool.query(
+      `SELECT room_name FROM meeting_records
+       WHERE appointment_id = $1 OR id::text = $1
+       ORDER BY created_at DESC LIMIT 1`,
+      [meetingId],
+    );
+    if (existing.rows[0]?.room_name) roomName = existing.rows[0].room_name;
+  } catch { /* use fallback */ }
+  return roomName;
+}
+
+function buildJoinConfigResponse(id, roomName, hostState, identity, requestedRole, guestInvite) {
+  let { displayName, email, participantId, role, isHost } = hostState;
+  if (guestInvite?.guestName && requestedRole === 'guest') {
+    displayName = String(guestInvite.guestName).trim().substring(0, 100) || displayName;
+  }
+
+  const apiCfg = externalApiConfig(isHost ? 'doctor' : role, displayName);
+  const jitsiDomain = isHost ? JITSI_DOMAIN : JITSI_GUEST_DOMAIN;
+  const jwtRole = isHost ? 'doctor' : role;
+  const roleJwt = buildJitsiRoleJwt(roomName, {
+    id: participantId,
+    name: displayName,
+    email,
+  }, jwtRole);
+
+  return {
+    success: true,
+    domain: jitsiDomain,
+    hostDomain: JITSI_DOMAIN,
+    guestDomain: JITSI_GUEST_DOMAIN,
+    roomName,
+    role: isHost ? 'doctor' : role,
+    displayName,
+    email,
+    participantId,
+    registered: identity.registered,
+    jwt: roleJwt,
+    useIzaraLobbyOnly: true,
+    tokenAuthEnabled: JITSI_TOKEN_AUTH_ENABLED,
+    hostReady: isHostReadyForMeeting(id),
+    meetingServerUrl: process.env.MEETING_SERVER_PUBLIC_URL || '',
+    noJitsiLoginRequired: true,
+    ...apiCfg,
+  };
+}
+
 app.get('/api/meetings/:id/identity', optionalAuth, async (req, res) => {
   try {
     const { id } = req.params;
@@ -1970,11 +2063,7 @@ app.get('/api/meetings/:id/join-config', optionalAuth, async (req, res) => {
     await ensureMeetingRecordForAppointment(id);
     const requestedRole = String(req.query.role || 'guest').toLowerCase();
 
-    if (
-      JITSI_TOKEN_AUTH_ENABLED
-      && !req.user
-      && (requestedRole === 'doctor' || requestedRole === 'patient' || requestedRole === 'admin' || requestedRole === 'host')
-    ) {
+    if (joinConfigAuthRequired(requestedRole, Boolean(req.user))) {
       return res.status(401).json({
         success: false,
         error: 'Authentication required for secured meeting rooms',
@@ -1998,72 +2087,9 @@ app.get('/api/meetings/:id/join-config', optionalAuth, async (req, res) => {
     }
 
     const identity = await resolveMeetingParticipant(req, id, requestedRole);
-    let { displayName, email, participantId, role } = identity;
-    let isHost = role === 'doctor' || role === 'admin' || role === 'host';
-
-    if (isHost && role === 'doctor' && req.user && dbAvailable) {
-      try {
-        const hostCheck = await pool.query(
-          `SELECT doctor_id FROM meeting_records
-           WHERE appointment_id = $1 OR id::text = $1
-           ORDER BY created_at DESC LIMIT 1`,
-          [id],
-        );
-        const appointedDoctorId = hostCheck.rows[0]?.doctor_id;
-        const requestDoctorId = req.user.id || req.user.doctorId || req.user.userId || req.user.sub;
-        if (appointedDoctorId && requestDoctorId && appointedDoctorId !== requestDoctorId) {
-          isHost = false;
-          role = 'guest';
-        }
-      } catch (hostErr) {
-        console.warn('[Meeting] join-config host check:', hostErr.message);
-      }
-    }
-
-    if (guestInvite?.guestName && requestedRole === 'guest') {
-      displayName = String(guestInvite.guestName).trim().substring(0, 100) || displayName;
-    }
-    // isHost may have been downgraded when doctor is not appointed to this meeting
-
-    let roomName = `izara-${String(id).substring(0, 12)}-meeting`;
-    try {
-      const existing = await pool.query(
-        `SELECT room_name FROM meeting_records
-         WHERE appointment_id = $1 OR id::text = $1
-         ORDER BY created_at DESC LIMIT 1`,
-        [id]
-      );
-      if (existing.rows[0]?.room_name) roomName = existing.rows[0].room_name;
-    } catch { /* use fallback */ }
-
-    const apiCfg = externalApiConfig(isHost ? 'doctor' : role, displayName);
-    const jitsiDomain = isHost ? JITSI_DOMAIN : JITSI_GUEST_DOMAIN;
-    const jwtRole = isHost ? 'doctor' : role;
-    const roleJwt = buildJitsiRoleJwt(roomName, {
-      id: participantId,
-      name: displayName,
-      email,
-    }, jwtRole);
-
-    res.json({
-      success: true,
-      domain: jitsiDomain,
-      hostDomain: JITSI_DOMAIN,
-      guestDomain: JITSI_GUEST_DOMAIN,
-      roomName,
-      role: isHost ? 'doctor' : role,
-      displayName,
-      email,
-      participantId,
-      registered: identity.registered,
-      jwt: roleJwt,
-      useIzaraLobbyOnly: true,
-      tokenAuthEnabled: JITSI_TOKEN_AUTH_ENABLED,
-      hostReady: isHostReadyForMeeting(id),
-      meetingServerUrl: process.env.MEETING_SERVER_PUBLIC_URL || '',
-      noJitsiLoginRequired: true,
-      ...apiCfg,
-    });
+    const hostState = await resolveJoinConfigHostState(req, id, identity);
+    const roomName = await lookupMeetingRoomName(id);
+    res.json(buildJoinConfigResponse(id, roomName, hostState, identity, requestedRole, guestInvite));
   } catch (error) {
     console.error('[Meeting] join-config error:', error);
     res.status(500).json({ success: false, error: 'Failed to build join config' });
@@ -4794,16 +4820,23 @@ app.post('/api/meetings/:id/save-recording', authenticateToken, async (req, res)
       });
     }
 
-    const meeting = await postMeeting.resolveMeetingContext(id);
+    let meeting = await postMeeting.resolveMeetingContext(id);
+    if (!meeting) {
+      meeting = await ensureMeetingRecordForAppointment(id);
+    }
     const actorId = resolveActorUserId(req.user);
-    if (meeting?.doctor_id && actorId && req.user?.role !== 'admin' && meeting.doctor_id !== actorId) {
+    const actorDoctorId = req.user?.doctorId || actorId;
+    if (meeting?.doctor_id && actorDoctorId && req.user?.role !== 'admin' && meeting.doctor_id !== actorDoctorId) {
       return res.status(403).json({ error: 'Recording access denied for this doctor' });
     }
 
     const recordingId = uuidv4();
     let stored;
     try {
-      stored = await postMeeting.persistRecordingFromBuffer(id, buffer, mimeType, { meeting });
+      stored = await postMeeting.persistRecordingFromBuffer(id, buffer, mimeType, {
+        meeting,
+        doctorId: meeting?.doctor_id || actorDoctorId || req.body?.doctorId,
+      });
     } catch (persistErr) {
       console.error('[Save Recording] Persist failed:', persistErr.message);
       return res.status(500).json({

@@ -61,6 +61,13 @@ describe('resolveMeetingServerUrl — runtime behavior', () => {
   it('ENV-MEET-04 — localhost browser defaults to :3020', async () => {
     delete process.env.MEETING_SERVER_URL;
     delete process.env.VITE_MEETING_SERVER_URL;
+    delete process.env.MEETING_PUBLIC_URL;
+    delete process.env.VITE_MEETING_PUBLIC_URL;
+    (globalThis as { ENV?: Record<string, string> }).ENV = {};
+    vi.stubEnv('MEETING_SERVER_URL', '');
+    vi.stubEnv('VITE_MEETING_SERVER_URL', '');
+    vi.stubEnv('MEETING_PUBLIC_URL', '');
+    vi.stubEnv('VITE_MEETING_PUBLIC_URL', '');
     vi.resetModules();
     Object.defineProperty(globalThis, 'location', {
       value: { hostname: 'localhost', protocol: 'http:' },
@@ -71,5 +78,6 @@ describe('resolveMeetingServerUrl — runtime behavior', () => {
       '../../../Isara-doctor-portal/frontend/utils/resolveMeetingServerUrl.ts'
     );
     expect(resolveMeetingServerUrl()).toBe('http://localhost:3020');
+    vi.unstubAllEnvs();
   });
 });

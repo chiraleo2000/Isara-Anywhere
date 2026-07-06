@@ -131,8 +131,19 @@ export function jitsiReachabilityHint(domain: string): string {
   );
 }
 
+/** Self-hosted Jitsi on localhost/LAN — portal origin cannot CORS-fetch external_api.js. */
+function isSelfHostedLocalJitsiDomain(domain: string): boolean {
+  const d = String(domain || '').toLowerCase();
+  return d.includes('localhost') || d.endsWith('.isara.local') || d.includes('demotoday.net');
+}
+
 /** Preflight — fails fast when meet.* DNS/hosts is missing (common LAN mistake). */
 export async function verifyJitsiDomainReachable(domain = resolveJitsiDomain()): Promise<void> {
+  if (isSelfHostedLocalJitsiDomain(domain)) {
+    // Script-tag load matches JitsiMeetExternalAPI bootstrap; avoids CORS on http://127.0.0.1:* → https://meet.localhost:8443
+    await loadJitsiExternalApiScript(domain);
+    return;
+  }
   const url = `https://${domain}/external_api.js`;
   const ctrl = new AbortController();
   const timer = globalThis.setTimeout(() => ctrl.abort(), 12_000);
@@ -142,8 +153,12 @@ export async function verifyJitsiDomainReachable(domain = resolveJitsiDomain()):
       throw new Error(`Jitsi returned HTTP ${res.status}`);
     }
   } catch (err: unknown) {
-    const msg =
-      err instanceof Error ? err.message : typeof err === 'string' ? err : 'Jitsi reachability check failed';
+    let msg = 'Jitsi reachability check failed';
+    if (err instanceof Error) {
+      msg = err.message;
+    } else if (typeof err === 'string') {
+      msg = err;
+    }
     if (msg.includes('abort')) {
       throw new Error(jitsiReachabilityHint(domain));
     }

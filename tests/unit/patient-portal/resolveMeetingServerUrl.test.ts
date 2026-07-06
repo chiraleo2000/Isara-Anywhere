@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { resolveMeetingServerUrl } from '../../../Isara-patient-portal/frontend/utils/resolveMeetingServerUrl';
 
 describe('resolveMeetingServerUrl (patient portal)', () => {
@@ -6,6 +6,10 @@ describe('resolveMeetingServerUrl (patient portal)', () => {
   const originalEnv = (globalThis as { ENV?: Record<string, string> }).ENV;
 
   beforeEach(() => {
+    vi.stubEnv('MEETING_PUBLIC_URL', '');
+    vi.stubEnv('VITE_MEETING_PUBLIC_URL', '');
+    vi.stubEnv('MEETING_SERVER_URL', '');
+    vi.stubEnv('VITE_MEETING_SERVER_URL', '');
     Object.defineProperty(globalThis, 'location', {
       value: { hostname: 'localhost', protocol: 'http:' },
       configurable: true,
@@ -17,6 +21,7 @@ describe('resolveMeetingServerUrl (patient portal)', () => {
   });
 
   afterEach(() => {
+    vi.unstubAllEnvs();
     Object.defineProperty(globalThis, 'location', {
       value: originalLocation,
       configurable: true,

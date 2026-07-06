@@ -155,5 +155,5 @@ Write-Host "  SETUP COMPLETE — you can now run Cloud Build deployments" -Foreg
 Write-Host "═══════════════════════════════════════════════════════════════" -ForegroundColor Green
 Write-Host ""
 Write-Host "  Next step:" -ForegroundColor Yellow
-Write-Host "    .\scripts\deploy\submit-cloud-build.ps1" -ForegroundColor White
+Write-Host "    npm run cloud:deploy -- -Tag v1.7.59" -ForegroundColor White
 Write-Host ""

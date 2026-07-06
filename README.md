@@ -234,7 +234,7 @@ Details: [Processes/GATE0_IMPLEMENTATION_STATUS.md](Processes/GATE0_IMPLEMENTATI
 | Cloud UI | Playwright (`tests/group-*.ui-test.ts`) | Groups A–P + **Q** (meeting lifecycle P0) |
 | Static guards | `npm run test:guards:static` | No legacy `src/`, credentials-include, dev env |
 
-**Local release gate:** `npm run test:local:pre-deploy-gate` (alias `npm run phase:9`)
+**Local release gate:** `npm run test:local:pre-deploy-gate` (alias `npm run phase:9`) · **fast parallel:** `npm run phase:9:parallel` (`PW_WORKERS=2`, ~45–90 min)
 
 Canonical contract: [Processes/FULL_WORKFLOW_CONTRACT.md](Processes/FULL_WORKFLOW_CONTRACT.md) · test gates: [Processes/PROCESS_TO_TEST_GATE.md](Processes/PROCESS_TO_TEST_GATE.md)
 
@@ -384,7 +384,7 @@ npm run cleanup:cloud-test   # after E2E — purge test rows + re-seed baseline 
 
 ---
 
-## Quality gates (v1.7.53)
+## Quality gates (v1.7.57)
 
 ```powershell
 npm run phase:0                  # lint, typecheck, meeting-server contract
@@ -409,6 +409,33 @@ Error ledgers: `reports/local-error-ledger/*-latest.json` — index: [reports/RE
 ---
 
 ## Changelog (recent)
+
+### v1.7.60 (July 6, 2026)
+
+- **Local strict gate:** `phase:9:strict` — 110 headed E2E, 0 skip/fail; screenshot audits + Thai guides rebuilt; ledger P0=0
+- **GCP deploy:** Cloud Run v1.7.60 (patient/doctor/meeting); `test:cloud:deploy-gate` 21/21 pass; cloud ledger P0=0
+- **E2E hardening:** JROLE02 Edge+Firefox hybrid; JPRE01 host-waiting display name; Q02 token refresh; cloud D/I/K nav fixes; `GATE_STRICT` serial workers
+- **Patient meeting:** `patient-display-name` test id on host-waiting screen
+
+### v1.7.59 (July 3, 2026)
+
+- **SonarQube:** owasp-middleware exception handling + `sanitizeRequestBody` refactor; test helper nested-ternary cleanup
+- **Cloud CSP:** `https://accounts.google.com` in `style-src` (patient + doctor) — Google Sign-In on cloud
+- **Cloud E2E:** `ensurePatientPortalAuthenticated` (Group J), explicit admin/patient auth (A02/A04)
+- **Repo cleanup:** removed legacy deploy scripts (`deploy/cloud.ps1`, `submit-cloud-build.ps1`), orphan gate/docker helpers, duplicate `scripts/cloud-run/*` (kept `sync-meeting-ai-secrets.ps1` only)
+
+### v1.7.58 (July 2, 2026)
+
+- **Cloud CSP fix:** add `https://meet.jit.si` to `connect-src` (doctor nginx + patient nginx + owasp) — fixes Q01 Jitsi `external_api.js` load on Cloud Run
+- **Cloud build:** remove BuildKit-only `--mount=type=secret` from doctor `Dockerfile.unified` (classic docker on Cloud Build)
+
+### v1.7.57 (July 2, 2026)
+
+- **Headed parallel E2E:** default `PW_WORKERS=2` (was 4) — reduces meeting-server overload under headed load
+- **Role browsers:** Patient **Chrome**, Doctor **Edge**, Admin **Firefox** (`PW_NO_CHROME=1` — daily Chrome not used)
+- **E2E hardening:** lobby admit/reject waits, meeting-results overlay dismiss, PDPA access poll, Admin Firefox `gotoCloudWithRetry` on health-meeting nav, API retries (H5/I4/DA2)
+- **Local gate:** round 9 ledger P0=0; `npm run phase:9:parallel` headed with screenshots (`BASELINE_VISUAL=1`)
+- **Cloud:** deploy tag `v1.7.57` · `npm run test:cloud:release-gate` full coverage
 
 ### v1.7.54 (June 30, 2026)
 

@@ -1,15 +1,15 @@
 # การเข้าถึงระบบ (Cloud — dev-testing)
 
-> อัปเดต: 30 มิถุนายน 2569 | Environment: Google Cloud Run (asia-southeast1) | Project: izara-telemedicine  
-> **Release track:** v1.7.54 · Local gate GREEN; cloud deploy **BLOCKED** pending `gcloud` approval
+> อัปเดต: 2 กรกฎาคม 2569 | Environment: Google Cloud Run (asia-southeast1) | Project: izara-telemedicine  
+> **Release track:** v1.7.60 · deploy `npm run cloud:deploy -- -Tag v1.7.60` · cloud gate `npm run test:cloud:release-gate`
 
 ## บริการที่ให้บริการ (URL ที่ใช้งานจริง)
 
 | Service | URL | Revision | Image |
 | ------- | --- | -------- | ----- |
-| Patient Portal | https://izara-patient-portal-dev-testing-724889190329.asia-southeast1.run.app | **00113-psw** (100%) | v1.7.37 |
-| Doctor Portal | https://izara-doctor-portal-dev-testing-724889190329.asia-southeast1.run.app | **00138-2k5** (100%) | v1.7.37 |
-| Meeting Server | https://izara-meeting-server-dev-testing-724889190329.asia-southeast1.run.app | latest | v1.7.37 |
+| Patient Portal | https://izara-patient-portal-dev-testing-724889190329.asia-southeast1.run.app | **00130-9qx** (100%) | v1.7.60 |
+| Doctor Portal | https://izara-doctor-portal-dev-testing-724889190329.asia-southeast1.run.app | **00162-kkt** (100%) | v1.7.60 |
+| Meeting Server | https://izara-meeting-server-dev-testing-724889190329.asia-southeast1.run.app | **00236-zfs** (100%) | v1.7.60 |
 
 **Login**
 

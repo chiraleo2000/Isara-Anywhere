@@ -137,15 +137,29 @@ let appointmentId = '';
         await expect(loading).toBeHidden({ timeout: IS_CLOUD ? 120_000 : 60_000 });
       }
 
+      const preJoinScreen = patient.page
+        .getByTestId('lobby-starting-screen')
+        .or(patient.page.getByTestId('host-waiting-screen'))
+        .or(patient.page.getByTestId('lobby-waiting-screen'));
+      await expect(preJoinScreen.first(), 'JPRE01d: patient pre-join screen').toBeVisible({
+        timeout: IS_CLOUD ? 60_000 : 45_000,
+      });
+
+      const displayNameEl = patient.page.getByTestId('patient-display-name');
+      const hostWaiting = patient.page.getByTestId('host-waiting-screen');
+      let displayName = '';
+      if (await displayNameEl.isVisible({ timeout: 5_000 }).catch(() => false)) {
+        displayName = (await displayNameEl.innerText()).trim();
+      } else if (await hostWaiting.isVisible({ timeout: 2_000 }).catch(() => false)) {
+        const hostText = (await hostWaiting.innerText()).trim();
+        const fromLabel = hostText.match(/ชื่อของคุณ:\s*(.+)/);
+        displayName = fromLabel?.[1]?.trim() ?? hostText;
+      }
+      expect(displayName.length, 'JPRE01d: auth display name must not be empty').toBeGreaterThan(0);
+      expect(/enter your name|type your name|กรอกชื่อ/i.test(displayName)).toBe(false);
+
       const lobbyStarting = patient.page.getByTestId('lobby-starting-screen');
-      if (await lobbyStarting.isVisible({ timeout: 5_000 }).catch(() => false)) {
-        const displayNameOnStart = patient.page.getByTestId('patient-display-name');
-        await expect(displayNameOnStart, 'JPRE01d: patient display name during auto-lobby').toBeVisible({
-          timeout: IS_CLOUD ? 45_000 : 30_000,
-        });
-        const displayName = (await displayNameOnStart.innerText()).trim();
-        expect(displayName.length, 'JPRE01d: auth display name must not be empty').toBeGreaterThan(0);
-        expect(/enter your name|type your name|กรอกชื่อ/i.test(displayName)).toBe(false);
+      if (await lobbyStarting.isVisible({ timeout: 1_000 }).catch(() => false)) {
         await expect(lobbyStarting).toBeHidden({ timeout: IS_CLOUD ? 90_000 : 60_000 });
       }
 

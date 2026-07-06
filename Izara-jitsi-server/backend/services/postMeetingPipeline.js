@@ -219,6 +219,25 @@ export function createPostMeetingPipeline(deps) {
     return next;
   }
 
+  function parseMeetingConfig(meeting) {
+    if (!meeting?.meeting_config) return {};
+    if (typeof meeting.meeting_config === 'object') return meeting.meeting_config;
+    try {
+      return JSON.parse(meeting.meeting_config);
+    } catch {
+      return {};
+    }
+  }
+
+  function resolveDoctorIdForRecording(meeting, options = {}) {
+    if (meeting?.doctor_id) return meeting.doctor_id;
+    const cfg = parseMeetingConfig(meeting);
+    const fromCfg = cfg.organizerDoctorId || cfg.originalRefs?.doctorId;
+    if (fromCfg) return fromCfg;
+    if (options.doctorId) return options.doctorId;
+    return 'unknown-doctor';
+  }
+
   async function resolveMeetingContext(meetingKey) {
     const result = await safeQuery(
       `SELECT mr.*, u_pat.name_thai AS patient_name_thai, u_doc.name_thai AS doctor_name_thai
@@ -279,7 +298,7 @@ export function createPostMeetingPipeline(deps) {
   async function persistRecordingFromBuffer(meetingKey, buffer, mimeType, options = {}) {
     const meeting = options.meeting || (await resolveMeetingContext(meetingKey));
     const meetingId = meeting?.id || meetingKey;
-    const doctorId = meeting?.doctor_id || options.doctorId || 'unknown-doctor';
+    const doctorId = resolveDoctorIdForRecording(meeting, options);
 
     const validation = validateRecordingBuffer(buffer, mimeType);
     if (!validation.ok) {

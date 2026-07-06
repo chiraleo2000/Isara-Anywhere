@@ -233,16 +233,28 @@ test.describe('Group H — Content, Resources & Consultants', () => {
 
     await test.step('H-approval-1 — Doctor creates draft via API', async () => {
       const token = await readPageBearerToken(doctor.page);
-      const createResp = await doctor.page.request.post(`${DOCTOR_URL}/api/content/medical`, {
-        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-        data: {
-          titleThai: uniqueTitle,
-          contentThai: 'บทความทดสอบรอการอนุมัติจากแอดมิน',
-          category: 'general-health',
-          tags: ['e2e'],
-          status: 'draft',
-        },
-      });
+      let createResp: import('@playwright/test').APIResponse | null = null;
+      const createDeadline = Date.now() + 45_000;
+      let attempt = 0;
+      while (!createResp && Date.now() < createDeadline) {
+        attempt++;
+        try {
+          createResp = await doctor.page.request.post(`${DOCTOR_URL}/api/content/medical`, {
+            headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+            data: {
+              titleThai: uniqueTitle,
+              contentThai: 'บทความทดสอบรอการอนุมัติจากแอดมิน',
+              category: 'general-health',
+              tags: ['e2e'],
+              status: 'draft',
+            },
+            timeout: 45_000,
+          });
+        } catch {
+          await doctor.page.waitForTimeout(1500 * Math.min(attempt, 4));
+        }
+      }
+      expect(createResp, 'create draft response').toBeTruthy();
       expect(createResp.status(), 'create draft').toBeLessThan(400);
       const created = await createResp.json();
       const articleId = created.article?.id || created.id;

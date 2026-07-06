@@ -326,6 +326,18 @@ test.describe('Group G — Living Will & PDPA', () => {
         await patient.page.waitForTimeout(500);
       }
       const accessRow = patient.page.getByTestId(`pdpa-doctor-access-row-${DEMO_DOCTOR_ID}`);
+      const accessDeadline = Date.now() + 30_000;
+      while (Date.now() < accessDeadline) {
+        if (await accessRow.isVisible({ timeout: 2_000 }).catch(() => false)) break;
+        await patient.page.reload({ waitUntil: 'domcontentloaded' });
+        await waitForContent(patient.page, 'G15-reload-retry');
+        const tab = patient.page.getByRole('button', { name: /Doctor Access|แพทย์ที่เข้าถึง/i });
+        if (await tab.isVisible({ timeout: 3_000 }).catch(() => false)) {
+          await tab.click();
+          await patient.page.waitForTimeout(500);
+        }
+        await patient.page.waitForTimeout(1_000);
+      }
       await expect(accessRow, 'G15 doctor access row visible').toBeVisible({ timeout: 10_000 });
       await snap(patient.page, 'G15-doctor-access-granted', 'group-G');
       console.log('  ✅ G15: Patient granted doctor access');

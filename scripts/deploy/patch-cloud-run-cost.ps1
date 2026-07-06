@@ -21,10 +21,10 @@ $services = @(
     @{ Name = "izara-doctor-portal-dev-testing"; Concurrency = 80 }
 )
 
-Write-Host "`nPatching Cloud Run cost profile ($MinInstances–$MaxInstances instances, 1 CPU, 1Gi)..." -ForegroundColor Cyan
+Write-Host "`nPatching Cloud Run cost profile ($MinInstances-$MaxInstances instances, 1 CPU, 1Gi)..." -ForegroundColor Cyan
 
 foreach ($svc in $services) {
-    Write-Host "  → $($svc.Name)" -ForegroundColor Yellow
+    Write-Host "  -> $($svc.Name)" -ForegroundColor Yellow
     gcloud run services update $svc.Name `
         --project=$Project `
         --region=$Region `
@@ -32,7 +32,7 @@ foreach ($svc in $services) {
         --memory=1Gi `
         --min-instances=$MinInstances `
         --max-instances=$MaxInstances `
-        --concurrency=$svc.Concurrency `
+        --concurrency=$($svc['Concurrency']) `
         --no-cpu-boost `
         --quiet
     if ($LASTEXITCODE -ne 0) {

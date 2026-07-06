@@ -86,6 +86,7 @@ function ensureLocalDbMigrations(): void {
   const files = [
     '2025-add-google-sub.sql',
     '2025-ensure-appointment-columns.sql',
+    'v1.6.0-fix-content-approval.sql',
   ];
   for (const file of files) {
     const migrationPath = path.join(migrationDir, file);

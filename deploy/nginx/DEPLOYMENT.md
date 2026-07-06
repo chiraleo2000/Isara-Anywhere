@@ -144,6 +144,19 @@ bash scripts/docker/verify-stack.sh
 bash deploy/nginx/diagnose.sh
 ```
 
+**Windows dev — parallel pre-deploy gate (before promoting LAN):**
+
+```powershell
+cd Isara-Anywhere
+$env:GATE_SKIP_DOCKER_BUILD='1'
+$env:PW_HEADED='1'
+$env:BASELINE_VISUAL='1'
+npm run phase:9:parallel
+npm run docs:evidence:local
+```
+
+Uses `PW_WORKERS=2` for headed E2E (groups B/C/G/H/I/J in parallel; D→Q→E→F serial). `PW_NO_CHROME=1` — your daily Chrome is not used.
+
 **`diagnose.sh` expectations (Ubuntu LAN):**
 
 | Section | Check | PASS |

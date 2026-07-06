@@ -51,5 +51,8 @@ Removes cloud demo accounts; does not change `scripts/startup_data/` (repo seeds
 
 ```powershell
 npm run cleanup:project:dry   # preview
-npm run cleanup:project       # remove test caches, stale reports, deprecated scripts/archive, Presentations/media junk
+npm run cleanup:project       # remove test caches, stale reports, regenerable lint output
 ```
+
+**Deploy (canonical):** `npm run cloud:deploy` → `scripts/deploy-cloud-from-env.ps1` + root `cloudbuild.yaml`.  
+Legacy `scripts/deploy/cloud.ps1`, `submit-cloud-build.ps1`, and duplicate `scripts/cloud-run/` Docker/Cloud Build files were removed in v1.7.60.

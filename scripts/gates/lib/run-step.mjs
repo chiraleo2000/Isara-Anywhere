@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { spawnSync } from 'node:child_process';
+import { resolveGateWorkers } from './resolve-gate-workers.mjs';
 
 const isWin = process.platform === 'win32';
 
@@ -47,14 +48,14 @@ export function npmStep(name, script, cwd, env) {
 export const headedE2eEnv = {
   BASELINE_VISUAL: '1',
   PW_HEADED: '1',
-  PW_WORKERS: '1',
+  PW_WORKERS: resolveGateWorkers(),
   PW_SKIP_LIVE_GEMINI: '1',
-  PW_ALLOW_RECORDING_SEED: '',
+  PW_ALLOW_RECORDING_SEED: '1',
   PW_SKIP_FIREFOX_JROLE: '1',
   PW_SKIP_DEFECT_DM5: '1',
   E2E_PRESERVE_WORKFLOW: '1',
   E2E_ALLOW_PARALLEL_SESSIONS: '1',
-  E2E_LIGHT_FIXTURE: '1',
+  E2E_LIGHT_FIXTURE: '0',
   PATIENT_URL: 'http://127.0.0.1:3005',
   DOCTOR_URL: 'http://127.0.0.1:3010',
   MEETING_URL: 'http://127.0.0.1:3020',

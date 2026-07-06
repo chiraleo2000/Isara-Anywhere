@@ -1,15 +1,15 @@
 {
-  "checkedAt": "2026-06-30T06:34:22.874Z",
-  "gitShortHash": "4b7199de",
-  "pass": false,
+  "checkedAt": "2026-07-01T08:15:17.157Z",
+  "gitShortHash": "84fd08ed",
+  "pass": true,
   "unitGate": {
-    "pass": false,
-    "checkedAt": "2026-06-30T06:13:18.978Z",
-    "logPath": "reports\\local-unit-gate-2026-06-30T06-10-58.log"
+    "pass": true,
+    "checkedAt": "2026-06-30T07:27:00.078Z",
+    "logPath": "reports\\local-unit-gate-2026-06-30T07-26-15.log"
   },
   "screenshotAudit": {
     "pass": true,
-    "checkedAt": "2026-06-30T06:32:18.872Z",
+    "checkedAt": "2026-07-01T08:13:28.841Z",
     "groupCount": 1,
     "failedGroups": []
   },
@@ -19,14 +19,21 @@
   },
   "ledgerRounds": [
     {
-      "file": "reports/local-error-ledger/round-1-2026-06-29T05-07-47-547Z.json",
+      "file": "reports/local-error-ledger/round-1-2026-07-01T04-14-45-984Z.json",
       "round": 1,
       "totalTests": null,
       "p0Count": 0,
       "pass": true
     },
     {
-      "file": "reports/local-error-ledger/round-1-2026-06-30T05-12-14-935Z.json",
+      "file": "reports/local-error-ledger/round-1-2026-07-01T05-02-15-578Z.json",
+      "round": 1,
+      "totalTests": null,
+      "p0Count": 0,
+      "pass": true
+    },
+    {
+      "file": "reports/local-error-ledger/round-1-2026-07-01T05-02-16-142Z.json",
       "round": 1,
       "totalTests": null,
       "p0Count": 0,
@@ -40,14 +47,7 @@
       "pass": true
     },
     {
-      "file": "reports/local-error-ledger/round-2-2026-06-29T05-10-39-141Z.json",
-      "round": 2,
-      "totalTests": null,
-      "p0Count": 0,
-      "pass": true
-    },
-    {
-      "file": "reports/local-error-ledger/round-2-2026-06-30T05-54-16-743Z.json",
+      "file": "reports/local-error-ledger/round-2-2026-07-01T05-36-12-795Z.json",
       "round": 2,
       "totalTests": null,
       "p0Count": 0,
@@ -61,21 +61,7 @@
       "pass": true
     },
     {
-      "file": "reports/local-error-ledger/round-3-2026-06-28T17-51-24-559Z.json",
-      "round": 3,
-      "totalTests": null,
-      "p0Count": 0,
-      "pass": true
-    },
-    {
-      "file": "reports/local-error-ledger/round-3-2026-06-29T05-13-31-382Z.json",
-      "round": 3,
-      "totalTests": null,
-      "p0Count": 0,
-      "pass": true
-    },
-    {
-      "file": "reports/local-error-ledger/round-3-2026-06-30T05-18-58-295Z.json",
+      "file": "reports/local-error-ledger/round-3-2026-07-01T07-18-50-371Z.json",
       "round": 3,
       "totalTests": null,
       "p0Count": 0,
@@ -89,14 +75,7 @@
       "pass": true
     },
     {
-      "file": "reports/local-error-ledger/round-4-2026-06-29T05-16-40-508Z.json",
-      "round": 4,
-      "totalTests": null,
-      "p0Count": 0,
-      "pass": true
-    },
-    {
-      "file": "reports/local-error-ledger/round-4-2026-06-30T05-30-50-936Z.json",
+      "file": "reports/local-error-ledger/round-4-2026-07-01T07-28-36-966Z.json",
       "round": 4,
       "totalTests": null,
       "p0Count": 0,
@@ -110,7 +89,7 @@
       "pass": true
     },
     {
-      "file": "reports/local-error-ledger/round-5-2026-06-30T06-15-38-388Z.json",
+      "file": "reports/local-error-ledger/round-5-2026-07-01T07-47-53-220Z.json",
       "round": 5,
       "totalTests": null,
       "p0Count": 0,
@@ -124,14 +103,7 @@
       "pass": true
     },
     {
-      "file": "reports/local-error-ledger/round-6-2026-06-29T05-24-26-956Z.json",
-      "round": 6,
-      "totalTests": null,
-      "p0Count": 0,
-      "pass": true
-    },
-    {
-      "file": "reports/local-error-ledger/round-6-2026-06-30T06-27-33-513Z.json",
+      "file": "reports/local-error-ledger/round-6-2026-07-01T07-59-34-440Z.json",
       "round": 6,
       "totalTests": null,
       "p0Count": 0,
@@ -145,7 +117,7 @@
       "pass": true
     },
     {
-      "file": "reports/local-error-ledger/round-7-2026-06-30T06-34-22-780Z.json",
+      "file": "reports/local-error-ledger/round-7-2026-07-01T08-15-16-762Z.json",
       "round": 7,
       "totalTests": null,
       "p0Count": 0,
@@ -154,62 +126,6 @@
     {
       "file": "reports/local-error-ledger/round-7-latest.json",
       "round": 7,
-      "totalTests": null,
-      "p0Count": 0,
-      "pass": true
-    },
-    {
-      "file": "reports/local-error-ledger/round-9-2026-06-25T06-06-50-930Z.json",
-      "round": 9,
-      "totalTests": null,
-      "p0Count": 0,
-      "pass": true
-    },
-    {
-      "file": "reports/local-error-ledger/round-9-2026-06-26T05-20-50-248Z.json",
-      "round": 9,
-      "totalTests": null,
-      "p0Count": 0,
-      "pass": true
-    },
-    {
-      "file": "reports/local-error-ledger/round-9-2026-06-26T13-58-31-501Z.json",
-      "round": 9,
-      "totalTests": null,
-      "p0Count": 0,
-      "pass": true
-    },
-    {
-      "file": "reports/local-error-ledger/round-9-2026-06-26T14-20-37-945Z.json",
-      "round": 9,
-      "totalTests": null,
-      "p0Count": 0,
-      "pass": true
-    },
-    {
-      "file": "reports/local-error-ledger/round-9-2026-06-29T06-41-07-684Z.json",
-      "round": 9,
-      "totalTests": null,
-      "p0Count": 0,
-      "pass": true
-    },
-    {
-      "file": "reports/local-error-ledger/round-9-2026-06-29T09-19-01-413Z.json",
-      "round": 9,
-      "totalTests": null,
-      "p0Count": 0,
-      "pass": true
-    },
-    {
-      "file": "reports/local-error-ledger/round-9-2026-06-29T10-48-57-342Z.json",
-      "round": 9,
-      "totalTests": null,
-      "p0Count": 0,
-      "pass": true
-    },
-    {
-      "file": "reports/local-error-ledger/round-9-2026-06-29T10-49-14-049Z.json",
-      "round": 9,
       "totalTests": null,
       "p0Count": 0,
       "pass": true
@@ -227,6 +143,27 @@
       "totalTests": null,
       "p0Count": 0,
       "pass": false
+    },
+    {
+      "file": "reports/local-error-ledger/round-jitsi-lan-latest.json",
+      "round": "jitsi-lan",
+      "totalTests": null,
+      "p0Count": 0,
+      "pass": true
+    },
+    {
+      "file": "reports/local-error-ledger/round-jitsi-local-latest.json",
+      "round": "jitsi-local",
+      "totalTests": null,
+      "p0Count": 0,
+      "pass": true
+    },
+    {
+      "file": "reports/local-error-ledger/round-lan-latest.json",
+      "round": "lan",
+      "totalTests": null,
+      "p0Count": 0,
+      "pass": true
     }
   ],
   "groupPngCounts": {

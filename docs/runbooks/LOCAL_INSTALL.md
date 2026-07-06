@@ -71,6 +71,25 @@ npm run sonar:lint
 
 Browsers stay **visible** (`PW_HEADED=1`) so you can watch UI during the gate.
 
+### Fast path — parallel gate (~45–90 min)
+
+Runs independent groups **B, C, G, H, I, J** in parallel (`PW_WORKERS=2`); meeting pipeline **D → Q → E → F** stays serial via Playwright deps. Does **not** launch your personal Google Chrome (`PW_NO_CHROME=1`).
+
+```powershell
+$env:PW_HEADED='1'
+$env:BASELINE_VISUAL='1'
+$env:PW_SKIP_LIVE_GEMINI='1'
+$env:GATE_SKIP_DOCKER_BUILD='1'   # if stack already up
+npm run phase:9:parallel
+# or E2E + screenshots only (skip unit re-run):
+# $env:GATE_FROM_STEP='e2e-full-headed'
+# npm run test:local:gate-parallel-resume
+```
+
+After pass: `npm run docs:evidence:local` and `npm run ledger:local`.
+
+### Full serial gate (~2–4 h)
+
 ```powershell
 $env:PW_HEADED='1'
 $env:BASELINE_VISUAL='1'
@@ -144,12 +163,12 @@ npm run test:lan:deploy-gate
 - [docs/SPLIT_REPOS.md](../SPLIT_REPOS.md)
 
 <!-- EVIDENCE_START -->
-## Visual test evidence (local, headed UI)
+## Visual test evidence (cloud, headed UI)
 
 > Browsers run **visible** during gates: `$env:PW_HEADED='1'` + `$env:BASELINE_VISUAL='1'`
-> Updated: 2026-06-30
+> Updated: 2026-07-06
 
-**Ledger:** `reports/local-error-ledger/round-9-latest.json` — tests **?**, **P0=0**
+**Ledger:** `reports/cloud-error-ledger/round-final-latest.json` — tests **?**, **P0=0**
 
 ### Headed local gate
 

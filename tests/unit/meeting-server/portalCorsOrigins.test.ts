@@ -21,9 +21,10 @@ describe('portalCorsOrigins — Docker LAN contract', () => {
   });
 
   it('CORS-02 — meeting server example sets MEETING_SERVER_URL for containers', () => {
-    const doctor = readEnvExample('Isara-doctor-portal/.env.example');
-    const patient = readEnvExample('Isara-patient-portal/.env.example');
-    expect(doctor + patient).toMatch(/MEETING_SERVER_URL|VITE_MEETING_SERVER_URL/);
+    const docker = readEnvExample('.env.docker.example');
+        const doctor = readEnvExample('Isara-doctor-portal/.env');
+        const patient = readEnvExample('Isara-patient-portal/.env');
+        expect(docker + doctor + patient).toMatch(/MEETING_SERVER_URL|VITE_MEETING_SERVER_URL/);
   });
 
   it('CORS-03 — docker-compose exposes meeting-server on 3020', () => {
