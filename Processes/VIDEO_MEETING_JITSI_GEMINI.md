@@ -1660,7 +1660,7 @@ npm run test:e2e:meeting-lifecycle
 
 **Recording:** Doctor manual toggle only (`MeetingRoom.tsx` — no auto-record on join). Browser `save-recording` path is primary for local/LAN; optional Jibri profile (`docker compose --profile jibri`) for webhook-only validation — not required for gate PASS.
 
-**Gate evidence:** `phase:4` Q+R headed; `selfHostedJitsiJwt.contract.test.ts`; ledger round 9 P0=0; `PW_SKIP_FIREFOX_JROLE=1` in full gate (JROLE01 Chromium only).
+**Gate evidence:** `phase:4` Q+R headed; `selfHostedJitsiJwt.contract.test.ts`; ledger round 9 P0=0; JROLE01 Chromium + JROLE02 Firefox (Edge doctor hybrid) run in full/parallel gate with zero skips.
 
 ---
 

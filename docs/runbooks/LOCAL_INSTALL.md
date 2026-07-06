@@ -163,12 +163,12 @@ npm run test:lan:deploy-gate
 - [docs/SPLIT_REPOS.md](../SPLIT_REPOS.md)
 
 <!-- EVIDENCE_START -->
-## Visual test evidence (cloud, headed UI)
+## Visual test evidence (local, headed UI)
 
 > Browsers run **visible** during gates: `$env:PW_HEADED='1'` + `$env:BASELINE_VISUAL='1'`
 > Updated: 2026-07-06
 
-**Ledger:** `reports/cloud-error-ledger/round-final-latest.json` — tests **?**, **P0=0**
+**Ledger:** `reports/local-error-ledger/round-9-latest.json` — tests **?**, **P0=0**
 
 ### Headed local gate
 

@@ -213,7 +213,6 @@ test.describe('Defect — Meeting lobby admit flow', () => {
   });
 
   test('DM5 — guest + patient in lobby; doctor admits both (3-party)', async ({ portals }) => {
-    test.skip(process.env.PW_SKIP_DEFECT_DM5 === '1', 'DM5 skipped in full gate — Group Q covers 3-party');
     const { doctor, patient } = portals;
     const { appointmentId, doctorCtx } = await createDefectMeeting(doctor.page, 'DM5');
 
@@ -300,7 +299,6 @@ test.describe('Defect — Meeting lobby admit flow', () => {
   });
 
   test('DM6 — doctor denies guest via API; patient still admitted separately', async ({ portals }) => {
-    test.skip(process.env.PW_SKIP_DEFECT_DM6 === '1', 'DM6 skipped in full gate — guest lobby covered by Group Q');
     const { doctor, patient } = portals;
     const { appointmentId, doctorCtx } = await createDefectMeeting(doctor.page, 'DM6');
 

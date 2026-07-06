@@ -413,6 +413,7 @@ Error ledgers: `reports/local-error-ledger/*-latest.json` — index: [reports/RE
 ### v1.7.60 (July 6, 2026)
 
 - **Local strict gate:** `phase:9:strict` — 110 headed E2E, 0 skip/fail; screenshot audits + Thai guides rebuilt; ledger P0=0
+- **Zero-skip parallel gate:** removed `PW_SKIP_DEFECT_DM5/DM6` and `PW_SKIP_FIREFOX_JROLE`; DM5/DM6/JROLE02 run in `phase:9:parallel` and `test:local:e2e-*`
 - **GCP deploy:** Cloud Run v1.7.60 (patient/doctor/meeting); `test:cloud:deploy-gate` 21/21 pass; cloud ledger P0=0
 - **E2E hardening:** JROLE02 Edge+Firefox hybrid; JPRE01 host-waiting display name; Q02 token refresh; cloud D/I/K nav fixes; `GATE_STRICT` serial workers
 - **Patient meeting:** `patient-display-name` test id on host-waiting screen

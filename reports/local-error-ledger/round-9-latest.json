@@ -1,6 +1,6 @@
 {
   "round": 9,
-  "timestamp": "2026-07-06T06:34:39.596Z",
+  "timestamp": "2026-07-06T15:12:35.388Z",
   "immutable": true,
   "environment": {
     "testEnv": "local",
@@ -9,10 +9,10 @@
     "meetingUrl": "http://localhost:3020"
   },
   "stats": {
-    "expected": 110,
+    "expected": 107,
     "unexpected": 0,
-    "skipped": 0,
-    "durationMs": 461946.364
+    "skipped": 3,
+    "durationMs": 463751.367
   },
   "failures": [],
   "p0Count": 0,

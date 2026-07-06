@@ -364,9 +364,6 @@ test.describe('Group R — Jitsi role permissions (doctor HOST / patient partici
 
   test('JROLE02 — Firefox: doctor moderator controls, patient standard attendee', async () => {
     test.setTimeout(IS_CLOUD ? 600_000 : 420_000);
-    if (process.env.PW_SKIP_FIREFOX_JROLE === '1') {
-      test.skip(true, 'PW_SKIP_FIREFOX_JROLE=1 (local full-gate resource recovery)');
-    }
     const { browser, doctorPage, patientPage, adminPage, browserName } = await launchDualBrowserPair('firefox');
     const closeBrowsers = (doctorPage as Page & { __closeBrowsers?: () => Promise<void> }).__closeBrowsers;
     try {

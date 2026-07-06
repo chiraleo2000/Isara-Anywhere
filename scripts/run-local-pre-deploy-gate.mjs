@@ -22,12 +22,6 @@ const gateEnv = {
   PW_WORKERS: gateWorkers,
   PW_NO_CHROME: process.env.PW_NO_CHROME || '1',
   BASELINE_VISUAL: '1',
-  ...(isStrict
-    ? {}
-    : {
-        PW_SKIP_FIREFOX_JROLE: '1',
-        PW_SKIP_DEFECT_DM5: '1',
-      }),
   E2E_ALLOW_PARALLEL_SESSIONS: '1',
   PATIENT_URL: 'http://127.0.0.1:3005',
   DOCTOR_URL: 'http://127.0.0.1:3010',
