@@ -356,7 +356,7 @@ const PendingTabPanel: React.FC<PendingTabPanelProps> = ({
 }) => {
   if (doctors.length === 0) {
     return (
-      <div className="text-center py-12">
+      <div data-testid="admin-doctor-pending-panel" className="text-center py-12">
         <svg className="w-16 h-16 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
@@ -366,7 +366,7 @@ const PendingTabPanel: React.FC<PendingTabPanelProps> = ({
     );
   }
   return (
-    <div className="space-y-4">
+    <div data-testid="admin-doctor-pending-panel" className="space-y-4">
       {doctors.map((doctor) => (
         <div key={doctor.id} data-testid="doctor-item" className="doctor-item card border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow bg-white">
           <div className="flex items-start justify-between">
@@ -1083,6 +1083,7 @@ const AdminDoctorManagement: React.FC = () => {
               </span>
             </button>
             <button
+              data-testid="admin-doctor-pending-tab"
               onClick={() => setActiveTab('pending')}
               className={getTabClass(activeTab, 'pending')}
             >
@@ -1151,6 +1152,7 @@ const AdminDoctorManagement: React.FC = () => {
             </svg>
             <input
               type="text"
+              data-testid="admin-doctor-search"
               placeholder="Search by name, email, or specialty..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}

@@ -24,6 +24,15 @@ Izara-jitsi-server/.env
 
 deploy/nginx/*.pem
 deploy/nginx/isara-mkcert-rootCA.pem
+deploy/jitsi/config/
+deploy/jitsi/docker-jitsi-meet/
+
+# Stray root artifacts (regenerate ledgers via npm run ledger:*)
+DEFAULT
+Defect*.pdf
+Isara Anywhere*.pptx
+scripts/_tmp-*.mjs
+tests/e2e/.workflow-state.json
 !.env.example
 !.env.docker.example
 !.env.docker.template
@@ -107,6 +116,7 @@ test-logs/
 reports/*.log
 reports/local-failures/
 reports/local-unit-gate-*.log
+reports/cloud-unit-gate/*.log
 reports/local-error-ledger/round-*-20*.json
 !reports/local-error-ledger/*-latest.json
 LOCAL_E2E_ERROR_LEDGER_ROUND*.md

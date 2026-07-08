@@ -14,10 +14,11 @@
  * ═══════════════════════════════════════════════════════════════════════
  */
 import {
-  test, expect, assertFullHealth, snap,
+  test, expect, assertFullHealth, snap, snapDistinct,
   navPatient, navDoctor, waitForContent, PATIENT_URL, DOCTOR_URL,
   readPageBearerToken,
 } from './helpers/multi-portal';
+import { resetScreenshotSession } from './helpers/screenshot-distinct';
 
 const DEMO_DOCTOR_ID = 'DOC-TEST-001';
 const DEMO_PATIENT_ID = 'PATIENT-DEMO';
@@ -123,120 +124,81 @@ test.describe('Group G — Living Will & PDPA', () => {
      ═════════════════════════════════════════════════════════════════ */
   test('G2 — Patient Living Will form flow', async ({ portals }) => {
     const { patient } = portals;
+    resetScreenshotSession('group-G');
 
     await test.step('G04 — Navigate to Living Will', async () => {
-      // Try direct link first, then sidebar
-      const lwLink = patient.page.locator('a, button').filter({
-        hasText: /Living Will|หนังสือแสดงเจตนา|สร้าง.*หนังสือ|Create.*Living/i,
-      }).first();
-      if (await lwLink.isVisible({ timeout: 5_000 }).catch(() => false)) {
-        await lwLink.click();
-        await patient.page.waitForTimeout(2_000);
-        await waitForContent(patient.page, 'G04');
-      } else {
-        await navPatient(patient.page, '/pdpa', 'G04');
-        // Look for Living Will section/tab
-        const lwTab = patient.page.locator('button, [role="tab"], a').filter({
-          hasText: /Living Will|หนังสือแสดงเจตนา/i,
-        }).first();
-        if (await lwTab.isVisible({ timeout: 5_000 }).catch(() => false)) {
-          await lwTab.click();
-          await patient.page.waitForTimeout(2_000);
-        }
-      }
+      await navPatient(patient.page, '/living-will', 'G04');
+      await expect(patient.page.getByTestId('living-will-step-1')).toBeVisible({ timeout: 30_000 });
       await assertFullHealth(patient.page, 'G04');
-      await snap(patient.page, 'G04-living-will', 'group-G');
+      await snapDistinct(patient.page, 'G04-living-will', 'group-G', {
+        locator: patient.page.getByTestId('living-will-step-1'),
+      });
       console.log('  ✅ G04: Living Will page');
     });
 
     await test.step('G05 — Step 1: Fill representative info', async () => {
-      // Look for input fields in the current view
-      const inputs = patient.page.locator('input[type="text"], textarea');
-      const inputCount = await inputs.count();
-      if (inputCount > 0) {
-        // Fill representative name
-        const nameInput = inputs.first();
-        await nameInput.fill('นายสมชาย ใจดี');
-        await patient.page.waitForTimeout(500);
-
-        // Fill relationship or phone if available
-        if (inputCount > 1) {
-          await inputs.nth(1).fill('คู่สมรส');
-          await patient.page.waitForTimeout(300);
-        }
-        if (inputCount > 2) {
-          await inputs.nth(2).fill('0812345678');
-          await patient.page.waitForTimeout(300);
-        }
-      }
-      await snap(patient.page, 'G05-step1-representatives', 'group-G');
-      console.log(`  ✅ G05: Step 1 — filled ${Math.min(inputCount, 3)} fields`);
+      await patient.page.locator('#proxy-primary-name').fill('นายสมชาย ใจดี');
+      await patient.page.locator('#proxy-primary-relationship').selectOption({ index: 1 });
+      await patient.page.locator('#proxy-primary-phone').fill('0812345678');
+      await patient.page.locator('#proxy-primary-email').fill('proxy@example.com');
+      await snapDistinct(patient.page, 'G05-step1-representatives', 'group-G', {
+        locator: patient.page.getByTestId('living-will-step-1'),
+      });
+      console.log('  ✅ G05: Step 1 — representative fields filled');
     });
 
     await test.step('G06 — Click Next to Step 2', async () => {
-      const nextBtn = patient.page.locator('button').filter({
-        hasText: /Next|ถัดไป|Continue|ต่อไป|Step 2|ขั้นตอน.*2/i,
-      }).first();
-      if (await nextBtn.isVisible({ timeout: 5_000 }).catch(() => false)) {
-        await nextBtn.click();
-        await patient.page.waitForTimeout(2_000);
-      }
-      await snap(patient.page, 'G06-step2-treatments', 'group-G');
+      await patient.page.getByTestId('living-will-next-btn').click();
+      await expect(patient.page.getByTestId('living-will-step-2')).toBeVisible({ timeout: 15_000 });
+      await expect(patient.page.getByText(/CPR|ช่วยฟื้นคืนชีพ/i).first()).toBeVisible();
+      await snapDistinct(patient.page, 'G06-step2-treatments', 'group-G', {
+        locator: patient.page.getByTestId('living-will-step-2'),
+      });
       console.log('  ✅ G06: Step 2 — Treatment Preferences');
     });
 
     await test.step('G07 — Step 2: Toggle treatment preferences', async () => {
-      const checkboxes = patient.page.locator(
-        'input[type="checkbox"], [role="switch"], [role="checkbox"]'
-      );
+      const checkboxes = patient.page.getByTestId('living-will-step-2').locator('input[type="checkbox"]');
       const cbCount = await checkboxes.count();
-      // Toggle first 3 treatment options
       for (let i = 0; i < Math.min(cbCount, 3); i++) {
-        const cb = checkboxes.nth(i);
-        if (await cb.isVisible({ timeout: 2_000 }).catch(() => false)) {
-          await cb.click();
-          await patient.page.waitForTimeout(300);
-        }
+        await checkboxes.nth(i).click();
+        await patient.page.waitForTimeout(300);
       }
-      await snap(patient.page, 'G07-treatment-prefs', 'group-G');
+      await snapDistinct(patient.page, 'G07-treatment-prefs', 'group-G', {
+        locator: patient.page.getByTestId('living-will-step-2'),
+      });
       console.log(`  ✅ G07: Toggled ${Math.min(cbCount, 3)} treatment preferences`);
     });
 
     await test.step('G08 — Advance to Step 3 (Signature)', async () => {
-      const nextBtn = patient.page.locator('button').filter({
-        hasText: /Next|ถัดไป|Continue|ต่อไป|Step 3|ลงนาม|Sign/i,
-      }).first();
-      if (await nextBtn.isVisible({ timeout: 5_000 }).catch(() => false)) {
-        await nextBtn.click();
-        await patient.page.waitForTimeout(2_000);
-      }
-      await snap(patient.page, 'G08-step3-signature', 'group-G');
+      await patient.page.getByTestId('living-will-next-btn').click();
+      await expect(patient.page.getByTestId('living-will-step-3')).toBeVisible({ timeout: 15_000 });
+      await expect(patient.page.getByTestId('living-will-signature')).toBeVisible();
+      await snapDistinct(patient.page, 'G08-step3-signature', 'group-G', {
+        locator: patient.page.getByTestId('living-will-step-3'),
+      });
       console.log('  ✅ G08: Step 3 — Signature');
     });
 
     await test.step('G09 — Save or submit living will', async () => {
-      const saveBtn = patient.page.locator('button').filter({
-        hasText: /Save|บันทึก|Submit|ส่ง|Complete|เสร็จ|Confirm|ยืนยัน/i,
-      }).first();
-      if (await saveBtn.isVisible({ timeout: 5_000 }).catch(() => false)) {
-        const [, apiResp] = await Promise.allSettled([
-          saveBtn.click(),
-          patient.page.waitForResponse(
-            (r) => (r.url().includes('/api/phr') || r.url().includes('/api/pdpa') || r.url().includes('/living-will'))
-              && (r.request().method() === 'POST' || r.request().method() === 'PUT'),
-            { timeout: 10_000 },
-          ),
-        ]);
-        await patient.page.waitForTimeout(2_000);
-        if (apiResp.status === 'fulfilled') {
-          console.log(`  ✅ G09: Living will saved — API ${apiResp.value.status()}`);
-        } else {
-          console.log('  ✅ G09: Save clicked');
-        }
-      } else {
-        console.log('  ✅ G09: No save button (may need more steps)');
+      const canvas = patient.page.getByTestId('living-will-signature');
+      const box = await canvas.boundingBox();
+      if (box) {
+        await patient.page.mouse.move(box.x + 24, box.y + 24);
+        await patient.page.mouse.down();
+        await patient.page.mouse.move(box.x + box.width - 24, box.y + box.height - 24, { steps: 8 });
+        await patient.page.mouse.up();
       }
-      await snap(patient.page, 'G09-living-will-saved', 'group-G');
+      await patient.page.getByTestId('living-will-next-btn').click();
+      await expect(patient.page.getByTestId('living-will-step-4')).toBeVisible({ timeout: 15_000 });
+      const shareEveryone = patient.page.getByTestId('living-will-step-4').locator('input[type="checkbox"]').first();
+      if (await shareEveryone.isVisible({ timeout: 3_000 }).catch(() => false)) {
+        await shareEveryone.check();
+      }
+      await snapDistinct(patient.page, 'G09-living-will-saved', 'group-G', {
+        locator: patient.page.getByTestId('living-will-step-4'),
+      });
+      console.log('  ✅ G09: Step 4 — share/save screen');
     });
 
     console.log('\n  🎉 G2 COMPLETE — Living Will form\n');

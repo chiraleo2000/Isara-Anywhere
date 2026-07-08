@@ -15,7 +15,7 @@
  * ═══════════════════════════════════════════════════════════════════════
  */
 import {
-  test, expect, assertFullHealth, snap,
+  test, expect, assertFullHealth, snap, snapDistinct,
   navPatient, navDoctor, waitForContent, waitForPoolAppointment, waitForAcceptedInPool, isAcceptedPoolRow,
   pageRequestGet, pageRequestPatch,
   pageRequestGetWithAuthRetry, pageRequestPatchWithAuthRetry,
@@ -30,6 +30,7 @@ import {
   doctorHealthMeetingUrl,
   PATIENT_URL, DOCTOR_URL,
 } from './helpers/multi-portal';
+import { resetScreenshotSession } from './helpers/screenshot-distinct';
 import { refreshAuthStorageStates, reinjectAuthFromStorageFile } from './helpers/auth-refresh';
 import { saveWorkflowState, loadWorkflowState, clearWorkflowState } from './helpers/workflow-state';
 
@@ -501,6 +502,7 @@ test.describe('Group D — Appointment Workflows', () => {
      ═════════════════════════════════════════════════════════════════ */
   test('D3 — Admin appointment oversight & doctor assignment', async ({ portals }) => {
     const { admin, doctor } = portals;
+    resetScreenshotSession('group-D');
     await refreshAuthStorageStates();
     await reinjectAuthFromStorageFile(admin.page, 'admin');
     await reinjectAuthFromStorageFile(doctor.page, 'doctor');
@@ -557,7 +559,9 @@ test.describe('Group D — Appointment Workflows', () => {
           '❌ D15: Admin pool UI must show pool data after patient booking',
         ).toBeTruthy();
       }
-      await snap(admin.page, 'D15-admin-pool', 'group-D');
+      await snapDistinct(admin.page, 'D15-admin-pool', 'group-D', {
+        locator: admin.page.locator('.flex.gap-2.mb-6').first(),
+      });
       console.log('  ✅ D15: Admin → Appointment Pool (refreshed)');
     });
 
@@ -603,7 +607,13 @@ test.describe('Group D — Appointment Workflows', () => {
       const assignData = await assignResp.json().catch(() => ({}));
       expect(assignData.success, '❌ D15b: Admin assign must succeed — doctor assignment FAILED').toBeTruthy();
       console.log(`  ✅ D15b: Admin assigned DOC-TEST-001 to appointment ${unassigned.id}`);
-      await snap(admin.page, 'D15b-admin-assigned-doctor', 'group-D');
+      await navDoctor(admin.page, 'appointment-pool', 'D15b');
+      await admin.page.waitForTimeout(1_500);
+      await admin.page.getByRole('button', { name: /รอคุณตอบรับ/i }).evaluate((el) => (el as HTMLButtonElement).click());
+      await admin.page.waitForTimeout(1_500);
+      await snapDistinct(admin.page, 'D15b-admin-assigned-doctor', 'group-D', {
+        locator: admin.page.locator('.p-6').last(),
+      });
     });
 
     await test.step('D15c — Doctor receives appointment_assigned notification', async () => {
@@ -619,11 +629,22 @@ test.describe('Group D — Appointment Workflows', () => {
     });
 
     await test.step('D16 — Verify assignment reflected in Admin pool view', async () => {
-      // Stay on appointment pool — verify the assignment is now visible
+      await navDoctor(admin.page, 'appointment-pool', 'D16');
+      await admin.page.waitForTimeout(1_000);
+      const acceptedTab = admin.page.getByTestId('accepted-pool-tab');
+      if (await acceptedTab.isVisible({ timeout: 5_000 }).catch(() => false)) {
+        await acceptedTab.evaluate((el) => (el as HTMLButtonElement).click());
+        await admin.page.waitForTimeout(1_000);
+      }
+      const poolPanel = admin.page.getByTestId('accepted-pool-list')
+        .or(admin.page.locator('.p-6').last());
+      await expect(poolPanel.first()).toBeVisible({ timeout: 15_000 });
       const body = await admin.page.locator('body').innerText();
       const hasAssignmentData = /assign|มอบหมาย|doctor|แพทย์|DOC|confirm|ยืนยัน|pool|appointment|นัดหมาย/i.test(body);
       console.log(`  ✅ D16: Admin pool shows assignment data: ${hasAssignmentData}`);
-      await snap(admin.page, 'D16-pool-after-assignment', 'group-D');
+      await snapDistinct(admin.page, 'D16-pool-after-assignment', 'group-D', {
+        locator: poolPanel.first(),
+      });
     });
 
     await test.step('D16b — Doctor Health Meeting shows assigned appointment', async () => {
@@ -969,15 +990,16 @@ test.describe('Group D — Appointment Workflows', () => {
     await test.step('D20 — Navigate to Doctor Dashboard', async () => {
       await navDoctor(doctor.page, 'dashboard', 'D20');
       await assertFullHealth(doctor.page, 'D20');
-      // Wait for dashboard data to load (30s auto-refresh, but let's wait for initial load)
       await doctor.page.waitForTimeout(3_000);
-      await snap(doctor.page, 'D20-dashboard-loaded', 'group-D');
+      await snapDistinct(doctor.page, 'D20-dashboard-loaded', 'group-D', { fullPage: false });
       console.log('  ✅ D20: Doctor Dashboard loaded');
     });
 
     await test.step('D21 — Verify KPI cards show real data', async () => {
-      // Take a screenshot to see the current state
-      await snap(doctor.page, 'D21-kpi-cards', 'group-D');
+      await expect(doctor.page.getByTestId('doctor-dashboard-kpi')).toBeVisible({ timeout: 15_000 });
+      await snapDistinct(doctor.page, 'D21-kpi-cards', 'group-D', {
+        locator: doctor.page.getByTestId('doctor-dashboard-kpi'),
+      });
       const body = await doctor.page.locator('body').innerText();
 
       // Dashboard should show appointment/queue-related labels
@@ -1012,21 +1034,17 @@ test.describe('Group D — Appointment Workflows', () => {
     });
 
     await test.step('D22 — Verify dashboard updates are visible in UI (slow scroll)', async () => {
-      // Scroll down to see all KPI cards
-      await doctor.page.evaluate(() => window.scrollTo(0, 0));
+      await doctor.page.getByTestId('doctor-dashboard-queue').scrollIntoViewIfNeeded();
       await doctor.page.waitForTimeout(1_000);
-      await snap(doctor.page, 'D22-kpi-top', 'group-D');
+      await snapDistinct(doctor.page, 'D22-kpi-middle', 'group-D', {
+        locator: doctor.page.getByTestId('doctor-dashboard-queue'),
+      });
 
-      // Slowly scroll to show full dashboard
-      await doctor.page.evaluate(() => window.scrollBy(0, 400));
+      await doctor.page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
       await doctor.page.waitForTimeout(1_000);
-      await snap(doctor.page, 'D22-kpi-middle', 'group-D');
+      await snapDistinct(doctor.page, 'D22-kpi-bottom', 'group-D', { fullPage: false });
 
-      await doctor.page.evaluate(() => window.scrollBy(0, 400));
-      await doctor.page.waitForTimeout(1_000);
-      await snap(doctor.page, 'D22-kpi-bottom', 'group-D');
-
-      console.log('  ✅ D22: Dashboard scrolled — UI updates visible');
+      console.log('  ✅ D22: Dashboard queue section captured');
     });
 
     console.log('\n  🎉 D5 COMPLETE — Doctor dashboard shows queue data\n');

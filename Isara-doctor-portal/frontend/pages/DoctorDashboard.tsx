@@ -1916,7 +1916,7 @@ export const DoctorDashboard: React.FC<DoctorDashboardProps> = ({
             <p className={`text-xs ${tc('text-emerald-400', 'text-emerald-600')}`}>{labels.patientQueueRecords[language]}</p>
           </div>
 
-          <div className="flex-1 overflow-y-auto p-4">
+          <div className="flex-1 overflow-y-auto p-4" data-testid="doctor-dashboard-queue">
             <div className="space-y-2">
               {queue.map((patient, idx) => (
                 <button

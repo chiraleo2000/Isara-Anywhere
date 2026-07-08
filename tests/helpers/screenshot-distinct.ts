@@ -56,3 +56,16 @@ export function registerScreenshotHash(group: string, filePath: string): void {
   set.add(hash);
   sessionHashes.set(group, set);
 }
+
+/** Fail fast when a workflow step reuses the same pixels as an earlier step in this run. */
+export function assertDistinctFromSession(group: string, filePath: string): void {
+  const hash = sha256File(filePath);
+  const set = sessionHashes.get(group) ?? new Set<string>();
+  if (set.has(hash)) {
+    throw new Error(
+      `${group}: screenshot ${path.basename(filePath)} duplicates a prior step in this run`,
+    );
+  }
+  set.add(hash);
+  sessionHashes.set(group, set);
+}

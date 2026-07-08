@@ -13,7 +13,7 @@
  * ═══════════════════════════════════════════════════════════════════════
  */
 import {
-  test, expect, assertFullHealth, assertTailwindCssHealthy, snap, snapMeetingStage,
+  test, expect, assertFullHealth, assertTailwindCssHealthy, snap, snapDistinct, snapMeetingStage,
   PATIENT_URL, DOCTOR_URL, MEETING_URL,
   ROLE_BROWSER_MATRIX, getRoleBrowserSpec,
   refreshPatientSession, waitForContent,
@@ -100,7 +100,12 @@ test.describe('Group A — Auth & Access Verification', () => {
         found.push(item.label);
       }
     }
-    await snap(patient.page, 'A02-patient-sidebar', 'group-A');
+    await patient.page.locator('aside a[href="/appointments"], nav a[href="/appointments"]').first().click();
+    await waitForContent(patient.page, 'A02-appointments', IS_CLOUD ? 20_000 : 8_000);
+    await snapDistinct(patient.page, 'A02-patient-sidebar', 'group-A', {
+      locator: patient.page.locator('aside').first(),
+      fullPage: false,
+    });
     expect(found.length, `Expected ≥8 sidebar items, found: ${found.join(', ')}`).toBeGreaterThanOrEqual(8);
     console.log(`  ✅ A02: Patient sidebar — ${found.length}/10 items: [${found.join(', ')}]`);
   });

@@ -32,7 +32,7 @@ import {
   getPortalIssues,
   probeRenderHealth,
 } from './portal-diagnostics';
-import { registerScreenshotHash } from './screenshot-distinct';
+import { registerScreenshotHash, assertDistinctFromSession } from './screenshot-distinct';
 import {
   refreshAuthStorageStates,
   refreshAuthStorageStateForRole,
@@ -636,6 +636,68 @@ export async function snap(page: Page, name: string, subDir?: string): Promise<s
     } catch (err) {
       console.warn(`⚠️ Screenshot failed: ${name}`, err instanceof Error ? err.message : '');
     }
+  }
+  return filePath;
+}
+
+/** Screenshot that fails if pixels match a prior step in the same group run. */
+export async function snapDistinct(
+  page: Page,
+  name: string,
+  subDir?: string,
+  options?: { locator?: import('@playwright/test').Locator; fullPage?: boolean; stabilize?: boolean },
+): Promise<string> {
+  const safeSubDir = subDir?.replaceAll(/[^a-zA-Z0-9_-]/g, '_');
+  const dir = safeSubDir ? path.join(SS_DIR, safeSubDir) : SS_DIR;
+  fs.mkdirSync(dir, { recursive: true });
+  const safeName = name.replaceAll(/[^a-zA-Z0-9_-]/g, '_');
+  const filePath = path.join(dir, `${safeName}.png`);
+  const docsDir = safeSubDir ? path.join(DOCS_SS_DIR, safeSubDir) : DOCS_SS_DIR;
+  fs.mkdirSync(docsDir, { recursive: true });
+  const docsPath = path.join(docsDir, `${safeName}.png`);
+  const ssTimeout = (await isFirefoxPage(page)) ? 15_000 : 5_000;
+  const shotOpts = { path: filePath, timeout: ssTimeout, animations: 'disabled' as const };
+  try {
+    if (options?.stabilize) {
+      await page.evaluate(() => {
+        if (!document.getElementById('pw-screenshot-stabilize')) {
+          const style = document.createElement('style');
+          style.id = 'pw-screenshot-stabilize';
+          style.textContent = '*, *::before, *::after { animation: none !important; transition: none !important; }';
+          document.head.appendChild(style);
+        }
+      });
+      await page.locator('.animate-spin').first().waitFor({ state: 'hidden', timeout: 15_000 }).catch(() => {});
+      await page.waitForTimeout(250);
+    }
+    if (options?.locator) {
+      if (options?.stabilize) {
+        const box = await options.locator.boundingBox();
+        if (!box || box.width <= 0 || box.height <= 0) {
+          throw new Error(`Distinct screenshot failed: ${name} — locator has no bounding box`);
+        }
+        await page.screenshot({
+          path: filePath,
+          timeout: ssTimeout,
+          animations: 'disabled',
+          clip: {
+            x: Math.max(0, Math.floor(box.x)),
+            y: Math.max(0, Math.floor(box.y)),
+            width: Math.ceil(box.width),
+            height: Math.ceil(box.height),
+          },
+        });
+      } else {
+        await options.locator.screenshot(shotOpts);
+      }
+    } else {
+      await page.screenshot({ ...shotOpts, fullPage: options?.fullPage ?? true });
+    }
+    fs.copyFileSync(filePath, docsPath);
+    if (safeSubDir) assertDistinctFromSession(safeSubDir, docsPath);
+  } catch (err) {
+    console.warn(`⚠️ Distinct screenshot failed: ${name}`, err instanceof Error ? err.message : '');
+    throw err;
   }
   return filePath;
 }

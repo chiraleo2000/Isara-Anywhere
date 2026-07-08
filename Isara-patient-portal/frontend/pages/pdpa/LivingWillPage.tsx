@@ -469,7 +469,7 @@ function ProgressStepper({ step, isDark, language, onStepClick }: Readonly<{
   };
 
   return (
-    <div className="flex items-center gap-2 mb-8">
+    <div className="flex items-center gap-2 mb-8" data-testid="living-will-stepper">
       {stepItems.map((s, i) => (
         <div key={s.num} className="flex items-center flex-1">
           <button
@@ -504,7 +504,7 @@ function StepHealthcareProxy({ form, setForm, isDark, language, updateProxy, onN
 }>) {
   const lang = toLang(language);
   return (
-  <div className="space-y-6">
+  <div className="space-y-6" data-testid="living-will-step-1">
     <div className={`rounded-2xl border p-6 ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'}`}>
       <h2 className={`text-lg font-semibold mb-4 flex items-center gap-2 ${isDark ? 'text-white' : 'text-gray-800'}`}>
         <User className={`w-5 h-5 ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`} />
@@ -713,6 +713,8 @@ function StepHealthcareProxy({ form, setForm, isDark, language, updateProxy, onN
     </div>
 
     <button
+      type="button"
+      data-testid="living-will-next-btn"
       onClick={onNext}
       className="w-full py-3 bg-emerald-600 text-white rounded-xl font-medium hover:bg-emerald-700"
     >
@@ -730,7 +732,7 @@ function StepMedicalPreferences({ form, setForm, togglePreference, onBack, onNex
   onNext: () => void;
 }>) {
   return (
-  <div className="space-y-6">
+  <div className="space-y-6" data-testid="living-will-step-2">
     <div className="bg-white rounded-2xl border border-gray-100 p-6">
       <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
         <Heart className="w-5 h-5 text-red-500" />
@@ -922,6 +924,8 @@ function StepMedicalPreferences({ form, setForm, togglePreference, onBack, onNex
         ย้อนกลับ
       </button>
       <button
+        type="button"
+        data-testid="living-will-next-btn"
         onClick={onNext}
         className="flex-1 py-3 bg-emerald-600 text-white rounded-xl font-medium hover:bg-emerald-700"
       >
@@ -943,7 +947,7 @@ function StepSignature({ canvasRef, form, startDrawing, draw, stopDrawing, clear
   onNext: () => void;
 }>) {
   return (
-  <div className="space-y-6">
+  <div className="space-y-6" data-testid="living-will-step-3">
     <div className="bg-white rounded-2xl border border-gray-100 p-6">
       <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
         <PenTool className="w-5 h-5 text-emerald-600" />
@@ -1007,6 +1011,7 @@ function StepSignature({ canvasRef, form, startDrawing, draw, stopDrawing, clear
       <button
         onClick={onNext}
         disabled={!form.digitalSignature}
+        data-testid="living-will-next-btn"
         className="flex-1 py-3 bg-emerald-600 text-white rounded-xl font-medium hover:bg-emerald-700 disabled:opacity-50"
       >
         ถัดไป
@@ -1035,7 +1040,7 @@ function StepShareDoctors({ form, setForm, sharedDoctors, onShowDoctorModal, rem
   language: string;
 }>) {
   return (
-  <div className="space-y-6">
+  <div className="space-y-6" data-testid="living-will-step-4">
     <div className="bg-white rounded-2xl border border-gray-100 p-6">
       <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
         <Stethoscope className="w-5 h-5 text-emerald-600" />
