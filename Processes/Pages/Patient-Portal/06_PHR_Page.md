@@ -32,7 +32,25 @@
 3. **ผลลัพธ์ที่คาดหวัง** — สถานะระบบ / API / ฐานข้อมูลหลังจบขั้นตอน
 
 ---
+## UI Controls Inventory
 
+| # | Control | testid | Action | Expected | Screenshot |
+|---|---------|--------|--------|----------|------------|
+| 1 | Overview tab | `phr-tab-overview` | click | UI responds; API optional | U-phr-tab-overview |
+| 2 | Vitals tab | `phr-tab-vitals` | click | UI responds; API optional | U-phr-tab-vitals |
+| 3 | Medications tab | `phr-tab-medications` | click | UI responds; API optional | U-phr-tab-medications |
+| 4 | Allergies tab | `phr-tab-allergies` | click | UI responds; API optional | U-phr-tab-allergies |
+| 5 | Lab tab | `phr-tab-lab-imaging` | click | UI responds; API optional | U-phr-tab-lab-imaging |
+| 6 | Prescriptions tab | `phr-tab-prescriptions` | click | UI responds; API optional | U-phr-tab-prescriptions |
+| 7 | Documents tab | `phr-tab-documents` | click | UI responds; API optional | U-phr-tab-documents |
+| 8 | Profile tab | `phr-tab-profile` | click | UI responds; API optional | U-phr-tab-profile |
+| 9 | Document upload | `phr-document-upload` | type | UI responds; API optional | U-phr-document-upload |
+| 10 | Data Testid | `data-testid` | click | Documented control | U-data-testid |
+| 11 | Confirmed | `confirmed` | click | Documented control | U-confirmed |
+| 12 | Phr Page | `phr-page` | click | Documented control | U-phr-page |
+| 13 | Appointmentid | `appointmentId` | click | Documented control | U-appointmentId |
+| 14 | Meetingid | `meetingId` | click | Documented control | U-meetingId |
+| 15 | Phrroute | `phrRoute` | click | Documented control | U-phrRoute |
 
 ## 1. Purpose
 

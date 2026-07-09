@@ -56,6 +56,14 @@ flowchart TB
             L3["💉 Treatment Preferences"]
             L4["🔒 Access Control"]
         end
+        
+        subgraph DOCS["📁 MEDICAL DOCUMENTS"]
+            DOC1["📄 patient_documents inbox"]
+            DOC2["🧪 Lab / Imaging PDFs"]
+            DOC3["💊 Prescriptions"]
+            DOC4["📋 EMR reports"]
+            DOC5["📤 Patient uploads"]
+        end
     end
     
     subgraph AI_FEATURES["🤖 AI FEATURES"]
@@ -72,6 +80,7 @@ flowchart TB
 
     PHR --> AI_FEATURES
     PHR --> SHARING
+    DOCS --> S1
     VITALS --> AI1
     CONDITIONS --> AI2
     MEDS --> AI3
@@ -91,5 +100,6 @@ flowchart TB
     class A1,A2,A3,A4 allergyStyle
     class C1,C2,C3,C4 conditionStyle
     class L1,L2,L3,L4 willStyle
+    class DOC1,DOC2,DOC3,DOC4,DOC5 willStyle
     class AI1,AI2,AI3 aiStyle
     class S1,S2,S3 shareStyle

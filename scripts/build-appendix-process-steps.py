@@ -33,15 +33,14 @@ SYSTEM_DOCS = [
     "Medicine_Content_Processes.md",
     "Medical_Consultants_Workflows.md",
     "Clinical_Resources_&_Medical_Library_Workflows.md",
+    "Clinical_Document_Delivery_Workflows.md",
+    "WORKFLOW_CONNECTIONS.md",
     "System_Architecture_Overview.md",
     "PHASE1_REQUIREMENTS.md",
-    "PHASE1_BASELINE_WORKFLOW_CONTRACT.md",
     "GATE0_IMPLEMENTATION_STATUS.md",
     "ENV_AND_STACK_CHECK.md",
-    "UI_Pages_Workflows.md",
-    "FULL_WORKFLOW_CONTRACT.md",
+    "POST_MEETING_WORKFLOW.md",
     "TWO_ROUND_CLOUD_TESTING.md",
-    "Living_Will_Implementation_Plan.md",
 ]
 
 

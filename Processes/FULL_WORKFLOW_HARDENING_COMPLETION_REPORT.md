@@ -1,6 +1,20 @@
 # Full workflow hardening ? completion report
 
-**Updated:** June 30, 2026 (Round 6 — self-hosted Jitsi local PASS, LAN/cloud BLOCKED, cost-opt cloudbuild)
+**Updated:** July 9, 2026 (UI element coverage + Group U + P0 matrix)
+
+## Round 7 summary (2026-07-09) — UI element coverage
+
+| Track | Status | Evidence |
+|-------|--------|----------|
+| UI_ELEMENT_COVERAGE_MATRIX | **PASS** | 579 controls; P0 missing=0 (`audit-ui-element-coverage.py`) |
+| 42 page docs UI Controls Inventory | **PASS** | `processDocContentContract.test.ts` PDCC-42 |
+| Group U deep UI audit | **ADDED** | `group-U-ui-element-audit.ui-test.ts` + parallel strict gate |
+| Unit groups sequential | **PASS** | 17/17 (`test:unit:groups-sequential`) |
+| Phase 0 lint/tsc/meeting | **PASS** | `npm run phase:0` |
+| PHR tab testids | **PASS** | `phr-tab-*`, `phr-document-upload` |
+| Pool page deprecated | **PASS** | Page 20 DEPRECATED; redirect to health-meeting queue |
+| Local pre-deploy gate | **PASS** | `test:local:e2e-strict-parallel` 119/119; screenshots global 280 PNGs; ledger P0=0 (2026-07-09T15:12Z) |
+| Local phase 9 strict | **PASS** | `GATE_SKIP_DOCKER_BUILD=1`, `JITSI_DOMAIN=meet.jit.si`, commit `1102376` |
 
 ## Round 6 summary (2026-06-30)
 
@@ -10,7 +24,7 @@
 | Meeting roles | **PASS** | Doctor moderator JWT; patient/guest not; manual recording only |
 | Unit + screenshots | **PASS** | ut-02..17; ss-04..06; 0 process gaps |
 | LAN + nginx | **BLOCKED** | Ubuntu host unreachable |
-| Cloud deploy | **BLOCKED** | Cost config ready; deploy needs user approval |
+| Cloud release gate | **BLOCKED** | `test:cloud:deploy-gate` D15b admin-assign flake on Cloud Run (local 119/119 PASS); retry `npm run test:cloud:release-gate` |
 
 ## W10 manual checklist (cannot automate)
 

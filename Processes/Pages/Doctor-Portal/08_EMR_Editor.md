@@ -33,7 +33,17 @@
 3. **ผลลัพธ์ที่คาดหวัง** — สถานะระบบ / API / ฐานข้อมูลหลังจบขั้นตอน
 
 ---
+## UI Controls Inventory
 
+| # | Control | testid | Action | Expected | Screenshot |
+|---|---------|--------|--------|----------|------------|
+| 1 | EMR autosave | `emr-autosave-status` | type | UI responds; API optional | U-emr-autosave-status |
+| 2 | Data Testid | `data-testid` | click | Documented control | U-data-testid |
+| 3 | Confirmed | `confirmed` | click | Documented control | U-confirmed |
+| 4 | Emr Editor Modal | `emr-editor-modal` | click | Documented control | U-emr-editor-modal |
+| 5 | Emr Sign Btn | `emr-sign-btn` | click | Documented control | U-emr-sign-btn |
+| 6 | Appointmentid | `appointmentId` | click | Documented control | U-appointmentId |
+| 7 | Meetingid | `meetingId` | click | Documented control | U-meetingId |
 
 ## 1. Purpose
 

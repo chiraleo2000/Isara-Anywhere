@@ -33,7 +33,44 @@
 3. **ผลลัพธ์ที่คาดหวัง** — สถานะระบบ / API / ฐานข้อมูลหลังจบขั้นตอน
 
 ---
+## UI Controls Inventory
 
+| # | Control | testid | Action | Expected | Screenshot |
+|---|---------|--------|--------|----------|------------|
+| 1 | Page root | `health-meeting-page` | type | UI responds; API optional | U-health-meeting-page |
+| 2 | Queue list | `queue-list` | type | UI responds; API optional | U-queue-list |
+| 3 | Queue KPI | `queue-count` | type | UI responds; API optional | U-queue-count |
+| 4 | Claim appointment | `queue-claim-btn` | click | UI responds; API optional | U-queue-claim-btn |
+| 5 | AI match | `queue-ai-match-btn` | click | UI responds; API optional | U-queue-ai-match-btn |
+| 6 | Confirm appointment | `confirm-appointment-btn` | click | UI responds; API optional | U-confirm-appointment-btn |
+| 7 | Data Testid | `data-testid` | click | Documented control | U-data-testid |
+| 8 | Confirmed | `confirmed` | click | Documented control | U-confirmed |
+| 9 | Lobby Waiting Screen | `lobby-waiting-screen` | click | Documented control | U-lobby-waiting-screen |
+| 10 | Admit All Btn | `admit-all-btn` | click | Documented control | U-admit-all-btn |
+| 11 | Jitsi Doctor Container | `jitsi-doctor-container` | click | Documented control | U-jitsi-doctor-container |
+| 12 | Jitsi Guest Container | `jitsi-guest-container` | click | Documented control | U-jitsi-guest-container |
+| 13 | Insert Meeting Summary Emr Btn | `insert-meeting-summary-emr-btn` | click | Documented control | U-insert-meeting-summary-emr-btn |
+| 14 | Host Ready | `host-ready` | click | Documented control | U-host-ready |
+| 15 | Notifyhostpresent | `notifyHostPresent` | click | Documented control | U-notifyHostPresent |
+| 16 | Appointmentid | `appointmentId` | click | Documented control | U-appointmentId |
+| 17 | Meetingid | `meetingId` | click | Documented control | U-meetingId |
+| 18 | Guestjoinurl | `guestJoinUrl` | click | Documented control | U-guestJoinUrl |
+| 19 | Share Link | `share-link` | click | Documented control | U-share-link |
+| 20 | Guest Invite | `guest-invite` | click | Documented control | U-guest-invite |
+| 21 | Guest Lobby Waiting | `guest-lobby-waiting` | click | Documented control | U-guest-lobby-waiting |
+| 22 | Frame Src | `frame-src` | click | Documented control | U-frame-src |
+| 23 | Connect Src | `connect-src` | click | Documented control | U-connect-src |
+| 24 | Guest Transcript Segment | `guest-transcript-segment` | click | Documented control | U-guest-transcript-segment |
+| 25 | Recordingurl | `recordingUrl` | click | Documented control | U-recordingUrl |
+| 26 | Meeting Summary Ready | `meeting-summary-ready` | click | Documented control | U-meeting-summary-ready |
+| 27 | End Meeting Btn | `end-meeting-btn` | click | Documented control | U-end-meeting-btn |
+| 28 | Recording Indicator | `recording-indicator` | click | Documented control | U-recording-indicator |
+| 29 | Meeting Results | `meeting-results` | click | Documented control | U-meeting-results |
+| 30 | Recording Player | `recording-player` | click | Documented control | U-recording-player |
+| 31 | Generate Summary Btn | `generate-summary-btn` | click | Documented control | U-generate-summary-btn |
+| 32 | Defectisarapdfmeetingqueue | `defectIsaraPdfMeetingQueue` | click | Documented control | U-defectIsaraPdfMeetingQueue |
+| 33 | Pending | `pending` | click | Documented control | U-pending |
+| 34 | Assigned | `assigned` | click | Documented control | U-assigned |
 
 ## 1. Purpose
 

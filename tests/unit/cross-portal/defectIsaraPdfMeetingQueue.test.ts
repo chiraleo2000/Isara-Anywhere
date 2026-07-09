@@ -135,14 +135,15 @@ describe('Defect PDF #2 — patient Jitsi name auto-filled from account', () => 
     expect(opts.interfaceConfigOverwrite.DEFAULT_LOCAL_DISPLAY_NAME).toBe('Patient Demo');
   });
 
-  it('DPDF-N3 — confirm URLs embed patient displayName hash param', () => {
+  it('DPDF-N3 — confirm URLs embed portal patient meeting path when patientId known', () => {
     const urls = buildTelehealthMeetingUrls('apt-name-1', {
       patientName: 'Patient Demo',
       doctorName: 'Dr. Demo',
+      patientId: 'pat-uuid-1',
+      doctorId: 'doc-uuid-1',
     });
-    expect(urls.patientMeetingUrl).toContain('userInfo.displayName=Patient');
-    expect(urls.patientMeetingUrl).toContain('prejoinPageEnabled=false');
-    expect(urls.patientMeetingUrl).toContain('requireDisplayName=false');
+    expect(urls.patientMeetingUrl).toContain('/patient/pat-uuid-1/meeting/apt-name-1');
+    expect(urls.doctorMeetingUrl).toContain('/doctor/doc-uuid-1/meeting/apt-name-1');
   });
 
   it('DPDF-N4 — join-config mount uses server displayName in userInfo', () => {
@@ -187,9 +188,12 @@ describe('Defect PDF #3 — doctor host / patient participant meeting roles', ()
       roomName: room,
       patientName: 'P',
       doctorName: 'D',
+      patientId: 'pat-m5',
+      doctorId: 'doc-m5',
     });
-    expect(urls.doctorMeetingUrl).toContain(`/${room}`);
-    expect(urls.patientMeetingUrl).toContain(`/${room}`);
+    expect(urls.jitsiDoctorMeetingUrl).toContain(`/${room}`);
+    expect(urls.jitsiPatientMeetingUrl).toContain(`/${room}`);
+    expect(urls.patientMeetingUrl).toContain('/patient/pat-m5/meeting/apt-host-1');
   });
 
   it('DPDF-M6 — stable room name is deterministic per appointment id', () => {

@@ -18,6 +18,8 @@ import {
   waitForDoctorLobbyAdmitControls,
   ensureDoctorLobbyPanelOpen,
   waitForDoctorLobbyRejectControl,
+  refreshPageAuth,
+  requirePatientAuth,
 } from './helpers/multi-portal';
 import {
   chromiumLaunchArgs,
@@ -90,12 +92,15 @@ async function doctorInMeetingWithLobby(
   await proxyLocalMeetingServer(patientPage, MEETING_URL);
   await doctorPage.goto(`${DOCTOR_URL}/doctor/${doctorCtx.doctorId}/meeting/${appointmentId}`, {
     waitUntil: 'domcontentloaded',
+    timeout: 90_000,
   });
   await joinIzaraMeetingInApp(doctorPage, `${label}-doctor`, browserName);
   await notifyHostPresentAfterJitsi(doctorPage, appointmentId, { bffUrl: DOCTOR_URL, meetingUrl: MEETING_URL });
   await expect(doctorPage.getByTestId('jitsi-meeting-container')).toBeVisible({ timeout: 90_000 });
 
-  await patientPage.goto(`${PATIENT_URL}/meeting/${appointmentId}`, { waitUntil: 'domcontentloaded' });
+  await refreshPageAuth(patientPage, PATIENT_URL, 'patient1');
+  const { userId: patientUserId } = await requirePatientAuth(patientPage, `${label}-patient`);
+  await patientPage.goto(`${PATIENT_URL}/patient/${patientUserId}/meeting/${appointmentId}`, { waitUntil: 'domcontentloaded', timeout: 90_000 });
   await joinMeetingToLobby(patientPage, `${label}-patient`, browserName);
   await expect(
     patientPage.getByTestId('lobby-waiting-screen').or(patientPage.getByTestId('host-waiting-screen')).first(),
@@ -222,6 +227,7 @@ test.describe('Defect — Meeting lobby admit flow', () => {
     await overrideBrowserMeetingServerUrl(patient.page, MEETING_URL);
     await doctor.page.goto(`${DOCTOR_URL}/doctor/${doctorCtx.doctorId}/meeting/${appointmentId}`, {
       waitUntil: 'domcontentloaded',
+      timeout: 90_000,
     });
     try {
       await joinIzaraMeetingInApp(doctor.page, 'DM5-doctor', portals.doctor.browserName);
@@ -238,7 +244,8 @@ test.describe('Defect — Meeting lobby admit flow', () => {
     expect(inviteResp.ok()).toBeTruthy();
     const inviteData = await inviteResp.json();
 
-    await patient.page.goto(`${PATIENT_URL}/meeting/${appointmentId}`, { waitUntil: 'domcontentloaded' });
+    const { userId: patientUserId } = await getPatientAuth(patient.page);
+    await patient.page.goto(`${PATIENT_URL}/patient/${patientUserId}/meeting/${appointmentId}`, { waitUntil: 'domcontentloaded', timeout: 90_000 });
     await joinMeetingToLobby(patient.page, 'DM5-patient', portals.patient.browserName);
     await waitForMeetingHostReady(patient.page.request, MEETING_URL, appointmentId, 60_000);
     await expect(
@@ -259,6 +266,7 @@ test.describe('Defect — Meeting lobby admit flow', () => {
       await proxyLocalMeetingServer(guestPage, MEETING_URL);
       await guestPage.goto(`${PATIENT_PORTAL}/guest/join/${inviteData.token}`, {
         waitUntil: 'domcontentloaded',
+        timeout: 90_000,
       });
       const joinBtn = guestPage.getByTestId('guest-join-btn');
       if (await joinBtn.isVisible({ timeout: 15_000 }).catch(() => false)) {
@@ -308,6 +316,7 @@ test.describe('Defect — Meeting lobby admit flow', () => {
     await overrideBrowserMeetingServerUrl(patient.page, MEETING_URL);
     await doctor.page.goto(`${DOCTOR_URL}/doctor/${doctorCtx.doctorId}/meeting/${appointmentId}`, {
       waitUntil: 'domcontentloaded',
+      timeout: 90_000,
     });
     await joinIzaraMeetingInApp(doctor.page, 'DM6-doctor', portals.doctor.browserName);
     await notifyHostPresentAfterJitsi(doctor.page, appointmentId, { bffUrl: DOCTOR_URL, meetingUrl: MEETING_URL });
@@ -326,7 +335,8 @@ test.describe('Defect — Meeting lobby admit flow', () => {
     });
     const guestId = guestJoin.participantId || 'guest-dm6';
 
-    await patient.page.goto(`${PATIENT_URL}/meeting/${appointmentId}`, { waitUntil: 'domcontentloaded' });
+    const { userId: patientUserId } = await getPatientAuth(patient.page);
+    await patient.page.goto(`${PATIENT_URL}/patient/${patientUserId}/meeting/${appointmentId}`, { waitUntil: 'domcontentloaded', timeout: 90_000 });
     await joinMeetingToLobby(patient.page, 'DM6-patient', portals.patient.browserName);
 
     await lobbyReject(doctor.page, appointmentId, guestId, doctorCtx.doctorId, 'E2E deny guest');

@@ -23,6 +23,31 @@ import {
 // ============================================================================
 const API_BASE = import.meta.env.VITE_API_URL || '';
 
+function normalizeResource(raw: Record<string, unknown>): ClinicalResourceItem {
+  const resource = (raw.resource || raw) as Record<string, unknown>;
+  const author = resource.author as { id?: string; name?: string } | undefined;
+  return {
+    ...(resource as unknown as ClinicalResourceItem),
+    id: resource.id as string,
+    title: (resource.title as string) || (resource.titleThai as string) || '',
+    titleTh: (resource.titleTh as string) || (resource.titleThai as string) || '',
+    description: (resource.description as string) || '',
+    descriptionTh: (resource.descriptionTh as string) || (resource.descriptionThai as string) || '',
+    content: (resource.content as string) || '',
+    contentTh: (resource.contentTh as string) || (resource.contentThai as string) || '',
+    category: (resource.category as ClinicalResourcesCategoryId) || 'treatment',
+    tags: (resource.tags as string[]) || [],
+    status: (resource.status as ContentStatus) || 'draft',
+    createdBy: (resource.createdBy as string) || author?.id || '',
+    createdByName: (resource.createdByName as string) || author?.name || 'Unknown',
+    version: (resource.version as number) || 1,
+    history: (resource.history as ContentVersion[]) || [],
+    comments: (resource.comments as ClinicalResourceItem['comments']) || [],
+    rejectionReason: (resource.rejectionReason as string) || undefined,
+    resourceType: (resource.resourceType as ClinicalResourceItem['resourceType']) || 'guideline',
+  };
+}
+
 // ============================================================================
 // STATUS CONFIG
 // ============================================================================
@@ -119,8 +144,11 @@ const renderContentWithImages = (content: string) => {
   if (!content) return '';
 
   // Replace [image:URL:description] with actual img tags (sanitized)
-  const imagePattern = /\[image:([^\]:]+):([^\]]*)\]/g;
-  let processedContent = content.replaceAll(imagePattern, (_match, url, description) => {
+  let processedContent = content.replaceAll(/\[image:([^\]]+)\]/g, (_match, inner: string) => {
+    const lastColon = inner.lastIndexOf(':');
+    if (lastColon <= 0) return _match;
+    const url = inner.slice(0, lastColon).trim();
+    const description = inner.slice(lastColon + 1).trim();
     const safeUrl = sanitizeUrl(url);
     const safeDesc = escapeHtml(description);
     return `<figure class="my-6"><img src="${safeUrl}" alt="${safeDesc}" class="w-full max-w-2xl mx-auto rounded-lg shadow-md" loading="lazy" /><figcaption class="text-center text-sm text-gray-500 mt-2">${safeDesc}</figcaption></figure>`;
@@ -255,7 +283,7 @@ export const ClinicalResources: React.FC = () => {
       });
       if (!response.ok) throw new Error('Failed to fetch resources');
       const data = await response.json();
-      setResources(data.resources || []);
+      setResources((data.resources || []).map((r: Record<string, unknown>) => normalizeResource(r)));
       setPendingCount(data.pendingCount || 0);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error');
@@ -285,8 +313,8 @@ export const ClinicalResources: React.FC = () => {
       });
       if (!response.ok) throw new Error('Failed to fetch pending');
       const data = await response.json();
-      setPendingResources(data.resources || []);
-      setPendingCount(data.count || 0);
+      setPendingResources((data.resources || []).map((r: Record<string, unknown>) => normalizeResource(r)));
+      setPendingCount(data.count || data.resources?.length || 0);
     } catch (err) {
       console.error('Error fetching pending:', err);
     }
@@ -344,8 +372,9 @@ export const ClinicalResources: React.FC = () => {
         const errorText = await response.text();
         throw new Error(errorText || 'Failed to create resource');
       }
-      const newResource = await response.json();
-      setResources((prev) => [...prev, newResource]);
+      const result = await response.json();
+      const resource = normalizeResource(result);
+      setResources((prev) => [...prev, resource]);
       setShowCreateModal(false);
       resetForm();
       if (formData.status === 'pending' && isAdmin) {
@@ -372,9 +401,10 @@ export const ClinicalResources: React.FC = () => {
         }),
       });
       if (!response.ok) throw new Error('Failed to update resource');
-      const updatedResource = await response.json();
-      setResources((prev) => prev.map((r) => (r.id === updatedResource.id ? updatedResource : r)));
-      setSelectedResource(updatedResource);
+      const result = await response.json();
+      const resource = normalizeResource(result);
+      setResources((prev) => prev.map((r) => (r.id === resource.id ? resource : r)));
+      setSelectedResource(resource);
       setShowEditModal(false);
       resetForm();
     } catch (err) {
@@ -417,8 +447,9 @@ export const ClinicalResources: React.FC = () => {
       });
       if (!response.ok) throw new Error(`Failed to ${action} resource`);
       const result = await response.json();
-      setResources((prev) => prev.map((r) => (r.id === result.resource.id ? result.resource : r)));
-      setSelectedResource(result.resource);
+      const resource = normalizeResource(result);
+      setResources((prev) => prev.map((r) => (r.id === resource.id ? resource : r)));
+      setSelectedResource(resource);
       setShowApprovalModal(false);
       setApprovalComment('');
       setRejectionReason('');
@@ -434,12 +465,19 @@ export const ClinicalResources: React.FC = () => {
     try {
       const response = await fetch(`${API_BASE}/api/content/tags/clinical`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: newTag, userId: user?.id }),
       });
       if (!response.ok) throw new Error('Failed to create tag');
-      const tag = await response.json();
-      setTags((prev) => [...prev, tag]);
+      const result = await response.json();
+      const tag = result.tag || result;
+      setTags((prev) => [...prev, {
+        id: tag.id || tag.name,
+        name: tag.name,
+        createdBy: user?.id || '',
+        createdAt: new Date().toISOString(),
+        usageCount: 1,
+      }]);
       setFormData((prev) => ({ ...prev, tags: [...prev.tags, tag.name] }));
       setNewTag('');
     } catch (err) {
@@ -451,7 +489,8 @@ export const ClinicalResources: React.FC = () => {
     try {
       const response = await fetch(`${API_BASE}/api/content/clinical/${resource.id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({
           status: 'pending',
           userId: user?.id || 'unknown',
@@ -460,7 +499,8 @@ export const ClinicalResources: React.FC = () => {
         }),
       });
       if (!response.ok) throw new Error('Failed to submit for approval');
-      const updatedResource = await response.json();
+      const result = await response.json();
+      const updatedResource = normalizeResource(result);
       setResources((prev) => prev.map((r) => (r.id === updatedResource.id ? updatedResource : r)));
       setSelectedResource(updatedResource);
     } catch (err) {
@@ -481,6 +521,23 @@ export const ClinicalResources: React.FC = () => {
       ...prev,
       references: prev.references.filter((_, i) => i !== index),
     }));
+  };
+
+  const openHistoryModal = async (resource: ClinicalResourceItem) => {
+    setSelectedResource(resource);
+    setShowHistoryModal(true);
+    try {
+      const response = await fetch(`${API_BASE}/api/content/clinical/${resource.id}/history`, {
+        headers: getAuthHeaders(),
+        credentials: 'include',
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setSelectedResource((prev) => prev ? { ...prev, history: data.history || [], version: data.version || prev.version } : prev);
+      }
+    } catch (err) {
+      console.error('Error fetching history:', err);
+    }
   };
 
   const resetForm = () => {
@@ -628,7 +685,7 @@ export const ClinicalResources: React.FC = () => {
             </button>
           )}
           <button
-            onClick={() => setShowHistoryModal(true)}
+            onClick={() => openHistoryModal(resource)}
             className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
           >
             <HistoryIcon className="w-4 h-4" />

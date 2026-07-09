@@ -146,6 +146,7 @@ export const pdpaService = {
   getDoctorAccess: () => api.get<any[]>('/api/pdpa/doctor-access'),
   grantDoctorAccess: (doctorId: string) => api.post<any>('/api/pdpa/doctor-access', { doctor_id: doctorId }),
   revokeDoctorAccess: (doctorId: string) => api.delete<any>(`/api/pdpa/doctor-access/${doctorId}`),
+  revokeAllConsents: () => api.delete<any>('/api/pdpa/consent'),
   getPendingRequests: () => api.get<any[]>('/api/pdpa/pending-requests'),
   respondToRequest: (notificationId: string, doctorId: string, action: 'grant' | 'deny') =>
     api.post<any>('/api/pdpa/consent-request/respond', { notification_id: notificationId, doctor_id: doctorId, action }),

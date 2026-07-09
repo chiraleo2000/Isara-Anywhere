@@ -32,7 +32,16 @@
 3. **ผลลัพธ์ที่คาดหวัง** — สถานะระบบ / API / ฐานข้อมูลหลังจบขั้นตอน
 
 ---
+## UI Controls Inventory
 
+| # | Control | testid | Action | Expected | Screenshot |
+|---|---------|--------|--------|----------|------------|
+| 1 | Prescribe submit | `prescribe-submit` | click | UI responds; API optional | U-prescribe-submit |
+| 2 | Data Testid | `data-testid` | click | Documented control | U-data-testid |
+| 3 | Confirmed | `confirmed` | click | Documented control | U-confirmed |
+| 4 | Appointmentid | `appointmentId` | click | Documented control | U-appointmentId |
+| 5 | Meetingid | `meetingId` | click | Documented control | U-meetingId |
+| 6 | Allergy Block Banner | `allergy-block-banner` | click | Documented control | U-allergy-block-banner |
 
 ## 1. Purpose
 

@@ -56,7 +56,20 @@ Isara Anywhere นำแนวคิดด้านฟังก์ชันจ�
   ภายนอกออกทั้งหมด) เพื่อความปลอดภัยและความสม่ำเสมอของ UX.
 
 ---
+## UI Controls Inventory
 
+| # | Control | testid | Action | Expected | Screenshot |
+|---|---------|--------|--------|----------|------------|
+| 1 | Data Testid | `data-testid` | click | Documented control | U-data-testid |
+| 2 | Host Present | `host-present` | click | Documented control | U-host-present |
+| 3 | Jitsimeetingshell | `JitsiMeetingShell` | click | Documented control | U-JitsiMeetingShell |
+| 4 | Waitforhostready | `waitForHostReady` | click | Documented control | U-waitForHostReady |
+| 5 | Confirmed | `confirmed` | click | Documented control | U-confirmed |
+| 6 | Appointmentid | `appointmentId` | click | Documented control | U-appointmentId |
+| 7 | Meetingid | `meetingId` | click | Documented control | U-meetingId |
+| 8 | Success | `success` | click | Documented control | U-success |
+| 9 | Message | `message` | click | Documented control | U-message |
+| 10 | Code | `code` | click | Documented control | U-code |
 
 ## 1. Technology Stack
 

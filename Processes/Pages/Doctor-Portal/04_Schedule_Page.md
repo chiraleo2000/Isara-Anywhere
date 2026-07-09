@@ -34,6 +34,34 @@
 3. **ผลลัพธ์ที่คาดหวัง** — สถานะระบบ / API / ฐานข้อมูลหลังจบขั้นตอน
 
 ---
+## UI Controls Inventory
+
+| # | Control | testid | Action | Expected | Screenshot |
+|---|---------|--------|--------|----------|------------|
+| 1 | Data Testid | `data-testid` | click | Documented control | U-data-testid |
+| 2 | Doctorid | `doctorId` | click | Documented control | U-doctorId |
+| 3 | Appointmentdate | `appointmentDate` | click | Documented control | U-appointmentDate |
+| 4 | Mapappointmentforclient | `mapAppointmentForClient` | click | Documented control | U-mapAppointmentForClient |
+| 5 | Resolveappointmentschedule | `resolveAppointmentSchedule` | click | Documented control | U-resolveAppointmentSchedule |
+| 6 | Confirmeddate | `confirmedDate` | click | Documented control | U-confirmedDate |
+| 7 | Appointmenttime | `appointmentTime` | click | Documented control | U-appointmentTime |
+| 8 | Meetinglink | `meetingLink` | click | Documented control | U-meetingLink |
+| 9 | Patientname | `patientName` | click | Documented control | U-patientName |
+| 10 | Status | `status` | click | Documented control | U-status |
+| 11 | Confirmed | `confirmed` | click | Documented control | U-confirmed |
+| 12 | Scheduled | `scheduled` | click | Documented control | U-scheduled |
+| 13 | Pending | `pending` | click | Documented control | U-pending |
+| 14 | Assigned | `assigned` | click | Documented control | U-assigned |
+| 15 | Buildtelehealthcalendarurl | `buildTelehealthCalendarUrl` | click | Documented control | U-buildTelehealthCalendarUrl |
+| 16 | Buildgooglecalendarurl | `buildGoogleCalendarUrl` | click | Documented control | U-buildGoogleCalendarUrl |
+| 17 | Calendareventurl | `calendarEventUrl` | click | Documented control | U-calendarEventUrl |
+| 18 | Mini Calendar Appointment Day | `mini-calendar-appointment-day` | click | Documented control | U-mini-calendar-appointment-day |
+| 19 | Doctor Portal | `doctor-portal` | click | Documented control | U-doctor-portal |
+| 20 | Appointmentid | `appointmentId` | click | Documented control | U-appointmentId |
+| 21 | Meetingid | `meetingId` | click | Documented control | U-meetingId |
+| 22 | Success | `success` | click | Documented control | U-success |
+| 23 | Message | `message` | click | Documented control | U-message |
+| 24 | Code | `code` | click | Documented control | U-code |
 
 ## 1. Purpose (วัตถุประสงค์)
 

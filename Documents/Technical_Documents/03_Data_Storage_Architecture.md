@@ -1,6 +1,6 @@
 # สถาปัตยกรรมการจัดเก็บข้อมูล (Data Storage Architecture)
 
-> **อัปเดต:** 2 มิถุนายน 2569 | **ชุด:** `Documents/Technical_Documents` · [ดัชนี](../README.md)  
+> **อัปเดต:** 9 กรกฎาคม 2569 | **ชุด:** `Documents/Technical_Documents` · [ดัชนี](../README.md)  
 > **ไม่มี Nextcloud** — เก็บที่ PostgreSQL/Cloud SQL, `/tmp/recordings`, GCS (ถ้ามี env)  
 > **ก่อนหน้า:** [02](02_Authentication_and_Authorization.md) · **ถัดไป:** [04](04_Jitsi_Integration_and_Code_Examples.md) · [05 ขั้นตอน](05_Appendix_Full_Process_Steps.md)  
 > **แผนภาพ draw.io:** [Documents/docs/diagrams/diagrams.drawio](../Documents/docs/diagrams/diagrams.drawio)
@@ -91,10 +91,10 @@
 | กลุ่ม | ตาราง | จำนวนโดยประมาณ |
 |-------|-------|----------------|
 | User & Auth | `users`, `sessions`, `password_resets`, `refresh_tokens`, `device_tokens`, `biometric_credentials` | 6 |
-| Patient | `patient_profiles`, `phr`, `vital_signs`, `living_wills`, `living_will_versions`, `patient_consents`, `push_subscriptions` | 7 |
+| Patient | `patient_profiles`, `phr`, `vital_signs`, `living_wills`, `living_will_versions`, `patient_consents`, `patient_documents`, `patient_doctor_messages`, `push_subscriptions` | 9 |
 | Doctor | `doctor_profiles`, `doctors`, `doctor_schedules`, `doctor_reviews`, `consultants` | 5 |
 | Appointment & Meeting | `appointments`, `meeting_records`, `meeting_transcripts` | 3+ |
-| Clinical | `emr`, `prescriptions`, `lab_orders` | 3+ |
+| Clinical | `emr`, `prescriptions`, `lab_orders`, `imaging_orders` | 4+ |
 | Content & AI | `medical_content`, `clinical_resources`, `knowledge_base`, `ai_chat_history`, `transcript_embeddings` | หลายตาราง |
 | System | `notifications`, `audit_logs`, `user_settings`, `sync_queue` | หลายตาราง |
 
@@ -138,12 +138,17 @@
 | `recording_data` | **BYTEA** — ไฟล์บันทึกในฐานข้อมูล |
 | `doctor_validation_status`, `ready_for_patient` | man-in-the-loop |
 
-### 3.5 ตาราง `emr` และ `phr`
+### 3.5 ตาราง `emr`, `phr` และ `patient_documents`
 
 | ตาราง | ผู้เป็นเจ้าของข้อมูล | การใช้ |
 |-------|---------------------|--------|
 | `phr` | ผู้ป่วย | ประวัติสุขภาพส่วนบุคคล — JSONB หลายฟิลด์ |
 | `emr` | แพทย์บันทึกต่อ patient/appointment | SOAP, การวินิจฉัย |
+| `patient_documents` | ผู้ป่วย (inbox) | เอกสารคลินิกที่ส่งถึงผู้ป่วย — EMR, lab PDF, Rx, imaging, instruction sheet; `file_data` BYTEA หรือ metadata อ้างอิง `source_type`/`source_id` |
+
+**`patient_documents` (v2.3.0):** ทะเบียนกลางสำหรับทุก artifact ที่ผู้ป่วยดาวน์โหลดได้ — `source_type` เช่น `emr_report`, `lab_report`, `prescription`, `imaging_report`, `instruction_sheet`, `patient_upload`; API `GET/POST/DELETE /api/patients/documents` และ `GET /api/documents/:id/download` บน patient portal; แพทย์ publish ผ่าน `DocumentDeliveryService` หลัง sign EMR / ส่งผล lab / บันทึก Rx
+
+**`patient_doctor_messages`:** ข้อความแพทย์→ผู้ป่วย (in-app + email) จากหน้า Patient Detail
 
 ---
 
@@ -181,6 +186,17 @@ recording_stopped_at     TIMESTAMPTZ,
 ```
 
 Pipeline หลังประชุมอาจ persist ลง `recording_data` ก่อนลบไฟล์ชั่วคราว
+
+ตาราง `patient_documents` (v2.3.0):
+
+```sql
+file_data    BYTEA,          -- PDF หรือไฟล์ที่ส่งถึงผู้ป่วย
+mime_type    TEXT DEFAULT 'application/pdf',
+file_size    INTEGER,
+source_type  TEXT NOT NULL,  -- emr_report | lab_report | prescription | ...
+```
+
+Clinical delivery เก็บ PDF ใน BYTEA ภายใน `izara_phase1` — **ไม่**ใช้ GCS path สำหรับเอกสารคลินิก (GCS clinical paths ปิดใน production gate)
 
 ### 5.2 ดิสก์ชั่วคราว — Meeting Server
 
@@ -297,6 +313,7 @@ Production Cloud Run: sweep โฟลเดอร์ว่างทุกชั�
 | `migrations/v2.0.0-phase2-tables.sql` | device_tokens, sync_queue, user_settings |
 | `migrations/v2.1.0-phase2-ai-his.sql` | ตาราง AI/HIS เพิ่ม |
 | `migrations/v2.2.0-ai-specialty-matching.sql` | appointment_ai_suggestions |
+| `migrations/v2.3.0-patient-documents-and-messages.sql` | `patient_documents`, `patient_doctor_messages`, booking columns |
 | `migrations/add_meeting_url_columns.sql` | คอลัมน์ Jitsi บน appointments |
 | `v2.2.0-notify-triggers.sql` | NOTIFY triggers |
 | `migrations/pdpa-access-control-migration.sql` | access_audit |
@@ -323,6 +340,8 @@ erDiagram
     users ||--o{ emr : clinician_writes
     users ||--o{ prescriptions : prescribes
     users ||--o{ lab_orders : orders
+    users ||--o{ patient_documents : receives
+    users ||--o{ patient_doctor_messages : exchanges
     users ||--o{ patient_consents : grants
     users ||--o{ notifications : receives
     users ||--o{ living_wills : owns
@@ -510,7 +529,7 @@ erDiagram
 
 | Processes | ตาราง | หมายเหตุ |
 |-----------|-------|----------|
-| `Living_Will_Processes.md`, `Living_Will_Implementation_Plan.md` | `living_wills`, `living_will_versions` | Patient 11 |
+| `Living_Will_Processes.md` | `living_wills`, `living_will_versions` | Patient 11 |
 | `Patient-Portal/10_PDPA_Page.md` | `patient_consents` | แยกจาก living will |
 
 ### 13.6 เนื้อหาและ RAG

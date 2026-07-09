@@ -1,6 +1,6 @@
 # Full Workflow Contract (Canonical Hardening Baseline)
 
-Last updated: 2026-05-22  
+Last updated: 2026-07-09  
 Source references: `Appointment_Workflows.md`, `VIDEO_MEETING_JITSI_GEMINI.md`, `GATE0_IMPLEMENTATION_STATUS.md`, `System_Architecture_Overview.md`, `Data_Sync_Documentation.md`
 
 ## Purpose

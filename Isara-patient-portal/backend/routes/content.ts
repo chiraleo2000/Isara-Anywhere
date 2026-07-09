@@ -51,13 +51,13 @@ router.get('/medical', async (req: Request, res: Response) => {
       titleTh: row.title_thai,
       titleThai: row.title_thai,
       titleEnglish: row.title_english,
-      summary: row.content_thai?.substring(0, 200) || row.content_english?.substring(0, 200),
-      summaryTh: row.content_thai?.substring(0, 200),
+      summary: row.summary_thai || row.content_thai?.substring(0, 200) || row.content_english?.substring(0, 200),
+      summaryTh: row.summary_thai || row.content_thai?.substring(0, 200),
       content: row.content_thai || row.content_english,
       contentThai: row.content_thai,
       contentEnglish: row.content_english,
       category: row.category,
-      type: row.type || 'article',
+      type: row.content_type || 'article',
       tags: row.tags || [],
       author: row.author_name_thai || row.author_name,
       authorName: row.author_name_thai || row.author_name,
@@ -66,6 +66,7 @@ router.get('/medical', async (req: Request, res: Response) => {
       viewCount: row.view_count || 0,
       readTime: Math.ceil((row.content_thai?.length || row.content_english?.length || 500) / 500),
       isFeatured: row.is_featured || false,
+      videoUrl: row.video_url || null,
       imageUrl: row.image_url,
       thumbnail: row.image_url,
       publishedAt: row.published_at,
@@ -169,66 +170,14 @@ router.post('/medical/:id/view', async (req: Request, res: Response) => {
 // ============================================================================
 
 /**
- * GET /api/content/clinical-resources (and /api/content/clinical alias)
- * Get clinical resources for health education
+ * Clinical resources are doctor-only — patients must not access.
  */
-const clinicalResourcesHandler = async (req: Request, res: Response) => {
-  try {
-    const { category } = req.query;
-    console.log(`[CONTENT] Getting clinical resources, category: ${typeof category === 'string' ? category : 'all'}`);
-
-    let query = `
-      SELECT cr.*, u.name as author_name, u.name_thai as author_name_thai
-      FROM clinical_resources cr
-      LEFT JOIN users u ON cr.approved_by = u.id
-      WHERE cr.status = 'published'
-    `;
-    const params: any[] = [];
-
-    if (category) {
-      query += ` AND cr.category = $${params.length + 1}`;
-      params.push(category);
-    }
-
-    query += ' ORDER BY cr.updated_at DESC LIMIT 100';
-
-    const result = await pool.query(query, params);
-
-    const resources = result.rows.map((row: any) => ({
-      id: row.id,
-      title: row.title_thai || row.title_english,
-      titleThai: row.title_thai,
-      titleEnglish: row.title_english,
-      content: row.content_thai || row.content_english,
-      contentThai: row.content_thai,
-      contentEnglish: row.content_english,
-      category: row.category,
-      specialty: row.specialty,
-      guidelineYear: row.guideline_year,
-      source: row.source,
-      tags: row.tags || [],
-      status: row.status,
-      imageUrl: row.image_url,
-      thumbnail: row.image_url,
-      approvedBy: row.author_name_thai || row.author_name,
-      approvedAt: row.approved_at,
-      createdAt: row.created_at,
-      updatedAt: row.updated_at
-    }));
-
-    res.json({
-      resources: resources,
-      categories: [],
-      lastUpdated: new Date().toISOString()
-    });
-  } catch (error: unknown) {
-    console.error('[CONTENT] Get clinical resources error:', error);
-    res.status(500).json({ error: 'Failed to fetch clinical resources' });
-  }
+const clinicalResourcesBlocked = (_req: Request, res: Response) => {
+  res.status(403).json({ error: 'Clinical resources are not available to patients' });
 };
 
-router.get('/clinical-resources', clinicalResourcesHandler);
-router.get('/clinical', clinicalResourcesHandler);
+router.get('/clinical-resources', clinicalResourcesBlocked);
+router.get('/clinical', clinicalResourcesBlocked);
 
 // ============================================================================
 // HEALTH TIPS ROUTES
@@ -391,19 +340,23 @@ router.get('/search', async (req: Request, res: Response) => {
     const query = q.toLowerCase();
     
     // Search in clinical resources from PostgreSQL
-    let results: any[] = [];
-    try {
-      const searchResult = await pool.query(
-        `SELECT * FROM clinical_resources 
-         WHERE LOWER(title) LIKE $1 OR LOWER(content) LIKE $1 OR LOWER(category) LIKE $1
-         LIMIT 50`,
-        [`%${query}%`]
-      );
-      results = searchResult.rows;
-    } catch {
-      // If table doesn't exist, return empty
-      results = [];
-    }
+    const searchResult = await pool.query(
+      `SELECT id, title_thai, title_english, content_thai, category, status
+       FROM medical_content
+       WHERE status = 'published' AND (
+         LOWER(title_thai) LIKE $1 OR LOWER(title_english) LIKE $1
+         OR LOWER(content_thai) LIKE $1 OR LOWER(content_english) LIKE $1
+         OR LOWER(category) LIKE $1
+       )
+       LIMIT 50`,
+      [`%${query}%`]
+    );
+    results = searchResult.rows.map((row: any) => ({
+      id: row.id,
+      title: row.title_thai || row.title_english,
+      category: row.category,
+      status: row.status,
+    }));
     
     res.json({ results, query: q, total: results.length });
   } catch (error: unknown) {

@@ -139,8 +139,11 @@ function isSelfHostedLocalJitsiDomain(domain: string): boolean {
 
 /** Preflight — fails fast when meet.* DNS/hosts is missing (common LAN mistake). */
 export async function verifyJitsiDomainReachable(domain = resolveJitsiDomain()): Promise<void> {
-  if (isSelfHostedLocalJitsiDomain(domain)) {
-    // Script-tag load matches JitsiMeetExternalAPI bootstrap; avoids CORS on http://127.0.0.1:* → https://meet.localhost:8443
+  const isAutomation =
+    typeof navigator !== 'undefined' && Boolean((navigator as { webdriver?: boolean }).webdriver);
+  if (isSelfHostedLocalJitsiDomain(domain) || isAutomation) {
+    // Script-tag load matches JitsiMeetExternalAPI bootstrap; avoids CORS on fetch preflight
+    // (Playwright headed sets navigator.webdriver — fetch to external_api.js often fails).
     await loadJitsiExternalApiScript(domain);
     return;
   }

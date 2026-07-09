@@ -1,7 +1,7 @@
 # Workflow Connections — Features, Functions & Diagrams
 
-**Version:** 1.0.0  
-**Last Updated:** June 25, 2026  
+**Version:** 1.1.0  
+**Last Updated:** July 9, 2026  
 **Purpose:** Single map of how portals, services, database, and realtime layers connect.  
 **Detail docs:** Domain workflows in linked files; page specs in [Pages/](Pages/).
 
@@ -117,9 +117,38 @@ sequenceDiagram
 | AI draft | processing | `meeting_records.ai_summary` | [POST_MEETING_WORKFLOW.md](POST_MEETING_WORKFLOW.md) |
 | Doctor review | `ai_validations` | `ai_validations` | Post-meeting |
 | Clinical sign-off | `signed` EMR | `emr`, `prescriptions`, `lab_orders`, `imaging_orders` | [Health_Records_Processes.md](Health_Records_Processes.md) |
-| Patient delivery | `ready_for_patient` | `patient_instructions`, `notifications`, `health_timeline` | [Pages/Patient-Portal/04_Dashboard_Page.md](Pages/Patient-Portal/04_Dashboard_Page.md) |
+| Patient delivery | `ready_for_patient` | `patient_documents`, `patient_instructions`, `notifications`, `health_timeline` | [Clinical_Document_Delivery_Workflows.md](Clinical_Document_Delivery_Workflows.md) |
 
 **Page navigation map:** [Pages/README.md](Pages/README.md) § Meeting Workflow.
+
+### Full working order (numbered)
+
+```text
+ 1. Patient books appointment          → appointments (pending / in_pool)
+ 2. Admin assigns OR doctor confirms → confirmed + Jitsi URLs + calendarEventUrl
+ 3. Doctor starts meeting (HOST)     → meeting_records (in_progress)
+ 4. Patient/guest lobby → admitted   → Jitsi + transcript + chat
+ 5. Doctor ends meeting              → meeting_records (ended)
+ 6. Gemini SOAP pipeline             → meeting_records.ai_summary
+ 7. Doctor man-in-the-loop approve   → ai_validations
+ 8. Doctor signs EMR               → emr (signed) → patient_documents
+ 9. Doctor Rx / lab / imaging        → prescriptions, lab_orders, imaging_orders
+10. DocumentDeliveryService publish  → patient_documents registry
+11. Notifications + NOTIFY           → patient bell + PHR tabs
+12. Patient views results            → PHR Documents / Treatment Results
+```
+
+```mermaid
+flowchart TD
+  A[1 Book] --> B[2 Confirm / Assign]
+  B --> C[3–5 Video meeting]
+  C --> D[6–7 AI + doctor review]
+  D --> E[8 Sign EMR]
+  E --> F[9 Clinical orders]
+  F --> G[10 Publish documents]
+  G --> H[11 Notify patient]
+  H --> I[12 PHR delivery]
+```
 
 ---
 
@@ -164,6 +193,7 @@ Full catalog: [Data_Sync_Documentation.md](Data_Sync_Documentation.md).
 | **Content** | Thai-first articles, admin approval | Draft → publish | [Medicine_Content_Processes.md](Medicine_Content_Processes.md) | P08, D13–14 |
 | **AI chat / studio** | Patient AI doctor, doctor copilot | Chat, calculators | Separated §Q–R | P07, D15 |
 | **Notifications** | In-app + realtime | Bell, mark read | [Notification_Workflows.md](Notification_Workflows.md) | P15 |
+| **Document delivery** | EMR, Rx, lab PDF registry | Sign, publish, download | [Clinical_Document_Delivery_Workflows.md](Clinical_Document_Delivery_Workflows.md) | P06 |
 | **Admin** | Pool, doctor approval, all appointments | Assign, approve, override | Combined §3 | D17–21 |
 
 **Journey diagrams:** [Combined_Workflows_And_Actions.md](Combined_Workflows_And_Actions.md)  
@@ -182,7 +212,7 @@ Quick lookup — full column defs: [DATABASE_TABLES_REFERENCE.md](DATABASE_TABLE
 | Meeting | `meeting_records`, `meeting_transcripts`, `meeting_chats`, `meeting_invites` |
 | Post-meeting AI | `ai_validations`, `meeting_records` |
 | Sign visit | `emr`, `prescriptions`, `lab_orders`, `imaging_orders` |
-| Patient delivery | `patient_instructions`, `notifications`, `health_timeline` |
+| Patient delivery | `patient_documents`, `patient_instructions`, `notifications`, `health_timeline` |
 | Content publish | `medical_content`, `clinical_resources`, `knowledge_base` |
 | Realtime | 8 NOTIFY tables (see §4) |
 
@@ -202,5 +232,6 @@ Quick lookup — full column defs: [DATABASE_TABLES_REFERENCE.md](DATABASE_TABLE
 
 - [UI_Pages_Workflows.md](UI_Pages_Workflows.md) → use `Pages/`
 - [Pages/Doctor-Portal/07_Virtual_Meeting.md](Pages/Doctor-Portal/07_Virtual_Meeting.md) → use [01_Meeting_Room.md](Pages/Meeting-Server/01_Meeting_Room.md)
-- [Living_Will_Implementation_Plan.md](Living_Will_Implementation_Plan.md) → merged into [Living_Will_Processes.md](Living_Will_Processes.md)
 - [PHASE1_BASELINE_WORKFLOW_CONTRACT.md](PHASE1_BASELINE_WORKFLOW_CONTRACT.md) → merged into [FULL_WORKFLOW_CONTRACT.md](FULL_WORKFLOW_CONTRACT.md)
+
+**Removed (content merged — file deleted):** `Living_Will_Implementation_Plan.md` → [Living_Will_Processes.md](Living_Will_Processes.md)

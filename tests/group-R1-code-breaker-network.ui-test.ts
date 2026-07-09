@@ -9,6 +9,7 @@ import {
   launchVisibleChromium,
   joinMeetingToLobby,
   lobbyJoinUnauth,
+  requirePatientAuth,
 } from './helpers/multi-portal';
 import { loadWorkflowState } from './helpers/workflow-state';
 import { assertNoActiveJitsi } from './helpers/meeting-lifecycle-fixture';
@@ -47,7 +48,8 @@ test.describe('Code Breaker R1 — network chaos (cloud)', () => {
       timeout: 90_000,
     });
 
-    await patient.page.goto(`${PATIENT_URL}/meeting/${appointmentId}`, {
+    const { userId: patientUserId } = await requirePatientAuth(patient.page, 'CB1');
+    await patient.page.goto(`${PATIENT_URL}/patient/${patientUserId}/meeting/${appointmentId}`, {
       waitUntil: 'domcontentloaded',
       timeout: 90_000,
     });

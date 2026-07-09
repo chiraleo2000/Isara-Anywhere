@@ -245,6 +245,11 @@ export const CompleteEMREditor: React.FC<CompletEMREditorProps> = ({
   const sendEMRToPatientHealthLogs = async (finalizedEMR: EMR): Promise<boolean> => {
     try {
       setIsSendingToPatient(true);
+      const token = localStorage.getItem('token') || localStorage.getItem('authToken');
+      const authHeaders: Record<string, string> = {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      };
 
       // Prepare patient-friendly medication list (without sensitive internal data)
       const patientMedications = finalizedEMR.prescriptions?.map(rx => ({
@@ -287,7 +292,7 @@ export const CompleteEMREditor: React.FC<CompletEMREditorProps> = ({
       // Call API to add to patient's health logs
       const response = await fetch(`/api/patients/${patient.id}/health-logs`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: authHeaders,
         body: JSON.stringify(healthLogEntry),
       });
 
@@ -312,9 +317,13 @@ export const CompleteEMREditor: React.FC<CompletEMREditorProps> = ({
   // Notify patient that their EMR is ready
   const notifyPatientEMRReady = async (emr: EMR): Promise<void> => {
     try {
+      const token = localStorage.getItem('token') || localStorage.getItem('authToken');
       await fetch('/api/notifications/emr-signed', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
         body: JSON.stringify({
           patientId: patient.id,
           patientEmail: patient.contact?.email,

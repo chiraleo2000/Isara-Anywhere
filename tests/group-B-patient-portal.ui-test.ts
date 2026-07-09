@@ -72,7 +72,15 @@ test.describe('Group B — Patient Portal Continuous Flow', () => {
       await snap(patient.page, 'B05-phr', 'group-B');
       const body = await patient.page.locator('body').innerText();
       expect(/health record|ระเบียนสุขภาพ|PHR|vital|allergy|medication|ภาพรวม/i.test(body)).toBeTruthy();
-      console.log('  ✅ B05: PHR page');
+      for (const tabId of ['phr-tab-overview', 'phr-tab-documents', 'phr-tab-lab-imaging']) {
+        const tab = patient.page.getByTestId(tabId);
+        if (await tab.isVisible().catch(() => false)) {
+          await tab.click();
+          await patient.page.waitForTimeout(400);
+          await snap(patient.page, `B05-${tabId}`, 'group-B');
+        }
+      }
+      console.log('  ✅ B05: PHR page + tabs');
     });
 
     /* B06 — PHR → Timeline */

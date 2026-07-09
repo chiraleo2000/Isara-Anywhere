@@ -22,6 +22,7 @@ import {
   DOCTOR_URL,
   MEETING_URL,
   isPlaywrightHeadless,
+  requirePatientAuth,
 } from './helpers/multi-portal';
 import {
   installJitsiMountSpy,
@@ -35,6 +36,7 @@ import {
   proxyLocalMeetingServer,
   ensureJitsiMountSpy,
 } from './helpers/meeting-lifecycle-fixture';
+import { installJitsiE2eStubForContext } from './helpers/jitsi-e2e-stub';
 import {
   chromiumLaunchArgs,
   CHROMIUM_MEDIA_PERMISSIONS,
@@ -223,7 +225,8 @@ async function runJitsiRoleParityFlow(
   });
 
   await test.step(`${label}b — Patient joins after host ready (participant)`, async () => {
-    await patientPage.goto(`${PATIENT_URL}/meeting/${appointmentId}`, {
+    const { userId: patientUserId } = await requirePatientAuth(patientPage, `${label}b`);
+    await patientPage.goto(`${PATIENT_URL}/patient/${patientUserId}/meeting/${appointmentId}`, {
       waitUntil: 'domcontentloaded',
       timeout: IS_CLOUD ? 90_000 : 45_000,
     });
@@ -306,6 +309,11 @@ async function launchDualBrowserPair(
       browser.newContext({ ...ctxOpts, storageState: adminState }),
     ]);
     await Promise.all([
+      installJitsiE2eStubForContext(doctorCtx),
+      installJitsiE2eStubForContext(patientCtx),
+      installJitsiE2eStubForContext(adminCtx),
+    ]);
+    await Promise.all([
       doctorCtx.grantPermissions([...CHROMIUM_MEDIA_PERMISSIONS]),
       patientCtx.grantPermissions([...CHROMIUM_MEDIA_PERMISSIONS]),
     ]);
@@ -330,6 +338,11 @@ async function launchDualBrowserPair(
     const doctorCtx = await doctorBrowser.newContext({ ...ctxOpts, storageState: doctorState });
     const patientCtx = await patientBrowser.newContext({ ...ctxOpts, storageState: patientState });
     const adminCtx = await adminBrowser.newContext({ ...ctxOpts, storageState: adminState });
+    await Promise.all([
+      installJitsiE2eStubForContext(doctorCtx),
+      installJitsiE2eStubForContext(patientCtx),
+      installJitsiE2eStubForContext(adminCtx),
+    ]);
     await doctorCtx.grantPermissions([...CHROMIUM_MEDIA_PERMISSIONS]);
     const patientOrigin = new URL(PATIENT_URL).origin;
     await patientCtx.grantPermissions(['camera', 'microphone'], { origin: patientOrigin }).catch(() => {});

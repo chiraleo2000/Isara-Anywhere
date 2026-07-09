@@ -777,7 +777,7 @@ Users can configure notification preferences per channel and category via `notif
 
 ### 4.7 Living Will & PDPA Compliance
 
-> **Full Documentation:** [Living_Will_Processes.md](Living_Will_Processes.md), [Living_Will_Implementation_Plan.md](Living_Will_Implementation_Plan.md)
+> **Full Documentation:** [Living_Will_Processes.md](Living_Will_Processes.md)
 
 Enables patients to create legally-binding Living Will documents with PDPA-compliant sharing controls.
 
@@ -1425,6 +1425,7 @@ Legacy: [07_Virtual_Meeting.md](Pages/Doctor-Portal/07_Virtual_Meeting.md) (stub
 | [Clinical_Resources_&_Medical_Library_Workflows.md](Clinical_Resources_&_Medical_Library_Workflows.md) | Clinical guidelines, protocols, RAG knowledge base | Doctor CRUD, admin approval, AI search |
 | [Medical_Consultants_Workflows.md](Medical_Consultants_Workflows.md) | Specialist directory, consultant management | Admin CRUD, doctor rating, availability toggle |
 | [Notification_Workflows.md](Notification_Workflows.md) | In-app, email, push notifications, preferences | 16+ event types incl. `schedule_entry_ready` + `calendarEventUrl` on confirm |
+| [Clinical_Document_Delivery_Workflows.md](Clinical_Document_Delivery_Workflows.md) | EMR/Rx/lab PDF registry → PHR Documents tab | `patient_documents`, DocumentDeliveryService |
 | [Data_Sync_Documentation.md](Data_Sync_Documentation.md) | PostgreSQL sync, NOTIFY triggers, audit trail | 8 triggers, Socket.IO events, cross-portal sync |
 
 
@@ -1434,7 +1435,7 @@ Legacy: [07_Virtual_Meeting.md](Pages/Doctor-Portal/07_Virtual_Meeting.md) (stub
 | ---------- | ------------- |
 | [Living_Will_Processes.md](Living_Will_Processes.md) | 4-step wizard, healthcare proxy, PDPA sharing controls, audit trail |
 
-> Archived: [Living_Will_Implementation_Plan.md](Living_Will_Implementation_Plan.md) (merged) · [UI_Pages_Workflows.md](UI_Pages_Workflows.md) (use `Pages/`)
+> Archived: [UI_Pages_Workflows.md](UI_Pages_Workflows.md) (use `Pages/`) · `Living_Will_Implementation_Plan.md` **deleted** — see [Living_Will_Processes.md](Living_Will_Processes.md)
 
 ### UI & Requirements Documents (1)
 
@@ -1452,11 +1453,11 @@ Legacy: [07_Virtual_Meeting.md](Pages/Doctor-Portal/07_Virtual_Meeting.md) (stub
 | [Pages/Meeting-Server/](Pages/Meeting-Server/) | 4 pages | Meeting Server architecture, Meeting Room, Meeting Results, EMR page |
 
 
-### Thai Translations (7)
+### Thai Translations (auto-sync)
 
 | Document | Description |
 | ---------- | ------------- |
-| [Thai/](Thai/) | Thai-language versions: Appointment, Data Sync, Health Records, Notification, User Management, Video Meeting workflows |
+| [Thai/](Thai/) | Full mirror: run `python scripts/sync-processes-thai.py` — hub [README_TH.md](Thai/README_TH.md), [WORKFLOW_CONNECTIONS_TH.md](Thai/WORKFLOW_CONNECTIONS_TH.md), all workflows + [Thai/Pages/](Thai/Pages/) |
 
 ---
 

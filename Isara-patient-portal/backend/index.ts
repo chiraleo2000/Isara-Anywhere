@@ -27,6 +27,8 @@ import notificationRoutes from './routes/notifications';
 import settingsRoutes, { syncRouter as syncRoutes } from './routes/settings';
 import phase2Routes from './routes/phase2';
 import mapRoutes from './routes/map';
+import documentsRoutes from './routes/documents';
+import { getDocumentById } from './services/documentDeliveryService';
 import { startPgNotifyListener } from './pgNotifyListener';
 import { startAppointmentScheduler } from './cron/appointmentScheduler';
 import { authMiddleware, AuthenticatedRequest } from './middleware/auth';
@@ -370,22 +372,76 @@ app.get('/api/consultants/specialties', async (req: Request, res: Response) => {
 app.get('/api/health-records/instructions/:appointmentId', authMiddleware, async (req: Request, res: Response) => {
   try {
     const { appointmentId } = req.params;
-    console.log(`[HEALTH-RECORDS] Getting instructions for appointment: ${appointmentId}`);
-    
-    res.json({
-      success: true,
-      instructions: {
-        appointmentId: appointmentId,
-        diagnosis: 'ตรวจสุขภาพทั่วไป',
-        medications: [],
-        lifestyleRecommendations: ['พักผ่อนให้เพียงพอ', 'ออกกำลังกายสม่ำเสมอ'],
-        followUpDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-        warnings: [],
-        generatedAt: new Date().toISOString()
-      }
-    });
+    const userId = (req as AuthenticatedRequest).user?.id || (req as AuthenticatedRequest).user?.userId;
+
+    const meetingResult = await pool.query(
+      `SELECT patient_instructions, patient_instructions_thai, ai_summary, ready_for_patient
+       FROM meeting_records WHERE appointment_id = $1 OR id::text = $1
+       ORDER BY updated_at DESC LIMIT 1`,
+      [appointmentId]
+    );
+
+    if (meetingResult.rows.length > 0 && meetingResult.rows[0].ready_for_patient) {
+      const row = meetingResult.rows[0];
+      return res.json({
+        success: true,
+        instructions: {
+          appointmentId,
+          summary: row.ai_summary,
+          patientInstructions: row.patient_instructions || row.patient_instructions_thai,
+          generatedAt: new Date().toISOString(),
+        },
+      });
+    }
+
+    const emrResult = await pool.query(
+      `SELECT patient_instructions, patient_instructions_thai, ai_summary, signed_at
+       FROM emr WHERE appointment_id = $1 AND patient_id = $2 AND status = 'signed'
+       ORDER BY signed_at DESC LIMIT 1`,
+      [appointmentId, userId]
+    );
+
+    if (emrResult.rows.length > 0) {
+      const row = emrResult.rows[0];
+      return res.json({
+        success: true,
+        instructions: {
+          appointmentId,
+          summary: row.ai_summary,
+          patientInstructions: row.patient_instructions || row.patient_instructions_thai,
+          generatedAt: row.signed_at,
+        },
+      });
+    }
+
+    res.json({ success: true, instructions: null, message: 'No instructions available yet' });
   } catch (error: unknown) {
     console.error('[HEALTH-RECORDS] Instructions error:', error);
+    res.status(500).json({ error: errMsg(error) });
+  }
+});
+
+// GET instruction sheet PDF/text download via patient_documents
+app.get('/api/health-records/instructions/:appointmentId/download', authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const { appointmentId } = req.params;
+    const userId = (req as AuthenticatedRequest).user?.id || (req as AuthenticatedRequest).user?.userId;
+    const result = await pool.query(
+      `SELECT * FROM patient_documents
+       WHERE patient_id = $1 AND source_type = 'instruction_sheet'
+         AND (appointment_id = $2 OR metadata->>'meetingId' = $2)
+       ORDER BY delivered_at DESC LIMIT 1`,
+      [userId, appointmentId]
+    );
+    const doc = result.rows[0];
+    if (!doc?.file_data) {
+      return res.status(404).json({ error: 'Instruction sheet not found' });
+    }
+    res.setHeader('Content-Type', doc.mime_type || 'text/plain');
+    res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(doc.file_name)}"`);
+    res.send(doc.file_data);
+  } catch (error: unknown) {
+    console.error('[HEALTH-RECORDS] Instruction download error:', error);
     res.status(500).json({ error: errMsg(error) });
   }
 });
@@ -472,12 +528,28 @@ app.get('/api/dashboard/stats', authMiddleware, async (req: Request, res: Respon
 // ============================================================================
 app.get('/api/health-records/treatment-results', authMiddleware, async (req: Request, res: Response) => {
   try {
-    console.log('[HEALTH-RECORDS] Getting treatment results');
-    
+    const userId = (req as AuthenticatedRequest).user?.id || (req as AuthenticatedRequest).user?.userId;
+    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+
+    const result = await pool.query(
+      `SELECT e.*, u.name as doctor_name, u.name_thai as doctor_name_thai
+       FROM emr e LEFT JOIN users u ON e.doctor_id = u.id
+       WHERE e.patient_id = $1 AND e.status = 'signed'
+       ORDER BY e.signed_at DESC NULLS LAST, e.created_at DESC`,
+      [userId]
+    );
+
     res.json({
       success: true,
-      results: [],
-      message: 'No treatment results found'
+      results: result.rows.map((row) => ({
+        id: row.id,
+        encounterDate: row.signed_at || row.created_at,
+        doctorName: row.doctor_name_thai || row.doctor_name,
+        aiSummary: row.ai_summary,
+        instructions: row.patient_instructions || row.patient_instructions_thai,
+        appointmentId: row.appointment_id,
+      })),
+      total: result.rows.length,
     });
   } catch (error: unknown) {
     console.error('[HEALTH-RECORDS] Treatment results error:', error);
@@ -586,6 +658,32 @@ app.get('/api/patients/:patientId/lab-results/:id', authMiddleware, async (req: 
 
 app.use('/api/auth', authRoutes);
 app.use('/api/phr', phrRoutes);
+app.use('/api/patients/documents', documentsRoutes);
+
+// Document download (canonical URL used by patient_documents.fileUrl)
+app.get('/api/documents/:id/download', authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const authReq = req as AuthenticatedRequest;
+    const patientId = authReq.user?.userId || authReq.user?.id;
+    if (!patientId) return res.status(401).json({ error: 'Unauthorized' });
+
+    const doc = await getDocumentById(req.params.id, patientId);
+    if (!doc || !doc.file_data) {
+      return res.status(404).json({ error: 'Document not found' });
+    }
+
+    res.setHeader('Content-Type', doc.mime_type || 'application/pdf');
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="${encodeURIComponent(doc.file_name)}"`
+    );
+    res.send(doc.file_data);
+  } catch (error: unknown) {
+    console.error('[Documents] Download error:', error);
+    res.status(500).json({ error: 'Failed to download document' });
+  }
+});
+
 app.use('/api/appointments', appointmentRoutes);
 app.use('/api/appointment-pool', appointmentPoolRoutes);
 app.use('/api/doctors', doctorRoutes);
@@ -614,12 +712,24 @@ app.get('/api/prescriptions', authMiddleware, async (req: Request, res: Response
     const userId = (req as AuthenticatedRequest).user?.userId || (req as AuthenticatedRequest).user?.id;
     console.log(`[PRESCRIPTIONS] Fetching for patient: ${String(userId)}`);
     const result = await pool.query(
-      `SELECT p.*, d.name as doctor_name FROM prescriptions p 
-       LEFT JOIN users d ON p.doctor_id = d.id  
+      `SELECT p.*, d.name as doctor_name,
+              pd.id as document_id
+       FROM prescriptions p
+       LEFT JOIN users d ON p.doctor_id = d.id
+       LEFT JOIN LATERAL (
+         SELECT id FROM patient_documents
+         WHERE source_type = 'prescription' AND source_id = p.id::text
+         ORDER BY delivered_at DESC NULLS LAST
+         LIMIT 1
+       ) pd ON true
        WHERE p.patient_id = $1 ORDER BY p.created_at DESC`,
       [userId]
     );
-    res.json({ success: true, prescriptions: result.rows });
+    const prescriptions = result.rows.map((row) => ({
+      ...row,
+      download_url: row.document_id ? `/api/documents/${row.document_id}/download` : null,
+    }));
+    res.json({ success: true, prescriptions });
   } catch (error: unknown) {
     console.error('[PRESCRIPTIONS] Error:', error);
     res.status(500).json({ error: errMsg(error), prescriptions: [] });
@@ -643,23 +753,31 @@ app.get('/api/prescriptions/:id', authMiddleware, async (req: Request, res: Resp
 // ============================================================================
 app.get('/api/health-records', authMiddleware, async (req: Request, res: Response) => {
   try {
-    const userId = (req as AuthenticatedRequest).user?.id || (req as AuthenticatedRequest).user?.patientId;
-    console.log(`[HEALTH-RECORDS] Getting all health records for patient: ${String(userId)}`);
-    
-    // Return health records from PostgreSQL
+    const userId = (req as AuthenticatedRequest).user?.id || (req as AuthenticatedRequest).user?.userId;
+    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+
+    const [emrRows, docRows] = await Promise.all([
+      pool.query(
+        `SELECT id, appointment_id, signed_at, created_at, status, ai_summary
+         FROM emr WHERE patient_id = $1 AND status = 'signed' ORDER BY signed_at DESC`,
+        [userId]
+      ),
+      pool.query(
+        `SELECT id, source_type, title, file_name, delivered_at FROM patient_documents
+         WHERE patient_id = $1 AND status = 'delivered' ORDER BY delivered_at DESC`,
+        [userId]
+      ).catch(() => ({ rows: [] })),
+    ]);
+
     res.json({
       success: true,
-      records: [],
       patientId: userId,
-      message: 'Health records retrieved successfully'
+      records: emrRows.rows,
+      documents: docRows.rows,
     });
   } catch (error: unknown) {
     console.error('[HEALTH-RECORDS] Error:', error);
-    res.status(500).json({
-      success: false,
-      records: [],
-      error: 'Failed to retrieve health records'
-    });
+    res.status(500).json({ success: false, records: [], error: 'Failed to retrieve health records' });
   }
 });
 
@@ -815,50 +933,8 @@ app.get('/api/users/profile', authMiddleware, async (req: Request, res: Response
 
 // ============================================================================
 // GET /api/medical-content - Alias for /api/content/medical (for E2E tests)
-// ============================================================================
-app.get('/api/medical-content', async (req: Request, res: Response) => {
-  try {
-    console.log('[MEDICAL-CONTENT] Fetching medical content');
-    
-    // Return demo medical content
-    const demoContent = [
-      {
-        id: 'demo_article_001',
-        title: 'การดูแลสุขภาพประจำวัน',
-        titleThai: 'การดูแลสุขภาพประจำวัน',
-        titleEnglish: 'Daily Health Care Tips',
-        category: 'general-health',
-        type: 'article',
-        status: 'published',
-        isFeatured: true,
-        readTime: 5,
-        author: 'Dr. Demo',
-        createdAt: new Date().toISOString()
-      },
-      {
-        id: 'demo_article_002',
-        title: 'โรคเบาหวานและการป้องกัน',
-        titleThai: 'โรคเบาหวานและการป้องกัน',
-        titleEnglish: 'Diabetes Prevention',
-        category: 'chronic-disease',
-        type: 'article',
-        status: 'published',
-        isFeatured: true,
-        readTime: 8,
-        author: 'Dr. Demo',
-        createdAt: new Date().toISOString()
-      }
-    ];
-    
-    res.json({
-      success: true,
-      content: demoContent,
-      total: demoContent.length
-    });
-  } catch (error: unknown) {
-    console.error('[MEDICAL-CONTENT] Error:', error);
-    res.json({ success: true, content: [], total: 0 });
-  }
+app.get('/api/medical-content', (req, res) => {
+  res.redirect(307, `/api/content/medical${req.url.includes('?') ? req.url.slice(req.url.indexOf('?')) : ''}`);
 });
 
 // ============================================================================

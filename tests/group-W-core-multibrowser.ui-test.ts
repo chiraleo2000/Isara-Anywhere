@@ -18,6 +18,7 @@ import {
   navPatient,
   navDoctor,
   waitForContent,
+  requirePatientAuth,
   PATIENT_URL,
   DOCTOR_URL,
   MEETING_URL,
@@ -194,7 +195,8 @@ test.describe('Group W — Core multi-browser workflow', () => {
     });
 
     await test.step('Patient meeting route', async () => {
-      const url = `${PATIENT_URL}/meeting/${workflowAppointmentId}`;
+      const { userId: patientUserId } = await requirePatientAuth(patient.page, 'W04');
+      const url = `${PATIENT_URL}/patient/${patientUserId}/meeting/${workflowAppointmentId}`;
       await patient.page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30_000 });
       await waitForContent(patient.page, 'W04-patient-meeting', 12_000);
       await assertFullHealth(patient.page, 'W04-patient-meeting');

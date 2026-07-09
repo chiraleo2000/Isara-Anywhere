@@ -116,6 +116,101 @@ try {
   console.error('[MAIN-API] ❌ CRITICAL: PostgreSQL required but not available.');
 }
 
+const DocumentDeliveryService = require('./services/documentDeliveryService.cjs');
+const { formatMedicalArticle, formatClinicalResource } = require('./lib/contentFormatters.cjs');
+
+function mapFrontendEmrToDbUpdate(emrData) {
+  return {
+    subjective: {
+      chiefComplaint: emrData.chiefComplaint,
+      historyOfPresentIllness: emrData.historyOfPresentIllness,
+      reviewOfSystems: emrData.reviewOfSystems,
+    },
+    objective: {
+      vitalSigns: emrData.vitalSigns,
+      physicalExamination: emrData.physicalExamination,
+    },
+    assessment: { diagnoses: emrData.diagnosis },
+    plan: {
+      treatment: emrData.treatmentPlan,
+      prescriptions: emrData.prescriptions,
+    },
+    ai_summary: emrData.aiSummary,
+    ai_transcript: emrData.aiTranscript,
+    patient_instructions: emrData.followUpInstructions || emrData.treatmentPlan,
+    patient_instructions_thai: emrData.followUpInstructions,
+    doctor_signature: emrData.digitalSignature,
+    signed_at: emrData.signedAt,
+    status: emrData.status === 'finalized' ? 'signed' : emrData.status,
+  };
+}
+
+async function publishEmrReportDocument(pool, { patientId, emrId, doctorId, appointmentId, emrRow, healthLogEntry }) {
+  const title = `รายงานการรักษา EMR — ${new Date(healthLogEntry.encounterDate || Date.now()).toLocaleDateString('th-TH')}`;
+  const body = [
+    `อาการสำคัญ: ${healthLogEntry.chiefComplaint || '-'}`,
+    `แผนการรักษา: ${healthLogEntry.treatmentPlan || '-'}`,
+    `คำแนะนำ: ${healthLogEntry.followUpInstructions || '-'}`,
+    healthLogEntry.aiSummary ? `สรุป AI: ${healthLogEntry.aiSummary}` : '',
+  ].filter(Boolean).join('\n\n');
+  const fileData = Buffer.from(body, 'utf8');
+
+  const emrDoc = await DocumentDeliveryService.publishDocument(pool, {
+    patientId,
+    sourceType: 'emr_report',
+    sourceId: emrId,
+    appointmentId,
+    doctorId,
+    title,
+    description: healthLogEntry.chiefComplaint || null,
+    fileName: `emr-report-${emrId}.txt`,
+    mimeType: 'text/plain',
+    fileData,
+    fileSize: fileData.length,
+    metadata: { emrId, signedAt: healthLogEntry.signedAt },
+  });
+
+  const instructions = healthLogEntry.followUpInstructions
+    || emrRow?.patient_instructions
+    || emrRow?.patient_instructions_thai;
+  if (instructions) {
+    const instrBuf = Buffer.from(String(instructions), 'utf8');
+    await DocumentDeliveryService.publishDocument(pool, {
+      patientId,
+      sourceType: 'instruction_sheet',
+      sourceId: emrId,
+      appointmentId,
+      doctorId,
+      title: `คำแนะนำหลังพบแพทย์ — ${new Date().toLocaleDateString('th-TH')}`,
+      fileName: `instruction-${emrId}.txt`,
+      mimeType: 'text/plain',
+      fileData: instrBuf,
+      fileSize: instrBuf.length,
+      metadata: { emrId, linkedEmrReport: emrDoc?.id },
+    });
+  }
+
+  await logAuditAccess({
+    userId: doctorId || 'system',
+    action: 'DOCUMENT_DELIVERED',
+    patientId,
+    resourceId: emrDoc?.id || emrId,
+    details: { sourceType: 'emr_report', emrId },
+  }).catch(() => {});
+
+  return emrDoc;
+}
+
+async function logDocumentDeliveredAudit({ userId, patientId, resourceId, sourceType, details = {} }) {
+  await logAuditAccess({
+    userId: userId || 'system',
+    action: 'DOCUMENT_DELIVERED',
+    patientId,
+    resourceId,
+    details: { sourceType, ...details },
+  }).catch(() => {});
+}
+
 // ============================================================================
 // MIDDLEWARE
 // ============================================================================
@@ -137,8 +232,8 @@ app.use(cors({
   credentials: true,
 }));
 
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use(express.json({ limit: '60mb' }));
+app.use(express.urlencoded({ extended: true, limit: '60mb' }));
 
 // Rate Limiting (in-memory, per-IP) — disabled in dev/test
 const isMainApiProd = process.env.NODE_ENV === 'production';
@@ -325,6 +420,14 @@ app.set('io', io);
  * GCS is ONLY used for backup, NOT for interactive operations
  */
 async function fetchFromGCS(bucket, path) { // NOSONAR S3776: tested GCS fallback helper, multi-path error handling is intentional
+  // Clinical paths must never use GCS in production (PostgreSQL + patient_documents only)
+  if (process.env.DISABLE_GCS_CLINICAL !== 'false') {
+    const clinicalPaths = ['health-logs', 'phr.json', 'emr', 'lab', 'prescription', 'documents'];
+    if (clinicalPaths.some((p) => String(path || '').includes(p))) {
+      console.warn(`[fetchFromGCS] BLOCKED clinical GCS read: ${bucket}/${path}`);
+      return null;
+    }
+  }
   // POSTGRESQL ONLY - GCS is disabled for interactive operations
   console.log(`📊 PostgreSQL fetch: ${bucket}/${path}`);
   
@@ -719,39 +822,11 @@ function contentViewerFromReq(req) {
     userId: user.id || user.userId,
     role: user.role,
     isAdmin: user.role === 'admin' || user.isAdmin,
+    userName: user.name || user.email,
   };
 }
 
-function formatMedicalArticle(a) {
-  let summary = '';
-  if (a.content_thai) {
-    summary = a.content_thai.substring(0, 200);
-  } else if (a.content) {
-    summary = a.content.substring(0, 200);
-  }
-  return {
-    id: a.id,
-    title: a.title_thai || a.title || a.title_english || '',
-    titleThai: a.title_thai || a.title || '',
-    titleEnglish: a.title_english || '',
-    content: a.content_thai || a.content || a.content_english || '',
-    contentThai: a.content_thai || a.content || '',
-    contentEnglish: a.content_english || '',
-    summary,
-    category: a.category,
-    tags: typeof a.tags === 'string' ? JSON.parse(a.tags || '[]') : (a.tags || []),
-    author: { id: a.author_id, name: a.author_name || 'Unknown' },
-    createdBy: a.author_id,
-    status: a.status,
-    viewCount: a.view_count || 0,
-    likeCount: a.like_count || 0,
-    imageUrl: a.image_url || null,
-    thumbnail: a.image_url || null,
-    createdAt: a.created_at,
-    updatedAt: a.updated_at,
-    publishedAt: a.published_at,
-  };
-}
+// formatMedicalArticle imported from contentFormatters.cjs
 
 // ============================================================================
 // PDPA CONSENT VALIDATION MIDDLEWARE
@@ -808,6 +883,17 @@ async function validateDoctorPatientAccess(req, res, next) {
 async function logAuditAccessPG(entry) {
   try {
     const id = `audit_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+    const details = entry.details && typeof entry.details === 'object'
+      ? {
+          ...entry.details,
+          doctorName: entry.details.doctorName || entry.doctor_name || entry.details.doctor_name,
+          doctorId: entry.details.doctorId || entry.doctor_id || entry.details.doctor_id,
+          dataAccessed: entry.details.dataAccessed || entry.details.entity_type || entry.entity_type,
+        }
+      : entry.details;
+    const action = ['VIEW_PHR', 'VIEW_EMR', 'VIEW_EHR'].includes(entry.action)
+      ? 'DATA_ACCESSED'
+      : entry.action;
     await PostgresDataService.pool.query(
       `INSERT INTO audit_logs (id, user_id, patient_id, action, entity_type, entity_id, details, ip_address, user_agent, performed_by, created_at)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW())`,
@@ -815,10 +901,10 @@ async function logAuditAccessPG(entry) {
         id,
         entry.user_id,
         entry.patient_id,
-        entry.action,
+        action,
         entry.entity_type || null,
         entry.entity_id || null,
-        entry.details ? JSON.stringify(entry.details) : null,
+        details ? JSON.stringify(details) : null,
         entry.ip_address || null,
         entry.user_agent || null,
         entry.performed_by || entry.user_id
@@ -1456,9 +1542,14 @@ app.get('/api/patients/:patientId/phr', authenticateToken, validateDoctorPatient
     await logAuditAccessPG({
       user_id: doctorId,
       patient_id: patientId,
-      action: 'VIEW_PHR',
+      action: 'DATA_ACCESSED',
       entity_type: 'phr',
-      details: { pdpaSource: req.pdpaSource },
+      details: {
+        pdpaSource: req.pdpaSource,
+        doctorName: req.user?.name || req.user?.email,
+        doctorId,
+        dataAccessed: 'PHR',
+      },
       ip_address: req.ip,
       user_agent: req.get('user-agent'),
       performed_by: doctorId
@@ -1527,9 +1618,15 @@ app.get('/api/patients/:patientId/emr', authenticateToken, validateDoctorPatient
     await logAuditAccessPG({
       user_id: doctorId,
       patient_id: patientId,
-      action: 'VIEW_EMR',
+      action: 'DATA_ACCESSED',
       entity_type: 'emr',
-      details: { count: enriched.length, pdpaSource: req.pdpaSource },
+      details: {
+        count: enriched.length,
+        pdpaSource: req.pdpaSource,
+        doctorName: req.user?.name || req.user?.email,
+        doctorId,
+        dataAccessed: 'EMR',
+      },
       ip_address: req.ip,
       user_agent: req.get('user-agent'),
       performed_by: doctorId
@@ -1596,9 +1693,15 @@ app.get('/api/patients/:patientId/ehr', authenticateToken, validateDoctorPatient
     await logAuditAccessPG({
       user_id: doctorId,
       patient_id: patientId,
-      action: 'VIEW_EHR',
+      action: 'DATA_ACCESSED',
       entity_type: 'ehr',
-      details: { labGroupCount: labGroups.length, pdpaSource: req.pdpaSource },
+      details: {
+        labGroupCount: labGroups.length,
+        pdpaSource: req.pdpaSource,
+        doctorName: req.user?.name || req.user?.email,
+        doctorId,
+        dataAccessed: 'EHR',
+      },
       ip_address: req.ip,
       user_agent: req.get('user-agent'),
       performed_by: doctorId
@@ -1722,6 +1825,34 @@ app.get('/api/emr', authenticateToken, async (req, res) => {
       error: error.message, 
       code: 'INTERNAL_ERROR' 
     });
+  }
+});
+
+// PUT /api/emr/:id — Update existing EMR (doctor editor)
+app.put('/api/emr/:id', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const emrData = req.body;
+
+    if (!DB_AVAILABLE) {
+      return res.status(503).json({ error: 'Database unavailable', code: 'DATABASE_UNAVAILABLE' });
+    }
+
+    const dbPayload = mapFrontendEmrToDbUpdate(emrData);
+    const updated = await PostgresDataService.EMRService.updateEMRById(id, dbPayload);
+    if (!updated) {
+      return res.status(404).json({ error: 'EMR not found', code: 'EMR_NOT_FOUND' });
+    }
+
+    emitDataChange(SOCKET_EVENTS.EMR_UPDATED, { emr: updated }, {
+      doctorId: emrData.doctorId || req.user?.id,
+      patientId: emrData.patientId || updated.patient_id,
+    });
+
+    res.json({ success: true, emr: updated });
+  } catch (error) {
+    console.error('EMR update error:', error);
+    res.status(500).json({ error: error.message, code: 'INTERNAL_ERROR' });
   }
 });
 
@@ -2060,76 +2191,73 @@ app.post('/api/patients/:patientId/health-logs', authenticateToken, async (req, 
   try {
     const { patientId } = req.params;
     const healthLogEntry = req.body;
-    
-    // Validate required fields
+    const doctorId = req.user?.id;
+
     if (!healthLogEntry.id || !healthLogEntry.type) {
       return res.status(400).json({ error: 'Health log entry must have id and type' });
     }
-    
-    // Write to PostgreSQL EMR table (NOT GCS)
+
     let savedEntry;
+    const emrPayload = {
+      patient_id: patientId,
+      doctor_id: doctorId,
+      appointment_id: healthLogEntry.appointmentId || null,
+      subjective: { chiefComplaint: healthLogEntry.chiefComplaint || '' },
+      assessment: { diagnoses: healthLogEntry.diagnosis || [] },
+      plan: { treatment: healthLogEntry.treatmentPlan || '', medications: healthLogEntry.medications || [] },
+      patient_instructions: healthLogEntry.followUpInstructions || healthLogEntry.treatmentPlan || '',
+      patient_instructions_thai: healthLogEntry.followUpInstructions || '',
+      ai_summary: healthLogEntry.aiSummary || '',
+      status: 'signed',
+      signed_at: healthLogEntry.signedAt || new Date().toISOString(),
+      doctor_signature: healthLogEntry.signedBy || doctorId,
+    };
+
     if (healthLogEntry.emrId) {
-      // Update existing EMR with patient-facing instructions/summary
-      const updateResult = await pool.query(
-        `UPDATE emr SET
-          patient_instructions = COALESCE($2, patient_instructions),
-          patient_instructions_thai = COALESCE($3, patient_instructions_thai),
-          updated_at = NOW()
-         WHERE id = $1 AND patient_id = $4
-         RETURNING *`,
-        [
-          healthLogEntry.emrId,
-          healthLogEntry.followUpInstructions || healthLogEntry.treatmentPlan || null,
-          healthLogEntry.followUpInstructions || healthLogEntry.treatmentPlan || null,
-          patientId
-        ]
-      );
-      savedEntry = updateResult.rows[0];
+      savedEntry = await PostgresDataService.EMRService.updateEMRById(healthLogEntry.emrId, emrPayload);
       if (!savedEntry) {
-        // EMR not found for this patient - create a new lightweight record
-        const newEmr = await PostgresDataService.EMRService.upsertEMR({
-          patient_id: patientId,
-          doctor_id: req.user?.id,
-          appointment_id: healthLogEntry.appointmentId || null,
-          subjective: { chiefComplaint: healthLogEntry.chiefComplaint || '' },
-          assessment: { diagnoses: healthLogEntry.diagnosis || [] },
-          plan: { treatment: healthLogEntry.treatmentPlan || '' },
-          patient_instructions: healthLogEntry.followUpInstructions || '',
-          ai_summary: healthLogEntry.aiSummary || '',
-          status: 'signed'
-        });
-        savedEntry = newEmr;
+        savedEntry = await PostgresDataService.EMRService.upsertEMR(emrPayload);
+      } else {
+        await PostgresDataService.EMRService.signEMR(healthLogEntry.emrId, doctorId);
+        const signed = await pool.query('SELECT * FROM emr WHERE id = $1', [healthLogEntry.emrId]);
+        savedEntry = signed.rows[0] || savedEntry;
       }
     } else {
-      // No emrId — create a new EMR record
-      const newEmr = await PostgresDataService.EMRService.upsertEMR({
-        patient_id: patientId,
-        doctor_id: req.user?.id,
-        appointment_id: healthLogEntry.appointmentId || null,
-        subjective: { chiefComplaint: healthLogEntry.chiefComplaint || '' },
-        assessment: { diagnoses: healthLogEntry.diagnosis || [] },
-        plan: { treatment: healthLogEntry.treatmentPlan || '' },
-        patient_instructions: healthLogEntry.followUpInstructions || '',
-        ai_summary: healthLogEntry.aiSummary || '',
-        status: 'signed'
-      });
-      savedEntry = newEmr;
+      savedEntry = await PostgresDataService.EMRService.upsertEMR(emrPayload);
+      if (savedEntry?.id) {
+        await PostgresDataService.EMRService.signEMR(savedEntry.id, doctorId);
+        const signed = await pool.query('SELECT * FROM emr WHERE id = $1', [savedEntry.id]);
+        savedEntry = signed.rows[0] || savedEntry;
+      }
     }
-    
-    // Log audit
+
+    // Publish to patient_documents registry
+    try {
+      await publishEmrReportDocument(pool, {
+        patientId,
+        emrId: savedEntry?.id || healthLogEntry.emrId,
+        doctorId,
+        appointmentId: healthLogEntry.appointmentId,
+        emrRow: savedEntry,
+        healthLogEntry,
+      });
+    } catch (docErr) {
+      console.warn('[Health-logs] Document publish skipped:', docErr.message);
+    }
+
     await logAuditAccess({
-      userId: req.user?.id || 'system',
+      userId: doctorId || 'system',
       action: 'ADD_HEALTH_LOG',
       patientId,
-      resourceId: healthLogEntry.emrId || savedEntry?.id || healthLogEntry.id
+      resourceId: healthLogEntry.emrId || savedEntry?.id || healthLogEntry.id,
     });
-    
+
     console.log(`✅ Health log added for patient ${patientId}: ${healthLogEntry.id} (PostgreSQL)`);
-    
-    res.status(201).json({ 
-      success: true, 
+
+    res.status(201).json({
+      success: true,
       entry: savedEntry || { id: healthLogEntry.id, type: healthLogEntry.type, patientId },
-      message: 'Health log entry added successfully'
+      message: 'Health log entry added successfully',
     });
   } catch (error) {
     console.error('Add health log error:', error);
@@ -2181,6 +2309,175 @@ app.get('/api/patients/:patientId/health-logs', authenticateToken, async (req, r
     });
   } catch (error) {
     console.error('Get health logs error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// ============================================================================
+// PATIENT DOCUMENTS (clinical delivery registry)
+// ============================================================================
+
+app.get('/api/patients/:patientId/documents', authenticateToken, async (req, res) => {
+  try {
+    const { patientId } = req.params;
+    const { sourceType } = req.query;
+    const documents = await DocumentDeliveryService.listDocuments(pool, patientId, {
+      sourceType: sourceType || undefined,
+    });
+    res.json({ documents, count: documents.length });
+  } catch (error) {
+    console.error('List patient documents error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+app.post('/api/patients/:patientId/documents', authenticateToken, async (req, res) => {
+  try {
+    const { patientId } = req.params;
+    const {
+      sourceType,
+      sourceId,
+      appointmentId,
+      title,
+      description,
+      fileName,
+      mimeType,
+      fileData,
+      fileSize,
+      metadata,
+    } = req.body;
+
+    if (!sourceType || !title || !fileName) {
+      return res.status(400).json({ error: 'sourceType, title, and fileName are required' });
+    }
+
+    const doc = await DocumentDeliveryService.publishDocument(pool, {
+      patientId,
+      sourceType,
+      sourceId,
+      appointmentId,
+      doctorId: req.user?.id,
+      title,
+      description,
+      fileName,
+      mimeType,
+      fileData,
+      fileSize,
+      metadata,
+    });
+
+    res.status(201).json({ success: true, document: doc });
+  } catch (error) {
+    console.error('Publish patient document error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+app.get('/api/documents/:docId/download', authenticateToken, async (req, res) => {
+  try {
+    const doc = await DocumentDeliveryService.getDocument(pool, req.params.docId);
+    if (!doc || !doc.file_data) {
+      return res.status(404).json({ error: 'Document not found' });
+    }
+    res.setHeader('Content-Type', doc.mime_type || 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(doc.file_name)}"`);
+    res.send(doc.file_data);
+  } catch (error) {
+    console.error('Document download error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// ============================================================================
+// DOCTOR → PATIENT MESSAGES
+// ============================================================================
+
+async function ensurePatientDoctorMessagesTable() {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS patient_doctor_messages (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      patient_id VARCHAR(50) NOT NULL,
+      doctor_id VARCHAR(50) NOT NULL,
+      appointment_id VARCHAR(50),
+      subject TEXT NOT NULL,
+      body TEXT NOT NULL,
+      channel TEXT NOT NULL DEFAULT 'both',
+      status TEXT NOT NULL DEFAULT 'sent',
+      read_at TIMESTAMPTZ,
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    )
+  `);
+}
+
+app.post('/api/patients/:patientId/messages', authenticateToken, async (req, res) => {
+  try {
+    const { patientId } = req.params;
+    const { subject, body, channel = 'both', appointmentId } = req.body;
+    const doctorId = req.user?.id;
+
+    if (!subject?.trim() || !body?.trim()) {
+      return res.status(400).json({ error: 'subject and body are required' });
+    }
+
+    await ensurePatientDoctorMessagesTable();
+    const result = await pool.query(
+      `INSERT INTO patient_doctor_messages (patient_id, doctor_id, appointment_id, subject, body, channel)
+       VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
+      [patientId, doctorId, appointmentId || null, subject.trim(), body.trim(), channel]
+    );
+    const message = result.rows[0];
+
+    const doctorRow = await pool.query('SELECT name, name_thai FROM users WHERE id = $1', [doctorId]);
+    const doctorName = doctorRow.rows[0]?.name_thai || doctorRow.rows[0]?.name || 'แพทย์';
+
+    await PostgresDataService.NotificationService.createNotification({
+      user_id: patientId,
+      type: 'doctor_message',
+      title: subject.trim(),
+      title_thai: subject.trim(),
+      message: body.trim().slice(0, 200),
+      message_thai: body.trim().slice(0, 200),
+      data: { messageId: message.id, doctorId, doctorName },
+    });
+
+    if (channel === 'email' || channel === 'both') {
+      try {
+        const patientRow = await pool.query('SELECT email, name FROM users WHERE id = $1', [patientId]);
+        const email = patientRow.rows[0]?.email;
+        if (email) {
+          await emailService.sendEmail(email, {
+            subject: `[Izara] ${subject.trim()}`,
+            text: body.trim(),
+            html: `<p>${body.trim().replace(/\n/g, '<br>')}</p><p><em>จากแพทย์ ${doctorName}</em></p>`,
+          });
+        }
+      } catch (emailErr) {
+        console.warn('[Messages] Email send skipped:', emailErr.message);
+      }
+    }
+
+    res.status(201).json({ success: true, message });
+  } catch (error) {
+    console.error('Send patient message error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+app.get('/api/patients/:patientId/messages', authenticateToken, async (req, res) => {
+  try {
+    const { patientId } = req.params;
+    await ensurePatientDoctorMessagesTable();
+    const result = await pool.query(
+      `SELECT m.*, d.name as doctor_name, d.name_thai as doctor_name_thai
+       FROM patient_doctor_messages m
+       LEFT JOIN users d ON m.doctor_id = d.id
+       WHERE m.patient_id = $1
+       ORDER BY m.created_at DESC LIMIT 50`,
+      [patientId]
+    );
+    res.json({ messages: result.rows, count: result.rows.length });
+  } catch (error) {
+    console.error('List patient messages error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -2372,6 +2669,44 @@ app.post('/api/prescriptions', authenticateToken, async (req, res) => {
       doctorId: prescriptionData.doctorId || prescriptionData.doctor_id || req.user?.id,
       patientId: prescriptionData.patientId || prescriptionData.patient_id
     });
+
+    // Publish prescription document for patient PHR
+    try {
+      const patientId = prescriptionData.patientId || prescriptionData.patient_id;
+      const meds = prescriptionData.medications || [];
+      const rxText = meds.map(m => `- ${m.drugName || m.name}: ${m.dosage || ''} ${m.frequency || ''} (${m.duration || ''})`).join('\n');
+      const body = `ใบสั่งยา\n\n${rxText}\n\nหมายเหตุ: ${prescriptionData.notes || '-'}`;
+      const rxDoc = await DocumentDeliveryService.publishDocument(pool, {
+        patientId,
+        sourceType: 'prescription',
+        sourceId: prescription.id,
+        appointmentId: prescriptionData.appointmentId,
+        doctorId: prescription.doctor_id || req.user?.id,
+        title: `ใบสั่งยา — ${new Date().toLocaleDateString('th-TH')}`,
+        fileName: `prescription-${prescription.id}.txt`,
+        mimeType: 'text/plain',
+        fileData: Buffer.from(body, 'utf8'),
+        metadata: { prescriptionId: prescription.id, medications: meds },
+      });
+      await logDocumentDeliveredAudit({
+        userId: req.user?.id,
+        patientId,
+        resourceId: rxDoc?.id || prescription.id,
+        sourceType: 'prescription',
+        details: { prescriptionId: prescription.id },
+      });
+      await PostgresDataService.NotificationService.createNotification({
+        user_id: patientId,
+        type: 'prescription_ready',
+        title: 'ใบสั่งยาพร้อมแล้ว',
+        title_thai: 'ใบสั่งยาพร้อมแล้ว',
+        message: 'แพทย์ส่งใบสั่งยาของคุณแล้ว',
+        message_thai: 'แพทย์ส่งใบสั่งยาของคุณแล้ว กรุณาตรวจสอบในหน้าสุขภาพของฉัน',
+        data: { prescription_id: prescription.id },
+      });
+    } catch (rxDocErr) {
+      console.warn('[RX] Document publish skipped:', rxDocErr.message);
+    }
 
     res.json({ success: true, prescription });
   } catch (error) {
@@ -2605,6 +2940,57 @@ ${resultsSummary}
       return res.status(404).json({ error: 'Lab order not found' });
     }
 
+    // Publish lab report documents to patient_documents
+    try {
+      for (const doc of documents || []) {
+        const published = await DocumentDeliveryService.publishDocument(pool, {
+          patientId: updated.patient_id,
+          sourceType: 'lab_report',
+          sourceId: labOrderId,
+          appointmentId: updated.appointment_id,
+          doctorId: req.user?.id,
+          title: `ผลแล็บ — ${doc.name}`,
+          fileName: doc.name,
+          mimeType: doc.type || 'application/pdf',
+          fileData: doc.data,
+          fileSize: doc.size,
+          metadata: { labOrderId, tests: results?.length || 0 },
+        });
+        doc.documentId = published?.id;
+        await logDocumentDeliveredAudit({
+          userId: req.user?.id,
+          patientId: updated.patient_id,
+          resourceId: published?.id || labOrderId,
+          sourceType: 'lab_report',
+          details: { labOrderId },
+        });
+      }
+      if ((!documents || documents.length === 0) && results?.length > 0) {
+        const summary = results.map(r => `${r.testName}: ${r.value} ${r.unit || ''} (${r.flag || 'NORMAL'})`).join('\n');
+        const published = await DocumentDeliveryService.publishDocument(pool, {
+          patientId: updated.patient_id,
+          sourceType: 'lab_report',
+          sourceId: labOrderId,
+          appointmentId: updated.appointment_id,
+          doctorId: req.user?.id,
+          title: `ผลแล็บ — ${labOrderId}`,
+          fileName: `lab-results-${labOrderId}.txt`,
+          mimeType: 'text/plain',
+          fileData: Buffer.from(summary, 'utf8'),
+          metadata: { labOrderId, results },
+        });
+        await logDocumentDeliveredAudit({
+          userId: req.user?.id,
+          patientId: updated.patient_id,
+          resourceId: published?.id || labOrderId,
+          sourceType: 'lab_report',
+          details: { labOrderId, structuredOnly: true },
+        });
+      }
+    } catch (docErr) {
+      console.warn('[LAB] Document publish skipped:', docErr.message);
+    }
+
     // Create notification for the patient about lab results
     try {
       const patientId = updated.patient_id;
@@ -2788,6 +3174,44 @@ app.put('/api/imaging-orders/:orderId/results', authenticateToken, async (req, r
     const updated = await PostgresDataService.ImagingOrderService.updateImagingResults(orderId, resultPayload);
     if (!updated) {
       return res.status(404).json({ error: 'Imaging order not found' });
+    }
+
+    try {
+      for (const doc of documents || []) {
+        const published = await DocumentDeliveryService.publishDocument(pool, {
+          patientId: updated.patient_id,
+          sourceType: 'imaging_report',
+          sourceId: orderId,
+          appointmentId: updated.appointment_id,
+          doctorId: req.user?.id,
+          title: `รายงานภาพถ่าย — ${doc.name}`,
+          fileName: doc.name,
+          mimeType: doc.type || 'application/pdf',
+          fileData: doc.data,
+          fileSize: doc.size,
+          metadata: { imagingOrderId: orderId },
+        });
+        await logDocumentDeliveredAudit({
+          userId: req.user?.id,
+          patientId: updated.patient_id,
+          resourceId: published?.id || orderId,
+          sourceType: 'imaging_report',
+          details: { imagingOrderId: orderId },
+        });
+      }
+      if (updated.patient_id) {
+        await PostgresDataService.NotificationService.createNotification({
+          user_id: updated.patient_id,
+          type: 'imaging_results',
+          title: 'ผลภาพถ่ายพร้อมแล้ว',
+          title_thai: 'ผลภาพถ่ายพร้อมแล้ว',
+          message: 'แพทย์ส่งผลการตรวจภาพถ่ายของคุณแล้ว',
+          message_thai: 'แพทย์ส่งผลการตรวจภาพถ่ายของคุณแล้ว',
+          data: { imaging_order_id: orderId },
+        });
+      }
+    } catch (imgDocErr) {
+      console.warn('[IMAGING] Document publish skipped:', imgDocErr.message);
     }
 
     res.json({ success: true, imagingOrder: updated });
@@ -5629,6 +6053,8 @@ function resolveConfirmMeetingLinks(appointment, appointmentId) {
   const urls = buildTelehealthMeetingUrls(appointmentId, {
     patientName: appointment.patient_name_thai || appointment.patient_name || 'Patient',
     doctorName: appointment.doctor_name_thai || appointment.doctor_name || 'Doctor',
+    patientId: appointment.patient_id,
+    doctorId: appointment.doctor_id,
   });
   console.log(`🔗 Generated meeting links for ${appointmentId}: ${urls.meetingLink}`);
   return {
@@ -6206,6 +6632,8 @@ app.put('/api/appointments/:appointmentId/status', authenticateToken, async (req
         const urls = buildTelehealthMeetingUrls(appointmentId, {
           patientName: current.patient_name_thai || current.patient_name || 'Patient',
           doctorName: current.doctor_name_thai || current.doctor_name || 'Doctor',
+          patientId: current.patient_id,
+          doctorId: effectiveDoctorId || current.doctor_id,
         });
         meetingLink = urls.meetingLink;
         doctorMeetingUrl = urls.doctorMeetingUrl;
@@ -6991,15 +7419,22 @@ app.post('/api/content/medical', authenticateToken, async (req, res) => {
     const requestedStatus = data.status === 'pending' ? 'pending' : 'draft';
     const article = await PostgresDataService.ContentService.createContent({
       title: data.title,
-      title_thai: data.titleThai,
+      title_thai: data.titleThai || data.titleTh,
+      title_english: data.titleEnglish,
       content: data.content,
-      content_thai: data.contentThai,
+      content_thai: data.contentThai || data.contentTh,
+      content_english: data.contentEnglish,
+      summary_thai: data.summaryTh || data.summaryThai,
+      summary_english: data.summaryEnglish,
       category: data.category,
+      type: data.type,
       tags: data.tags,
       author_id: req.user?.id || data.authorId,
       author_name: req.user?.name || data.authorName || null,
       status: requestedStatus,
       image_url: data.thumbnail || data.imageUrl || null,
+      video_url: data.videoUrl || null,
+      is_featured: data.isFeatured || false,
     });
 
     res.status(201).json({ success: true, article: formatMedicalArticle(article) });
@@ -7035,46 +7470,21 @@ app.put('/api/content/medical/:id', authenticateToken, async (req, res) => {
     const data = req.body;
     console.log(`📚 [Content API] Updating article ${id}...`);
 
-    const { pool } = PostgresDataService;
-    const existing = await pool.query('SELECT status, author_id FROM medical_content WHERE id = $1', [id]);
-    if (existing.rowCount === 0) {
+    const viewer = contentViewerFromReq(req);
+    const result = await PostgresDataService.ContentService.updateContent(id, {
+      ...data,
+      userName: data.userName || req.user?.name || req.user?.email,
+    }, viewer);
+
+    if (!result) {
       return res.status(404).json({ error: 'Article not found' });
     }
-    const prev = existing.rows[0];
-    const viewer = contentViewerFromReq(req);
-    if (!viewer.isAdmin && prev.author_id !== viewer.userId) {
+    if (result.error === 'forbidden') {
       return res.status(403).json({ error: 'Not authorized to edit this article' });
     }
 
-    let nextStatus = data.status || prev.status;
-    if (prev.status === 'published' && !viewer.isAdmin) {
-      nextStatus = 'pending';
-    }
-
-    const result = await pool.query(
-      `UPDATE medical_content SET
-        title_thai = COALESCE($2, title_thai),
-        title_english = COALESCE($3, title_english),
-        content_thai = COALESCE($4, content_thai),
-        content_english = COALESCE($5, content_english),
-        category = COALESCE($6, category),
-        tags = COALESCE($7, tags),
-        status = $8,
-        image_url = COALESCE($9, image_url),
-        updated_at = NOW()
-       WHERE id = $1
-       RETURNING *`,
-      [id, data.titleThai || data.title, data.titleEnglish || data.title,
-       data.contentThai || data.content, data.contentEnglish || data.content,
-       data.category, JSON.stringify(data.tags || []), nextStatus, data.thumbnail || data.imageUrl]
-    );
-    
-    if (result.rowCount === 0) {
-      return res.status(404).json({ error: 'Article not found' });
-    }
-    
-    res.json({ success: true, article: result.rows[0] });
-    emitDataChange(SOCKET_EVENTS.CONTENT_UPDATED, { table: 'medical_content', id, status: result.rows[0].status }, { broadcast: true });
+    res.json({ success: true, article: formatMedicalArticle(result) });
+    emitDataChange(SOCKET_EVENTS.CONTENT_UPDATED, { table: 'medical_content', id, status: result.status }, { broadcast: true });
   } catch (error) {
     console.error('❌ [Content API] Error:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -7107,19 +7517,27 @@ app.delete('/api/content/medical/:id', authenticateToken, async (req, res) => {
 app.post('/api/content/medical/:id/review', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
-    const { action } = req.body;
-    const userId = req.user?.id;
-    console.log(`📚 [Content API] Reviewing article ${id}, action: ${action}...`);
-    
-    let newStatus = action === 'approve' ? 'published' : 'rejected';
-    
-    const result = await PostgresDataService.ContentService.updateContentStatus(id, newStatus, userId);
-    
-    if (!result) {
-      return res.status(404).json({ error: 'Article not found' });
+    const { action, comment, rejectionReason } = req.body;
+    const viewer = contentViewerFromReq(req);
+    if (!viewer.isAdmin) {
+      return res.status(403).json({ error: 'Admin access required' });
     }
-    
-    res.json({ success: true, article: result });
+    console.log(`📚 [Content API] Reviewing article ${id}, action: ${action}...`);
+
+    const result = await PostgresDataService.ContentService.reviewMedicalContent(id, {
+      action,
+      userId: viewer.userId,
+      userName: req.user?.name || req.user?.email || 'Admin',
+      comment,
+      rejectionReason,
+    });
+
+    if (!result) {
+      return res.status(404).json({ error: 'Article not found or not pending' });
+    }
+
+    const newStatus = result.status;
+    res.json({ success: true, article: formatMedicalArticle(result) });
     const contentEvent = newStatus === 'published' ? SOCKET_EVENTS.CONTENT_PUBLISHED : SOCKET_EVENTS.CONTENT_UPDATED;
     emitDataChange(contentEvent, { table: 'medical_content', id, status: newStatus }, { broadcast: true });
   } catch (error) {
@@ -7128,25 +7546,38 @@ app.post('/api/content/medical/:id/review', authenticateToken, async (req, res) 
   }
 });
 
+app.get('/api/content/medical/:id/history', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const history = await PostgresDataService.ContentService.getContentHistory(id, 'medical_content');
+    if (!history) return res.status(404).json({ error: 'Article not found' });
+    res.json(history);
+  } catch (error) {
+    console.error('❌ [Content API] History error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 app.get('/api/content/tags/medical', async (req, res) => {
   try {
     console.log('📚 [Content API] Fetching medical tags...');
-    
-    // Get all unique tags from medical_content
-    const { pool } = PostgresDataService;
-    const result = await pool.query(`
-      SELECT DISTINCT jsonb_array_elements_text(tags::jsonb) as tag
-      FROM medical_content
-      WHERE tags IS NOT NULL
-      ORDER BY tag
-    `);
-    
-    const tags = result.rows.map(r => ({ id: r.tag, name: r.tag }));
-    // Return in format expected by frontend: { tags: [...] }
+    const tags = await PostgresDataService.ContentService.getTags('medical');
     res.json({ tags });
   } catch (error) {
     console.error('❌ [Content API] Error:', error);
-    res.json({ tags: [] }); // Return empty array if no tags
+    res.json({ tags: [] });
+  }
+});
+
+app.post('/api/content/tags/medical', authenticateToken, async (req, res) => {
+  try {
+    const { name } = req.body;
+    if (!name?.trim()) return res.status(400).json({ error: 'Tag name is required' });
+    const tag = await PostgresDataService.ContentService.registerTag(name.trim(), 'medical', req.user?.id);
+    res.status(201).json({ success: true, tag: { id: tag.id, name: tag.name } });
+  } catch (error) {
+    console.error('❌ [Content API] Tag create error:', error);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -7171,52 +7602,11 @@ app.get('/api/content/clinical', optionalAuthenticateToken, async (req, res) => 
       filteredResources = filteredResources.filter(r => r.category === category);
     }
     
-    // Transform to match frontend expected format - use correct field names from DB schema
-    const formattedResources = filteredResources.map(r => {
-      let description = '';
-      if (r.content_english) {
-        description = r.content_english.substring(0, 200);
-      } else if (r.content_thai) {
-        description = r.content_thai.substring(0, 200);
-      }
-
-      return {
-        id: r.id,
-        title: r.title_english || r.title_thai,  // Use English title if available
-        titleThai: r.title_thai,
-        description,
-        content: r.content_english || r.content_thai,
-        contentThai: r.content_thai,
-        category: r.category,
-        specialty: r.specialty,
-        guidelineYear: r.guideline_year,
-        source: r.source,
-        tags: typeof r.tags === 'string' ? JSON.parse(r.tags || '[]') : (r.tags || []),
-        createdBy: r.author_id,
-        createdByName: r.author_name || r.source || 'Clinical Team',
-        author: {
-          id: r.author_id || r.approved_by,
-          name: r.author_name || r.source || 'Clinical Team'
-        },
-        status: r.status,
-        viewCount: 0,
-        downloadCount: 0,
-        imageUrl: r.image_url || null,
-        createdAt: r.created_at,
-        updatedAt: r.updated_at,
-        publishedAt: r.approved_at,
-        resourceType: 'guideline',
-        fileUrl: r.file_url,
-        fileSize: r.file_size
-      };
-    });
+    const formattedResources = filteredResources.map((r) => formatClinicalResource(r));
     
-    // Get pending count for admin badge
-    const pendingResources = await PostgresDataService.ContentService.getClinicalResources('pending');
-    const pendingCount = (pendingResources || []).length;
+    const pendingCount = await PostgresDataService.ContentService.getPendingContentCount();
     
-    // Return in format expected by frontend: { resources: [...], pendingCount: number }
-    res.json({ resources: formattedResources, pendingCount });
+    res.json({ resources: formattedResources, pendingCount: pendingCount.resources });
   } catch (error) {
     console.error('❌ [Content API] Error:', error);
     // Return empty array instead of 500 error for graceful fallback
@@ -7235,28 +7625,44 @@ app.get('/api/content/clinical/pending', authenticateToken, async (req, res) => 
       ...viewer,
       status: 'pending',
     });
-    res.json({ resources: resources || [] });
+    res.json({
+      resources: (resources || []).map((r) => formatClinicalResource(r)),
+      count: resources?.length || 0,
+    });
   } catch (error) {
     console.error('❌ [Content API] Error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
 
-app.get('/api/content/clinical/:id', async (req, res) => {
+app.get('/api/content/clinical/:id', optionalAuthenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
+    if (id === 'pending') return res.status(404).json({ error: 'Resource not found' });
     console.log(`📚 [Content API] Fetching clinical resource ${id}...`);
-    
-    const resources = await PostgresDataService.ContentService.getClinicalResources();
-    const resource = resources.find(r => r.id === id);
-    
+
+    const viewer = contentViewerFromReq(req);
+    const resource = await PostgresDataService.ContentService.getClinicalResourceById(id, viewer);
+
     if (!resource) {
       return res.status(404).json({ error: 'Resource not found' });
     }
-    
-    res.json(resource);
+
+    res.json(formatClinicalResource(resource));
   } catch (error) {
     console.error('❌ [Content API] Error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+app.get('/api/content/clinical/:id/history', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const history = await PostgresDataService.ContentService.getContentHistory(id, 'clinical_resources');
+    if (!history) return res.status(404).json({ error: 'Resource not found' });
+    res.json(history);
+  } catch (error) {
+    console.error('❌ [Content API] History error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -7264,51 +7670,25 @@ app.get('/api/content/clinical/:id', async (req, res) => {
 app.post('/api/content/clinical', authenticateToken, async (req, res) => {
   try {
     const data = req.body;
-    
-    // Validate required fields
-    if (!data.title && !data.titleEnglish && !data.titleThai && !data.titleTh) {
-      return res.status(400).json({ error: 'Title is required (title, titleEnglish, or titleThai)' });
+
+    if (!data.titleThai && !data.titleTh && !data.title && !data.titleEnglish) {
+      return res.status(400).json({ error: 'Thai title (titleThai) is required' });
     }
-    
+    if (!data.contentThai && !data.contentTh && !data.content && !data.contentEnglish) {
+      return res.status(400).json({ error: 'Thai content (contentThai) is required' });
+    }
+
     console.log('📚 [Content API] Creating clinical resource...');
-    
-    const { pool } = PostgresDataService;
-    const client = await pool.connect();
-    try {
-      await client.query('BEGIN');
-      // Use correct column names from schema: title_english, title_thai, content_english, content_thai
-      const result = await client.query(
-        `INSERT INTO clinical_resources (
-          id, title_english, title_thai, content_english, content_thai,
-          category, specialty, guideline_year, source, tags, status, author_id, author_name
-        )
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
-         RETURNING *`,
-        [
-          `CR-${Date.now()}`,
-          data.title || data.titleEnglish || '',
-          data.titleThai || data.titleTh || '',
-          data.content || data.contentEnglish || data.description || '',
-          data.contentThai || data.contentTh || data.descriptionTh || '',
-          data.category || 'treatment',
-          data.specialty || 'General',
-          data.guidelineYear || new Date().getFullYear(),
-          data.source || '',
-          JSON.stringify(data.tags || []),
-          data.status || 'pending',
-          req.user?.id || data.authorId || null,
-          req.user?.name || data.authorName || null
-        ]
-      );
-      await client.query('COMMIT');
-      res.status(201).json({ success: true, resource: result.rows[0] });
-      emitDataChange(SOCKET_EVENTS.CONTENT_UPDATED, { table: 'clinical_resources', id: result.rows[0].id, status: result.rows[0].status }, { broadcast: true });
-    } catch (txErr) {
-      await client.query('ROLLBACK').catch(() => {});
-      throw txErr;
-    } finally {
-      client.release();
-    }
+
+    const status = data.status === 'pending' ? 'pending' : 'draft';
+    const resource = await PostgresDataService.ContentService.createClinicalResource(
+      { ...data, status },
+      req.user?.id || data.authorId,
+      req.user?.name || data.authorName || null
+    );
+
+    res.status(201).json({ success: true, resource: formatClinicalResource(resource) });
+    emitDataChange(SOCKET_EVENTS.CONTENT_UPDATED, { table: 'clinical_resources', id: resource.id, status: resource.status }, { broadcast: true });
   } catch (error) {
     console.error('❌ [Content API] Error:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -7320,33 +7700,22 @@ app.put('/api/content/clinical/:id', authenticateToken, async (req, res) => {
     const { id } = req.params;
     const data = req.body;
     console.log(`📚 [Content API] Updating clinical resource ${id}...`);
-    
-    const { pool } = PostgresDataService;
-    // Use correct column names from schema: title_english, title_thai, content_english, content_thai
-    const result = await pool.query(
-      `UPDATE clinical_resources SET
-        title_english = COALESCE($2, title_english),
-        title_thai = COALESCE($3, title_thai),
-        content_english = COALESCE($4, content_english),
-        content_thai = COALESCE($5, content_thai),
-        category = COALESCE($6, category),
-        specialty = COALESCE($7, specialty),
-        tags = COALESCE($8, tags),
-        status = COALESCE($9, status),
-        updated_at = NOW()
-       WHERE id = $1
-       RETURNING *`,
-      [id, data.title || data.titleEnglish, data.titleThai || data.titleTh, 
-       data.content || data.contentEnglish, data.contentThai || data.contentTh,
-       data.category, data.specialty, JSON.stringify(data.tags || []), data.status]
-    );
-    
-    if (result.rowCount === 0) {
+
+    const viewer = contentViewerFromReq(req);
+    const result = await PostgresDataService.ContentService.updateClinicalResource(id, {
+      ...data,
+      userName: data.userName || req.user?.name || req.user?.email,
+    }, viewer);
+
+    if (!result) {
       return res.status(404).json({ error: 'Resource not found' });
     }
-    
-    res.json({ success: true, resource: result.rows[0] });
-    emitDataChange(SOCKET_EVENTS.CONTENT_UPDATED, { table: 'clinical_resources', id, status: result.rows[0].status }, { broadcast: true });
+    if (result.error === 'forbidden') {
+      return res.status(403).json({ error: 'Not authorized to edit this resource' });
+    }
+
+    res.json({ success: true, resource: formatClinicalResource(result) });
+    emitDataChange(SOCKET_EVENTS.CONTENT_UPDATED, { table: 'clinical_resources', id, status: result.status }, { broadcast: true });
   } catch (error) {
     console.error('❌ [Content API] Error:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -7357,17 +7726,17 @@ app.delete('/api/content/clinical/:id', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
     console.log(`📚 [Content API] Deleting clinical resource ${id}...`);
-    
-    const { pool } = PostgresDataService;
-    const result = await pool.query(
-      `UPDATE clinical_resources SET status = 'archived', updated_at = NOW() WHERE id = $1 RETURNING *`,
-      [id]
-    );
-    
-    if (result.rowCount === 0) {
+
+    const viewer = contentViewerFromReq(req);
+    const result = await PostgresDataService.ContentService.archiveClinicalResource(id, viewer);
+
+    if (!result) {
       return res.status(404).json({ error: 'Resource not found' });
     }
-    
+    if (result.error === 'forbidden') {
+      return res.status(403).json({ error: 'Not authorized to delete this resource' });
+    }
+
     res.json({ success: true, message: 'Resource archived' });
     emitDataChange(SOCKET_EVENTS.CONTENT_UPDATED, { table: 'clinical_resources', id, status: 'archived' }, { broadcast: true });
   } catch (error) {
@@ -7379,30 +7748,27 @@ app.delete('/api/content/clinical/:id', authenticateToken, async (req, res) => {
 app.post('/api/content/clinical/:id/review', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
-    const { action, reason } = req.body;
-    const userId = req.user?.id;
-    console.log(`📚 [Content API] Reviewing clinical resource ${id}, action: ${action}...`);
-    
-    let newStatus = action === 'approve' ? 'published' : 'rejected';
-    
-    const { pool } = PostgresDataService;
-    const result = await pool.query(
-      `UPDATE clinical_resources SET
-        status = $2::varchar,
-        approved_by = $3,
-        approved_at = CASE WHEN $2::varchar = 'published' THEN NOW() ELSE NULL END,
-        rejection_reason = CASE WHEN $2::varchar = 'rejected' THEN $4 ELSE NULL END,
-        updated_at = NOW()
-       WHERE id = $1
-       RETURNING *`,
-      [id, newStatus, userId, reason]
-    );
-    
-    if (result.rowCount === 0) {
-      return res.status(404).json({ error: 'Resource not found' });
+    const { action, comment, rejectionReason, reason } = req.body;
+    const viewer = contentViewerFromReq(req);
+    if (!viewer.isAdmin) {
+      return res.status(403).json({ error: 'Admin access required' });
     }
-    
-    res.json({ success: true, resource: result.rows[0] });
+    console.log(`📚 [Content API] Reviewing clinical resource ${id}, action: ${action}...`);
+
+    const result = await PostgresDataService.ContentService.reviewClinicalResource(id, {
+      action,
+      userId: viewer.userId,
+      userName: req.user?.name || req.user?.email || 'Admin',
+      comment,
+      rejectionReason: rejectionReason || reason,
+    });
+
+    if (!result) {
+      return res.status(404).json({ error: 'Resource not found or not pending' });
+    }
+
+    const newStatus = result.status;
+    res.json({ success: true, resource: formatClinicalResource(result) });
     const clinicalEvent = newStatus === 'published' ? SOCKET_EVENTS.CONTENT_PUBLISHED : SOCKET_EVENTS.CONTENT_UPDATED;
     emitDataChange(clinicalEvent, { table: 'clinical_resources', id, status: newStatus }, { broadcast: true });
   } catch (error) {
@@ -7414,21 +7780,23 @@ app.post('/api/content/clinical/:id/review', authenticateToken, async (req, res)
 app.get('/api/content/tags/clinical', async (req, res) => {
   try {
     console.log('📚 [Content API] Fetching clinical tags...');
-    
-    const { pool } = PostgresDataService;
-    const result = await pool.query(`
-      SELECT DISTINCT jsonb_array_elements_text(tags::jsonb) as tag
-      FROM clinical_resources
-      WHERE tags IS NOT NULL
-      ORDER BY tag
-    `);
-    
-    const tags = result.rows.map(r => ({ id: r.tag, name: r.tag }));
-    // Return in format expected by frontend: { tags: [...] }
+    const tags = await PostgresDataService.ContentService.getTags('clinical');
     res.json({ tags });
   } catch (error) {
     console.error('❌ [Content API] Error:', error);
-    res.json({ tags: [] }); // Return empty array if no tags
+    res.json({ tags: [] });
+  }
+});
+
+app.post('/api/content/tags/clinical', authenticateToken, async (req, res) => {
+  try {
+    const { name } = req.body;
+    if (!name?.trim()) return res.status(400).json({ error: 'Tag name is required' });
+    const tag = await PostgresDataService.ContentService.registerTag(name.trim(), 'clinical', req.user?.id);
+    res.status(201).json({ success: true, tag: { id: tag.id, name: tag.name } });
+  } catch (error) {
+    console.error('❌ [Content API] Tag create error:', error);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -8312,16 +8680,19 @@ app.get('/api/admin/dashboard-stats', authenticateToken, async (req, res) => {
     
     // Fetch stats from database
     const { pool } = PostgresDataService;
-    const appointmentsResult = await pool.query('SELECT COUNT(*) as count FROM appointments');
-    const patientsResult = await pool.query("SELECT COUNT(*) as count FROM users WHERE role = 'patient'");
-    const doctorsResult = await pool.query("SELECT COUNT(*) as count FROM users WHERE role = 'doctor'");
+    const [appointmentsResult, patientsResult, doctorsResult, pendingCounts] = await Promise.all([
+      pool.query('SELECT COUNT(*) as count FROM appointments'),
+      pool.query("SELECT COUNT(*) as count FROM users WHERE role = 'patient'"),
+      pool.query("SELECT COUNT(*) as count FROM users WHERE role = 'doctor'"),
+      PostgresDataService.ContentService.getPendingContentCount(),
+    ]);
     
     res.json({
       success: true,
       stats: {
         pendingDoctors: 0,
-        pendingContent: 0,
-        pendingResources: 0,
+        pendingContent: pendingCounts.content,
+        pendingResources: pendingCounts.resources,
         totalAppointments: Number.parseInt(appointmentsResult.rows[0]?.count || 0, 10),
         totalPatients: Number.parseInt(patientsResult.rows[0]?.count || 0, 10),
         totalDoctors: Number.parseInt(doctorsResult.rows[0]?.count || 0, 10),
@@ -8756,14 +9127,16 @@ app.post('/api/ai/validations/:id/approve', authenticateToken, async (req, res) 
         if (meetingResult.rows.length > 0) {
           const meeting = meetingResult.rows[0];
           await client.query(`
-            INSERT INTO emr (id, appointment_id, patient_id, doctor_id, summary, type, created_at, updated_at)
-            VALUES ($1, $2, $3, $4, $5, 'meeting_soap_note', NOW(), NOW())
+            INSERT INTO emr (id, appointment_id, patient_id, doctor_id, subjective, plan, ai_summary, status, signed_at, created_at, updated_at)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, 'signed', NOW(), NOW(), NOW())
             ON CONFLICT (id) DO NOTHING
           `, [
             `EMR-SOAP-${Date.now()}`,
             meeting.appointment_id,
             meeting.patient_id,
             val.doctor_id || req.user?.id,
+            JSON.stringify({ text: val.content_snapshot || '' }),
+            JSON.stringify({ treatment: val.content_snapshot || '' }),
             val.content_snapshot || ''
           ]);
         }

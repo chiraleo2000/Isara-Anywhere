@@ -15,6 +15,8 @@ const {
   buildClinicalResourceVisibilityQuery,
   canViewMedicalContent,
 } = require('../lib/contentVisibility.cjs');
+const { parseJsonField, formatMedicalArticle, formatClinicalResource } = require('../lib/contentFormatters.cjs');
+const { indexClinicalResource, deactivateClinicalResource } = require('../lib/contentEmbeddingService.cjs');
 
 // Database Configuration - parse DATABASE_URL if available
 const isDevelopment = process.env.NODE_ENV !== 'production';
@@ -308,6 +310,78 @@ async function runMigrations() {
       )
     `);
     
+    // v2.3.0 — patient_documents registry + booking wizard columns
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS patient_documents (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        patient_id VARCHAR(50) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        source_type TEXT NOT NULL,
+        source_id VARCHAR(50),
+        appointment_id VARCHAR(50) REFERENCES appointments(id) ON DELETE SET NULL,
+        doctor_id VARCHAR(50) REFERENCES users(id) ON DELETE SET NULL,
+        title TEXT NOT NULL,
+        description TEXT,
+        file_name TEXT NOT NULL,
+        mime_type TEXT NOT NULL DEFAULT 'application/pdf',
+        file_data BYTEA,
+        file_size INTEGER,
+        status TEXT NOT NULL DEFAULT 'delivered',
+        delivered_at TIMESTAMPTZ DEFAULT NOW(),
+        metadata JSONB DEFAULT '{}'::jsonb,
+        created_at TIMESTAMPTZ DEFAULT NOW(),
+        updated_at TIMESTAMPTZ DEFAULT NOW()
+      )
+    `);
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS patient_doctor_messages (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        patient_id VARCHAR(50) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        doctor_id VARCHAR(50) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        appointment_id VARCHAR(50) REFERENCES appointments(id) ON DELETE SET NULL,
+        subject TEXT NOT NULL,
+        body TEXT NOT NULL,
+        channel TEXT NOT NULL DEFAULT 'both',
+        status TEXT NOT NULL DEFAULT 'sent',
+        read_at TIMESTAMPTZ,
+        created_at TIMESTAMPTZ DEFAULT NOW()
+      )
+    `);
+    await pool.query(`
+      ALTER TABLE appointments ADD COLUMN IF NOT EXISTS preferred_dates JSONB DEFAULT '[]'::jsonb;
+      ALTER TABLE appointments ADD COLUMN IF NOT EXISTS preferred_time_slot VARCHAR(20);
+      ALTER TABLE appointments ADD COLUMN IF NOT EXISTS required_specialty VARCHAR(100);
+      ALTER TABLE appointments ADD COLUMN IF NOT EXISTS suggested_specialty VARCHAR(100);
+      ALTER TABLE appointments ADD COLUMN IF NOT EXISTS booking_metadata JSONB DEFAULT '{}'::jsonb;
+    `);
+
+    // medical_content — columns expected by ContentService CRUD
+    await pool.query(`
+      ALTER TABLE medical_content ADD COLUMN IF NOT EXISTS summary_thai TEXT;
+      ALTER TABLE medical_content ADD COLUMN IF NOT EXISTS summary_english TEXT;
+      ALTER TABLE medical_content ADD COLUMN IF NOT EXISTS content_type VARCHAR(50) DEFAULT 'article';
+      ALTER TABLE medical_content ADD COLUMN IF NOT EXISTS video_url TEXT;
+      ALTER TABLE medical_content ADD COLUMN IF NOT EXISTS is_featured BOOLEAN DEFAULT false;
+      ALTER TABLE medical_content ADD COLUMN IF NOT EXISTS submitted_at TIMESTAMPTZ;
+      ALTER TABLE medical_content ADD COLUMN IF NOT EXISTS author_name VARCHAR(255);
+      ALTER TABLE medical_content ADD COLUMN IF NOT EXISTS approved_by VARCHAR(50) REFERENCES users(id);
+      ALTER TABLE medical_content ADD COLUMN IF NOT EXISTS approved_at TIMESTAMPTZ;
+      ALTER TABLE medical_content ADD COLUMN IF NOT EXISTS rejection_reason TEXT;
+      ALTER TABLE medical_content ADD COLUMN IF NOT EXISTS history JSONB DEFAULT '[]'::jsonb;
+      ALTER TABLE medical_content ADD COLUMN IF NOT EXISTS version INTEGER DEFAULT 1;
+    `);
+
+    await pool.query(`
+      ALTER TABLE clinical_resources ADD COLUMN IF NOT EXISTS description_thai TEXT;
+      ALTER TABLE clinical_resources ADD COLUMN IF NOT EXISTS description_english TEXT;
+      ALTER TABLE clinical_resources ADD COLUMN IF NOT EXISTS resource_type VARCHAR(50) DEFAULT 'guideline';
+      ALTER TABLE clinical_resources ADD COLUMN IF NOT EXISTS submitted_at TIMESTAMPTZ;
+      ALTER TABLE clinical_resources ADD COLUMN IF NOT EXISTS published_at TIMESTAMPTZ;
+      ALTER TABLE clinical_resources ADD COLUMN IF NOT EXISTS history JSONB DEFAULT '[]'::jsonb;
+      ALTER TABLE clinical_resources ADD COLUMN IF NOT EXISTS version INTEGER DEFAULT 1;
+      ALTER TABLE clinical_resources ADD COLUMN IF NOT EXISTS comments JSONB DEFAULT '[]'::jsonb;
+      ALTER TABLE medical_content ADD COLUMN IF NOT EXISTS comments JSONB DEFAULT '[]'::jsonb;
+    `);
+
     console.log('✅ Database migrations completed (Doctor Portal - Phase 1 + Phase 2)');
   } catch (err) {
     console.warn('⚠️ Migration warning:', err.message);
@@ -916,6 +990,44 @@ const EMRService = {
   },
 
   /**
+   * Update EMR by id (doctor editor PUT)
+   */
+  async updateEMRById(emrId, data) {
+    const result = await pool.query(
+      `UPDATE emr SET
+        subjective = COALESCE($2, subjective),
+        objective = COALESCE($3, objective),
+        assessment = COALESCE($4, assessment),
+        plan = COALESCE($5, plan),
+        ai_summary = COALESCE($6, ai_summary),
+        ai_transcript = COALESCE($7, ai_transcript),
+        patient_instructions = COALESCE($8, patient_instructions),
+        patient_instructions_thai = COALESCE($9, patient_instructions_thai),
+        doctor_signature = COALESCE($10, doctor_signature),
+        signed_at = COALESCE($11, signed_at),
+        status = COALESCE($12, status),
+        updated_at = NOW()
+       WHERE id = $1
+       RETURNING *`,
+      [
+        emrId,
+        data.subjective != null ? JSON.stringify(data.subjective) : null,
+        data.objective != null ? JSON.stringify(data.objective) : null,
+        data.assessment != null ? JSON.stringify(data.assessment) : null,
+        data.plan != null ? JSON.stringify(data.plan) : null,
+        data.ai_summary ?? data.aiSummary ?? null,
+        data.ai_transcript ?? data.aiTranscript ?? null,
+        data.patient_instructions ?? data.followUpInstructions ?? data.treatmentPlan ?? null,
+        data.patient_instructions_thai ?? data.followUpInstructions ?? null,
+        data.doctor_signature ?? data.digitalSignature ?? null,
+        data.signed_at ?? data.signedAt ?? null,
+        data.status === 'finalized' ? 'signed' : (data.status ?? null),
+      ]
+    );
+    return result.rows[0] || null;
+  },
+
+  /**
    * Sign EMR (finalize)
    */
   async signEMR(emrId, doctorId) {
@@ -1065,7 +1177,103 @@ const LabOrderService = {
 // MEDICAL CONTENT SERVICE
 // ============================================================================
 
+function newAuditId() {
+  return `AUD-${Date.now()}-${crypto.randomBytes(4).toString('hex')}`;
+}
+
+function newCommentId() {
+  return `CMT-${Date.now()}-${crypto.randomBytes(4).toString('hex')}`;
+}
+
 const ContentService = {
+  formatMedicalArticle,
+  formatClinicalResource,
+
+  async logContentAudit({ userId, action, entityType, entityId, details, performedBy }) {
+    await pool.query(
+      `INSERT INTO audit_logs (id, user_id, action, entity_type, entity_id, details, performed_by)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+      [newAuditId(), userId || null, action, entityType, entityId, JSON.stringify(details || {}), performedBy || userId]
+    );
+  },
+
+  buildVersionEntry(row, modifierId, modifierName, changeNote) {
+    return {
+      version: row.version || 1,
+      title: row.title_thai || row.title_english || '',
+      content: row.content_thai || row.content_english || '',
+      summary: row.summary_thai || row.summary_english || '',
+      modifiedBy: modifierId,
+      modifiedByName: modifierName || 'Unknown',
+      modifiedAt: new Date().toISOString(),
+      changeNote: changeNote || undefined,
+    };
+  },
+
+  async appendVersionHistory(table, id, entry) {
+    const col = table === 'clinical_resources' ? 'clinical_resources' : 'medical_content';
+    await pool.query(
+      `UPDATE ${col} SET
+        history = COALESCE(history, '[]'::jsonb) || $2::jsonb,
+        version = COALESCE(version, 1) + 1,
+        updated_at = NOW()
+       WHERE id = $1`,
+      [id, JSON.stringify([entry])]
+    );
+  },
+
+  async addComment(table, id, comment) {
+    const col = table === 'clinical_resources' ? 'clinical_resources' : 'medical_content';
+    const entry = {
+      id: newCommentId(),
+      authorId: comment.authorId,
+      authorName: comment.authorName,
+      authorRole: comment.authorRole || 'admin',
+      content: comment.content,
+      createdAt: new Date().toISOString(),
+      isAdminFeedback: Boolean(comment.isAdminFeedback),
+    };
+    await pool.query(
+      `UPDATE ${col} SET comments = COALESCE(comments, '[]'::jsonb) || $2::jsonb, updated_at = NOW() WHERE id = $1`,
+      [id, JSON.stringify([entry])]
+    );
+    return entry;
+  },
+
+  async registerTag(name, contentType, createdBy) {
+    const tagId = name.toLowerCase().replace(/\s+/g, '-');
+    const result = await pool.query(
+      `INSERT INTO content_tags (id, name, content_type, created_by, usage_count)
+       VALUES ($1, $2, $3, $4, 1)
+       ON CONFLICT (id) DO UPDATE SET usage_count = content_tags.usage_count + 1
+       RETURNING *`,
+      [tagId, name, contentType, createdBy || null]
+    );
+    return result.rows[0];
+  },
+
+  async getTags(contentType) {
+    const registry = await pool.query(
+      `SELECT id, name, name_thai, usage_count FROM content_tags WHERE content_type = $1 ORDER BY usage_count DESC, name`,
+      [contentType]
+    );
+    const table = contentType === 'clinical' ? 'clinical_resources' : 'medical_content';
+    const fromContent = await pool.query(`
+      SELECT DISTINCT jsonb_array_elements_text(tags::jsonb) as tag
+      FROM ${table}
+      WHERE tags IS NOT NULL
+      ORDER BY tag
+    `);
+    const seen = new Set(registry.rows.map((r) => r.name));
+    const merged = [...registry.rows.map((r) => ({ id: r.id, name: r.name, nameTh: r.name_thai, usageCount: r.usage_count }))];
+    for (const row of fromContent.rows) {
+      if (!seen.has(row.tag)) {
+        merged.push({ id: row.tag, name: row.tag });
+      }
+    }
+    return merged;
+  },
+
   /**
    * Get all medical content (legacy — prefer getContentForRole)
    */
@@ -1134,24 +1342,36 @@ const ContentService = {
    */
   async submitContentForReview(contentId, authorId) {
     const result = await pool.query(
-      `UPDATE medical_content SET status = 'pending', updated_at = NOW()
+      `UPDATE medical_content SET status = 'pending', submitted_at = NOW(), updated_at = NOW()
        WHERE id = $1 AND author_id = $2 AND status IN ('draft', 'rejected')
        RETURNING *`,
       [contentId, authorId]
     );
+    if (result.rows[0]) {
+      await this.logContentAudit({
+        userId: authorId,
+        action: 'submit',
+        entityType: 'medical_content',
+        entityId: contentId,
+        details: { status: 'pending' },
+        performedBy: authorId,
+      });
+    }
     return result.rows[0] || null;
   },
 
   /**
-   * Create content
+   * Create medical content
    */
   async createContent(data) {
     const result = await pool.query(
       `INSERT INTO medical_content (
         id, title_thai, title_english, content_thai, content_english,
-        category, tags, author_id, author_name, status, image_url
+        summary_thai, summary_english, category, content_type, tags,
+        author_id, author_name, status, image_url, video_url, is_featured, submitted_at
       )
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13::varchar, $14, $15, $16,
+         CASE WHEN $13::varchar = 'pending' THEN NOW() ELSE NULL END)
        RETURNING *`,
       [
         `MC-${Date.now()}`,
@@ -1159,32 +1379,397 @@ const ContentService = {
         data.title_english || data.titleEnglish || '',
         data.content_thai || data.contentThai || data.content || '',
         data.content_english || data.contentEnglish || '',
+        data.summary_thai || data.summaryTh || data.summaryThai || null,
+        data.summary_english || data.summaryEnglish || null,
         data.category,
+        data.content_type || data.type || 'article',
         JSON.stringify(data.tags || []),
         data.author_id,
         data.author_name || null,
         data.status || 'draft',
-        data.image_url || data.thumbnail || null
+        data.image_url || data.thumbnail || null,
+        data.video_url || data.videoUrl || null,
+        Boolean(data.is_featured || data.isFeatured),
       ]
     );
-    return result.rows[0];
+    const row = result.rows[0];
+    if (row) {
+      await this.logContentAudit({
+        userId: data.author_id,
+        action: 'create',
+        entityType: 'medical_content',
+        entityId: row.id,
+        details: { status: row.status, category: row.category },
+        performedBy: data.author_id,
+      });
+    }
+    return row;
   },
 
   /**
-   * Update content status (approve/reject)
+   * Update medical content with version history
    */
-  async updateContentStatus(contentId, status, approvedBy) {
+  async updateContent(id, data, viewer = {}) {
+    const existing = await pool.query('SELECT * FROM medical_content WHERE id = $1', [id]);
+    if (existing.rowCount === 0) return null;
+    const prev = existing.rows[0];
+
+    if (!viewer.isAdmin && prev.author_id !== viewer.userId) {
+      return { error: 'forbidden' };
+    }
+
+    let nextStatus = data.status || prev.status;
+    if (prev.status === 'published' && !viewer.isAdmin) {
+      nextStatus = 'pending';
+    }
+
+    const versionEntry = this.buildVersionEntry(
+      prev,
+      viewer.userId,
+      data.userName || viewer.userName,
+      data.changeNote
+    );
+    await this.appendVersionHistory('medical_content', id, versionEntry);
+
+    const result = await pool.query(
+      `UPDATE medical_content SET
+        title_thai = COALESCE($2, title_thai),
+        title_english = COALESCE($3, title_english),
+        content_thai = COALESCE($4, content_thai),
+        content_english = COALESCE($5, content_english),
+        summary_thai = COALESCE($6, summary_thai),
+        summary_english = COALESCE($7, summary_english),
+        category = COALESCE($8, category),
+        content_type = COALESCE($9, content_type),
+        tags = COALESCE($10, tags),
+        status = $11,
+        image_url = COALESCE($12, image_url),
+        video_url = COALESCE($13, video_url),
+        is_featured = COALESCE($14, is_featured),
+        submitted_at = CASE WHEN $11 = 'pending' AND status != 'pending' THEN NOW() ELSE submitted_at END,
+        updated_at = NOW()
+       WHERE id = $1
+       RETURNING *`,
+      [
+        id,
+        data.titleThai || data.title_thai || data.title,
+        data.titleEnglish || data.title_english,
+        data.contentThai || data.content_thai || data.content,
+        data.contentEnglish || data.content_english,
+        data.summaryTh || data.summary_thai,
+        data.summaryEnglish || data.summary_english,
+        data.category,
+        data.type || data.content_type,
+        data.tags ? JSON.stringify(data.tags) : null,
+        nextStatus,
+        data.thumbnail || data.imageUrl || data.image_url,
+        data.videoUrl || data.video_url,
+        data.isFeatured !== undefined ? data.isFeatured : (data.is_featured !== undefined ? data.is_featured : null),
+      ]
+    );
+
+    const row = result.rows[0];
+    if (row) {
+      await this.logContentAudit({
+        userId: viewer.userId,
+        action: 'update',
+        entityType: 'medical_content',
+        entityId: id,
+        details: { status: row.status, changeNote: data.changeNote },
+        performedBy: viewer.userId,
+      });
+    }
+    return row;
+  },
+
+  /**
+   * Review medical content (admin only)
+   */
+  async reviewMedicalContent(contentId, { action, userId, userName, comment, rejectionReason }) {
+    const newStatus = action === 'approve' ? 'published' : 'rejected';
     const result = await pool.query(
       `UPDATE medical_content SET
         status = $2::varchar,
         approved_by = $3,
         approved_at = CASE WHEN $2::varchar = 'published' THEN NOW() ELSE NULL END,
         published_at = CASE WHEN $2::varchar = 'published' THEN NOW() ELSE NULL END,
+        rejection_reason = CASE WHEN $2::varchar = 'rejected' THEN $4 ELSE NULL END,
+        updated_at = NOW()
+       WHERE id = $1 AND status = 'pending'
+       RETURNING *`,
+      [contentId, newStatus, userId, rejectionReason || comment || null]
+    );
+    const row = result.rows[0];
+    if (!row) return null;
+
+    if (comment) {
+      try {
+        await this.addComment('medical_content', contentId, {
+          authorId: userId,
+          authorName: userName,
+          authorRole: 'admin',
+          content: comment,
+          isAdminFeedback: true,
+        });
+      } catch (err) {
+        console.warn('[Content] addComment failed (medical):', err.message);
+      }
+    }
+
+    await this.logContentAudit({
+      userId,
+      action: action === 'approve' ? 'approve' : 'reject',
+      entityType: 'medical_content',
+      entityId: contentId,
+      details: { status: newStatus, rejectionReason, comment },
+      performedBy: userId,
+    });
+
+    const updated = await pool.query('SELECT * FROM medical_content WHERE id = $1', [contentId]);
+    return updated.rows[0];
+  },
+
+  /**
+   * Update content status (approve/reject) — legacy wrapper
+   */
+  async updateContentStatus(contentId, status, approvedBy) {
+    const action = status === 'published' ? 'approve' : 'reject';
+    return this.reviewMedicalContent(contentId, { action, userId: approvedBy, userName: 'Admin' });
+  },
+
+  /**
+   * Get content history
+   */
+  async getContentHistory(id, table = 'medical_content') {
+    const result = await pool.query(`SELECT history, version FROM ${table} WHERE id = $1`, [id]);
+    if (!result.rows[0]) return null;
+    return {
+      version: result.rows[0].version || 1,
+      history: parseJsonField(result.rows[0].history, []),
+    };
+  },
+
+  /**
+   * Create clinical resource
+   */
+  async createClinicalResource(data, authorId, authorName) {
+    const status = data.status === 'draft' ? 'draft' : (data.status === 'pending' ? 'pending' : 'draft');
+    const result = await pool.query(
+      `INSERT INTO clinical_resources (
+        id, title_english, title_thai, content_english, content_thai,
+        description_thai, description_english, category, specialty, guideline_year,
+        source, resource_type, tags, status, author_id, author_name, image_url, submitted_at
+      )
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14::varchar, $15, $16, $17,
+         CASE WHEN $14::varchar = 'pending' THEN NOW() ELSE NULL END)
+       RETURNING *`,
+      [
+        `CR-${Date.now()}`,
+        data.title || data.titleEnglish || '',
+        data.titleThai || data.titleTh || '',
+        data.content || data.contentEnglish || data.description || '',
+        data.contentThai || data.contentTh || data.descriptionTh || '',
+        data.descriptionTh || data.descriptionThai || null,
+        data.description || data.descriptionEnglish || null,
+        data.category || 'treatment',
+        data.specialty || 'General',
+        data.guidelineYear || new Date().getFullYear(),
+        data.source || '',
+        data.resourceType || 'guideline',
+        JSON.stringify(data.tags || []),
+        status,
+        authorId,
+        authorName,
+        data.imageUrl || data.image_url || null,
+      ]
+    );
+    const row = result.rows[0];
+    if (row) {
+      await this.logContentAudit({
+        userId: authorId,
+        action: 'create',
+        entityType: 'clinical_resource',
+        entityId: row.id,
+        details: { status: row.status },
+        performedBy: authorId,
+      });
+    }
+    return row;
+  },
+
+  /**
+   * Update clinical resource
+   */
+  async updateClinicalResource(id, data, viewer = {}) {
+    const existing = await pool.query('SELECT * FROM clinical_resources WHERE id = $1', [id]);
+    if (existing.rowCount === 0) return null;
+    const prev = existing.rows[0];
+
+    if (!viewer.isAdmin && prev.author_id !== viewer.userId) {
+      return { error: 'forbidden' };
+    }
+
+    let nextStatus = data.status || prev.status;
+    if ((prev.status === 'published' || prev.status === 'approved') && !viewer.isAdmin && !data.status) {
+      nextStatus = 'pending';
+    }
+
+    const versionEntry = this.buildVersionEntry(
+      { ...prev, title_thai: prev.title_thai, content_thai: prev.content_thai, summary_thai: prev.description_thai },
+      viewer.userId,
+      data.userName,
+      data.changeNote
+    );
+    await this.appendVersionHistory('clinical_resources', id, versionEntry);
+
+    const result = await pool.query(
+      `UPDATE clinical_resources SET
+        title_english = COALESCE($2, title_english),
+        title_thai = COALESCE($3, title_thai),
+        content_english = COALESCE($4, content_english),
+        content_thai = COALESCE($5, content_thai),
+        description_thai = COALESCE($6, description_thai),
+        description_english = COALESCE($7, description_english),
+        category = COALESCE($8, category),
+        specialty = COALESCE($9, specialty),
+        resource_type = COALESCE($10, resource_type),
+        tags = COALESCE($11, tags),
+        status = $12::varchar,
+        source = COALESCE($13, source),
+        guideline_year = COALESCE($14, guideline_year),
+        image_url = COALESCE($15, image_url),
+        submitted_at = CASE WHEN $12::varchar = 'pending' AND status NOT IN ('pending') THEN NOW() ELSE submitted_at END,
         updated_at = NOW()
        WHERE id = $1
        RETURNING *`,
-      [contentId, status, approvedBy]
+      [
+        id,
+        data.title || data.titleEnglish,
+        data.titleThai || data.titleTh,
+        data.content || data.contentEnglish,
+        data.contentThai || data.contentTh,
+        data.descriptionTh || data.descriptionThai,
+        data.description || data.descriptionEnglish,
+        data.category,
+        data.specialty,
+        data.resourceType,
+        data.tags ? JSON.stringify(data.tags) : null,
+        nextStatus,
+        data.source,
+        data.guidelineYear,
+        data.imageUrl || data.image_url,
+      ]
     );
+
+    const row = result.rows[0];
+    if (row) {
+      await this.logContentAudit({
+        userId: viewer.userId,
+        action: 'update',
+        entityType: 'clinical_resource',
+        entityId: id,
+        details: { status: row.status },
+        performedBy: viewer.userId,
+      });
+    }
+    return row;
+  },
+
+  /**
+   * Review clinical resource (admin only)
+   */
+  async reviewClinicalResource(resourceId, { action, userId, userName, comment, rejectionReason }) {
+    const newStatus = action === 'approve' ? 'published' : 'rejected';
+    const result = await pool.query(
+      `UPDATE clinical_resources SET
+        status = $2::varchar,
+        approved_by = $3,
+        approved_at = CASE WHEN $2::varchar = 'published' THEN NOW() ELSE NULL END,
+        published_at = CASE WHEN $2::varchar = 'published' THEN NOW() ELSE NULL END,
+        rejection_reason = CASE WHEN $2::varchar = 'rejected' THEN $4 ELSE NULL END,
+        updated_at = NOW()
+       WHERE id = $1 AND status = 'pending'
+       RETURNING *`,
+      [resourceId, newStatus, userId, rejectionReason || comment || null]
+    );
+    const row = result.rows[0];
+    if (!row) return null;
+
+    if (comment) {
+      try {
+        await this.addComment('clinical_resources', resourceId, {
+          authorId: userId,
+          authorName: userName,
+          authorRole: 'admin',
+          content: comment,
+          isAdminFeedback: true,
+        });
+      } catch (err) {
+        console.warn('[Content] addComment failed (clinical):', err.message);
+      }
+    }
+
+    if (newStatus === 'published') {
+      try {
+        await indexClinicalResource(pool, row);
+      } catch (err) {
+        console.warn('[RAG] Failed to index clinical resource:', err.message);
+      }
+    } else {
+      await deactivateClinicalResource(pool, resourceId);
+    }
+
+    await this.logContentAudit({
+      userId,
+      action: action === 'approve' ? 'approve' : 'reject',
+      entityType: 'clinical_resource',
+      entityId: resourceId,
+      details: { status: newStatus, rejectionReason, comment },
+      performedBy: userId,
+    });
+
+    const updated = await pool.query('SELECT * FROM clinical_resources WHERE id = $1', [resourceId]);
+    return updated.rows[0];
+  },
+
+  async getClinicalResourceById(id, viewer = {}) {
+    const result = await pool.query(
+      `SELECT cr.*, u.name as author_name_joined
+       FROM clinical_resources cr
+       LEFT JOIN users u ON cr.author_id = u.id
+       WHERE cr.id = $1`,
+      [id]
+    );
+    const row = result.rows[0];
+    if (!row) return null;
+    row.author_name = row.author_name || row.author_name_joined;
+
+    const role = (viewer.role || '').toLowerCase();
+    const status = row.status === 'approved' ? 'published' : row.status;
+    if (status === 'published' || status === 'approved') return row;
+    if (viewer.isAdmin || role === 'admin') return row;
+    if (viewer.userId && row.author_id === viewer.userId) return row;
+    return null;
+  },
+
+  async archiveClinicalResource(id, viewer = {}) {
+    const existing = await pool.query('SELECT author_id FROM clinical_resources WHERE id = $1', [id]);
+    if (existing.rowCount === 0) return null;
+    if (!viewer.isAdmin && existing.rows[0].author_id !== viewer.userId) {
+      return { error: 'forbidden' };
+    }
+    const result = await pool.query(
+      `UPDATE clinical_resources SET status = 'archived', updated_at = NOW() WHERE id = $1 RETURNING *`,
+      [id]
+    );
+    await deactivateClinicalResource(pool, id);
+    await this.logContentAudit({
+      userId: viewer.userId,
+      action: 'archive',
+      entityType: 'clinical_resource',
+      entityId: id,
+      performedBy: viewer.userId,
+    });
     return result.rows[0];
   },
 

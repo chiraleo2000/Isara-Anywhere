@@ -1,76 +1,73 @@
-# ขั้นตอนการจัดการผู้ใช้งานระบบ Izara Telemedicine
+# Izara Telemedicine User Management Workflows
 
-เอกสารฉบับสมบูรณ์สำหรับการจัดการผู้ใช้งานในแพลตฟอร์ม Izara Telemedicine ครอบคลุมการยืนยันตัวตน การลงทะเบียน การจัดการบทบาท และความปลอดภัย
+> **เอกสารภาษาไทย** — สร้างอัตโนมัติจาก `User_management_Workflows.md`  
+> **ต้นฉบับภาษาอังกฤษ:** [`User_management_Workflows.md`](../User_management_Workflows.md)  
+> **อัปเดต:** 9 กรกฎาคม 2569 · รัน `python scripts/sync-processes-thai.py` เพื่อสร้างใหม่
 
-**เวอร์ชัน:** 3.2.0
-**อัปเดตล่าสุด:** 4 กุมภาพันธ์ 2569
-**สถานะ:** ✅ ใช้งาน PostgreSQL เสร็จสมบูรณ์
+**เวอร์ชัน:** 1.6.0
+**อัปเดตล่าสุด:** March 31, 2026
+**สถานะ:** ✅ PostgreSQL Implementation Complete + Full DB Schema
+
 
 ---
 
 
 ## 📋 สารบัญ
 
-1. [ภาพรวมระบบ](#1-ภาพรวมระบบ)
-2. [โครงสร้างฐานข้อมูล](#2-โครงสร้างฐานข้อมูล)
+1. [System Overview](#1-system-overview)
+2. [Database Schema](#2-database-schema)
 3. [API Endpoints](#3-api-endpoints)
-4. [ขั้นตอนการทำงาน](#4-ขั้นตอนการทำงาน)
-5. [ความปลอดภัย](#5-ความปลอดภัย)
-6. [การควบคุมสิทธิ์ตามบทบาท](#6-การควบคุมสิทธิ์ตามบทบาท)
-7. [บัญชีทดสอบ](#7-บัญชีทดสอบ)
-8. [คอมโพเนนต์ Frontend](#8-คอมโพเนนต์-frontend)
-9. [รหัสข้อผิดพลาด](#9-รหัสข้อผิดพลาด)
+4. [User Workflows](#4-user-workflows)
+5. [Security Features](#5-security-features)
+6. [Role-Based Access Control](#6-role-based-access-control)
+7. [Test Accounts](#7-test-accounts)
+8. [Frontend Components](#8-frontend-components)
+9. [Error Codes](#9-error-codes)
 
 ---
 
 
-## 1. ภาพรวมระบบ
+## 1. System ภาพรวม
 
-Izara Telemedicine ใช้ฐานข้อมูล PostgreSQL แบบรวมศูนย์ พร้อมพอร์ทัลแยก 2 ระบบ:
+Izara Telemedicine uses a unified PostgreSQL database with two separate portals:
 
-| พอร์ทัล | URL | ประเภทผู้ใช้ | พอร์ต Backend |
+| Portal | URL | User Types | Backend Port |
 | -------- | ----- | ------------ | -------------- |
-| **พอร์ทัลผู้ป่วย** | `localhost:3005` | ผู้ป่วย | 3005 |
-| **พอร์ทัลแพทย์** | `localhost:3010` | แพทย์, ผู้ดูแลระบบ | 3010 |
+| **พอร์ทัลผู้ป่วย** | `localhost:3005` | Patients | 3005 |
+| **พอร์ทัลแพทย์** | `localhost:3010` | Doctors, Admins | 3010 |
 
 
+### Docker Services
 
-
-### บริการ Docker
-
-| บริการ | ชื่อ Container | พอร์ต | วัตถุประสงค์ |
+| Service | Container Name | Port | Purpose |
 | --------- | ---------------- | ------ | --------- |
-| PostgreSQL | izara-postgres | 5433 (ภายนอก) / 5432 (ภายใน) | ฐานข้อมูลหลัก |
-| พอร์ทัลผู้ป่วย | izara-patient-portal | 3005 | Frontend + Backend ผู้ป่วย |
-| พอร์ทัลแพทย์ | izara-doctor-portal | 3010 | Frontend + Backend แพทย์ |
-| pgAdmin | izara-pgadmin | 5050 | จัดการฐานข้อมูล |
+| PostgreSQL | izara-postgres | 5433 (ext) / 5432 (int) | Primary database |
+| พอร์ทัลผู้ป่วย | izara-ผู้ป่วย-portal | 3005 | ผู้ป่วย frontend + backend |
+| พอร์ทัลแพทย์ | izara-แพทย์-portal | 3010 | แพทย์ frontend + backend |
+| pgAdmin | izara-pgadmin | 5050 | Database administration |
 
 
+### Portal Comparison
 
-
-### การเปรียบเทียบพอร์ทัล
-
-| คุณสมบัติ | พอร์ทัลผู้ป่วย | พอร์ทัลแพทย์ |
+| ฟีเจอร์ | พอร์ทัลผู้ป่วย | พอร์ทัลแพทย์ |
 | --------- | ---------------- | --------------- |
-| การเข้ารหัสรหัสผ่าน | bcrypt | bcrypt |
-| การลงทะเบียน | ใช้งานได้ทันที | ต้องรอผู้ดูแลอนุมัติ |
-| ประเภทบทบาท | `patient` เท่านั้น | `doctor`, `admin` |
-| ระยะเวลา Session | ตาม Session | ตาม Session |
-| ที่เก็บข้อมูล | ตาราง `users` ใน PostgreSQL | ตาราง `users` ใน PostgreSQL |
-
-
+| Password Hashing | bcrypt | bcrypt |
+| Registration | Immediate access | ผู้ดูแลระบบ approval required |
+| Role Types | `patient` only | `doctor`, `admin` |
+| Session Duration | Session-based | Session-based |
+| Storage | PostgreSQL `users` table | PostgreSQL `users` table |
 
 ---
 
 
-## 2. โครงสร้างฐานข้อมูล
+## 2. ฐานข้อมูล Schema
 
-ข้อมูลผู้ใช้ทั้งหมดจัดเก็บในฐานข้อมูล PostgreSQL `izara_phase1`
+All user data is stored in the PostgreSQL database `izara_phase1`.
 
 
-### 2.1 ตาราง Users
+### 2.1 Users Table
 
-ตาราง `users` แบบรวมเก็บผู้ใช้ทุกประเภท (ผู้ป่วย, แพทย์, ผู้ดูแลระบบ):
+The unified `users` table stores all user types (patients, doctors, admins):
 
 ```sql
 CREATE TABLE users (
@@ -86,16 +83,16 @@ CREATE TABLE users (
     gender VARCHAR(20),
     national_id VARCHAR(20),
 
-    -- ฟิลด์เฉพาะแพทย์
+    -- Doctor-specific fields
     doctor_id VARCHAR(50),
     medical_license_number VARCHAR(50),
     specialty VARCHAR(100),
     hospital_name VARCHAR(255),
 
-    -- ฟิลด์เฉพาะผู้ป่วย
+    -- Patient-specific fields
     patient_id VARCHAR(50),
 
-    -- ฟิลด์สถานะ
+    -- Status fields
     is_active BOOLEAN DEFAULT true,
     is_verified BOOLEAN DEFAULT false,
     is_approved BOOLEAN DEFAULT false,
@@ -105,11 +102,11 @@ CREATE TABLE users (
     rejected_at TIMESTAMP WITH TIME ZONE,
     rejected_by VARCHAR(50),
 
-    -- ฟิลด์ผู้ดูแลระบบ
+    -- Admin fields
     admin_privileges JSONB,
     is_admin BOOLEAN DEFAULT false,
 
-    -- การตั้งค่า
+    -- Settings
     preferences JSONB DEFAULT '{"language": "th", "theme": "light"}'::jsonb,
     notification_settings JSONB,
 
@@ -118,14 +115,14 @@ CREATE TABLE users (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     last_login TIMESTAMP WITH TIME ZONE,
 
-    -- ความปลอดภัย
+    -- Security
     login_attempts INTEGER DEFAULT 0,
     locked_until TIMESTAMP WITH TIME ZONE
 );
 ```
 
 
-### 2.2 ตาราง Sessions
+### 2.2 Sessions Table
 
 ```sql
 CREATE TABLE sessions (
@@ -141,7 +138,7 @@ CREATE TABLE sessions (
 ```
 
 
-### 2.3 Token รีเซ็ตรหัสผ่าน
+### 2.3 Password Reset Tokens
 
 ```sql
 CREATE TABLE password_resets (
@@ -156,7 +153,7 @@ CREATE TABLE password_resets (
 ```
 
 
-### 2.4 ตาราง Patient Profiles
+### 2.4 Patient Profiles Table
 
 ```sql
 CREATE TABLE patient_profiles (
@@ -170,15 +167,13 @@ CREATE TABLE patient_profiles (
 ```
 
 
-### 2.5 รูปแบบ User ID
+### 2.5 User ID Formats
 
-| บทบาท | รูปแบบ ID | ตัวอย่าง |
+| Role | ID Format | Example |
 | ------ | ----------- | --------- |
 | ผู้ป่วย | `patient_{timestamp}_{random}` | `patient_1706123456789_abc123` |
 | แพทย์ | `DOC-{TIMESTAMP}-{RANDOM}` | `DOC-1706123456-XYZ789` |
-| ผู้ดูแลระบบ | `DOC-DEMO-001` หรือ `DOC-{...}` | `DOC-DEMO-001` |
-
-
+| ผู้ดูแลระบบ | `DOC-DEMO-001` or `DOC-{...}` | `DOC-DEMO-001` |
 
 ---
 
@@ -186,131 +181,125 @@ CREATE TABLE patient_profiles (
 ## 3. API Endpoints
 
 
-### 3.1 การยืนยันตัวตนพอร์ทัลผู้ป่วย (`/api/auth/*`)
+### 3.1 Patient Portal Authentication (`/api/auth/*`)
 
-| Method | Endpoint | คำอธิบาย | การเข้าถึง |
+| Method | Endpoint | คำอธิบาย | Access |
 | -------- | ---------- | ------------- | -------- |
-| POST | `/api/auth/register` | ลงทะเบียนผู้ป่วยใหม่ | สาธารณะ |
-| POST | `/api/auth/login` | เข้าสู่ระบบผู้ป่วย | สาธารณะ |
-| POST | `/api/auth/logout` | ออกจากระบบ | ต้องยืนยันตัวตน |
-| POST | `/api/auth/validate` | ตรวจสอบ Session Token | ต้องยืนยันตัวตน |
-| GET | `/api/auth/me` | ดูโปรไฟล์ผู้ใช้ปัจจุบัน | ต้องยืนยันตัวตน |
+| POST | `/api/auth/register` | Register new patient | Public |
+| POST | `/api/auth/login` | Patient login | Public |
+| POST | `/api/auth/logout` | End session | Authenticated |
+| POST | `/api/auth/validate` | Validate session token | Authenticated |
+| GET | `/api/auth/me` | Get current user profile | Authenticated |
 
 
+### 3.2 Doctor Portal Authentication (`/auth/*`)
 
-
-### 3.2 การยืนยันตัวตนพอร์ทัลแพทย์ (`/auth/*`)
-
-| Method | Endpoint | คำอธิบาย | การเข้าถึง |
+| Method | Endpoint | คำอธิบาย | Access |
 | -------- | ---------- | ------------- | -------- |
-| POST | `/auth/register` | ลงทะเบียนแพทย์ใหม่ (รอการอนุมัติ) | สาธารณะ |
-| POST | `/auth/login` | เข้าสู่ระบบแพทย์/ผู้ดูแล | สาธารณะ |
-| POST | `/auth/logout` | ออกจากระบบ | ต้องยืนยันตัวตน |
-| GET | `/auth/verify` | ตรวจสอบ Session และดึงข้อมูลผู้ใช้ | ต้องยืนยันตัวตน |
-| POST | `/auth/request-password-reset` | ขอรีเซ็ตรหัสผ่าน | สาธารณะ |
-| POST | `/auth/reset-password` | รีเซ็ตรหัสผ่านด้วย Token | สาธารณะ |
+| POST | `/auth/register` | Register new doctor (pending approval) | Public |
+| POST | `/auth/login` | Doctor/Admin login | Public |
+| POST | `/auth/logout` | End session | Authenticated |
+| GET | `/auth/verify` | Verify session & get user | Authenticated |
+| POST | `/auth/request-password-reset` | Request password reset | Public |
+| POST | `/auth/reset-password` | Reset password with token | Public |
 
 
+### 3.3 Admin Management (`/admin/*`)
 
-
-### 3.3 การจัดการผู้ดูแลระบบ (`/admin/*`)
-
-| Method | Endpoint | คำอธิบาย | การเข้าถึง |
+| Method | Endpoint | คำอธิบาย | Access |
 | -------- | ---------- | ------------- | -------- |
-| GET | `/admin/pending-doctors` | รายการแพทย์ทั้งหมด (ทุกสถานะ) | ผู้ดูแลระบบ |
-| POST | `/admin/approve-doctor` | อนุมัติการลงทะเบียนแพทย์ | ผู้ดูแลระบบ |
-| POST | `/admin/reject-doctor` | ปฏิเสธการลงทะเบียนแพทย์ | ผู้ดูแลระบบ |
-| POST | `/admin/update-role` | เปลี่ยนบทบาทผู้ใช้ (แพทย์↔ผู้ดูแล) | ผู้ดูแลระบบ |
-
-
+| GET | `/admin/pending-doctors` | List all doctors (all statuses) | Admin |
+| POST | `/admin/approve-doctor` | Approve doctor registration | Admin |
+| POST | `/admin/reject-doctor` | Reject doctor registration | Admin |
+| POST | `/admin/update-role` | Change user role (doctor↔admin) | Admin |
 
 ---
 
 
-## 4. ขั้นตอนการทำงาน
+## 4. User ขั้นตอนการทำงานs
 
 
-### 4.1 ขั้นตอนการลงทะเบียนผู้ป่วย
+### 4.1 Patient Registration Flow
 
 ```text
 ┌─────────────────────────────────────────────────────────────────┐
-│                 ขั้นตอนการลงทะเบียนผู้ป่วย                        │
+│                    PATIENT REGISTRATION FLOW                     │
 ├─────────────────────────────────────────────────────────────────┤
 │                                                                  │
-│  [หน้าลงทะเบียนพอร์ทัลผู้ป่วย]                                    │
+│  [Patient Portal Registration Page]                              │
 │               ↓                                                  │
 │  ┌─────────────────────────────┐                                │
-│  │ ขั้นตอนที่ 1: ข้อมูลพื้นฐาน   │                                │
-│  │ • ชื่อ, อีเมล, เบอร์โทร       │                                │
-│  │ • วันเกิด, เพศ               │                                │
-│  │ • รหัสผ่าน (อย่างน้อย 6 ตัว)   │                                │
+│  │ Step 1: Basic Information   │                                │
+│  │ • Name, Email, Phone        │                                │
+│  │ • Date of Birth, Gender     │                                │
+│  │ • Password (min 6 chars)    │                                │
 │  └─────────────────────────────┘                                │
 │               ↓                                                  │
 │  ┌─────────────────────────────┐                                │
-│  │ ขั้นตอนที่ 2: ข้อมูลสุขภาพ    │                                │
-│  │ • ส่วนสูง, น้ำหนัก, กรุ๊ปเลือด │                                │
-│  │ • การแพ้ยา                  │                                │
-│  │ • โรคประจำตัว               │                                │
-│  │ • ผู้ติดต่อฉุกเฉิน            │                                │
+│  │ Step 2: Health Information  │                                │
+│  │ • Height, Weight, Blood Type│                                │
+│  │ • Allergies                 │                                │
+│  │ • Chronic Conditions        │                                │
+│  │ • Emergency Contact         │                                │
 │  └─────────────────────────────┘                                │
 │               ↓                                                  │
 │        POST /api/auth/register                                   │
 │               ↓                                                  │
 │  ┌─────────────────────────────┐                                │
-│  │ การดำเนินการของระบบ:         │                                │
-│  │ 1. ตรวจสอบอีเมลซ้ำ           │                                │
-│  │ 2. สร้าง patient_id         │                                │
-│  │ 3. เข้ารหัสรหัสผ่าน (bcrypt)  │                                │
-│  │ 4. บันทึกลงตาราง users       │                                │
-│  │ 5. สร้าง patient_profiles   │                                │
-│  │ 6. สร้าง Session            │                                │
+│  │ Backend Actions:            │                                │
+│  │ 1. Validate email unique    │                                │
+│  │ 2. Generate patient_id      │                                │
+│  │ 3. Hash password (bcrypt)   │                                │
+│  │ 4. Insert into users table  │                                │
+│  │ 5. Create patient_profiles  │                                │
+│  │ 6. Create session           │                                │
 │  └─────────────────────────────┘                                │
 │               ↓                                                  │
-│     [เข้าสู่ระบบอัตโนมัติ → แดชบอร์ด]                              │
+│     [Auto-login → Dashboard]                                     │
 │                                                                  │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
 
-### 4.2 ขั้นตอนการลงทะเบียนแพทย์
+### 4.2 Doctor Registration Flow
 
 ```text
 ┌─────────────────────────────────────────────────────────────────┐
-│                  ขั้นตอนการลงทะเบียนแพทย์                         │
+│                     DOCTOR REGISTRATION FLOW                     │
 ├─────────────────────────────────────────────────────────────────┤
 │                                                                  │
-│  [หน้าลงทะเบียนพอร์ทัลแพทย์]                                      │
+│  [Doctor Portal Registration Page]                               │
 │               ↓                                                  │
 │  ┌─────────────────────────────┐                                │
-│  │ แบบฟอร์มลงทะเบียน:           │                                │
-│  │ • ชื่อ, อีเมล, เบอร์โทร       │                                │
-│  │ • เลขที่ใบอนุญาตประกอบวิชาชีพ  │                                │
-│  │ • สาขาเฉพาะทาง              │                                │
-│  │ • รหัสผ่าน (อย่างน้อย 8 ตัว)   │                                │
+│  │ Registration Form:          │                                │
+│  │ • Name, Email, Phone        │                                │
+│  │ • Medical License Number    │                                │
+│  │ • Specialty                 │                                │
+│  │ • Password (min 8 chars)    │                                │
 │  └─────────────────────────────┘                                │
 │               ↓                                                  │
 │         POST /auth/register                                      │
 │               ↓                                                  │
 │  ┌─────────────────────────────┐                                │
-│  │ การดำเนินการของระบบ:         │                                │
-│  │ 1. ตรวจสอบอีเมลซ้ำ           │                                │
-│  │ 2. สร้าง DOC-xxx ID         │                                │
-│  │ 3. เข้ารหัสรหัสผ่าน (bcrypt)  │                                │
-│  │ 4. บันทึกผู้ใช้พร้อม:          │                                │
+│  │ Backend Actions:            │                                │
+│  │ 1. Validate email unique    │                                │
+│  │ 2. Generate DOC-xxx ID      │                                │
+│  │ 3. Hash password (bcrypt)   │                                │
+│  │ 4. Insert user with:        │                                │
 │  │    is_active: false         │                                │
 │  │    is_approved: false       │                                │
 │  │    approval_status: pending │                                │
-│  │ 5. แจ้งเตือนผู้ดูแลระบบ        │                                │
+│  │ 5. Notify admin             │                                │
 │  └─────────────────────────────┘                                │
 │               ↓                                                  │
-│     [แสดงข้อความ "รอการอนุมัติ"]                                   │
+│     [Show "Pending Approval" Message]                            │
 │               ↓                                                  │
 │  ┌─────────────────────────────┐                                │
-│  │ ⚠️ แพทย์ยังไม่สามารถเข้าสู่ระบบได้ │                             │
+│  │ ⚠️ DOCTOR CANNOT LOGIN      │                                │
 │  │                             │                                │
-│  │ แพทย์ต้องรอผู้ดูแลระบบ        │                                │
-│  │ ตรวจสอบและอนุมัติผ่าน        │                                │
-│  │ หน้าจัดการแพทย์              │                                │
+│  │ Doctor must wait for Admin  │                                │
+│  │ to verify and approve via   │                                │
+│  │ Doctor Management Page      │                                │
 │  │ (/admin/doctors)            │                                │
 │  └─────────────────────────────┘                                │
 │                                                                  │
@@ -318,34 +307,31 @@ CREATE TABLE patient_profiles (
 ```
 
 
-### 4.2.1 การเปรียบเทียบการลงทะเบียนผู้ป่วย vs แพทย์
+### 4.2.1 Patient vs Doctor Registration Comparison
 
-| คุณสมบัติ | การลงทะเบียนผู้ป่วย | การลงทะเบียนแพทย์ |
+| ฟีเจอร์ | ผู้ป่วย Registration | แพทย์ Registration |
 | ------- | -------------------- | ------------------- |
-| **พอร์ทัล** | พอร์ทัลผู้ป่วย (localhost:3005) | พอร์ทัลแพทย์ (localhost:3010) |
+| **Portal** | พอร์ทัลผู้ป่วย (localhost:3005) | พอร์ทัลแพทย์ (localhost:3010) |
 | **Endpoint** | `POST /api/auth/register` | `POST /auth/register` |
-| **ข้อมูลที่ต้องกรอก** | ชื่อ, อีเมล, รหัสผ่าน, เบอร์โทร | ชื่อ, อีเมล, รหัสผ่าน, เลขที่ ว., สาขา |
-| **รหัสผ่านขั้นต่ำ** | 6 ตัวอักษร | 8 ตัวอักษร |
-| **ข้อมูลสุขภาพ** | ส่วนสูง, น้ำหนัก, กรุ๊ปเลือด, ภูมิแพ้ | ไม่มี |
-| **ข้อมูลวิชาชีพ** | ไม่มี | เลขที่ใบอนุญาต, สาขา, โรงพยาบาล |
-| **ใช้งานได้ทันที** | ✅ ใช่ - เข้าสู่ระบบได้เลย | ❌ ไม่ - ต้องรอผู้ดูแลอนุมัติ |
-| **สถานะเริ่มต้น** | `is_active: true`, `is_approved: true` | `is_active: false`, `is_approved: false` |
-| **ต้องการการอนุมัติ** | ❌ ไม่ | ✅ ใช่ - ผู้ดูแลต้องอนุมัติ |
-| **เข้าสู่ระบบอัตโนมัติ** | ✅ ใช่ - เข้าสู่ระบบหลังลงทะเบียน | ❌ ไม่ - ต้องรอการอนุมัติ |
+| **Required Fields** | Name, Email, Password, Phone | Name, Email, Password, Medical License, Specialty |
+| **Password Minimum** | 6 characters | 8 characters |
+| **Health Info** | Height, Weight, Blood Type, Allergies | N/A |
+| **Professional Info** | N/A | Medical License Number, Specialty, Hospital |
+| **Immediate Access** | ✅ Yes - Can login immediately | ❌ No - Must wait for ผู้ดูแลระบบ approval |
+| **Initial สถานะ** | `is_active: true`, `is_approved: true` | `is_active: false`, `is_approved: false` |
+| **Approval Required** | ❌ No | ✅ Yes - ผู้ดูแลระบบ must approve |
+| **Auto-Login** | ✅ Yes - Logged in after registration | ❌ No - Must wait for approval |
 
 
-
-
-### 4.2.2 สถานะการอนุมัติแพทย์
+### 4.2.2 Doctor Registration States
 
 ```text
 ┌─────────────────────────────────────────────────────────────────┐
-│                    สถานะการอนุมัติแพทย์                          │
+│                    DOCTOR APPROVAL STATES                        │
 ├─────────────────────────────────────────────────────────────────┤
 │                                                                  │
 │  ┌─────────────┐    ┌─────────────┐    ┌─────────────┐          │
-│  │  รอดำเนินการ │ → │   อนุมัติ    │    │   ปฏิเสธ    │          │
-│  │  (PENDING)  │    │ (APPROVED)  │    │ (REJECTED)  │          │
+│  │   PENDING   │ → │  APPROVED   │    │  REJECTED   │          │
 │  └─────────────┘    └─────────────┘    └─────────────┘          │
 │        ↓                  ↓                  ↓                  │
 │  ┌─────────────┐    ┌─────────────┐    ┌─────────────┐          │
@@ -358,67 +344,67 @@ CREATE TABLE patient_profiles (
 │  │  'pending'  │    │  'approved' │    │  'rejected' │          │
 │  └─────────────┘    └─────────────┘    └─────────────┘          │
 │        ↓                  ↓                  ↓                  │
-│  เข้าสู่ระบบไม่ได้    เข้าสู่ระบบได้      เข้าสู่ระบบไม่ได้          │
-│  รอผู้ดูแลอนุมัติ     เข้าถึงระบบได้      ลงทะเบียนใหม่ได้          │
-│                     เต็มรูปแบบ         ด้วยข้อมูลที่ถูกต้อง         │
+│  Cannot login       Can login         Cannot login              │
+│  Waiting for        Full access       May re-register           │
+│  admin approval     to portal         with correct info         │
 │                                                                  │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
 
-### 4.3 ขั้นตอนการเข้าสู่ระบบ
+### 4.3 Login Flow
 
 ```text
 ┌─────────────────────────────────────────────────────────────────┐
-│                     ขั้นตอนการเข้าสู่ระบบ                          │
+│                         LOGIN FLOW                               │
 ├─────────────────────────────────────────────────────────────────┤
 │                                                                  │
-│  [กรอกอีเมล และ รหัสผ่าน]                                         │
+│  [Enter Email & Password]                                        │
 │               ↓                                                  │
-│       POST /auth/login (หรือ /api/auth/login)                    │
+│       POST /auth/login (or /api/auth/login)                      │
 │               ↓                                                  │
 │  ┌─────────────────────────────┐                                │
-│  │ การตรวจสอบความปลอดภัย:       │                                │
-│  │ 1. Rate limit (10/15นาที)   │                                │
-│  │ 2. ตรวจสอบการล็อคบัญชี        │                                │
-│  │ 3. ค้นหาผู้ใช้ตามอีเมล        │                                │
-│  │ 4. ตรวจสอบสถานะการอนุมัติ     │  ← เฉพาะพอร์ทัลแพทย์            │
-│  │ 5. ตรวจสอบรหัสผ่าน (bcrypt)   │                                │
-│  │ 6. รีเซ็ต login_attempts     │                                │
-│  │ 7. สร้าง Session            │                                │
-│  │ 8. อัปเดต last_login        │                                │
+│  │ Security Checks:            │                                │
+│  │ 1. Rate limit (10/15min)    │                                │
+│  │ 2. Account lock check       │                                │
+│  │ 3. Find user by email       │                                │
+│  │ 4. Check approval status    │  ← Doctor Portal only          │
+│  │ 5. Verify password (bcrypt) │                                │
+│  │ 6. Reset login_attempts     │                                │
+│  │ 7. Create session           │                                │
+│  │ 8. Update last_login        │                                │
 │  └─────────────────────────────┘                                │
 │               ↓                                                  │
-│     [ส่งคืน Token + ข้อมูลผู้ใช้]                                  │
+│     [Return token + user data]                                   │
 │               ↓                                                  │
-│     [เปลี่ยนเส้นทางไปแดชบอร์ด]                                     │
+│     [Redirect to Dashboard]                                      │
 │                                                                  │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
 
-### 4.4 ผู้ดูแลระบบ: อนุมัติแพทย์
+### 4.4 Admin: Approve Doctor
 
 ```text
 ┌─────────────────────────────────────────────────────────────────┐
-│              ขั้นตอนผู้ดูแลอนุมัติแพทย์                            │
+│                   ADMIN APPROVE DOCTOR FLOW                      │
 ├─────────────────────────────────────────────────────────────────┤
 │                                                                  │
-│  [ผู้ดูแล → หน้าจัดการแพทย์]                                       │
+│  [Admin → Doctor Management Page]                                │
 │               ↓                                                  │
 │  ┌─────────────────────────────┐                                │
-│  │ ดูแท็บรอดำเนินการ:           │                                │
-│  │ • รายการแพทย์ที่รอ           │                                │
-│  │ • ชื่อ, อีเมล, เลขที่ใบอนุญาต  │                                │
-│  │ • สาขา, วันที่ลงทะเบียน       │                                │
+│  │ View Pending Tab:           │                                │
+│  │ • List pending doctors      │                                │
+│  │ • Name, Email, License      │                                │
+│  │ • Specialty, Reg Date       │                                │
 │  └─────────────────────────────┘                                │
 │               ↓                                                  │
-│     [คลิกปุ่ม "อนุมัติ"]                                           │
+│     [Click "Approve" Button]                                     │
 │               ↓                                                  │
 │      POST /admin/approve-doctor                                  │
 │               ↓                                                  │
 │  ┌─────────────────────────────┐                                │
-│  │ อัปเดตฐานข้อมูล:             │                                │
+│  │ Database Updates:           │                                │
 │  │ UPDATE users SET            │                                │
 │  │   is_active = true,         │                                │
 │  │   is_approved = true,       │                                │
@@ -428,65 +414,65 @@ CREATE TABLE patient_profiles (
 │  │ WHERE id = {doctorId}       │                                │
 │  └─────────────────────────────┘                                │
 │               ↓                                                  │
-│     [ส่งอีเมลแจ้งการอนุมัติถึงแพทย์]                                 │
+│     [Send approval email to doctor]                              │
 │               ↓                                                  │
-│     [แพทย์สามารถเข้าสู่ระบบได้]                                     │
+│     [Doctor can now login]                                       │
 │                                                                  │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
 
-### 4.4.1 หน้าจัดการแพทย์ (เฉพาะผู้ดูแลระบบ)
+### 4.4.1 Doctor Management Page (Admin Only)
 
-**เส้นทาง:** `/admin/doctors` หรือ "จัดการแพทย์" ในเมนูด้านข้าง
-**คอมโพเนนต์:** `AdminDoctorManagement.tsx`
-**การเข้าถึง:** ผู้ดูแลระบบเท่านั้น (role = 'admin' หรือ is_admin = true)
+**Route:** `/admin/doctors` or "จัดการแพทย์" in sidebar
+**Component:** `AdminDoctorManagement.tsx`
+**Access:** ผู้ดูแลระบบ users only (role = 'ผู้ดูแลระบบ' or is_admin = true)
 
 ```text
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│  🏥 พอร์ทัลแพทย์                               🔔(3)  👤 ผู้ดูแลระบบ  ⚙️     │
+│  🏥 Doctor Portal                              🔔(3)  👤 Admin User  ⚙️     │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │  📋 แดชบอร์ด                                                                 │
 │  📅 ตารางนัดหมาย                                                             │
 │  👥 ผู้ป่วย                                                                  │
 │  ─────────────────                                                          │
-│  👨‍⚕️ จัดการแพทย์  ◀── เฉพาะผู้ดูแลระบบ                                        │
-│  ✅ อนุมัติแพทย์ใหม่ (3)  ◀── แบดจ์แสดงจำนวนที่รอ                               │
+│  👨‍⚕️ จัดการแพทย์  ◀── Admin Only                                            │
+│  ✅ อนุมัติแพทย์ใหม่ (3)  ◀── Badge shows pending count                      │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │                                                                             │
 │  ┌───────────────────────────────────────────────────────────────────────┐  │
-│  │  👨‍⚕️ จัดการแพทย์ / Doctor Management                                    │  │
+│  │  👨‍⚕️ Doctor Management / จัดการแพทย์                                    │  │
 │  │                                                                       │  │
 │  │  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐                  │  │
-│  │  │ทั้งหมด(15)│ │รอดำเนินการ│ │อนุมัติแล้ว│ │ถูกปฏิเสธ │                  │  │
-│  │  │          │ │   (3) ⚠️  │ │  (10)    │ │   (2)    │                  │  │
+│  │  │ All (15) │ │Pending(3)│ │Approved  │ │Rejected  │                  │  │
+│  │  │          │ │    ⚠️    │ │  (10)    │ │   (2)    │                  │  │
 │  │  └──────────┘ └──────────┘ └──────────┘ └──────────┘                  │  │
 │  │                                                                       │  │
 │  │  ┌─────────────────────────────────────────────────────────────────┐  │  │
-│  │  │ 🔍 ค้นหาแพทย์...                              [ตัวกรอง ▼]       │  │  │
+│  │  │ 🔍 Search doctors...                          [Filter ▼]       │  │  │
 │  │  └─────────────────────────────────────────────────────────────────┘  │  │
 │  │                                                                       │  │
 │  │  ┌─────────────────────────────────────────────────────────────────┐  │  │
-│  │  │ ⏳ รอการอนุมัติ                                                  │  │  │
+│  │  │ ⏳ PENDING APPROVAL                                             │  │  │
 │  │  ├─────────────────────────────────────────────────────────────────┤  │  │
 │  │  │                                                                 │  │  │
-│  │  │  👤 นพ.สมชาย ใจดี                                                │  │  │
+│  │  │  👤 Dr. Somchai Jaidee                                          │  │  │
 │  │  │  📧 somchai.dr@hospital.co.th                                   │  │  │
-│  │  │  🔢 เลขที่ใบอนุญาต: ว.12345                                      │  │  │
-│  │  │  🏥 สาขา: อายุรศาสตร์                                            │  │  │
-│  │  │  📅 ลงทะเบียน: 4 ก.พ. 2569                                       │  │  │
+│  │  │  🔢 License: ว.12345                                            │  │  │
+│  │  │  🏥 Specialty: Internal Medicine                                │  │  │
+│  │  │  📅 Registered: Feb 4, 2026                                     │  │  │
 │  │  │                                                                 │  │  │
-│  │  │  [✓ อนุมัติ]  [✗ ปฏิเสธ]  [👁 ดูรายละเอียด]                       │  │  │
+│  │  │  [✓ Approve]  [✗ Reject]  [👁 View Details]                     │  │  │
 │  │  │                                                                 │  │  │
 │  │  ├─────────────────────────────────────────────────────────────────┤  │  │
 │  │  │                                                                 │  │  │
-│  │  │  👤 พญ.วนิดา สุขใจ                                               │  │  │
+│  │  │  👤 Dr. Wanida Sukjai                                           │  │  │
 │  │  │  📧 wanida.dr@clinic.com                                        │  │  │
-│  │  │  🔢 เลขที่ใบอนุญาต: ว.67890                                      │  │  │
-│  │  │  🏥 สาขา: กุมารเวชศาสตร์                                         │  │  │
-│  │  │  📅 ลงทะเบียน: 3 ก.พ. 2569                                       │  │  │
+│  │  │  🔢 License: ว.67890                                            │  │  │
+│  │  │  🏥 Specialty: Pediatrics                                       │  │  │
+│  │  │  📅 Registered: Feb 3, 2026                                     │  │  │
 │  │  │                                                                 │  │  │
-│  │  │  [✓ อนุมัติ]  [✗ ปฏิเสธ]  [👁 ดูรายละเอียด]                       │  │  │
+│  │  │  [✓ Approve]  [✗ Reject]  [👁 View Details]                     │  │  │
 │  │  │                                                                 │  │  │
 │  │  └─────────────────────────────────────────────────────────────────┘  │  │
 │  │                                                                       │  │
@@ -496,37 +482,35 @@ CREATE TABLE patient_profiles (
 ```
 
 
-#### ฟีเจอร์หน้าจัดการแพทย์
+#### Doctor Management Page ฟีเจอร์
 
 | ฟีเจอร์ | คำอธิบาย |
 | ------- | ----------- |
-| **แท็บ** | ทั้งหมด, รอดำเนินการ, อนุมัติแล้ว, ถูกปฏิเสธ |
-| **แบดจ์รอดำเนินการ** | แสดงจำนวนแพทย์ที่รอการอนุมัติ |
-| **ค้นหา** | ค้นหาตามชื่อ, อีเมล, เลขที่ใบอนุญาต |
-| **ตัวกรอง** | กรองตามสาขา, วันที่ลงทะเบียน |
-| **ปุ่มอนุมัติ** | อนุมัติแพทย์ - เปิดการใช้งานเข้าสู่ระบบ |
-| **ปุ่มปฏิเสธ** | ปฏิเสธพร้อมเหตุผล - แพทย์ไม่สามารถเข้าสู่ระบบ |
-| **ดูรายละเอียด** | โปรไฟล์เต็ม, เอกสาร, ข้อมูลลงทะเบียน |
-| **จัดการบทบาท** | เลื่อนขั้นแพทย์เป็นผู้ดูแล หรือลดตำแหน่งผู้ดูแลเป็นแพทย์ |
+| **Tabs** | All, รอดำเนินการ, Approved, Rejected |
+| **รอดำเนินการ Badge** | Shows count of doctors waiting for approval |
+| **Search** | Search by name, email, license number |
+| **Filter** | Filter by specialty, registration date |
+| **Approve Button** | Approve แพทย์ - enables login |
+| **Reject Button** | Reject with reason - แพทย์ cannot login |
+| **View Details** | Full profile, documents, registration info |
+| **Role Management** | Promote แพทย์ to ผู้ดูแลระบบ or demote ผู้ดูแลระบบ to แพทย์ |
 
 
-
-
-### 4.5 ผู้ดูแลระบบ: ปฏิเสธแพทย์
+### 4.5 Admin: Reject Doctor
 
 ```text
 ┌─────────────────────────────────────────────────────────────────┐
-│               ขั้นตอนผู้ดูแลปฏิเสธแพทย์                            │
+│                    ADMIN REJECT DOCTOR FLOW                      │
 ├─────────────────────────────────────────────────────────────────┤
 │                                                                  │
-│  [เลือกแพทย์ → คลิก "ปฏิเสธ"]                                      │
+│  [Select Doctor → Click "Reject"]                                │
 │               ↓                                                  │
-│     [กรอกเหตุผลในการปฏิเสธ]                                        │
+│     [Enter Rejection Reason]                                     │
 │               ↓                                                  │
 │       POST /admin/reject-doctor                                  │
 │               ↓                                                  │
 │  ┌─────────────────────────────┐                                │
-│  │ อัปเดตฐานข้อมูล:             │                                │
+│  │ Database Updates:           │                                │
 │  │ UPDATE users SET            │                                │
 │  │   is_active = false,        │                                │
 │  │   is_approved = false,      │                                │
@@ -536,50 +520,50 @@ CREATE TABLE patient_profiles (
 │  │ WHERE id = {doctorId}       │                                │
 │  └─────────────────────────────┘                                │
 │               ↓                                                  │
-│     [ส่งอีเมลแจ้งการปฏิเสธพร้อมเหตุผล]                              │
+│     [Send rejection email with reason]                           │
 │                                                                  │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
 
-### 4.6 ขั้นตอนรีเซ็ตรหัสผ่าน
+### 4.6 Password Reset Flow
 
 ```text
 ┌─────────────────────────────────────────────────────────────────┐
-│                   ขั้นตอนรีเซ็ตรหัสผ่าน                            │
+│                     PASSWORD RESET FLOW                          │
 ├─────────────────────────────────────────────────────────────────┤
 │                                                                  │
-│  [คลิก "ลืมรหัสผ่าน"]                                              │
+│  [Click "Forgot Password"]                                       │
 │               ↓                                                  │
-│     [กรอกที่อยู่อีเมล]                                             │
+│     [Enter email address]                                        │
 │               ↓                                                  │
 │    POST /auth/request-password-reset                             │
 │               ↓                                                  │
 │  ┌─────────────────────────────┐                                │
-│  │ การดำเนินการของระบบ:         │                                │
-│  │ 1. ค้นหาผู้ใช้ตามอีเมล        │                                │
-│  │ 2. สร้าง Reset Token        │                                │
-│  │ 3. บันทึกลง password_resets  │                                │
-│  │    (หมดอายุใน 1 ชั่วโมง)       │                                │
-│  │ 4. ส่งอีเมลรีเซ็ต            │                                │
+│  │ Backend Actions:            │                                │
+│  │ 1. Find user by email       │                                │
+│  │ 2. Generate reset token     │                                │
+│  │ 3. Insert into password_resets                               │
+│  │    (expires in 1 hour)      │                                │
+│  │ 4. Send reset email         │                                │
 │  └─────────────────────────────┘                                │
 │               ↓                                                  │
-│     [ผู้ใช้คลิกลิงก์ในอีเมล]                                        │
+│     [User clicks email link]                                     │
 │               ↓                                                  │
-│     [กรอกรหัสผ่านใหม่]                                             │
+│     [Enter new password]                                         │
 │               ↓                                                  │
 │      POST /auth/reset-password                                   │
 │               ↓                                                  │
 │  ┌─────────────────────────────┐                                │
-│  │ การตรวจสอบ:                 │                                │
-│  │ 1. ยืนยัน Token มีอยู่        │                                │
-│  │ 2. ตรวจสอบไม่หมดอายุ          │                                │
-│  │ 3. ตรวจสอบยังไม่ถูกใช้        │                                │
-│  │ 4. อัปเดต password_hash     │                                │
-│  │ 5. ทำเครื่องหมาย Token ว่าใช้แล้ว │                               │
+│  │ Validation:                 │                                │
+│  │ 1. Verify token exists      │                                │
+│  │ 2. Check not expired        │                                │
+│  │ 3. Check not already used   │                                │
+│  │ 4. Update password_hash     │                                │
+│  │ 5. Mark token as used       │                                │
 │  └─────────────────────────────┘                                │
 │               ↓                                                  │
-│     [รีเซ็ตรหัสผ่านสำเร็จ]                                          │
+│     [Password Reset Success]                                     │
 │                                                                  │
 └─────────────────────────────────────────────────────────────────┘
 ```
@@ -587,30 +571,30 @@ CREATE TABLE patient_profiles (
 ---
 
 
-## 5. ความปลอดภัย
+## 5. ความปลอดภัย ฟีเจอร์
 
 
-### 5.1 การจำกัดอัตราการเรียก (Rate Limiting)
+### 5.1 Rate Limiting
 
-| Endpoint | จำกัด | ช่วงเวลา | การดำเนินการเมื่อเกิน |
+| Endpoint | Limit | Window | การกระทำ on Exceed |
 | ---------- | ------- | -------- | ------------------ |
-| เข้าสู่ระบบ | 10 ครั้ง | 15 นาที | ส่งคืน Error 429 |
-| รีเซ็ตรหัสผ่าน | 5 ครั้ง | 1 ชั่วโมง | ส่งคืน Error 429 |
-| API ทั่วไป | 500 ครั้ง | 15 นาที | ส่งคืน Error 429 |
+| Login | 10 requests | 15 minutes | Return 429 error |
+| Password Reset | 5 requests | 1 hour | Return 429 error |
+| General API | 500 requests | 15 minutes | Return 429 error |
 
 
+### 5.2 Account Lockout
+
+After 5 failed login attempts:
 
 
-### 5.2 การล็อคบัญชี
-
-หลังจากเข้าสู่ระบบผิดพลาด 5 ครั้ง:
+- Account is locked for 30 minutes
 
 
-- บัญชีถูกล็อค 30 นาที
+- `locked_until` timestamp is set
 
-- บันทึก timestamp `locked_until`
 
-- บันทึกเหตุการณ์ความปลอดภัย
+- Security event is logged
 
 ```sql
 UPDATE users
@@ -623,67 +607,64 @@ WHERE email = $1;
 ```
 
 
-### 5.3 ความปลอดภัยรหัสผ่าน
+### 5.3 Password ความปลอดภัย
 
-| คุณสมบัติ | การใช้งาน |
+| ฟีเจอร์ | Implementation |
 | --------- | ---------------- |
-| อัลกอริทึม | bcrypt (ทุกพอร์ทัล) |
+| Algorithm | bcrypt (all portals) |
 | Salt Rounds | 10 |
-| ความยาวขั้นต่ำ | 6 ตัว (ผู้ป่วย) / 8 ตัว (แพทย์) |
+| Min Length | 6 chars (ผู้ป่วย) / 8 chars (แพทย์) |
 
 
+### 5.4 Session ความปลอดภัย
 
 
-### 5.4 ความปลอดภัย Session
+- **Token Format**: 64-character cryptographic random hex string
 
 
-- **รูปแบบ Token**: สตริง Hex แบบสุ่มทางเข้ารหัส 64 ตัวอักษร
+- **IP Binding**: Sessions track client IP address
 
-- **ผูก IP**: Session ติดตาม IP Address ของ Client
 
-- **User-Agent**: Session ติดตามข้อมูลเบราว์เซอร์
+- **User-Agent**: Sessions track browser information
 
-- **การยกเลิก**: Session ถูกทำเครื่องหมาย `logged_out_at` เมื่อออกจากระบบ
+
+- **Invalidation**: Sessions marked with `logged_out_at` on logout
 
 ---
 
 
-## 6. การควบคุมสิทธิ์ตามบทบาท
+## 6. Role-Based Access Control
 
 
-### 6.1 สิทธิ์เข้าถึงพอร์ทัลผู้ป่วย
+### 6.1 Patient Portal Access
 
-| คุณสมบัติ | ผู้ป่วย |
+| ฟีเจอร์ | ผู้ป่วย |
 | --------- | --------- |
-| ดูแดชบอร์ด | ✅ |
-| จองนัดหมาย | ✅ |
-| ดูประวัติสุขภาพ | ✅ (ของตนเองเท่านั้น) |
-| AI Chat สุขภาพ | ✅ |
-| ยกเลิกนัดหมาย | ✅ (ของตนเองเท่านั้น) |
+| View Dashboard | ✅ |
+| จองนัด นัดหมาย | ✅ |
+| View เวชระเบียน | ✅ (own only) |
+| AI Health Chat | ✅ |
+| Cancel นัดหมาย | ✅ (own only) |
 
 
+### 6.2 Doctor Portal Access
 
-
-### 6.2 สิทธิ์เข้าถึงพอร์ทัลแพทย์
-
-| คุณสมบัติ | แพทย์ | ผู้ดูแลระบบ |
+| ฟีเจอร์ | แพทย์ | ผู้ดูแลระบบ |
 | --------- | -------- | ------- |
-| ดูแดชบอร์ด | ✅ | ✅ |
-| ดูคิวผู้ป่วย | ✅ (ที่ได้รับมอบหมาย) | ✅ (ทั้งหมด) |
-| ยืนยันนัดหมาย | ✅ | ✅ |
-| ดูนัดหมายที่กำหนด | ✅ (ของตนเอง) | ✅ (ทั้งหมด) |
-| ทำ EMR | ✅ | ✅ |
-| เขียนใบสั่งยา | ✅ | ✅ |
-| AI Chat ช่วยเหลือ | ✅ | ✅ |
-| จัดการแพทย์ | ❌ | ✅ |
-| อนุมัติการลงทะเบียน | ❌ | ✅ |
-| กำหนดบทบาท | ❌ | ✅ |
-| ดูสถิติ | ❌ | ✅ |
+| View Dashboard | ✅ | ✅ |
+| View ผู้ป่วย Queue | ✅ (assigned) | ✅ (all) |
+| ยืนยัน นัดหมาย | ✅ | ✅ |
+| View Scheduled Meetings | ✅ (own) | ✅ (all) |
+| Complete EMR | ✅ | ✅ |
+| Write ใบสั่งยา | ✅ | ✅ |
+| AI Chat Assistant | ✅ | ✅ |
+| แพทย์ Management | ❌ | ✅ |
+| Approve Registrations | ❌ | ✅ |
+| มอบหมาย Roles | ❌ | ✅ |
+| View Analytics | ❌ | ✅ |
 
 
-
-
-### 6.3 สิทธิ์ผู้ดูแลระบบ (JSONB)
+### 6.3 Admin Privileges (JSONB)
 
 ```json
 {
@@ -698,45 +679,45 @@ WHERE email = $1;
 ```
 
 
-### 6.4 การตรวจสอบสถานะผู้ดูแลระบบ
+### 6.4 Checking Admin Status
 
 ```typescript
-// ตรวจสอบว่าผู้ใช้เป็นผู้ดูแลหรือไม่
+// Check if user is admin
 const isAdmin = user.is_admin || user.role === 'admin';
 
-// ตรวจสอบสิทธิ์เฉพาะ
+// Check specific privilege
 const canManageDoctors = user.admin_privileges?.canManageDoctors || user.is_admin;
 ```
 
 ---
 
 
-## 7. บัญชีทดสอบ
+## 7. Test Accounts
 
 
-### 7.1 บัญชีที่ตั้งค่าไว้ล่วงหน้า
+### 7.1 Pre-seeded Accounts
 
-| พอร์ทัล | อีเมล | รหัสผ่าน | บทบาท |
+| Portal | Email | Password | Role |
 | -------- | ------- | ---------- | ------ |
-| พอร์ทัลแพทย์ | `admin.test@izara.com` | `YOUR_TEST_ADMIN_PASSWORD` | ผู้ดูแลระบบ |
-| พอร์ทัลแพทย์ | `doctor.test@izara.com` | `YOUR_TEST_DOCTOR_PASSWORD` | แพทย์ |
-| พอร์ทัลผู้ป่วย | `demo.test@gmail.com` | `YOUR_TEST_PASSWORD` | ผู้ป่วย |
-| พอร์ทัลผู้ป่วย | `Somchai.Mankong@gmail.com` | `YOUR_TEST_PASSWORD` | ผู้ป่วย |
-| พอร์ทัลผู้ป่วย | `Anan.Khayanrian@gmail.com` | `YOUR_TEST_PASSWORD` | ผู้ป่วย |
+| พอร์ทัลแพทย์ | `admin.test@izara.com` | `IzaraAdmin@2024` | ผู้ดูแลระบบ |
+| พอร์ทัลแพทย์ | `doctor.test@izara.com` | `IzaraDoctor@2024` | แพทย์ |
+| พอร์ทัลผู้ป่วย | `demo.test@gmail.com` | `P@ssw0rd` | ผู้ป่วย |
+| พอร์ทัลผู้ป่วย | `Somchai.Mankong@gmail.com` | `P@ssw0rd` | ผู้ป่วย |
+| พอร์ทัลผู้ป่วย | `Anan.Khayanrian@gmail.com` | `P@ssw0rd` | ผู้ป่วย |
 
 
-
-
-### 7.2 การ Seed ข้อมูล
+### 7.2 Seeding Data
 
 ```powershell
 
-# Seed ข้อมูลทดสอบลงฐานข้อมูล
+
+# Seed database with test data
 cd scripts/database
 node seed-database.cjs
 
 
-# หรือใช้ cloud-db-tool
+
+# Or use cloud-db-tool
 cd scripts
 node cloud-db-tool.cjs seed
 ```
@@ -744,69 +725,171 @@ node cloud-db-tool.cjs seed
 ---
 
 
-## 8. คอมโพเนนต์ Frontend
+## 8. Frontend Components
 
 
-### 8.1 คอมโพเนนต์พอร์ทัลผู้ป่วย
+### 8.1 Patient Portal Components
 
-| คอมโพเนนต์ | เส้นทาง | วัตถุประสงค์ |
+| Component | Path | Purpose |
 | ----------- | ------ | --------- |
-| `LoginPage` | `/pages/auth/LoginPage.tsx` | เข้าสู่ระบบผู้ป่วย |
-| `RegisterPage` | `/pages/auth/RegisterPage.tsx` | ลงทะเบียนผู้ป่วย |
-| `AuthContext` | `/contexts/AuthContext.tsx` | จัดการสถานะการยืนยันตัวตน |
+| `LoginPage` | `/pages/auth/LoginPage.tsx` | Patient login |
+| `RegisterPage` | `/pages/auth/RegisterPage.tsx` | Patient registration |
+| `AuthContext` | `/contexts/AuthContext.tsx` | Auth state management |
 
 
+### 8.2 Doctor Portal Components
 
-
-### 8.2 คอมโพเนนต์พอร์ทัลแพทย์
-
-| คอมโพเนนต์ | เส้นทาง | วัตถุประสงค์ |
+| Component | Path | Purpose |
 | ----------- | ------ | --------- |
-| `DoctorLogin` | `/pages/DoctorLogin.tsx` | เข้าสู่ระบบแพทย์/ผู้ดูแล |
-| `DoctorRegister` | `/pages/DoctorRegister.tsx` | ลงทะเบียนแพทย์ |
-| `AuthProvider` | `/components/common/AuthProvider.tsx` | จัดการสถานะการยืนยันตัวตน |
-| `AdminDoctorManagement` | `/pages/AdminDoctorManagement.tsx` | ผู้ดูแล: จัดการแพทย์ |
-
-
+| `DoctorLogin` | `/pages/DoctorLogin.tsx` | Doctor/Admin login |
+| `DoctorRegister` | `/pages/DoctorRegister.tsx` | Doctor registration |
+| `AuthProvider` | `/components/common/AuthProvider.tsx` | Auth state management |
+| `AdminDoctorManagement` | `/pages/AdminDoctorManagement.tsx` | Admin: manage doctors |
 
 ---
 
 
-## 9. รหัสข้อผิดพลาด
+## 9. Error Codes
 
-| รหัส | HTTP Status | คำอธิบาย |
+| Code | HTTP สถานะ | คำอธิบาย |
 | ------ | ------------- | ------------- |
-| `MISSING_CREDENTIALS` | 400 | ไม่มีอีเมลหรือรหัสผ่าน |
-| `INVALID_EMAIL` | 400 | รูปแบบอีเมลไม่ถูกต้อง |
-| `INVALID_CREDENTIALS` | 401 | อีเมลหรือรหัสผ่านผิด |
-| `PENDING_APPROVAL` | 403 | บัญชีรอการอนุมัติจากผู้ดูแล |
-| `ACCOUNT_REJECTED` | 403 | การลงทะเบียนถูกปฏิเสธ |
-| `ACCOUNT_DEACTIVATED` | 403 | บัญชีถูกปิดใช้งาน |
-| `ACCOUNT_LOCKED` | 423 | เข้าสู่ระบบผิดพลาดหลายครั้งเกินไป |
-| `RATE_LIMIT_EXCEEDED` | 429 | คำขอมากเกินไป |
-| `LOGIN_ERROR` | 500 | เกิดข้อผิดพลาดของเซิร์ฟเวอร์ |
-
-
+| `MISSING_CREDENTIALS` | 400 | Email or password missing |
+| `INVALID_EMAIL` | 400 | Email format invalid |
+| `INVALID_CREDENTIALS` | 401 | Wrong email or password |
+| `PENDING_APPROVAL` | 403 | Account awaiting admin approval |
+| `ACCOUNT_REJECTED` | 403 | Registration was rejected |
+| `ACCOUNT_DEACTIVATED` | 403 | Account is disabled |
+| `ACCOUNT_LOCKED` | 423 | Too many failed attempts |
+| `RATE_LIMIT_EXCEEDED` | 429 | Too many requests |
+| `LOGIN_ERROR` | 500 | Server error during login |
 
 ---
 
 
-## สรุป
+## Summary
 
-| การดำเนินการ | ผู้ใช้ | พอร์ทัล | สถานะหลัง |
+| การกระทำ | User | Portal | สถานะ After |
 | -------- | ------ | -------- | -------------- |
-| ลงทะเบียน | ผู้ป่วย | ผู้ป่วย | ใช้งานได้ทันที |
-| ลงทะเบียน | แพทย์ | แพทย์ | รอการอนุมัติ |
-| เข้าสู่ระบบ | ผู้ป่วย | ผู้ป่วย | สร้าง Session |
-| เข้าสู่ระบบ | แพทย์ | แพทย์ | ตรวจสอบการอนุมัติ |
-| อนุมัติ | ผู้ดูแล | แพทย์ | approved, is_active=true |
-| ปฏิเสธ | ผู้ดูแล | แพทย์ | rejected, is_active=false |
-| มอบสิทธิ์ผู้ดูแล | ผู้ดูแล | แพทย์ | role=admin, is_admin=true |
-| รีเซ็ตรหัสผ่าน | ใครก็ได้ | ทั้งสอง | อัปเดตรหัสผ่าน |
-| ออกจากระบบ | ใครก็ได้ | ทั้งสอง | ยกเลิก Session |
-
-
+| Register | ผู้ป่วย | ผู้ป่วย | Active immediately |
+| Register | แพทย์ | แพทย์ | รอดำเนินการ approval |
+| Login | ผู้ป่วย | ผู้ป่วย | Session created |
+| Login | แพทย์ | แพทย์ | Checked for approval |
+| Approve | ผู้ดูแลระบบ | แพทย์ | approved, is_active=true |
+| Reject | ผู้ดูแลระบบ | แพทย์ | rejected, is_active=false |
+| Grant ผู้ดูแลระบบ | ผู้ดูแลระบบ | แพทย์ | role=ผู้ดูแลระบบ, is_admin=true |
+| Reset Password | Any | Both | Password updated |
+| Logout | Any | Both | Session invalidated |
 
 ---
 
-เอกสารนี้สะท้อนการใช้งาน PostgreSQL ปัจจุบันของ Izara Telemedicine (Phase 1 เสร็จสมบูรณ์)
+This document reflects the current PostgreSQL-based implementation of Izara Telemedicine (Phase 1 Complete).
+
+---
+
+
+## 10. PostgreSQL ฐานข้อมูล Architecture for User Management
+
+
+### ฐานข้อมูล Tables
+
+| Table | Purpose | Key Columns |
+| ----- | ------- | ----------- |
+| **users** | Unified user table (all roles) | id, email, password_hash (bcrypt via pgcrypto), role (patient/doctor/admin), name, name_thai, phone, date_of_birth, national_id, doctor_id, patient_id, is_active, is_verified, is_approved, approval_status (รอดำเนินการ/approved/rejected), preferences (JSONB), notification_settings (JSONB), login_attempts, locked_until |
+| **sessions** | JWT session tracking | id, user_id, token, ip_address, user_agent, expires_at, logged_out_at |
+| **password_resets** | Password reset tokens | id, user_id, token (hashed), expires_at (1 hour), used (boolean), used_at |
+| **device_tokens** | Push notification devices | id, user_id, device_token, platform (web/ios/android), device_name, is_active |
+| **biometric_credentials** | Biometric auth (Phase 2) | id, user_id, credential_type, public_key, device_id, is_active |
+| **refresh_tokens** | JWT refresh rotation (Phase 2) | id, user_id, token_hash, device_id, expires_at, is_revoked |
+| **patient_profiles** | ผู้ป่วย-specific data | patient_id, demographics (JSONB), emergency_contact (JSONB), insurance_info (JSONB) |
+| **doctor_profiles** | แพทย์-specific data | doctor_id, specialty, sub_specialties (JSONB), qualifications, experience_years, hospital_name, department, languages (JSONB), rating, consultation_fee, is_available, schedule (JSONB) |
+| **audit_logs** | All user actions tracked | id, user_id, การกระทำ, entity_type='user', details (JSONB), ip_address, user_agent |
+
+
+### Authentication Data Flow
+
+```text
+Patient Portal (port 3005)                 Doctor Portal (port 3010)
+┌──────────────────────────┐              ┌──────────────────────────┐
+│ LoginPage.tsx            │              │ DoctorLoginPage.tsx       │
+│ POST /api/auth/login     │              │ POST /api/auth/login      │
+└──────────┬───────────────┘              └──────────┬───────────────┘
+           │                                         │
+           └─────────────────┬───────────────────────┘
+                             ▼
+┌──────────────────────────────────────────────────────────────────────┐
+│  PostgreSQL - izara_phase1                                           │
+│                                                                      │
+│  Login:                                                              │
+│  SELECT * FROM users WHERE email = $1                               │
+│  → Verify: password_hash = crypt($password, password_hash)          │
+│  → Check: is_active = true, approval_status = 'approved'            │
+│  → Check: login_attempts < 5 AND locked_until < NOW()               │
+│  INSERT INTO sessions (user_id, token, ip_address, user_agent,      │
+│    expires_at) VALUES ($1, $jwt, $ip, $ua, NOW() + '24h')          │
+│  INSERT INTO audit_logs (action='login', user_id=$1)                │
+│                                                                      │
+│  Register (Patient):                                                 │
+│  INSERT INTO users (email, password_hash, role='patient', name,     │
+│    is_active=true, is_approved=true, approval_status='approved')     │
+│  INSERT INTO patient_profiles (patient_id=$newId)                   │
+│                                                                      │
+│  Register (Doctor):                                                  │
+│  INSERT INTO users (email, password_hash, role='doctor', name,      │
+│    is_active=false, is_approved=false, approval_status='pending')    │
+│  INSERT INTO doctor_profiles (doctor_id=$newId, specialty=$1)       │
+│  → Admin approval required before first login                        │
+│                                                                      │
+│  Admin approves doctor:                                              │
+│  UPDATE users SET is_active=true, is_approved=true,                 │
+│    approval_status='approved' WHERE id=$doctorId                     │
+│  INSERT INTO audit_logs (action='approve_doctor')                    │
+│                                                                      │
+│  Logout:                                                             │
+│  UPDATE sessions SET logged_out_at=NOW() WHERE token=$jwt           │
+│                                                                      │
+│  Password Reset:                                                     │
+│  INSERT INTO password_resets (user_id, token, expires_at=NOW()+'1h')│
+│  → Email sent with reset link                                        │
+│  UPDATE users SET password_hash=crypt($newPwd, gen_salt('bf'))      │
+│    WHERE id=$userId                                                  │
+│  UPDATE password_resets SET used=true, used_at=NOW()                │
+└──────────────────────────────────────────────────────────────────────┘
+```
+
+
+### Deployment Architecture
+
+| Environment | Service | Auth Scope | Database |
+| ----------- | ------- | ---------- | -------- |
+| Local Docker | พอร์ทัลผู้ป่วย (3005) | ผู้ป่วย registration + login | izara-postgres:5432 |
+| Local Docker | พอร์ทัลแพทย์ (3010) | Doctor/admin login + user mgmt | izara-postgres:5432 |
+| Production | พอร์ทัลผู้ป่วย (Cloud Run) | Same | 35.240.157.230:5432 |
+| Production | พอร์ทัลแพทย์ (Cloud Run) | Same | 35.240.157.230:5432 |
+
+
+### ความปลอดภัย ฟีเจอร์ in PostgreSQL
+
+| ฟีเจอร์ | Implementation |
+| ------- | -------------- |
+| Password hashing | pgcrypto: crypt() + gen_salt('bf') |
+| Session management | JWT stored in sessions table, 24h expiry |
+| Account lockout | login_attempts counter, locked_until timestamp |
+| Audit trail | Every auth การกระทำ logged to audit_logs |
+| PDPA compliance | patient_consents table for data consent |
+
+
+### Scenario Coverage
+
+| # | Scenario | ผู้ดำเนินการ | DB Tables |
+| - | -------- | ----- | --------- |
+| 1 | ผู้ป่วย registers | ผู้ป่วย | users, patient_profiles, audit_logs |
+| 2 | แพทย์ registers | แพทย์ | users, doctor_profiles, audit_logs |
+| 3 | ผู้ดูแลระบบ approves แพทย์ | ผู้ดูแลระบบ | users, audit_logs |
+| 4 | ผู้ดูแลระบบ rejects แพทย์ | ผู้ดูแลระบบ | users, audit_logs |
+| 5 | ผู้ป่วย login | ผู้ป่วย | users, sessions, audit_logs |
+| 6 | แพทย์ login | แพทย์ | users (check approval), sessions, audit_logs |
+| 7 | Password reset request | Any | password_resets |
+| 8 | Password reset complete | Any | users, password_resets, audit_logs |
+| 9 | Logout | Any | sessions (logged_out_at) |
+| 10 | Grant ผู้ดูแลระบบ role | ผู้ดูแลระบบ | users (role='ผู้ดูแลระบบ'), audit_logs |
+| 11 | Account lockout | System | users (login_attempts, locked_until) |

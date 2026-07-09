@@ -300,6 +300,50 @@ async function runMigrations() {
       )
     `);
 
+    // v2.3.0 — patient_documents registry + booking wizard columns
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS patient_documents (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        patient_id VARCHAR(50) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        source_type TEXT NOT NULL,
+        source_id VARCHAR(50),
+        appointment_id VARCHAR(50) REFERENCES appointments(id) ON DELETE SET NULL,
+        doctor_id VARCHAR(50) REFERENCES users(id) ON DELETE SET NULL,
+        title TEXT NOT NULL,
+        description TEXT,
+        file_name TEXT NOT NULL,
+        mime_type TEXT NOT NULL DEFAULT 'application/pdf',
+        file_data BYTEA,
+        file_size INTEGER,
+        status TEXT NOT NULL DEFAULT 'delivered',
+        delivered_at TIMESTAMPTZ DEFAULT NOW(),
+        metadata JSONB DEFAULT '{}'::jsonb,
+        created_at TIMESTAMPTZ DEFAULT NOW(),
+        updated_at TIMESTAMPTZ DEFAULT NOW()
+      )
+    `);
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS patient_doctor_messages (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        patient_id VARCHAR(50) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        doctor_id VARCHAR(50) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        appointment_id VARCHAR(50) REFERENCES appointments(id) ON DELETE SET NULL,
+        subject TEXT NOT NULL,
+        body TEXT NOT NULL,
+        channel TEXT NOT NULL DEFAULT 'both',
+        status TEXT NOT NULL DEFAULT 'sent',
+        read_at TIMESTAMPTZ,
+        created_at TIMESTAMPTZ DEFAULT NOW()
+      )
+    `);
+    await pool.query(`
+      ALTER TABLE appointments ADD COLUMN IF NOT EXISTS preferred_dates JSONB DEFAULT '[]'::jsonb;
+      ALTER TABLE appointments ADD COLUMN IF NOT EXISTS preferred_time_slot VARCHAR(20);
+      ALTER TABLE appointments ADD COLUMN IF NOT EXISTS required_specialty VARCHAR(100);
+      ALTER TABLE appointments ADD COLUMN IF NOT EXISTS suggested_specialty VARCHAR(100);
+      ALTER TABLE appointments ADD COLUMN IF NOT EXISTS booking_metadata JSONB DEFAULT '{}'::jsonb;
+    `);
+
     console.log('✅ Database migrations completed (Phase 1 + Phase 2)');
 
     // ========================================================================

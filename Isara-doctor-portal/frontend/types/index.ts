@@ -1033,6 +1033,7 @@ export type GenderType = 'male' | 'female' | 'other';
 // Patient Record for Doctor View - supports both nested and flat data structures
 export interface PatientRecord {
   id: string;
+  lastAppointmentId?: string;
   // Flat structure fields (from GCS)
   name?: string;
   age?: number;

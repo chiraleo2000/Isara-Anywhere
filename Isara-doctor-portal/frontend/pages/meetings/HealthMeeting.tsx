@@ -44,6 +44,7 @@ import MeetingResults from './MeetingResults';
 import { resolveJitsiDomain, stableRoomNameForAppointment } from '../../utils/jitsiMeetingConfig';
 import { resolveMeetingServerUrl } from '../../utils/resolveMeetingServerUrl';
 import { splitQueueSections } from '../../utils/appointmentPoolQuery';
+import { AppointmentQueueCard } from '../../components/AppointmentQueueCard';
 
 const meetingServerBase = () => resolveMeetingServerUrl();
 
@@ -81,6 +82,9 @@ interface AppointmentRequest {
   notes?: string;
   poolStatus?: string;
   requiredSpecialty?: string;
+  suggestedSpecialty?: string;
+  appointmentType?: string;
+  aiMatchReason?: string;
   // Additional optional properties for compatibility
   email?: string;
   appointmentDate?: string;
@@ -319,6 +323,7 @@ const HealthMeeting: React.FC<HealthMeetingProps> = ({ doctor }) => {
   const [queue, setQueue] = useState<QueuePatient[]>([]);
   const [pendingQueue, setPendingQueue] = useState<AppointmentRequest[]>([]); // All pending appointments awaiting confirmation
   const [acceptedQueue, setAcceptedQueue] = useState<AppointmentRequest[]>([]); // Recently accepted (confirmed today)
+  const [queueSubTab, setQueueSubTab] = useState<'all' | 'pool' | 'awaiting_response' | 'accepted'>('all');
   const [queueLoadError, setQueueLoadError] = useState<string | null>(null);
   // Queue statistics - pendingConfirmation tracked via pendingQueue.length directly
   const [skipReason, setSkipReason] = useState('');
@@ -406,27 +411,32 @@ const HealthMeeting: React.FC<HealthMeetingProps> = ({ doctor }) => {
     navigate(`/doctor/${doctor.id}/meeting/${appointmentId}`);
   };
 
-  // Docker/demo: skip manual "Start meeting" — first ready telehealth or ?autostart= (E2E uses ?stayOnQueue=1)
+  // Deep-link tab from consolidated appointment-pool redirect (?tab=queue)
+  useEffect(() => {
+    const tab = searchParams.get('tab');
+    if (tab === 'queue') {
+      setActiveTab('queue');
+      setMobileSection('queue');
+    } else if (tab === 'meetings' || tab === 'today') {
+      setActiveTab('meetings');
+      setMobileSection('today');
+    } else if (tab === 'all-appointments') {
+      setActiveTab('all-appointments');
+    }
+  }, [searchParams]);
+
+  // Deep-link only: ?autostart= or ?appointmentId= (when DEMO_AUTO_MEETING). Sidebar nav shows queue list.
   useEffect(() => {
     if (autostartHandledRef.current) return;
     if (shouldStayOnHealthMeetingQueue(searchParams)) return;
 
     const paramId = searchParams.get('autostart') || searchParams.get('appointmentId');
-    if (paramId && (isDemoAutoMeetingEnabled() || searchParams.has('autostart'))) {
-      autostartHandledRef.current = true;
-      startInAppMeeting(paramId);
-      return;
-    }
+    if (!paramId) return;
+    if (!searchParams.has('autostart') && !isDemoAutoMeetingEnabled()) return;
 
-    if (!isDemoAutoMeetingEnabled() || loading) return;
-    const next = meetings.find(
-      (m) => (m.status === 'scheduled' || m.status === 'in-progress') && Boolean(m.meetingLink),
-    );
-    if (next?.id) {
-      autostartHandledRef.current = true;
-      startInAppMeeting(String(next.id));
-    }
-  }, [searchParams, loading, meetings, doctor.id]);
+    autostartHandledRef.current = true;
+    startInAppMeeting(paramId);
+  }, [searchParams, doctor.id]);
 
   const handlePreConsultation = async (apt: any) => {
     const aptId = apt.id;
@@ -833,6 +843,51 @@ const HealthMeeting: React.FC<HealthMeetingProps> = ({ doctor }) => {
       setErrorMessage(err.message || 'Failed to assign appointment');
     } finally {
       setAssignInProgress(false);
+    }
+  };
+
+  const handlePoolClaim = async (request: AppointmentRequest) => {
+    try {
+      const token = localStorage.getItem('token') || localStorage.getItem('authToken');
+      const apiBase = (import.meta as { env?: { VITE_API_URL?: string } }).env?.VITE_API_URL || '';
+      const date = request.requestedDate?.split('T')[0] || new Date().toISOString().split('T')[0];
+      const time = request.preferredTime || '10:00';
+      const response = await fetch(`${apiBase}/api/appointment-pool/${request.id}/claim`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({
+          doctorId: doctor.id,
+          doctorName: doctor.name,
+          proposedDate: date,
+          proposedTime: time,
+        }),
+      });
+      if (!response.ok) throw new Error('Claim failed');
+      setQueueToast(`Claimed appointment ${request.id}`);
+      scheduleToastClear(setQueueToast);
+      await loadAllData();
+    } catch (err: unknown) {
+      setErrorMessage(err instanceof Error ? err.message : 'Failed to claim appointment');
+    }
+  };
+
+  const handlePoolAIMatch = async (poolId: string) => {
+    try {
+      const token = localStorage.getItem('token') || localStorage.getItem('authToken');
+      const apiBase = (import.meta as { env?: { VITE_API_URL?: string } }).env?.VITE_API_URL || '';
+      const response = await fetch(`${apiBase}/api/appointment-pool/${poolId}/ai-match`, {
+        method: 'POST',
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (!response.ok) throw new Error('AI match failed');
+      setQueueToast('AI match triggered');
+      scheduleToastClear(setQueueToast);
+      await loadAllData();
+    } catch (err: unknown) {
+      setErrorMessage(err instanceof Error ? err.message : 'AI match failed');
     }
   };
 
@@ -1543,205 +1598,159 @@ Izara Telehealth Team
             </div>
           )}
 
+          <div className="flex flex-wrap gap-2 mb-4 p-6">
+            <button
+              type="button"
+              onClick={() => setQueueSubTab('pool')}
+              className={`px-4 py-2 rounded-lg font-medium transition-colors ${queueSubTab === 'pool' ? 'bg-emerald-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'}`}
+            >
+              🔄 รอจัดสรร ({pendingQueue.filter((r) => r.status === 'in_pool' || (r.status === 'pending' && !r.assignedDoctorId)).length})
+            </button>
+            <button
+              type="button"
+              onClick={() => setQueueSubTab('awaiting_response')}
+              className={`px-4 py-2 rounded-lg font-medium transition-colors ${queueSubTab === 'awaiting_response' ? 'bg-emerald-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'}`}
+            >
+              📋 รอคุณตอบรับ ({pendingQueue.filter((r) => r.status === 'awaiting_doctor_response').length})
+            </button>
+            <button
+              type="button"
+              data-testid="accepted-pool-tab"
+              onClick={() => setQueueSubTab('accepted')}
+              className={`px-4 py-2 rounded-lg font-medium transition-colors ${queueSubTab === 'accepted' ? 'bg-emerald-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'}`}
+            >
+              ✅ ที่รับแล้ว ({acceptedQueue.length})
+            </button>
+          </div>
+
           <div className="space-y-4" data-testid="queue-list">
-            {pendingQueue.length === 0 ? (
+            {(() => {
+              const filteredPending = queueSubTab === 'pool'
+                ? pendingQueue.filter((r) => r.status === 'in_pool' || (r.status === 'pending' && !r.assignedDoctorId))
+                : queueSubTab === 'awaiting_response'
+                  ? pendingQueue.filter((r) => r.status === 'awaiting_doctor_response')
+                  : queueSubTab === 'accepted'
+                    ? []
+                    : pendingQueue;
+              if (queueSubTab === 'accepted') return null;
+              if (filteredPending.length === 0) {
+                return (
               <div className="text-center py-12 text-gray-500">
-                <div className="text-6xl mb-4"></div>
                 <div className="text-lg font-medium">No appointments awaiting confirmation</div>
                 <p className="text-sm text-gray-400 mt-2">
                   New patient appointment requests will appear here for you to review and confirm
                 </p>
               </div>
-            ) : (
-              pendingQueue.map((request) => (
-                <div
+                );
+              }
+              return filteredPending.map((request) => (
+                <AppointmentQueueCard
                   key={request.id}
-                  data-testid={`queue-item-${request.id}`}
-                  data-queue-status={request.status || 'pending'}
-                  className={`border-2 rounded-xl p-4 transition-colors ${getUrgencyStyle(request.urgency)}`}
+                  request={{
+                    id: request.id,
+                    patientId: request.patientId,
+                    patientName: request.patientName,
+                    patientEmail: request.patientEmail,
+                    patientPhone: request.patientPhone,
+                    urgency: request.urgency,
+                    status: request.status,
+                    reason: request.reason,
+                    symptomDescription: request.symptomDescription,
+                    requestedDate: request.requestedDate,
+                    preferredTime: request.preferredTime,
+                    preferredDates: request.preferredDates,
+                    requiredSpecialty: request.requiredSpecialty,
+                    suggestedSpecialty: request.suggestedSpecialty,
+                    preferredTimeSlot: request.preferredTimeSlot,
+                    appointmentType: request.appointmentType,
+                    assignedDoctorId: request.assignedDoctorId,
+                    assignedDoctorName: request.assignedDoctorName,
+                    createdAt: request.createdAt,
+                    aiMatchReason: request.aiMatchReason,
+                    poolStatus: request.poolStatus,
+                  }}
+                  isAdmin={isAdmin}
+                  canConfirm={canConfirmAppointment(request)}
+                  onConfirm={() => {
+                    setSelectedAppointment(request);
+                    setConfirmDate(request.requestedDate?.split('T')[0] || new Date().toISOString().split('T')[0]);
+                    setConfirmTime(request.preferredTime || '10:00');
+                    setConfirmNotes('');
+                    setShowConfirmModal(true);
+                  }}
+                  onAssign={isAdmin ? () => {
+                    setSelectedPoolRequest(request);
+                    setAssignData({
+                      doctorId: request.assignedDoctorId || '',
+                      date: request.requestedDate?.split('T')[0] || new Date().toISOString().split('T')[0],
+                      time: request.preferredTime || '10:00',
+                      notes: '',
+                    });
+                    setShowAssignModal(true);
+                  } : undefined}
+                  onDecline={() => {
+                    const reason = prompt('Reason for declining this appointment:');
+                    if (reason) handleRejectAppointment(request.id, reason);
+                  }}
+                  onContact={() => {
+                    const email = request.patientEmail;
+                    if (email) {
+                      globalThis.location.href = `mailto:${email}?subject=Regarding your appointment request`;
+                    }
+                  }}
+                  onClaim={(request.status === 'in_pool' || request.status === 'pending')
+                    ? () => void handlePoolClaim(request)
+                    : undefined}
+                  onAiMatch={(request.status === 'in_pool' || request.status === 'pending')
+                    ? () => void handlePoolAIMatch(request.id)
+                    : undefined}
                 >
-                  <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
-                    <div className="flex-1">
-                      {/* Patient Info Header */}
-                      <div className="flex items-center gap-3 mb-3">
-                        <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                          <span className="text-2xl"></span>
-                        </div>
-                        <div>
-                          <h3 className="text-lg font-bold text-gray-900">{request.patientName}</h3>
-                          <div className="flex items-center gap-2 text-sm text-gray-600">
-                            <span>{request.patientEmail || 'No email'}</span>
-                            {request.patientPhone && (
-                              <>
-                                <span>•</span>
-                                <span>{request.patientPhone}</span>
-                              </>
-                            )}
-                          </div>
-                        </div>
-                        <span className={`ml-auto px-3 py-1 rounded-full text-xs font-bold uppercase ${getUrgencyBadgeStyleBold(request.urgency)}`}>
-                          {request.urgency}
-                        </span>
-                      </div>
-
-                      {/* Appointment Details Grid */}
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
-                        <div className="bg-blue-50 p-3 rounded-lg">
-                          <div className="font-semibold text-blue-900 flex items-center gap-1">
-                            <CalendarIcon className="w-4 h-4" />
-                            Requested Date
-                          </div>
-                          <div className="text-blue-700 mt-1">
-                            {request.requestedDate?.split('T')[0] || 'Flexible'}
-                            {request.preferredTime && ` at ${request.preferredTime}`}
-                          </div>
-                          {request.preferredDates && request.preferredDates.length > 1 && (
-                            <div className="text-xs text-blue-600 mt-1">
-                              Alt dates: {request.preferredDates.slice(1, 3).map((d: string) => d.split('T')[0]).join(', ')}
-                            </div>
-                          )}
-                        </div>
-                        <div className="bg-purple-50 p-3 rounded-lg">
-                          <div className="font-semibold text-purple-900">Reason / Symptoms</div>
-                          <div className="text-purple-700 mt-1 text-sm">
-                            {request.reason || 'General consultation'}
-                          </div>
-                          {request.requiredSpecialty && (
-                            <div className="text-xs text-purple-600 mt-1">
-                              Suggested: {request.requiredSpecialty}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* AI Analysis / Symptom Description */}
-                      {request.symptomDescription && (
-                        <div className="bg-gray-50 p-3 rounded-lg mb-3">
-                          <div className="font-semibold text-gray-700 text-sm">AI Analysis / Details</div>
-                          <div className="text-sm text-gray-600 mt-1 whitespace-pre-wrap max-h-32 overflow-y-auto">
-                            {typeof request.symptomDescription === 'string'
-                              ? request.symptomDescription.substring(0, 500)
-                              : JSON.stringify(request.symptomDescription).substring(0, 500)}
-                            {(request.symptomDescription?.length || 0) > 500 && '...'}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Status & Assignment Info */}
-                      <div className="flex items-center gap-3 text-xs text-gray-500">
-                        <span className={`px-2 py-1 rounded-full ${getStatusBadgeStyle(request.status)}`}>
-                          {request.status.replaceAll('_', ' ')}
-                        </span>
-                        {request.assignedDoctorName && (
-                          <span className="text-blue-600">
-                            Assigned to: Dr. {request.assignedDoctorName}
-                          </span>
-                        )}
-                        <span>Requested: {new Date(request.createdAt).toLocaleDateString()}</span>
-                      </div>
-
-                      <PhrPreviewMiniCard patientId={request.patientId} className="mt-3" />
-                    </div>
-
-                    {/* Action Buttons */}
-                    <div className="flex flex-col gap-2 min-w-[160px]">
-                      {canConfirmAppointment(request) && (
-                      <button
-                        onClick={() => {
-                          setSelectedAppointment(request);
-                          setConfirmDate(request.requestedDate?.split('T')[0] || new Date().toISOString().split('T')[0]);
-                          setConfirmTime(request.preferredTime || '10:00');
-                          setConfirmNotes('');
-                          setShowConfirmModal(true);
-                        }}
-                        className="px-4 py-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 font-bold text-sm shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-2"
-                      >
-                        ✓ Confirm Appointment
-                      </button>
-                      )}
-                      {isAdmin && request.status === 'awaiting_doctor_response' && request.assignedDoctorId && (
-                        <p className="text-xs text-gray-500 text-center px-1">
-                          รอแพทย์ที่ได้รับมอบหมายยืนยัน (HOST)
-                        </p>
-                      )}
-
-                      {/* Admin can ALWAYS assign/reassign to any doctor */}
-                      {isAdmin && (
-                        <button
-                          onClick={() => {
-                            setSelectedPoolRequest(request);
-                            setAssignData({
-                              doctorId: request.assignedDoctorId || '',
-                              date: request.requestedDate?.split('T')[0] || new Date().toISOString().split('T')[0],
-                              time: request.preferredTime || '10:00',
-                              notes: ''
-                            });
-                            setShowAssignModal(true);
-                          }}
-                          className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-medium flex items-center justify-center gap-2"
-                        >
-                          👨‍⚕️ {request.assignedDoctorId ? 'Reassign Doctor' : 'Assign to Doctor'}
-                        </button>
-                      )}
-
-                      <button
-                        onClick={() => {
-                          const reason = prompt('Reason for declining this appointment:');
-                          if (reason) {
-                            handleRejectAppointment(request.id, reason);
-                          }
-                        }}
-                        className="px-4 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 text-sm font-medium"
-                      >
-                        ✗ Decline
-                      </button>
-
-                      <button
-                        onClick={() => {
-                          const email = request.patientEmail;
-                          if (email) {
-                            globalThis.location.href = `mailto:${email}?subject=Regarding your appointment request`;
-                          }
-                        }}
-                        className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 text-sm"
-                      >
-                        ✉️ Contact Patient
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ))
-            )}
+                  {isAdmin && request.status === 'awaiting_doctor_response' && request.assignedDoctorId && (
+                    <p className="text-xs text-gray-500 text-center px-1 mt-2">
+                      รอแพทย์ที่ได้รับมอบหมายยืนยัน (HOST)
+                    </p>
+                  )}
+                  <PhrPreviewMiniCard patientId={request.patientId} className="mt-3" />
+                </AppointmentQueueCard>
+              ));
+            })()}
           </div>
 
-          {acceptedQueue.length > 0 && (
-            <div className="mt-8 pt-6 border-t border-gray-200" data-testid="accepted-queue-list">
-              <h3 className={`text-lg font-bold mb-3 ${hmDarkText(isDark)}`}>
-                Recently Accepted ({acceptedQueue.length})
-              </h3>
-              <p className={`text-sm mb-4 ${hmDarkSubtext(isDark)}`}>
-                Confirmed appointments remain visible here for 7 days (accepted by assigned doctor).
-              </p>
-              <div className="space-y-3">
-                {acceptedQueue.map((request) => (
-                  <div
-                    key={`accepted-${request.id}`}
-                    className={`border rounded-lg p-4 ${isDark ? 'bg-gray-700 border-green-700' : 'bg-green-50 border-green-200'}`}
-                  >
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
-                      <div>
-                        <div className="font-semibold text-gray-900">{request.patientName}</div>
-                        <div className="text-sm text-gray-600">
-                          Accepted by {request.acceptedBy || request.assignedDoctorName || request.confirmedBy || 'Doctor'}
-                          {request.acceptedAt || request.confirmedAt ? ` · ${new Date(request.acceptedAt || request.confirmedAt || '').toLocaleDateString()}` : ''}
+          {(queueSubTab === 'accepted' || queueSubTab === 'all') && (
+            <div className="mt-8 pt-6 border-t border-gray-200" data-testid="accepted-pool-list">
+              <div data-testid="accepted-queue-list">
+                <h3 className={`text-lg font-bold mb-3 ${hmDarkText(isDark)}`}>
+                  Recently Accepted ({acceptedQueue.length})
+                </h3>
+                <p className={`text-sm mb-4 ${hmDarkSubtext(isDark)}`}>
+                  Confirmed appointments remain visible here for 7 days (accepted by assigned doctor).
+                </p>
+                {acceptedQueue.length === 0 ? (
+                  <p className={`text-sm ${hmDarkSubtext(isDark)}`}>No recently accepted appointments in the last 7 days.</p>
+                ) : (
+                  <div className="space-y-3">
+                    {acceptedQueue.map((request) => (
+                      <div
+                        key={`accepted-${request.id}`}
+                        className={`border rounded-lg p-4 ${isDark ? 'bg-gray-700 border-green-700' : 'bg-green-50 border-green-200'}`}
+                      >
+                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+                          <div>
+                            <div className="font-semibold text-gray-900">{request.patientName}</div>
+                            <div className="text-sm text-gray-600">
+                              Accepted by {request.acceptedBy || request.assignedDoctorName || request.confirmedBy || 'Doctor'}
+                              {request.acceptedAt || request.confirmedAt ? ` · ${new Date(request.acceptedAt || request.confirmedAt || '').toLocaleDateString()}` : ''}
+                            </div>
+                            <div className="text-xs text-gray-400 mt-1" data-appointment-id={request.id}>{request.id}</div>
+                          </div>
+                          <span className="px-3 py-1 rounded-full text-xs font-bold bg-green-100 text-green-800 uppercase">
+                            accepted
+                          </span>
                         </div>
                       </div>
-                      <span className="px-3 py-1 rounded-full text-xs font-bold bg-green-100 text-green-800 uppercase">
-                        accepted
-                      </span>
-                    </div>
+                    ))}
                   </div>
-                ))}
+                )}
               </div>
             </div>
           )}

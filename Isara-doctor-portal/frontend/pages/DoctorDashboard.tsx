@@ -899,7 +899,7 @@ export const DoctorDashboard: React.FC<DoctorDashboardProps> = ({
                   type="button"
                   onClick={(e) => {
                     e.stopPropagation();
-                    handleStartConsultation(patient.id);
+                    handleViewPatient(patient);
                   }}
                   className="px-3 py-1 bg-emerald-600 text-white rounded text-xs hover:bg-emerald-700"
                 >

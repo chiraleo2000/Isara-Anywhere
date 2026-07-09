@@ -157,6 +157,9 @@ PATIENT_SHOTS: list[Shot] = [
     _s("Documents/docs/screenshots/group-F/F08-allergies-tab.png", "แท็บแพ้ยา/สาร", "6. ประวัติสุขภาพ (PHR)", ["เปิดแท็บแพ้"], "รายการสิ่งที่แพ้", "สำคัญต่อความปลอดภัย"),
     _s("Documents/docs/screenshots/group-F/F09-lab-results-tab.png", "แท็บผลแล็บ", "6. ประวัติสุขภาพ (PHR)", ["เปิดแท็บผลแล็บ"], "ผลตรวจย้อนหลัง", "อ้างอิงก่อนพบแพทย์"),
     _s("Documents/docs/screenshots/group-F/F14-phr-overview-data.png", "ภาพรวม PHR พร้อมข้อมูล", "6. ประวัติสุขภาพ (PHR)", ["กลับแท็บภาพรวม"], "สรุปรวมทุกหมวด", "ข้อมูล sync กับแพทย์"),
+    _s("docs/screenshots/group-F/F01-phr-page.png", "เอกสารทางการแพทย์ — แท็บเอกสาร", "6b. เอกสารคลินิก (patient_documents)", ["เปิด PHR → แท็บเอกสารทางการแพทย์"], "รายการ EMR แล็บ ใบสั่งยา", "inbox เดียวจากแพทย์"),
+    _s("docs/screenshots/group-F/F02-phr-tabs-explored.png", "แท็บใบสั่งยาใน PHR", "6b. เอกสารคลินิก (patient_documents)", ["เปิดแท็บใบสั่งยา"], "รายการ Rx + ดาวน์โหลด", "แจ้งเตือน prescription_ready"),
+    _s("docs/screenshots/group-E/E07-clinical-actions.png", "สั่งแล็บและสั่งยา (แพทย์)", "6c. แล็บและเอกสาร", ["แพทย์เปิด Lab Orders / Prescribing"], "สั่งตรวจ อัปโหลด PDF ส่ง Rx", "publish lab_report / prescription → patient_documents"),
     # Group G — PDPA / Living Will
     _s("Documents/docs/screenshots/group-G/G01-pdpa-page.png", "หน้า PDPA", "7. PDPA และหนังสือแสดงเจตนา", ["เปิดเมนู PDPA"], "นโยบายและสิทธิ", "ตาม พ.ร.บ. คุ้มครองข้อมูล"),
     _s("Documents/docs/screenshots/group-G/G02-pdpa-tabs.png", "แท็บความยินยอม PDPA", "7. PDPA และหนังสือแสดงเจตนา", ["สลับแท็บยินยอม"], "รายการ consent", "ควบคุมการแชร์ข้อมูล"),

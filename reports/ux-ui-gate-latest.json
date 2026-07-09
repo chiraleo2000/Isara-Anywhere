@@ -1,15 +1,15 @@
 {
-  "checkedAt": "2026-07-01T08:15:17.157Z",
-  "gitShortHash": "84fd08ed",
+  "checkedAt": "2026-07-09T08:43:58.247Z",
+  "gitShortHash": "1102376b",
   "pass": true,
   "unitGate": {
     "pass": true,
-    "checkedAt": "2026-06-30T07:27:00.078Z",
-    "logPath": "reports\\local-unit-gate-2026-06-30T07-26-15.log"
+    "checkedAt": "2026-07-09T04:53:08.441Z",
+    "logPath": "reports\\local-unit-gate-2026-07-09T04-52-15.log"
   },
   "screenshotAudit": {
     "pass": true,
-    "checkedAt": "2026-07-01T08:13:28.841Z",
+    "checkedAt": "2026-07-09T08:41:05.104Z",
     "groupCount": 1,
     "failedGroups": []
   },
@@ -19,21 +19,14 @@
   },
   "ledgerRounds": [
     {
-      "file": "reports/local-error-ledger/round-1-2026-07-01T04-14-45-984Z.json",
+      "file": "reports/local-error-ledger/round-1-2026-07-09T05-03-24-525Z.json",
       "round": 1,
       "totalTests": null,
       "p0Count": 0,
       "pass": true
     },
     {
-      "file": "reports/local-error-ledger/round-1-2026-07-01T05-02-15-578Z.json",
-      "round": 1,
-      "totalTests": null,
-      "p0Count": 0,
-      "pass": true
-    },
-    {
-      "file": "reports/local-error-ledger/round-1-2026-07-01T05-02-16-142Z.json",
+      "file": "reports/local-error-ledger/round-1-2026-07-09T06-21-23-355Z.json",
       "round": 1,
       "totalTests": null,
       "p0Count": 0,
@@ -47,7 +40,7 @@
       "pass": true
     },
     {
-      "file": "reports/local-error-ledger/round-2-2026-07-01T05-36-12-795Z.json",
+      "file": "reports/local-error-ledger/round-2-2026-07-09T06-26-40-300Z.json",
       "round": 2,
       "totalTests": null,
       "p0Count": 0,
@@ -61,7 +54,7 @@
       "pass": true
     },
     {
-      "file": "reports/local-error-ledger/round-3-2026-07-01T07-18-50-371Z.json",
+      "file": "reports/local-error-ledger/round-3-2026-07-09T06-35-43-615Z.json",
       "round": 3,
       "totalTests": null,
       "p0Count": 0,
@@ -75,7 +68,7 @@
       "pass": true
     },
     {
-      "file": "reports/local-error-ledger/round-4-2026-07-01T07-28-36-966Z.json",
+      "file": "reports/local-error-ledger/round-4-2026-07-09T05-58-42-430Z.json",
       "round": 4,
       "totalTests": null,
       "p0Count": 0,
@@ -89,7 +82,7 @@
       "pass": true
     },
     {
-      "file": "reports/local-error-ledger/round-5-2026-07-01T07-47-53-220Z.json",
+      "file": "reports/local-error-ledger/round-5-2026-07-09T07-50-10-000Z.json",
       "round": 5,
       "totalTests": null,
       "p0Count": 0,
@@ -103,7 +96,21 @@
       "pass": true
     },
     {
-      "file": "reports/local-error-ledger/round-6-2026-07-01T07-59-34-440Z.json",
+      "file": "reports/local-error-ledger/round-6-2026-07-09T06-47-10-987Z.json",
+      "round": 6,
+      "totalTests": null,
+      "p0Count": 0,
+      "pass": true
+    },
+    {
+      "file": "reports/local-error-ledger/round-6-2026-07-09T07-59-45-085Z.json",
+      "round": 6,
+      "totalTests": null,
+      "p0Count": 0,
+      "pass": true
+    },
+    {
+      "file": "reports/local-error-ledger/round-6-2026-07-09T08-30-13-571Z.json",
       "round": 6,
       "totalTests": null,
       "p0Count": 0,
@@ -117,7 +124,7 @@
       "pass": true
     },
     {
-      "file": "reports/local-error-ledger/round-7-2026-07-01T08-15-16-762Z.json",
+      "file": "reports/local-error-ledger/round-7-2026-07-09T08-43-58-023Z.json",
       "round": 7,
       "totalTests": null,
       "p0Count": 0,
@@ -126,6 +133,13 @@
     {
       "file": "reports/local-error-ledger/round-7-latest.json",
       "round": 7,
+      "totalTests": null,
+      "p0Count": 0,
+      "pass": true
+    },
+    {
+      "file": "reports/local-error-ledger/round-9-2026-07-09T02-49-24-815Z.json",
+      "round": 9,
       "totalTests": null,
       "p0Count": 0,
       "pass": true
@@ -175,9 +189,9 @@
     "group-E": 25,
     "group-F": 15,
     "group-G": 16,
-    "group-H": 13,
-    "group-I": 12,
-    "group-J": 13,
+    "group-H": 15,
+    "group-I": 13,
+    "group-J": 14,
     "group-J-jitsi-prejoin": 3,
     "group-J-meeting-jitsi": 2,
     "group-Q": 13,

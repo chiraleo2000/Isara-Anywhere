@@ -143,6 +143,7 @@ export function buildPatientJitsiMountOptions(input: PatientJitsiMountInput) {
   const jitsiOpts = getJitsiExternalApiOptions('patient', displayName);
   const jwt = resolveMountJwt(joinCfg);
 
+  const joinMuted = input.micOn === false && input.cameraOn === false;
   const configOverwrite = {
     ...mergeRecord(
       {
@@ -159,6 +160,13 @@ export function buildPatientJitsiMountOptions(input: PatientJitsiMountInput) {
     prejoinPageEnabled: false,
     requireDisplayName: false,
     moderator: false,
+    ...(joinMuted
+      ? {
+          startWithAudioMuted: true,
+          startWithVideoMuted: true,
+          disableInitialGUM: true,
+        }
+      : {}),
   };
 
   const interfaceConfigOverwrite = mergeRecord(

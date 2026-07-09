@@ -62,6 +62,7 @@ function LoginFormView({ tc, email, setEmail, password, setPassword, showPasswor
           <Mail className={`absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 ${tc.icon}`} />
           <input
             id="login-email"
+            data-testid="login-email"
             type="email"
             name="email"
             value={email}
@@ -89,6 +90,7 @@ function LoginFormView({ tc, email, setEmail, password, setPassword, showPasswor
           <Lock className={`absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 ${tc.icon}`} />
           <input
             id="login-password"
+            data-testid="login-password"
             type={showPassword ? 'text' : 'password'}
             name="password"
             value={password}
@@ -112,6 +114,7 @@ function LoginFormView({ tc, email, setEmail, password, setPassword, showPasswor
 
       <button
         type="submit"
+        data-testid="login-submit"
         disabled={loading}
         className="w-full bg-emerald-600 text-white py-3 rounded-xl font-medium hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
       >

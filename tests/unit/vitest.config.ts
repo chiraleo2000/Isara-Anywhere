@@ -80,7 +80,14 @@ const GROUP_CLINICAL = [
 const GROUP_CONTENT = [
   'doctor-portal/medicalContentWorkflow.test.ts',
   'doctor-portal/medicalConsultants.test.ts',
+  'doctor-portal/contentFormatters.test.ts',
+  'doctor-portal/clinicalResources.test.ts',
   'patient-portal/contentRoute.test.ts',
+  'patient-portal/contentAccessPolicy.test.ts',
+  'patient-portal/contentImageRenderer.test.ts',
+  'cross-portal/contentVisibilityContract.test.ts',
+  'cross-portal/contentWorkflowContract.test.ts',
+  'cross-portal/adminNavBadges.test.ts',
 ];
 const GROUP_MEETING = [
   'meeting/**',

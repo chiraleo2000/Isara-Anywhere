@@ -210,6 +210,8 @@ TableGroup patient_tables {
   living_wills
   living_will_versions
   patient_consents
+  patient_documents
+  patient_doctor_messages
 }
 
 Table patient_profiles {
@@ -333,6 +335,48 @@ Table patient_consents {
   indexes {
     patient_id
   }
+}
+
+Table patient_documents {
+  id uuid [pk, default: `uuid_generate_v4()`]
+  patient_id varchar(50) [ref: > users.id, not null]
+  source_type text [not null, note: 'emr_report|lab_report|prescription|imaging_report|instruction_sheet|patient_upload']
+  source_id varchar(50)
+  appointment_id varchar(50) [ref: > appointments.id]
+  doctor_id varchar(50) [ref: > users.id]
+  title text [not null]
+  description text
+  file_name text [not null]
+  mime_type text [default: 'application/pdf']
+  file_data bytea
+  file_size integer
+  status text [default: 'delivered']
+  delivered_at timestamptz [default: `CURRENT_TIMESTAMP`]
+  metadata jsonb [default: '{}']
+  created_at timestamptz [default: `CURRENT_TIMESTAMP`]
+  updated_at timestamptz [default: `CURRENT_TIMESTAMP`]
+
+  indexes {
+    (patient_id, delivered_at)
+    (source_type, source_id)
+  }
+
+  Note: 'Unified clinical document inbox for patients (v2.3.0)'
+}
+
+Table patient_doctor_messages {
+  id uuid [pk, default: `uuid_generate_v4()`]
+  patient_id varchar(50) [ref: > users.id, not null]
+  doctor_id varchar(50) [ref: > users.id, not null]
+  appointment_id varchar(50) [ref: > appointments.id]
+  subject text [not null]
+  body text [not null]
+  channel text [default: 'both', note: 'in_app|email|both']
+  status text [default: 'sent']
+  read_at timestamptz
+  created_at timestamptz [default: `CURRENT_TIMESTAMP`]
+
+  Note: 'Doctor-to-patient messages from Patient Detail (v2.3.0)'
 }
 
 // =============================================================================
@@ -649,17 +693,29 @@ Table medical_content {
   title_english varchar(500)
   content_thai text [not null]
   content_english text
+  summary_thai text
+  summary_english text
   category varchar(100) [note: 'general-health, nutrition, etc.']
+  content_type varchar(50) [default: 'article']
   tags jsonb
   author_id varchar(50) [ref: > users.id]
+  author_name varchar(255)
   status varchar(20) [default: 'draft']
   published_at timestamptz
+  submitted_at timestamptz
   view_count integer [default: 0]
   image_url text
+  video_url text
+  is_featured boolean [default: false]
+  approved_by varchar(50) [ref: > users.id]
+  approved_at timestamptz
+  rejection_reason text
+  history jsonb [default: '[]']
+  version integer [default: 1]
   created_at timestamptz [default: `CURRENT_TIMESTAMP`]
   updated_at timestamptz [default: `CURRENT_TIMESTAMP`]
   
-  Note: 'Patient health education content'
+  Note: 'Patient health education content with draft→pending→published workflow'
 }
 
 Table clinical_resources {

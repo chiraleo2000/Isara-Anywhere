@@ -3,13 +3,14 @@
  * รองรับหน้าจอมือถือ แท็บเล็ต และเดสก์ท็อป
  */
 
-import React, { useState, ReactNode, useLayoutEffect } from 'react';
+import React, { useState, ReactNode, useLayoutEffect, useEffect, useCallback } from 'react';
 import { useLocation } from 'react-router-dom';
 import { User } from '../../types';
 import { useResponsive } from '../../hooks/useResponsive';
 import { useSettings } from '../../hooks/useSettings';
 import { DoctorNotificationBell } from '../notifications/DoctorNotificationBell';
 import { SettingsDropdown } from './SettingsDropdown';
+import { getAuthHeaders } from '../../services/authServices';
 import {
   HomeIcon,
   CalendarDaysIcon,
@@ -27,6 +28,67 @@ const ShieldCheckIcon: React.FC<{ className?: string }> = ({ className }) => (
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
   </svg>
 );
+
+interface AdminNavBadges {
+  pendingContent: number;
+  pendingResources: number;
+  pendingDoctors: number;
+}
+
+function useAdminNavBadges(isAdmin: boolean): AdminNavBadges {
+  const [badges, setBadges] = useState<AdminNavBadges>({
+    pendingContent: 0,
+    pendingResources: 0,
+    pendingDoctors: 0,
+  });
+
+  const fetchBadges = useCallback(async () => {
+    if (!isAdmin) return;
+    try {
+      const response = await fetch('/api/admin/stats', {
+        headers: getAuthHeaders(),
+        credentials: 'include',
+      });
+      if (!response.ok) return;
+      const data = await response.json();
+      const stats = data.stats || data;
+      setBadges({
+        pendingContent: Number(stats.pendingContent || 0),
+        pendingResources: Number(stats.pendingResources || 0),
+        pendingDoctors: Number(stats.pendingDoctors || 0),
+      });
+    } catch {
+      /* non-fatal */
+    }
+  }, [isAdmin]);
+
+  useEffect(() => {
+    fetchBadges();
+    const interval = setInterval(fetchBadges, 60_000);
+    return () => clearInterval(interval);
+  }, [fetchBadges]);
+
+  return badges;
+}
+
+function getNavBadgeCount(itemId: string, badges: AdminNavBadges): number {
+  if (itemId === 'medical-content') return badges.pendingContent;
+  if (itemId === 'clinical-resources') return badges.pendingResources;
+  if (itemId === 'doctor-management') return badges.pendingDoctors;
+  return 0;
+}
+
+function NavBadge({ count, itemId }: { count: number; itemId?: string }) {
+  if (count <= 0) return null;
+  return (
+    <span
+      data-testid={itemId ? `nav-badge-${itemId}` : undefined}
+      className="ml-auto min-w-[1.25rem] px-1.5 py-0.5 text-xs font-bold rounded-full bg-red-500 text-white text-center"
+    >
+      {count > 99 ? '99+' : count}
+    </span>
+  );
+}
 
 // ============================================================================
 // MINI CALENDAR COMPONENT
@@ -263,7 +325,6 @@ function getMobileBaseNavItems(lang: string) {
     { id: 'schedule', label: isTh ? 'ตารางนัด' : 'Schedule', icon: CalendarDaysIcon },
     { id: 'patients', label: isTh ? 'ผู้ป่วย' : 'Patients', icon: ClipboardDocumentListIcon },
     { id: 'health-meeting', label: isTh ? 'นัดหมาย' : 'Meetings', icon: VideoCameraIcon },
-    { id: 'appointment-pool', label: isTh ? 'กลุ่มนัดหมาย' : 'Appt Pool', icon: ClockIcon },
     // Phase 1: 'medical-consultants' nav item disabled — to be rebuilt in Phase 2.
     { id: 'medical-content', label: isTh ? 'เนื้อหา' : 'Content', icon: BookOpenIcon },
     { id: 'clinical-resources', label: isTh ? 'ทรัพยากร' : 'Resources', icon: AcademicCapIcon },
@@ -290,6 +351,7 @@ export const MobileNav: React.FC<MobileNavProps> = ({
   const tc = getNavThemeClasses(isDarkMode);
 
   const isAdmin = user.isAdmin || user.role === 'admin';
+  const badges = useAdminNavBadges(isAdmin);
 
   const baseNavItems = getMobileBaseNavItems(language);
   const adminNavItems = getMobileAdminNavItems(language);
@@ -357,6 +419,7 @@ export const MobileNav: React.FC<MobileNavProps> = ({
             <nav className="py-2">
               {navItems.map((item) => {
                 const Icon = item.icon;
+                const badge = getNavBadgeCount(item.id, badges);
                 return (
                   <button
                     key={item.id}
@@ -369,7 +432,8 @@ export const MobileNav: React.FC<MobileNavProps> = ({
                     }`}
                   >
                     <Icon className="w-5 h-5" />
-                    <span className="font-medium">{item.label}</span>
+                    <span className="font-medium flex-1">{item.label}</span>
+                    <NavBadge count={badge} itemId={item.id} />
                   </button>
                 );
               })}
@@ -423,7 +487,6 @@ function getDesktopNavItems(lang: string) {
     { id: 'schedule', label: isTh ? 'ตารางนัดหมาย' : 'Schedule', icon: CalendarDaysIcon },
     { id: 'patients', label: isTh ? 'ผู้ป่วย' : 'Patients', icon: ClipboardDocumentListIcon },
     { id: 'health-meeting', label: isTh ? 'นัดหมาย & ประชุม' : 'Appointments & Meetings', icon: VideoCameraIcon },
-    { id: 'appointment-pool', label: isTh ? 'กลุ่มนัดหมาย' : 'Appointment Pool', icon: ClockIcon },
     // Phase 1: 'medical-consultants' nav item disabled — to be rebuilt in Phase 2.
     { id: 'medical-content', label: isTh ? 'เนื้อหาทางการแพทย์' : 'Medical Content', icon: BookOpenIcon },
     { id: 'clinical-resources', label: isTh ? 'ทรัพยากรทางคลินิก' : 'Clinical Resources', icon: AcademicCapIcon },
@@ -452,6 +515,7 @@ export const DesktopSidebar: React.FC<DesktopSidebarProps> = ({
   onLogout,
 }) => {
   const isAdmin = user.isAdmin || user.role === 'admin';
+  const badges = useAdminNavBadges(isAdmin);
   const { theme, language } = useSettings();
   const isDarkMode = theme === 'dark';
   const tc = getNavThemeClasses(isDarkMode);
@@ -490,6 +554,7 @@ export const DesktopSidebar: React.FC<DesktopSidebarProps> = ({
       <nav className="flex-1 overflow-y-auto py-4">
         {navItems.map((item) => {
           const Icon = item.icon;
+          const badge = getNavBadgeCount(item.id, badges);
           return (
             <button
               key={item.id}
@@ -499,7 +564,8 @@ export const DesktopSidebar: React.FC<DesktopSidebarProps> = ({
               }`}
             >
               <Icon className="w-5 h-5" />
-              <span className="font-medium">{item.label}</span>
+              <span className="font-medium flex-1">{item.label}</span>
+              <NavBadge count={badge} itemId={item.id} />
             </button>
           );
         })}

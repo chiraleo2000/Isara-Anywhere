@@ -143,11 +143,16 @@ interface Consultant {
 
 ## Data Storage
 
-Data is persisted in GCS bucket: `izara-meta-data`
+Data is persisted in PostgreSQL table **`consultants`** (`izara_phase1`).
 
-- Path: `consultants/consultants.json`
+| Column area | Examples |
+| ----------- | -------- |
+| Profile | `name`, `specialty`, `specialty_thai`, `hospital`, `email`, `phone` |
+| Meta | `languages` (JSONB), `experience_years`, `bio`, `is_available`, `rating` |
 
-- Specialties: `consultants/specialties.json`
+API: `GET/POST/PUT/DELETE /api/consultants` via `postgresDataService.cjs`.
+
+> **Deprecated:** Legacy GCS `consultants/consultants.json` — not used when `USE_POSTGRESQL=true`.
 
 ## Error Handling
 

@@ -213,3 +213,28 @@
 - อย่าแชร์ลิงก์ประชุมหรือ JWT ทางช่องทางไม่ปลอดภัย
 - ผลลัพธ์ AI ไม่ใช่การวินิจฉัย — แพทย์ต้องตรวจก่อนลง EMR
 
+
+## UI Controls Inventory
+
+| # | Control | testid | Action | Expected | Screenshot |
+|---|---------|--------|--------|----------|------------|
+| 1 | Data Testid | `data-testid` | click | Documented control | U-data-testid |
+| 2 | Confirmed | `confirmed` | click | Documented control | U-confirmed |
+| 3 | Lobby Waiting Screen | `lobby-waiting-screen` | click | Documented control | U-lobby-waiting-screen |
+| 4 | Admit All Btn | `admit-all-btn` | click | Documented control | U-admit-all-btn |
+| 5 | Jitsi Doctor Container | `jitsi-doctor-container` | click | Documented control | U-jitsi-doctor-container |
+| 6 | Jitsi Guest Container | `jitsi-guest-container` | click | Documented control | U-jitsi-guest-container |
+| 7 | Insert Meeting Summary Emr Btn | `insert-meeting-summary-emr-btn` | click | Documented control | U-insert-meeting-summary-emr-btn |
+| 8 | Host Ready | `host-ready` | click | Documented control | U-host-ready |
+| 9 | Notifyhostpresent | `notifyHostPresent` | click | Documented control | U-notifyHostPresent |
+| 10 | Appointmentid | `appointmentId` | click | Documented control | U-appointmentId |
+| 11 | Meetingid | `meetingId` | click | Documented control | U-meetingId |
+| 12 | Guestjoinurl | `guestJoinUrl` | click | Documented control | U-guestJoinUrl |
+| 13 | Share Link | `share-link` | click | Documented control | U-share-link |
+| 14 | Guest Invite | `guest-invite` | click | Documented control | U-guest-invite |
+| 15 | Guest Lobby Waiting | `guest-lobby-waiting` | click | Documented control | U-guest-lobby-waiting |
+| 16 | Frame Src | `frame-src` | click | Documented control | U-frame-src |
+| 17 | Connect Src | `connect-src` | click | Documented control | U-connect-src |
+| 18 | Guest Transcript Segment | `guest-transcript-segment` | click | Documented control | U-guest-transcript-segment |
+| 19 | Recordingurl | `recordingUrl` | click | Documented control | U-recordingUrl |
+| 20 | Meeting Summary Ready | `meeting-summary-ready` | click | Documented control | U-meeting-summary-ready |

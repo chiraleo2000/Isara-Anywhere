@@ -20,7 +20,7 @@ import LivingWillPage from './pages/LivingWillPage';
 import TimelinePage from './pages/TimelinePage';
 import MapPage from './pages/MapPage';
 import GCSStatusPage from './pages/GCSStatusPage';
-import PatientMeetingRoom from './pages/PatientMeetingRoom';
+import { LegacyPatientMeetingRedirect, PatientMeetingRouteGuard } from './pages/PatientMeetingRoute';
 import GuestMeetingJoin from './pages/GuestMeetingJoin';
 import FindDoctorsPage from './pages/FindDoctorsPage';
 import ErrorBoundary from './components/common/ErrorBoundary';
@@ -94,9 +94,10 @@ function AppRoutes() {
       <Route path="/guest-join/:meetingId" element={<GuestMeetingJoin />} />
       <Route path="/guest/join/:token" element={<GuestMeetingJoin />} />
 
-      {/* Full-screen meeting — public (no portal login); Izara lobby + doctor admit */}
-      <Route path="/meeting/:appointmentId" element={<PatientMeetingRoom />} />
-      <Route path="/join/:appointmentId" element={<PatientMeetingRoom />} />
+      {/* Full-screen meeting — authenticated patient (mirrors doctor /doctor/:userId/meeting/:id) */}
+      <Route path="/patient/:userId/meeting/:appointmentId" element={<PatientMeetingRouteGuard />} />
+      <Route path="/meeting/:appointmentId" element={<LegacyPatientMeetingRedirect />} />
+      <Route path="/join/:appointmentId" element={<LegacyPatientMeetingRedirect />} />
       
       <Route path="/" element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>
         <Route index element={<DashboardPage />} />

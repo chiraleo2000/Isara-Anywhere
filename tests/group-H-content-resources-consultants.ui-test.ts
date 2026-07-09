@@ -17,7 +17,7 @@
 import {
   test, expect, assertFullHealth, snap,
   navPatient, navDoctor, waitForContent, assertHasData,
-  PATIENT_URL, DOCTOR_URL, readPageBearerToken,
+  PATIENT_URL, DOCTOR_URL, readPageBearerToken, ensurePatientPortalAuthenticated,
 } from './helpers/multi-portal';
 
 test.describe('Group H — Content, Resources & Consultants', () => {
@@ -307,6 +307,137 @@ test.describe('Group H — Content, Resources & Consultants', () => {
       );
       expect(patientTitles.some((t: string) => t?.includes(uniqueTitle)), 'patient sees published').toBe(true);
       console.log('  ✅ H-approval-2: Published visible to patient');
+    });
+
+    console.log('\n  🎉 H5 COMPLETE — Medical content approval workflow\n');
+  });
+
+  test('H6 — Clinical resource approval workflow', async ({ portals }) => {
+    const { doctor, admin, patient } = portals;
+    const uniqueTitle = `E2E Clinical ${Date.now()}`;
+
+    await test.step('H6-1 — Doctor creates clinical draft via API', async () => {
+      const token = await readPageBearerToken(doctor.page);
+      const createResp = await doctor.page.request.post(`${DOCTOR_URL}/api/content/clinical`, {
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        data: {
+          titleThai: uniqueTitle,
+          contentThai: 'แนวทางทดสอบสำหรับแพทย์เท่านั้น',
+          category: 'general_medicine',
+          resourceType: 'guideline',
+          status: 'draft',
+        },
+        timeout: 45_000,
+      });
+      expect(createResp.status(), 'create clinical draft').toBeLessThan(400);
+      const created = await createResp.json();
+      const resourceId = created.resource?.id || created.id;
+      expect(resourceId).toBeTruthy();
+      await doctor.page.evaluate((id) => sessionStorage.setItem('h6-resource-id', id), resourceId);
+
+      const patientResp = await patient.page.request.get(`${PATIENT_URL}/api/content/clinical`);
+      expect(patientResp.status(), 'patient clinical blocked').toBe(403);
+      console.log(`  ✅ H6-1: Clinical draft ${resourceId}, patient blocked`);
+    });
+
+    await test.step('H6-2 — Submit → admin approve → doctor sees published', async () => {
+      const resourceId = await doctor.page.evaluate(() => sessionStorage.getItem('h6-resource-id'));
+      expect(resourceId).toBeTruthy();
+
+      const doctorToken = await readPageBearerToken(doctor.page);
+      const submitResp = await doctor.page.request.put(
+        `${DOCTOR_URL}/api/content/clinical/${resourceId}`,
+        {
+          headers: { Authorization: `Bearer ${doctorToken}`, 'Content-Type': 'application/json' },
+          data: { status: 'pending', changeNote: 'E2E submit' },
+        },
+      );
+      expect(submitResp.status(), 'submit clinical').toBeLessThan(400);
+
+      const adminToken = await readPageBearerToken(admin.page);
+      const reviewResp = await admin.page.request.post(
+        `${DOCTOR_URL}/api/content/clinical/${resourceId}/review`,
+        {
+          headers: { Authorization: `Bearer ${adminToken}`, 'Content-Type': 'application/json' },
+          data: { action: 'approve', comment: 'E2E approved' },
+        },
+      );
+      expect(reviewResp.status(), 'admin approve clinical').toBeLessThan(400);
+
+      const listResp = await doctor.page.request.get(`${DOCTOR_URL}/api/content/clinical`, {
+        headers: { Authorization: `Bearer ${doctorToken}` },
+      });
+      const listBody = await listResp.json();
+      const resources = listBody.resources || listBody || [];
+      const match = resources.find((r: { id?: string; titleThai?: string; title?: string; status?: string }) =>
+        r.id === resourceId || r.titleThai?.includes(uniqueTitle) || r.title?.includes(uniqueTitle),
+      );
+      expect(match, 'doctor sees approved resource').toBeTruthy();
+      expect(['published', 'approved']).toContain(match?.status);
+      console.log('  ✅ H6-2: Clinical resource approved for doctors');
+    });
+  });
+
+  test('H7 — Admin sidebar pending badges', async ({ portals }) => {
+    const { admin } = portals;
+
+    await test.step('H7-1 — Admin stats API returns pending fields', async () => {
+      const token = await readPageBearerToken(admin.page);
+      const statsResp = await admin.page.request.get(`${DOCTOR_URL}/api/admin/stats`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      expect(statsResp.status()).toBeLessThan(400);
+      const body = await statsResp.json();
+      const stats = body.stats || body;
+      expect(stats).toHaveProperty('pendingContent');
+      expect(stats).toHaveProperty('pendingResources');
+      expect(stats).toHaveProperty('pendingDoctors');
+      console.log(`  ✅ H7-1: pendingContent=${stats.pendingContent}, pendingResources=${stats.pendingResources}`);
+    });
+
+    await test.step('H7-2 — Badge elements render when counts > 0', async () => {
+      await navDoctor(admin.page, 'medical-content', 'H7-nav');
+      const badge = admin.page.locator('[data-testid="nav-badge-medical-content"]');
+      const count = await badge.count();
+      if (count > 0) {
+        await expect(badge.first()).toBeVisible();
+        console.log('  ✅ H7-2: Medical content nav badge visible');
+      } else {
+        console.log('  ℹ️ H7-2: No pending medical content badge (count is 0)');
+      }
+    });
+  });
+
+  test('H8 — Patient Health Studio medical content tab', async ({ portals }) => {
+    const { patient } = portals;
+
+    await test.step('H8-1 — Open dashboard Health Studio content tab', async () => {
+      await ensurePatientPortalAuthenticated(patient.page, 'H8-auth');
+      await patient.page.goto(`${PATIENT_URL}/`, { waitUntil: 'domcontentloaded', timeout: 60_000 });
+      await waitForContent(patient.page, 'H8-dashboard', 15_000, 'patient1');
+      expect(patient.page.url(), 'patient dashboard URL').toMatch(/:3005\//);
+      await assertFullHealth(patient.page, 'H8');
+      const studio = patient.page.locator('[data-testid="health-studio-ready"]');
+      await studio.scrollIntoViewIfNeeded();
+      await expect(studio).toBeVisible({ timeout: 20_000 });
+      const contentTab = patient.page.locator('[data-testid="health-studio-content-tab"]');
+      await expect(contentTab, 'Health Studio content tab').toBeVisible({ timeout: 10_000 });
+      await contentTab.click();
+      await expect(patient.page.locator('[data-testid="health-studio-medical-content"]')).toBeVisible({ timeout: 15_000 });
+      await snap(patient.page, 'H15-health-studio-content', 'group-H');
+      console.log('  ✅ H8-1: Health Studio content tab loaded');
+    });
+
+    await test.step('H8-2 — Browse article in Health Studio', async () => {
+      const article = patient.page.locator('[data-testid="content-item"]').first();
+      if (await article.isVisible({ timeout: 5_000 }).catch(() => false)) {
+        await article.click();
+        await patient.page.waitForTimeout(500);
+        await snap(patient.page, 'H16-health-studio-article', 'group-H');
+        console.log('  ✅ H8-2: Article opened in Health Studio');
+      } else {
+        console.log('  ℹ️ H8-2: No articles in Health Studio tab yet');
+      }
     });
   });
 });

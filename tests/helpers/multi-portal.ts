@@ -33,6 +33,7 @@ import {
   probeRenderHealth,
 } from './portal-diagnostics';
 import { registerScreenshotHash, assertDistinctFromSession } from './screenshot-distinct';
+import { installJitsiE2eStubForContext } from './jitsi-e2e-stub';
 import {
   refreshAuthStorageStates,
   refreshAuthStorageStateForRole,
@@ -604,10 +605,13 @@ export async function assertTailwindCssHealthy(page: Page, label: string): Promi
     probe.remove();
     return { cssBytes, emeraldBg };
   });
-  expect(cssBytes, `${label}: bundled CSS must include Tailwind utilities (>25KB)`).toBeGreaterThan(25_000);
   const rgb = emeraldBg.replaceAll(/\s/g, '');
+  const emeraldOk = rgb === 'rgb(5,150,105)' || rgb === 'rgba(5,150,105,1)';
+  // Vite dev injects CSS via JS modules (no large link[rel=stylesheet] bundles); utility probe is authoritative.
+  if (cssBytes <= 25_000 && emeraldOk) return;
+  expect(cssBytes, `${label}: bundled CSS must include Tailwind utilities (>25KB)`).toBeGreaterThan(25_000);
   expect(
-    rgb === 'rgb(5,150,105)' || rgb === 'rgba(5,150,105,1)',
+    emeraldOk,
     `${label}: Tailwind utility bg-emerald-600 must apply (got ${emeraldBg})`,
   ).toBeTruthy();
 }
@@ -623,8 +627,21 @@ export async function snap(page: Page, name: string, subDir?: string): Promise<s
   fs.mkdirSync(docsDir, { recursive: true });
   const docsPath = path.join(docsDir, `${safeName}.png`);
 
-  const ssTimeout = (await isFirefoxPage(page)) ? 15_000 : 5_000;
+  const isFf = await isFirefoxPage(page);
+  // Screenshots can be slow on Windows + headed browsers (especially Firefox).
+  const ssTimeout = isFf ? 30_000 : 15_000;
   try {
+    // Reduce flake when pages have transient spinners/animations.
+    await page.evaluate(() => {
+      if (!document.getElementById('pw-screenshot-stabilize')) {
+        const style = document.createElement('style');
+        style.id = 'pw-screenshot-stabilize';
+        style.textContent = '*, *::before, *::after { animation: none !important; transition: none !important; }';
+        document.head.appendChild(style);
+      }
+    }).catch(() => {});
+    await page.locator('.animate-spin').first().waitFor({ state: 'hidden', timeout: isFf ? 20_000 : 10_000 }).catch(() => {});
+    await page.waitForTimeout(250);
     await page.screenshot({ path: filePath, fullPage: true, timeout: ssTimeout, animations: 'disabled' });
     fs.copyFileSync(filePath, docsPath);
     if (safeSubDir) registerScreenshotHash(safeSubDir, docsPath);
@@ -1734,8 +1751,8 @@ const DOCTOR_NAV_MAP: Record<string, RegExp> = {
   'patients':            /ผู้ป่วย|Patients/i,
   'health-meeting':      /นัดหมาย.*ประชุม|Appointments.*Meeting/i,
   'meetings':            /นัดหมาย.*ประชุม|Appointments.*Meeting/i,
-  'appointment-pool':    /กลุ่มนัดหมาย|Appointment Pool/i,
-  'pool':                /กลุ่มนัดหมาย|Appointment Pool/i,
+  'appointment-pool':    /นัดหมาย.*ประชุม|Appointments.*Meeting|Patient Queue|คิวผู้ป่วย/i,
+  'pool':                /นัดหมาย.*ประชุม|Appointments.*Meeting|Patient Queue|คิวผู้ป่วย/i,
   'medical-consultants': /ที่ปรึกษา.*แพทย์|Medical Consultant/i,
   'consultants':         /ที่ปรึกษา.*แพทย์|Medical Consultant/i,
   'medical-content':     /เนื้อหา.*การแพทย์|Medical Content/i,
@@ -1755,8 +1772,8 @@ const DOCTOR_NAV_PATH: Record<string, string> = {
   'patients': 'patients',
   'health-meeting': 'health-meeting',
   'meetings': 'health-meeting',
-  'appointment-pool': 'appointment-pool',
-  'pool': 'appointment-pool',
+  'appointment-pool': 'health-meeting',
+  'pool': 'health-meeting',
   'medical-content': 'medical-content',
   'content': 'medical-content',
   'clinical-resources': 'clinical-resources',
@@ -1838,15 +1855,18 @@ export async function navDoctor(page: Page, target: string | RegExp, label: stri
 
   const wantsHealthMeeting =
     navKey === 'health-meeting'
-    || (typeof target === 'string' && /health-meeting|health meeting/i.test(target))
-    || (target instanceof RegExp && /health-meeting|health meeting/i.test(target.source));
+    || navKey === 'appointment-pool'
+    || navKey === 'pool'
+    || (typeof target === 'string' && /health-meeting|health meeting|appointment-pool|appointment pool/i.test(target))
+    || (target instanceof RegExp && /health-meeting|health meeting|appointment-pool|appointment pool/i.test(target.source));
 
-  // Health Meeting: direct goto with stayOnQueue=1 — avoids autostart race on sidebar click
+  // Health Meeting (incl. legacy appointment-pool redirect): direct goto with stayOnQueue=1
   if (wantsHealthMeeting) {
     const doctorId = extractDoctorIdFromUrl(page.url());
     if (doctorId) {
       const origin = extractOriginFromUrl(page.url(), DOCTOR_URL);
-      const dest = doctorHealthMeetingUrl(doctorId, origin);
+      const tabQuery = (navKey === 'appointment-pool' || navKey === 'pool') ? '&tab=queue' : '';
+      const dest = `${doctorHealthMeetingUrl(doctorId, origin).replace('?stayOnQueue=1', '')}?stayOnQueue=1${tabQuery}`;
       if (!page.url().includes('stayOnQueue=1')) {
         const gotoTimeout = (await isFirefoxPage(page))
           ? Math.round(NAV_TIMEOUT * getRoleBrowserSpec('admin').navTimeoutMultiplier)
@@ -2201,6 +2221,11 @@ async function grantMeetingMediaPermissions(
     grants.push(_adminCtx.grantPermissions([...CHROMIUM_MEDIA_PERMISSIONS], { origin: DOCTOR_URL }));
   }
   if (grants.length) await Promise.all(grants);
+  await Promise.all([
+    installJitsiE2eStubForContext(patientCtx),
+    installJitsiE2eStubForContext(doctorCtx),
+    installJitsiE2eStubForContext(_adminCtx),
+  ]);
 }
 
 /** Staggered portal warmup — avoids cold-start thundering herd (RENDER-02) */

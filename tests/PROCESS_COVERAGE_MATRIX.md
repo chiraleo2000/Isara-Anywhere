@@ -1,6 +1,17 @@
 # Process Documentation → Test Coverage Matrix
 
-**Last updated:** 2026-06-10 (Telemedicine Full Gate v5.2)
+**Last updated:** 2026-07-09 (580 controls, P0 missing=0; local gate 119/119 PASS)
+
+## UI element coverage (Group U)
+
+| Artifact | Role |
+|----------|------|
+| [`UI_ELEMENT_COVERAGE_MATRIX.md`](UI_ELEMENT_COVERAGE_MATRIX.md) | Per-control testid registry (580 controls; P0 missing=0) |
+| `group-U-ui-element-audit.ui-test.ts` | Parallel headed click/type + screenshot per P0 control |
+| `pageElementContract.test.ts` | Vitest: P0 testids exist in frontend |
+| `processDocContentContract.test.ts` | Vitest: all 42 pages have UI Controls Inventory |
+
+**Regenerate:** `python scripts/audit-ui-element-coverage.py`
 
 ## v5.2 contract packs
 
@@ -61,6 +72,7 @@
 | Column | Meaning |
 |--------|---------|
 | **Status** | `covered` · `partial` · `missing` |
+| **ElementCoverage** | P0 control status from `UI_ELEMENT_COVERAGE_MATRIX.md` |
 | **Priority** | P0 meeting · P1 clinical/admin · P2 secondary |
 | **UnitTest** | Vitest under `tests/unit/` |
 | **UI** | Playwright project (group letter) |
@@ -92,7 +104,7 @@
 | Doctor-Portal/17_Admin_Appointment_Management | Admin | adminAppointmentManagement | D, I | covered | P1 | group-D/D14-admin-meeting |
 | Doctor-Portal/18_Admin_Doctor_Management | Admin | adminDoctorManagement | I | covered | P1 | group-A/C03 |
 | Doctor-Portal/19_Doctors_Management | Admin | adminDoctorManagement, processPagesContract | I | covered | P2 | — |
-| Doctor-Portal/20_Appointment_Pool_Management | Appointments | appointmentPoolManagement, queueLifecycle, queueAcceptTraceability | D | covered | P0 | group-D/D11-appointment-pool |
+| Doctor-Portal/20_Appointment_Pool_Management | Appointments | appointmentPoolManagement, queueLifecycle, queueAcceptTraceability | D | covered | P0 | group-D/D11-appointment-pool (redirect → health-meeting queue) |
 | Doctor-Portal/21_Queue_Management | Appointments | queueManagementWorkflow, queueSocket.test.ts | D, E, Q | covered | P0 | group-D/D16b-doctor-queue-assigned |
 
 ---
@@ -140,7 +152,8 @@
 | FULL_WORKFLOW_CONTRACT.md | cross-portal/* | A–Q | covered | P0 |
 | Data_Sync_Documentation.md | syncQueue.integration.test.ts | — | covered | P1 |
 | Notification_Workflows.md | notificationWorkflow | I | covered | P2 |
-| Health_Records_Processes.md | phrRoute, emr*, healthRecordsWorkflowContract | F | covered | P1 |
+| Health_Records_Processes.md | phrRoute, emr*, healthRecordsWorkflowContract, clinicalDocumentDelivery | F, E, L | covered | P1 |
+| Clinical_Document_Delivery_Workflows.md | clinicalDocumentDelivery.test.ts, phrDocuments.test.ts | E, F | covered | P0 |
 | GATE0_IMPLEMENTATION_STATUS.md | gate0ImplementationContract, verify:gate0:local | D, E | covered | P0 |
 | TWO_ROUND_CLOUD_TESTING.md | — | A→D→D-host→Q→E→F | covered | P0 |
 | ENV_AND_STACK_CHECK.md | doctorEnvAudit, envSchema | M | covered | P2 |

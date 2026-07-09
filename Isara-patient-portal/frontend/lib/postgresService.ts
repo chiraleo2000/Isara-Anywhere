@@ -509,29 +509,32 @@ export async function uploadDocument(
   documentType: 'lab_result' | 'prescription' | 'imaging' | 'other',
   description?: string
 ): Promise<ApiResponse<{ id: string; filename: string; uploadedAt: string }>> {
-  const formData = new FormData();
-  formData.append('file', file);
-  formData.append('documentType', documentType);
-  if (description) formData.append('description', description);
-
-  const token = localStorage.getItem('authToken');
-  
   try {
-    const response = await fetch(`${apiBaseUrl()}/api/patients/documents`, {
-      method: 'POST',
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
-      body: formData,
-    });
+    const arrayBuffer = await file.arrayBuffer();
+    const base64 = btoa(
+      new Uint8Array(arrayBuffer).reduce((data, byte) => data + String.fromCharCode(byte), '')
+    );
 
-    const data = await response.json();
-    return response.ok ? { success: true, data } : { success: false, error: data.error };
+    return apiCall('/api/patients/documents', {
+      method: 'POST',
+      body: JSON.stringify({
+        fileName: file.name,
+        mimeType: file.type || 'application/pdf',
+        fileData: base64,
+        documentType,
+        description,
+        title: file.name,
+      }),
+    });
   } catch (error: any) {
     return { success: false, error: error.message };
   }
 }
 
 export async function getDocuments(): Promise<ApiResponse<any[]>> {
-  return apiCall('/api/patients/documents');
+  const result = await apiCall<{ documents: any[] }>('/api/patients/documents');
+  if (!result.success) return { success: false, error: result.error };
+  return { success: true, data: result.data?.documents || [] };
 }
 
 // ===== Doctor Search =====

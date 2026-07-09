@@ -1,5 +1,5 @@
 import { useState, FormEvent, useEffect } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useSettings } from '../contexts/SettingsContext';
 import { Eye, EyeOff, Mail, Lock, ArrowLeft, CheckCircle, AlertCircle, Loader2, Sun, Moon, Globe } from 'lucide-react';
@@ -245,6 +245,7 @@ const viewModeSubtitles: Record<ViewMode, (t: (k: string) => string) => string> 
 
 export default function LoginPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   const { login } = useAuth();
   const { theme, language, toggleTheme, toggleLanguage, t } = useSettings();
@@ -284,7 +285,8 @@ export default function LoginPage() {
 
     try {
       await login(email, password);
-      navigate('/');
+      const returnTo = (location.state as { returnTo?: string } | null)?.returnTo;
+      navigate(returnTo || '/', { replace: true });
     } catch (err: any) {
       setError(err.message || 'เข้าสู่ระบบไม่สำเร็จ กรุณาตรวจสอบอีเมลและรหัสผ่าน');
     } finally {

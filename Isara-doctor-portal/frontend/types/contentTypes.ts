@@ -153,6 +153,7 @@ export interface MedicalContentArticle {
   updatedByName: string;
   updatedAt: string;
   publishedAt?: string;
+  rejectionReason?: string;
 }
 
 // ============================================================================

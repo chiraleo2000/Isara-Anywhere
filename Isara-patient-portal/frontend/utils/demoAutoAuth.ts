@@ -1,8 +1,19 @@
 import { resolveEnv, resolveEnvBool } from './resolveEnv';
+import { isPatientMeetingRoute } from './patientMeetingRoutes';
 
 /** Dev/docker: skip login UI for seeded demo patient (E2E + local UX). */
 export function isDemoAutoLoginEnabled(): boolean {
   return resolveEnvBool('DEMO_AUTO_LOGIN');
+}
+
+/** Patient in-app meeting route — silent auth must not redirect to /login. */
+export function isPatientMeetingPath(pathname?: string): boolean {
+  return isPatientMeetingRoute(pathname);
+}
+
+/** Meeting routes hold spinner instead of login redirect when demo auto-login is on. */
+export function shouldBypassLoginRedirectForMeeting(pathname?: string): boolean {
+  return isPatientMeetingRoute(pathname) && isDemoAutoLoginEnabled();
 }
 
 /** Dev/docker: auto-navigate confirmed telehealth appointments into /meeting/:id. */

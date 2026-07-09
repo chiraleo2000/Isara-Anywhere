@@ -14,6 +14,8 @@ import {
   DOCTOR_URL,
   MEETING_URL,
   pageRequestPatch,
+  requirePatientAuth,
+  refreshPageAuth,
 } from './helpers/multi-portal';
 import {
   installJitsiMountSpy,
@@ -124,10 +126,12 @@ let appointmentId = '';
     });
 
     await test.step('JPRE01d — Patient auto-lobby shows auth display name (not empty)', async () => {
+      await refreshPageAuth(patient.page, PATIENT_URL, 'patient1');
       await overrideBrowserMeetingServerUrl(patient.page, MEETING_URL);
       await proxyLocalMeetingServer(patient.page, MEETING_URL);
       await installJitsiMountSpy(patient.page);
-      await patient.page.goto(`${PATIENT_URL}/meeting/${appointmentId}`, {
+      const { userId: patientUserId } = await requirePatientAuth(patient.page, 'JPRE01d');
+      await patient.page.goto(`${PATIENT_URL}/patient/${patientUserId}/meeting/${appointmentId}`, {
         waitUntil: 'domcontentloaded',
         timeout: IS_CLOUD ? 90_000 : 45_000,
       });

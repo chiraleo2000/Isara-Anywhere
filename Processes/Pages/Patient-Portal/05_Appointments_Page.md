@@ -34,7 +34,26 @@
 3. **ผลลัพธ์ที่คาดหวัง** — สถานะระบบ / API / ฐานข้อมูลหลังจบขั้นตอน
 
 ---
+## UI Controls Inventory
 
+| # | Control | testid | Action | Expected | Screenshot |
+|---|---------|--------|--------|----------|------------|
+| 1 | Data Testid | `data-testid` | click | Documented control | U-data-testid |
+| 2 | Status | `status` | click | Documented control | U-status |
+| 3 | Confirmed | `confirmed` | click | Documented control | U-confirmed |
+| 4 | Scheduled | `scheduled` | click | Documented control | U-scheduled |
+| 5 | Calendareventurl | `calendarEventUrl` | click | Documented control | U-calendarEventUrl |
+| 6 | Buildtelehealthcalendarurl | `buildTelehealthCalendarUrl` | click | Documented control | U-buildTelehealthCalendarUrl |
+| 7 | Appointmentdate | `appointmentDate` | click | Documented control | U-appointmentDate |
+| 8 | Appointment Join Meeting Btn | `appointment-join-meeting-btn` | click | Documented control | U-appointment-join-meeting-btn |
+| 9 | Appointmentid | `appointmentId` | click | Documented control | U-appointmentId |
+| 10 | Meetingid | `meetingId` | click | Documented control | U-meetingId |
+| 11 | Queue Count | `queue-count` | click | Documented control | U-queue-count |
+| 12 | Queue List | `queue-list` | click | Documented control | U-queue-list |
+| 13 | Defectisarapdfmeetingqueue | `defectIsaraPdfMeetingQueue` | click | Documented control | U-defectIsaraPdfMeetingQueue |
+| 14 | Pending | `pending` | click | Documented control | U-pending |
+| 15 | Userealtimesync | `useRealtimeSync` | click | Documented control | U-useRealtimeSync |
+| 16 | Onappointmentchange | `onAppointmentChange` | click | Documented control | U-onAppointmentChange |
 
 ## 1. Purpose
 

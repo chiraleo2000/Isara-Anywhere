@@ -179,7 +179,7 @@ FROM node:22-alpine AS production
 WORKDIR /app
 
 # Install curl for healthcheck + PostgreSQL + envsubst for runtime env-config.js
-RUN apk add --no-cache curl bash gettext postgresql16 postgresql16-contrib \
+RUN apk add --no-cache curl bash gettext postgresql17 postgresql17-contrib \
   && mkdir -p /run/postgresql /var/lib/postgresql/data \
   && chown -R postgres:postgres /run/postgresql /var/lib/postgresql
 

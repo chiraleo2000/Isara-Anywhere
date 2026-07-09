@@ -5,7 +5,7 @@ import React, { useState, useEffect } from 'react';
 import { Routes, Route, useParams, useNavigate, Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../components/common/AuthProvider';
 import { useSettings } from '../hooks/useSettings';
-import { PatientRecord } from '../types';
+import { PatientRecord, User } from '../types';
 import { patientDataService } from '../services/patientDataService';
 
 // Components
@@ -16,6 +16,7 @@ import CompleteSchedule from './schedule/CompleteSchedule';
 import CompleteEMREditor from '../components/CompleteEMREditor';
 import CompletePrescribing from '../components/CompletePrescribing';
 import CompleteLabOrders from '../components/CompleteLabOrders';
+import PatientMessageComposer from '../components/PatientMessageComposer';
 import GeminiAIStudio from './GeminiAIStudio';
 import { PatientRecordViewer } from '../components/PatientRecordViewer';
 import ClinicalResources from './content/ClinicalResources';
@@ -29,13 +30,38 @@ import MeetingResultsPage from './meetings/MeetingResultsPage';
 import EmrAppointmentPage from './meetings/EmrAppointmentPage';
 import AdminDoctorManagement from './admin/AdminDoctorManagement';
 import AdminAppointmentManagement from './admin/AdminAppointmentManagement';
-import AppointmentPoolManagement from './admin/AppointmentPoolManagement';
 import DoctorProfilePage from './DoctorProfilePage';
 import RouteErrorBoundary from '../components/common/RouteErrorBoundary';
 // DoctorAvailabilitySettings removed as per requirements
 
 function GuardedRoute({ name, children }: Readonly<{ name: string; children: React.ReactNode }>) {
   return <RouteErrorBoundary name={name}>{children}</RouteErrorBoundary>;
+}
+
+function LabOrdersNewPage({ doctor, patients, userId }: { doctor: User; patients: PatientRecord[]; userId: string }) {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const patientId = new URLSearchParams(location.search).get('patientId');
+  const patient = patients.find(p => p.id === patientId) || null;
+
+  if (!patientId || !patient) {
+    return <Navigate to={`/doctor/${userId}/patients`} replace />;
+  }
+
+  return <CompleteLabOrders doctor={doctor} patient={patient} onClose={() => navigate(-1)} />;
+}
+
+function PrescriptionNewPage({ doctor, patients, userId }: { doctor: User; patients: PatientRecord[]; userId: string }) {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const patientId = new URLSearchParams(location.search).get('patientId');
+  const patient = patients.find(p => p.id === patientId) || null;
+
+  if (!patientId || !patient) {
+    return <Navigate to={`/doctor/${userId}/patients`} replace />;
+  }
+
+  return <CompletePrescribing patient={patient} doctor={doctor} onClose={() => navigate(-1)} />;
 }
 
 const DoctorPortal: React.FC = () => {
@@ -50,7 +76,7 @@ const DoctorPortal: React.FC = () => {
   const [showEMREditor, setShowEMREditor] = useState(false);
   const [showPrescribing, setShowPrescribing] = useState(false);
   const [showAIStudio, setShowAIStudio] = useState(false);
-  const [showMeeting, setShowMeeting] = useState(false);
+  const [showMessageComposer, setShowMessageComposer] = useState(false);
   const [showLabOrders, setShowLabOrders] = useState(false);
   const [showPatientRecord, setShowPatientRecord] = useState(false);
   const [patientRecordKey, setPatientRecordKey] = useState(0);
@@ -80,7 +106,7 @@ const DoctorPortal: React.FC = () => {
     setShowEMREditor(false);
     setShowPrescribing(false);
     setShowAIStudio(false);
-    setShowMeeting(false);
+    setShowMessageComposer(false);
     setShowLabOrders(false);
     setShowPatientRecord(false);
     setSelectedPatient(null);
@@ -107,8 +133,8 @@ const DoctorPortal: React.FC = () => {
     if (path.includes('/doctors')) return 'doctors';
     if (path.includes('/medical-content')) return 'medical-content';
     if (path.includes('/health-meeting')) return 'health-meeting';
+    if (path.includes('/appointment-pool')) return 'health-meeting';
     if (path.includes('/clinical-resources')) return 'clinical-resources';
-    if (path.includes('/appointment-pool')) return 'appointment-pool';
     if (path.includes('/doctor-management')) return 'doctor-management';
     if (path.includes('/appointment-management')) return 'appointment-management';
     if (path.includes('/profile')) return 'profile';
@@ -151,7 +177,6 @@ const DoctorPortal: React.FC = () => {
           <GuardedRoute name="dashboard">
           <DoctorDashboard
             doctor={user}
-            onStartConsultation={() => setShowMeeting(true)}
             onViewPatient={(patientId) => {
               const patient = patients.find(p => p.id === patientId);
               if (patient) {
@@ -204,7 +229,7 @@ const DoctorPortal: React.FC = () => {
             onCreateEMR={() => setShowEMREditor(true)}
             onCreatePrescription={() => setShowPrescribing(true)}
             onOrderLab={() => setShowLabOrders(true)}
-            onStartConsultation={() => setShowMeeting(true)}
+            onMessagePatient={() => setShowMessageComposer(true)}
           />
           </GuardedRoute>
         } />
@@ -215,7 +240,17 @@ const DoctorPortal: React.FC = () => {
         <Route path="doctors" element={<DoctorsManagement />} />
         <Route path="medical-content" element={<GuardedRoute name="medical-content"><MedicalContent /></GuardedRoute>} />
         <Route path="health-meeting" element={<GuardedRoute name="health-meeting"><HealthMeeting doctor={user} /></GuardedRoute>} />
-        <Route path="appointment-pool" element={<GuardedRoute name="appointment-pool"><AppointmentPoolManagement /></GuardedRoute>} />
+        <Route path="appointment-pool" element={<Navigate to={`/doctor/${userId}/health-meeting?tab=queue`} replace />} />
+        <Route path="lab-orders/new" element={
+          <GuardedRoute name="lab-orders">
+            <LabOrdersNewPage doctor={user} patients={patients} userId={userId!} />
+          </GuardedRoute>
+        } />
+        <Route path="prescriptions/new" element={
+          <GuardedRoute name="prescriptions">
+            <PrescriptionNewPage doctor={user} patients={patients} userId={userId!} />
+          </GuardedRoute>
+        } />
         <Route path="emr/:appointmentId" element={<GuardedRoute name="emr-appointment"><EmrAppointmentPage /></GuardedRoute>} />
         {/* virtual-meeting route removed — all consultations use the real Jitsi /meeting/:id flow */}
 
@@ -245,7 +280,7 @@ const DoctorPortal: React.FC = () => {
         {/* Admin short aliases */}
         <Route path="admin/doctors" element={<Navigate to={`/doctor/${userId}/doctor-management`} replace />} />
         <Route path="admin/directory" element={<Navigate to={`/doctor/${userId}/doctors`} replace />} />
-        <Route path="admin/pool" element={<Navigate to={`/doctor/${userId}/appointment-pool`} replace />} />
+        <Route path="admin/pool" element={<Navigate to={`/doctor/${userId}/health-meeting?tab=queue`} replace />} />
         <Route path="admin/appointments" element={<Navigate to={`/doctor/${userId}/appointment-management`} replace />} />
 
         {/* Catch-all: use ABSOLUTE path to prevent infinite /dashboard append loop */}
@@ -302,14 +337,12 @@ const DoctorPortal: React.FC = () => {
         </div>
       )}
 
-      {showMeeting && selectedPatient && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-white rounded-lg p-6 max-w-md text-center">
-            <p className="text-gray-700 mb-4">กรุณาใช้หน้า Health Meeting เพื่อเริ่มการประชุมกับผู้ป่วย</p>
-            <button onClick={() => { setShowMeeting(false); navigate(`/doctor/${user.id}/health-meeting`); }} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">ไปหน้า Health Meeting</button>
-            <button onClick={() => setShowMeeting(false)} className="ml-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">ปิด</button>
-          </div>
-        </div>
+      {showMessageComposer && selectedPatient && (
+        <PatientMessageComposer
+          patient={selectedPatient}
+          doctor={user}
+          onClose={() => setShowMessageComposer(false)}
+        />
       )}
 
       {showPatientRecord && selectedPatient && (
@@ -344,7 +377,7 @@ interface PatientDetailViewProps {
   onCreateEMR: () => void;
   onCreatePrescription: () => void;
   onOrderLab: () => void;
-  onStartConsultation: () => void;
+  onMessagePatient: () => void;
 }
 
 const PatientDetailView: React.FC<PatientDetailViewProps> = ({
@@ -356,9 +389,12 @@ const PatientDetailView: React.FC<PatientDetailViewProps> = ({
   onCreateEMR,
   onCreatePrescription,
   onOrderLab,
-  onStartConsultation,
+  onMessagePatient,
 }) => {
   const { patientId } = useParams<{ patientId: string }>();
+  const [recentMessages, setRecentMessages] = useState<any[]>([]);
+  const [recentAppointments, setRecentAppointments] = useState<any[]>([]);
+  const [consentShared, setConsentShared] = useState<boolean | null>(null);
 
   useEffect(() => {
     if (patientId && selectedPatient?.id !== patientId) {
@@ -368,6 +404,27 @@ const PatientDetailView: React.FC<PatientDetailViewProps> = ({
       }
     }
   }, [patientId, patients, selectedPatient, setSelectedPatient]);
+
+  useEffect(() => {
+    if (!selectedPatient?.id) return;
+    const token = localStorage.getItem('token') || localStorage.getItem('authToken');
+    const headers: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {};
+
+    void fetch(`/api/patients/${selectedPatient.id}/messages`, { headers })
+      .then((r) => r.ok ? r.json() : { messages: [] })
+      .then((d) => setRecentMessages((d.messages || []).slice(0, 3)))
+      .catch(() => setRecentMessages([]));
+
+    void fetch(`/api/appointments/patient/${selectedPatient.id}`, { headers })
+      .then((r) => r.ok ? r.json() : [])
+      .then((d) => setRecentAppointments((Array.isArray(d) ? d : d.appointments || []).slice(0, 3)))
+      .catch(() => setRecentAppointments([]));
+
+    void fetch(`/api/patients/${selectedPatient.id}/living-will`, { headers })
+      .then((r) => r.ok ? r.json() : null)
+      .then((lw) => setConsentShared(Boolean(lw?.isShared || lw?.authorized)))
+      .catch(() => setConsentShared(null));
+  }, [selectedPatient?.id]);
 
   if (!selectedPatient) {
     return (
@@ -425,6 +482,37 @@ const PatientDetailView: React.FC<PatientDetailViewProps> = ({
           </div>
         </div>
 
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-6">
+          <div className="p-3 rounded-lg border border-gray-200 bg-gray-50">
+            <p className="text-xs font-medium text-gray-500 uppercase">PDPA / Living Will</p>
+            <p className={`text-sm font-semibold mt-1 ${consentShared ? 'text-emerald-700' : 'text-amber-700'}`}>
+              {consentShared === null ? 'Unknown' : consentShared ? 'Shared with you' : 'Not shared'}
+            </p>
+          </div>
+          <div className="p-3 rounded-lg border border-gray-200 bg-gray-50">
+            <p className="text-xs font-medium text-gray-500 uppercase">Recent appointments</p>
+            <p className="text-sm mt-1">{recentAppointments.length} on record</p>
+          </div>
+          <div className="p-3 rounded-lg border border-gray-200 bg-gray-50">
+            <p className="text-xs font-medium text-gray-500 uppercase">Messages sent</p>
+            <p className="text-sm mt-1">{recentMessages.length} recent</p>
+          </div>
+        </div>
+
+        {recentMessages.length > 0 && (
+          <div className="mb-6 p-4 border border-indigo-100 rounded-lg bg-indigo-50/50">
+            <h3 className="text-sm font-semibold text-indigo-900 mb-2">Recent messages to patient</h3>
+            <ul className="space-y-2 text-sm text-gray-700">
+              {recentMessages.map((m) => (
+                <li key={m.id}>
+                  <span className="font-medium">{m.subject}</span>
+                  <span className="text-gray-500"> — {new Date(m.created_at).toLocaleDateString()}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
           <button
             onClick={onShowPatientRecord}
@@ -451,10 +539,12 @@ const PatientDetailView: React.FC<PatientDetailViewProps> = ({
             Order Lab
           </button>
           <button
-            onClick={onStartConsultation}
+            type="button"
+            data-testid="patient-message-open-btn"
+            onClick={onMessagePatient}
             className="py-3 px-4 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition-colors text-sm"
           >
-            Start Consult
+            Email / Message
           </button>
         </div>
       </div>

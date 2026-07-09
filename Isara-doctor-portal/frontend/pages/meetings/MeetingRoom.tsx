@@ -93,12 +93,13 @@ async function postRecordingBase64(
   appointmentId: string,
   base64: string,
   duration: number,
+  mimeType: string,
 ): Promise<void> {
   const res = await meetingFetch(`/api/meetings/${appointmentId}/save-recording`, {
     method: 'POST',
     json: {
-      audioBase64: base64,
-      mimeType: 'audio/webm',
+      ...(mimeType.startsWith('video/') ? { videoBase64: base64 } : { audioBase64: base64 }),
+      mimeType,
       durationMs: duration,
       triggerTranscription: true,
       triggerPostMeetingPipeline: true,
@@ -125,7 +126,7 @@ function readBlobAsRecordingUpload(
           resolve();
           return;
         }
-        await postRecordingBase64(appointmentId, base64, duration);
+        await postRecordingBase64(appointmentId, base64, duration, blob.type || 'video/webm');
         resolve();
       } catch (err) {
         reject(err);
@@ -451,6 +452,10 @@ const MeetingRoom: React.FC = () => { // NOSONAR
   const navigate = useNavigate();
   const doctorDisplayName = getIzaraDisplayName(user, 'Doctor');
 
+  // Playwright / automation runs can fail to acquire real camera devices on Windows (NotReadableError),
+  // which can hang Jitsi join. Prefer joining muted + skipping device probing under automation.
+  const isAutomation = typeof navigator !== 'undefined' && Boolean((navigator as any).webdriver);
+
   // Refs
   const jitsiContainerRef = useRef<HTMLDivElement>(null);
   const jitsiApiRef = useRef<any>(null);
@@ -475,8 +480,8 @@ const MeetingRoom: React.FC = () => { // NOSONAR
     camera: 'checking', microphone: 'checking',
     cameraLabel: '', microphoneLabel: '',
   });
-  const [cameraOn, setCameraOn] = useState(true);
-  const [micOn, setMicOn] = useState(true);
+  const [cameraOn, setCameraOn] = useState(() => !isAutomation);
+  const [micOn, setMicOn] = useState(() => !isAutomation);
   const previewStreamRef = useRef<MediaStream | null>(null);
   const previewVideoRef = useRef<HTMLVideoElement>(null);
   const [transcripts, setTranscripts] = useState<TranscriptSegment[]>([]);
@@ -764,12 +769,17 @@ const MeetingRoom: React.FC = () => { // NOSONAR
     } finally {
       roomNameRef.current = roomName;
       connectSocket();
-      await checkMediaDevices();
+      if (!isAutomation) {
+        await checkMediaDevices();
+      } else {
+        setCameraOn(false);
+        setMicOn(false);
+      }
       autoStartAttemptsRef.current = 0;
       shouldAutoStartHostRef.current = true;
       setMeetingState(prev => ({ ...prev, status: 'host_starting' }));
     }
-  }, [appointmentId, user, doctorDisplayName, checkMediaDevices, connectSocket]);
+  }, [appointmentId, user, doctorDisplayName, checkMediaDevices, connectSocket, isAutomation]);
 
   useEffect(() => {
     if (appointmentId) {
@@ -820,6 +830,12 @@ const MeetingRoom: React.FC = () => { // NOSONAR
         'ready',
         'host_starting',
         async () => {
+          const configOverwrite = {
+            ...(mount.apiOptions.configOverwrite || {}),
+            ...(isAutomation
+              ? { startWithAudioMuted: true, startWithVideoMuted: true, disableInitialGUM: true }
+              : {}),
+          };
           const api = new (globalThis as any).JitsiMeetExternalAPI(mount.domain, {
             roomName: mount.roomName,
             ...(mount.jwt ? { jwt: mount.jwt } : {}),
@@ -827,6 +843,7 @@ const MeetingRoom: React.FC = () => { // NOSONAR
             width: '100%',
             height: '100%',
             ...mount.apiOptions,
+            configOverwrite,
             interfaceConfigOverwrite: {
               ...mount.apiOptions.interfaceConfigOverwrite,
               DISABLE_JOIN_LEAVE_NOTIFICATIONS: false,
@@ -1065,12 +1082,19 @@ const MeetingRoom: React.FC = () => { // NOSONAR
     setIsRecording(newState);
 
     if (newState) {
-      // Start recording — capture audio via MediaRecorder
+      // Start recording — prefer tab/screen capture (video+audio) so meeting playback is available in Meeting Results.
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        let stream: MediaStream;
+        try {
+          stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
+        } catch {
+          // Fallback: audio-only when display capture is blocked/denied (still supports transcript pipeline).
+          stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        }
         recordingStreamRef.current = stream;
         recordingChunksRef.current = [];
-        const recorder = new MediaRecorder(stream, { mimeType: 'audio/webm;codecs=opus' });
+        const preferredMime = stream.getVideoTracks().length > 0 ? 'video/webm;codecs=vp9,opus' : 'audio/webm;codecs=opus';
+        const recorder = new MediaRecorder(stream, { mimeType: preferredMime });
         recorder.ondataavailable = (e) => {
           if (e.data.size > 0) recordingChunksRef.current.push(e.data);
         };

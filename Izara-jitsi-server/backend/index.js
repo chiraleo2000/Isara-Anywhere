@@ -684,7 +684,7 @@ app.use(cors({
   origin: corsOriginValidator,
   credentials: true,
 }));
-app.use(express.json({ limit: '10mb' }));
+app.use(express.json({ limit: '60mb' }));
 
 // Sanitize :id route params before handlers (null bytes, traversal)
 app.param('id', (req, res, next, id) => {
@@ -2567,10 +2567,10 @@ ${chatContext}
             const soap = structuredSoap.soap || {};
             const emrFieldsJson = structuredSoap.emrFields || {};
             await safeQuery(
-              `INSERT INTO emr (id, appointment_id, patient_id, doctor_id, type, status,
+              `INSERT INTO emr (id, appointment_id, patient_id, doctor_id, status,
                 subjective, objective, assessment, plan,
                 ai_summary, ai_summary_approved, created_at, updated_at)
-               VALUES ($1, $2, $3, $4, 'meeting_soap_note', 'draft',
+               VALUES ($1, $2, $3, $4, 'draft',
                 $5, $6, $7, $8,
                 $9, false, NOW(), NOW())
                ON CONFLICT (id) DO NOTHING`,
@@ -4070,14 +4070,22 @@ app.post('/api/meetings/:id/validate', authenticateToken, async (req, res) => { 
           const meeting = meetingResult.rows[0];
           const summaryContent = summaryToStore || meeting.ai_summary || '';
           await safeQuery(
-            `INSERT INTO emr (id, appointment_id, patient_id, doctor_id, summary, type, created_at, updated_at)
-             VALUES ($1, $2, $3, $4, $5, 'meeting_soap_note', NOW(), NOW())
+            `INSERT INTO emr (id, appointment_id, patient_id, doctor_id, status,
+              subjective, objective, assessment, plan,
+              ai_summary, ai_summary_approved, signed_at, created_at, updated_at)
+             VALUES ($1, $2, $3, $4, 'signed',
+              $5, $6, $7, $8,
+              $9, true, NOW(), NOW(), NOW())
              ON CONFLICT (id) DO NOTHING`,
             [
               `EMR-SOAP-${Date.now()}`,
               meeting.appointment_id,
               meeting.patient_id,
               doctorId || req.user?.id,
+              JSON.stringify({ text: summaryContent }),
+              JSON.stringify({}),
+              JSON.stringify({}),
+              JSON.stringify({ treatment: summaryContent }),
               summaryContent
             ]
           );
@@ -4108,6 +4116,28 @@ app.post('/api/meetings/:id/validate', authenticateToken, async (req, res) => { 
                 `UPDATE meeting_records SET patient_instructions = $2 WHERE id::text = $1 OR appointment_id = $1`,
                 [id, instructions]
               );
+              // Publish instruction sheet to patient_documents when table exists
+              try {
+                await safeQuery(
+                  `INSERT INTO patient_documents (
+                    patient_id, source_type, source_id, appointment_id, doctor_id,
+                    title, file_name, mime_type, file_data, file_size, status, metadata
+                  ) VALUES ($1, 'instruction_sheet', $2, $3, $4, $5, $6, 'text/plain', $7, $8, 'delivered', $9::jsonb)`,
+                  [
+                    meeting.patient_id,
+                    id,
+                    meeting.appointment_id,
+                    doctorId || req.user?.id,
+                    `คำแนะนำหลังพบแพทย์ — ${new Date().toLocaleDateString('th-TH')}`,
+                    `instruction-${meeting.appointment_id || id}.txt`,
+                    Buffer.from(instructions, 'utf8'),
+                    Buffer.byteLength(instructions, 'utf8'),
+                    JSON.stringify({ meetingId: id }),
+                  ]
+                );
+              } catch (docErr) {
+                console.warn('[Meeting Validate] Instruction document publish skipped:', docErr.message);
+              }
               console.log(`[Meeting Validate] Patient instructions auto-generated for ${id}`);
             } catch (instrErr) {
               console.warn('[Meeting Validate] Patient instructions generation skipped:', instrErr.message);
@@ -4797,14 +4827,18 @@ app.post('/api/meetings/:id/save-recording', authenticateToken, async (req, res)
     if (!bodyCheck.ok) return sendValidationError(res, bodyCheck);
 
     const {
+      // Backward compatible: older clients send audioBase64. Newer clients send videoBase64.
       audioBase64,
-      mimeType = 'audio/webm',
+      videoBase64,
+      recordingBase64,
+      mimeType = 'video/webm',
       durationMs,
       triggerTranscription = true,
       triggerPostMeetingPipeline = true,
     } = req.body;
 
-    const parsed = parseBase64Payload(audioBase64, 'audioBase64');
+    const payload = recordingBase64 || videoBase64 || audioBase64;
+    const parsed = parseBase64Payload(payload, recordingBase64 ? 'recordingBase64' : (videoBase64 ? 'videoBase64' : 'audioBase64'));
     if (!parsed.ok) return sendValidationError(res, parsed);
 
     const buffer = parsed.buffer;

@@ -818,29 +818,26 @@ The meeting experience is designed to work like **Microsoft Teams** — the doct
 
 ### Recording Upload (Post-Meeting)
 
+> **Current (PostgreSQL):** Recordings stored in `meeting_records.recording_data` (BYTEA) and/or Meeting Server volume `recordings/`. AI pipeline writes to `meeting_records.ai_summary`, `meeting_transcripts`.
+
 ```text
-Doctor's device → POST /api/video-meeting/:appointmentId/end
-                  └─→ Video uploaded to GCS (izara-doctors-data)
-                  └─→ Audio transcribed via Speech-to-Text
-                  └─→ AI summary generated via Gemini
-                  └─→ 30-min section summaries (for long meetings)
-                  └─→ Recommendations generated for doctor
-                  └─→ Summary delivered to Doctor Portal
+Doctor ends meeting → Meeting Server POST /api/meetings/:id/end
+                  └─→ Transcript segments → meeting_transcripts
+                  └─→ Recording → meeting_records (BYTEA) + optional filesystem
+                  └─→ Gemini SOAP → meeting_records.ai_summary
+                  └─→ Doctor man-in-the-loop → ai_validations
+                  └─→ Summary in Doctor Portal Meeting Results
 ```
 
-### GCS Storage Structure
+> **Deprecated:** GCS path `izara-doctors-data/doctors/{doctorId}/meetings/` — not used when `USE_POSTGRESQL=true`.
+
+### PostgreSQL meeting tables
 
 ```text
-izara-doctors-data/
-└── doctors/{doctorId}/
-    └── meetings/{appointmentId}/
-        ├── recording.webm         # Video recording (max 200MB)
-        ├── transcript.txt         # Thai transcription
-        ├── summary.txt            # AI-generated SOAP summary
-        ├── recommendations.txt    # Clinical decision support
-        ├── section-0-summary.txt  # First 30-min section (if >30 min)
-        ├── section-1-summary.txt  # Second 30-min section
-        └── final-combined.txt     # Combined summary from all sections
+meeting_records          # status, ai_summary, recording_data (BYTEA), doctor_id, appointment_id
+meeting_transcripts      # segment rows per speaker/time
+meeting_chats            # in-meeting chat
+ai_validations           # man-in-the-loop approvals
 ```
 
 ### 30-Minute Sectioned Summaries
@@ -876,35 +873,22 @@ For meetings longer than 30 minutes:
    - Screen sharing for medical images/reports
    - Local recording enabled
 4. **Meeting ends:**
-   - Doctor ends meeting
-   - Recording uploaded to GCS via API
+   - Doctor ends meeting via Meeting Server
+   - Recording → `meeting_records` (BYTEA) + transcript → `meeting_transcripts`
 
 ### Recording & Transcription Flow
 
+> **Current:** Meeting Server + PostgreSQL. See [VIDEO_MEETING_JITSI_GEMINI.md](VIDEO_MEETING_JITSI_GEMINI.md) and [POST_MEETING_WORKFLOW.md](POST_MEETING_WORKFLOW.md).
+
 ```text
 ┌──────────────────────────────────────────────────────────────────────────┐
-│  POST-MEETING AI PROCESSING                                               │
+│  POST-MEETING AI PROCESSING (PostgreSQL)                                  │
 ├──────────────────────────────────────────────────────────────────────────┤
-│                                                                           │
-│  1. Video Upload                                                          │
-│     └─→ POST /api/video-meeting/:id/end                                  │
-│     └─→ Video → GCS: izara-doctors-data/doctors/{doctorId}/meetings/     │
-│                                                                           │
-│  2. Speech-to-Text Transcription                                          │
-│     └─→ Audio extracted → Google Cloud Speech-to-Text API                │
-│     └─→ Thai/English medical speech recognition                          │
-│     └─→ Output: transcript.txt                                           │
-│                                                                           │
-│  3. AI Summary Generation (Gemini)                                        │
-│     └─→ Transcript → Gemini AI                                           │
-│     └─→ Thai SOAP format: อาการสำคัญ, ประวัติ, การตรวจ, การวินิจฉัย      │
-│     └─→ Output: summary.txt                                              │
-│                                                                           │
-│  4. Doctor Recommendations (Gemini)                                       │
-│     └─→ Clinical decision support                                        │
-│     └─→ Differential diagnosis suggestions                               │
-│     └─→ Output: recommendations.txt                                      │
-│                                                                           │
+│  1. End meeting → Meeting Server POST /api/meetings/:id/end              │
+│  2. Transcript → meeting_transcripts (Web Speech API segments)           │
+│  3. Gemini SOAP → meeting_records.ai_summary                             │
+│  4. Man-in-the-loop → ai_validations                                     │
+│  5. Doctor signs EMR → patient_documents via DocumentDeliveryService     │
 └──────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -953,7 +937,7 @@ For meetings longer than 30 minutes:
 
 2. **Prescription saved:**
    - Prescription saved to `prescriptions.json`
-   - **Prescription sent to patient health logs** (`health-logs.json`)
+   - **Prescription published to `patient_documents`** (source_type `prescription`)
    - Patient can view prescribed medications in Health Studio
 
 ### 10.3 EMR Delivery to Patient
@@ -986,11 +970,13 @@ For meetings longer than 30 minutes:
 
 ## Delivery Flow
 
-1. EMR signed → POST to `/api/patients/{patientId}/health-logs`
-2. Data saved to GCS: `patients/{patientId}/health-logs.json`
-3. Patient notification sent
-4. Patient views in Health Studio → ผลการรักษา (Treatment Results)
+1. EMR signed → `PUT /api/emr/:id` + `DocumentDeliveryService.publishDocument`
+2. Rows in `patient_documents` + `health_timeline`; patient reads via `GET /api/phr/:id/health-logs` (signed only)
+3. Patient notification sent (`emr_signed`)
+4. Patient views in PHR → ผลการรักษา / เอกสารทางการแพทย์
 5. Patient views in Latest Appointment Result on dashboard
+
+See [Clinical_Document_Delivery_Workflows.md](Clinical_Document_Delivery_Workflows.md).
 
 ### 10.4 If EMR Not Signed
 
@@ -1083,9 +1069,11 @@ For meetings longer than 30 minutes:
 
 - Separate handling for pending vs confirmed status display
 
-### 5. Data Sync Fix - Appointment Details (appointments.ts backend)
+### 5. Data Sync Fix - Appointment Details (historical — pre-PostgreSQL)
 
-**Problem:** Patient portal's `getById` only read from individual `details.json` files, missing updates from doctor confirmation.
+> **⚠️ Archived:** The following subsections describe **legacy JSON/GCS file sync** (Dec 2025). **Current system** uses PostgreSQL `appointments` table + NOTIFY triggers. See [Data_Sync_Documentation.md](Data_Sync_Documentation.md). Kept for audit trail only.
+
+**Problem (legacy):** Patient portal's `getById` only read from individual `details.json` files, missing updates from doctor confirmation.
 
 ## Fix
 
@@ -1202,9 +1190,9 @@ return isRelevantStatus && (matchesDoctorId || matchesDoctorEmail || isAdminSeei
 
 - Dashboard stats correctly count today's appointments
 
-- **Both portals now have synchronized appointment data** - reads from SAME GCS files
+- **Both portals now have synchronized appointment data** — PostgreSQL `appointments` + NOTIFY (legacy: GCS file sync)
 
-- Cache issues resolved - data always fresh from GCS
+- Cache issues resolved — realtime via Socket.IO (legacy: GCS propagation delays)
 
 - Individual appointment files now stay in sync with master list
 

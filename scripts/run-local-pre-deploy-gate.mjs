@@ -19,6 +19,7 @@ const gateEnv = {
   ...process.env,
   PW_SKIP_LIVE_GEMINI: '1',
   PW_HEADED: '1',
+  PW_E2E_JITSI_STUB: '1',
   PW_WORKERS: gateWorkers,
   PW_NO_CHROME: process.env.PW_NO_CHROME || '1',
   BASELINE_VISUAL: '1',
@@ -44,6 +45,17 @@ const hostMeetingEnv = {
 };
 delete gateEnv.PW_HEADLESS;
 delete gateEnv.PW_ALLOW_RECORDING_SEED;
+
+// Drop stale D→E→F workflow ids between gate runs (prevents confirm 404 after DB resets/reseeds).
+try {
+  const workflowStatePath = path.join(root, 'tests', 'e2e', '.workflow-state.json');
+  if (fs.existsSync(workflowStatePath)) {
+    fs.unlinkSync(workflowStatePath);
+    console.log('[gate] Cleared tests/e2e/.workflow-state.json');
+  }
+} catch (err) {
+  console.warn('[gate] Could not clear workflow state:', err?.message || err);
+}
 
 const processDocMap = {
   'verify-deps': 'Processes/ENV_AND_STACK_CHECK.md',
@@ -134,30 +146,33 @@ const gateSteps = [
   npmStep('lint-portals-full', 'test:lint:portals:full'),
   npmStep('process-contracts', 'test:unit:process-contracts'),
   npmStep('v5-contracts', 'test:unit:v5-contracts'),
-  {
-    name: 'docker-compose',
-    cmd: 'docker',
-    args: (() => {
-      const base = [
-        'compose',
-        '--env-file',
-        '.env.docker',
-        '-f',
-        'docker-compose.yml',
-        '-f',
-        'deploy/jitsi/docker-compose.jitsi.yml',
-        '--profile',
-        'full',
-        '--profile',
-        'jitsi',
-        'up',
-        '-d',
-      ];
-      if (process.env.GATE_SKIP_DOCKER_BUILD !== '1') base.push('--build');
-      return base;
-    })(),
-    cwd: root,
-  },
+  (() => {
+    const jitsiVendor = path.join(root, 'deploy/jitsi/docker-jitsi-meet/docker-compose.yml');
+    const hasJitsiVendor = fs.existsSync(jitsiVendor);
+    const composeFiles = ['docker-compose.yml'];
+    const profiles = ['full'];
+    if (hasJitsiVendor) {
+      composeFiles.push('deploy/jitsi/docker-compose.jitsi.yml');
+      profiles.push('jitsi');
+    } else {
+      console.warn(
+        '⚠️  deploy/jitsi/docker-jitsi-meet not found — docker-compose step uses --profile full only.\n' +
+          '    Run: node scripts/jitsi/setup-local-jitsi.mjs  (optional for LAN Jitsi)',
+      );
+    }
+    const args = ['compose', '--env-file', '.env.docker'];
+    for (const f of composeFiles) args.push('-f', f);
+    for (const p of profiles) args.push('--profile', p);
+    args.push('up', '-d');
+    if (process.env.GATE_SKIP_DOCKER_BUILD !== '1') {
+      args.push('--build');
+    } else {
+      // Stack already up: core services only (skip pgadmin pull + doctor-portal image when npm dev serves :3010).
+      args.push('postgres', 'patient-portal', 'meeting-server');
+      console.log('[gate] GATE_SKIP_DOCKER_BUILD=1 — starting postgres, patient-portal, meeting-server only');
+    }
+    return { name: 'docker-compose', cmd: 'docker', args, cwd: root };
+  })(),
   npmStep('docker-probe', 'docker:probe-health'),
   {
     name: 'gate0-local',

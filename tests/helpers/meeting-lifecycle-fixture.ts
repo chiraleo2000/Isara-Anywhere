@@ -561,6 +561,8 @@ function jitsiSpyInstaller(): void {
   globalThis.addEventListener('beforeunload', () => globalThis.clearInterval(interval));
 }
 
+export { installJitsiE2eStubForContext, shouldUseJitsiE2eStub } from './jitsi-e2e-stub';
+
 /** Install spy on JitsiMeetExternalAPI to capture mount options (call before patient meeting navigation). */
 export async function installJitsiMountSpy(page: Page): Promise<void> {
   await page.addInitScript(jitsiSpyInstaller);

@@ -10,10 +10,11 @@ Maps each Processes document to Vitest contracts, Playwright groups, and gate st
 npm run test:local:pre-deploy-gate
 ```
 
-**Latest:** 2026-06-30 — Round 6 local: self-hosted Jitsi (`meet.localhost:8443`), doctor moderator JWT, manual recording; phases 0–5 + phase 3 ledger round 2 P0=0; LAN gate **BLOCKED** (Ubuntu `192.168.10.239` unreachable). See `reports/signoff/round6-local-lan-signoff-2026-06-30.md`.
+**Latest:** 2026-07-09 — Group U UI element audit; `UI_ELEMENT_COVERAGE_MATRIX.md`; page 20 DEPRECATED → health-meeting queue.
 
 | Step | Command | Process docs covered |
 |------|---------|-------------------|
+| UI element audit | `python scripts/audit-ui-element-coverage.py` | All Pages — per-control matrix |
 | Unit + coverage | `test:unit:coverage` | All workflow contracts |
 | Security hardening | `test:security-hardening` | VIDEO_MEETING, auth |
 | Meeting contracts | `test:meeting-server:contract` | Meeting-Server/00 |
@@ -77,7 +78,8 @@ npm run test:cloud:deploy-gate
 | 12–14 Content/Resources | clinicalResources | H |
 | 15_Gemini_AI_Studio | geminiService | J (mount-only in gate) |
 | 16_Doctor_Profile | meetingJoinContract | C |
-| 17–21 Admin/Pool/Queue | appointmentPoolManagement | D, I |
+| 17–21 Admin/Pool/Queue | appointmentPoolManagement | D, I (page 20 → redirect 06) |
+| **U — UI element audit** | pageElementContract | U (parallel with B/C/G/H/I/J) |
 
 ## Patient Portal pages
 
@@ -97,7 +99,9 @@ npm run test:cloud:deploy-gate
 | VIDEO_MEETING_JITSI_GEMINI.md | jitsiMeetingConfig, meeting-server/* | Q, E, R |
 | POST_MEETING_WORKFLOW.md | postMeetingWorkflow.integration | Q |
 | Health_Records_Processes.md | healthRecordsWorkflowContract | F |
+| Clinical_Document_Delivery_Workflows.md | clinicalDocumentDelivery, pageElementContract | E, F, L, U |
 | FULL_WORKFLOW_CONTRACT.md | fullWorkflowInvariants | A→F pipeline |
+| UI_ELEMENT_COVERAGE_MATRIX.md | pageElementContract, processDocContentContract | U (parallel) |
 | GATE0_IMPLEMENTATION_STATUS.md | verify:gate0 | D, Q |
 | TWO_ROUND_CLOUD_TESTING.md | — | local gate = Round 1 |
 

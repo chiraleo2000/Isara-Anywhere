@@ -317,6 +317,7 @@ function ResultEntryForm({
         <input
           id={`lab-report-upload-${order.id}`}
           type="file"
+          data-testid="lab-report-upload-btn"
           accept="image/png,image/jpeg,image/webp,application/pdf"
           multiple
           onChange={e => void handleReportFiles(e.target.files)}
@@ -345,6 +346,63 @@ function ResultEntryForm({
   );
 }
 
+function ImagingResultUploadForm({
+  orderId,
+  onDone,
+}: Readonly<{ orderId: string; onDone: () => Promise<void> }>) {
+  const [uploading, setUploading] = useState(false);
+  const [notes, setNotes] = useState('');
+
+  const handleFiles = async (files: FileList | null) => {
+    if (!files?.length) return;
+    setUploading(true);
+    try {
+      const documents: LabReportDocument[] = [];
+      for (const file of Array.from(files)) {
+        const data = await readFileAsBase64(file);
+        documents.push({ name: file.name, type: file.type, data, size: file.size });
+      }
+      const token = localStorage.getItem('token') || localStorage.getItem('authToken');
+      const response = await fetch(`/api/imaging-orders/${orderId}/results`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ results: [{ findings: notes }], documents, notes }),
+      });
+      if (!response.ok) throw new Error('Upload failed');
+      await onDone();
+    } catch (e) {
+      console.error(e);
+      alert('Failed to upload imaging results');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  return (
+    <div className="mt-3 p-3 bg-indigo-50 border border-dashed border-indigo-300 rounded-lg">
+      <textarea
+        value={notes}
+        onChange={(e) => setNotes(e.target.value)}
+        placeholder="Findings / report text"
+        className="w-full text-sm border rounded p-2 mb-2"
+        rows={2}
+      />
+      <input
+        type="file"
+        accept="application/pdf,image/png,image/jpeg"
+        multiple
+        data-testid="imaging-report-upload-btn"
+        disabled={uploading}
+        onChange={(e) => void handleFiles(e.target.files)}
+        className="block w-full text-sm"
+      />
+    </div>
+  );
+}
+
 interface CompleteLabOrdersProps {
   doctor: User;
   patient: PatientRecord | null;
@@ -356,12 +414,16 @@ export const CompleteLabOrders: React.FC<CompleteLabOrdersProps> = ({
   patient,
   onClose,
 }) => {
-  const [view, setView] = useState<'order' | 'results'>('order');
+  const [view, setView] = useState<'order' | 'results' | 'imaging'>('order');
   const [labTestCatalog, setLabTestCatalog] = useState<LabTest[]>([]);
   const [selectedTests, setSelectedTests] = useState<LabTest[]>([]);
   const [clinicalIndication, setClinicalIndication] = useState('');
   const [urgency, setUrgency] = useState<'routine' | 'urgent' | 'stat'>('routine');
   const [pastOrders, setPastOrders] = useState<any[]>([]);
+  const [imagingOrders, setImagingOrders] = useState<any[]>([]);
+  const [imagingModality, setImagingModality] = useState('xray');
+  const [imagingBodyPart, setImagingBodyPart] = useState('');
+  const [imagingIndication, setImagingIndication] = useState('');
 
   const commonPanels = [
     {
@@ -394,6 +456,18 @@ export const CompleteLabOrders: React.FC<CompleteLabOrdersProps> = ({
       if (patient) {
         const orders = await fetchLabOrdersByPatient(patient.id);
         setPastOrders(orders as typeof pastOrders);
+        const token = localStorage.getItem('token') || localStorage.getItem('authToken');
+        try {
+          const imgResp = await fetch(`/api/imaging-orders/patient/${patient.id}`, {
+            headers: token ? { Authorization: `Bearer ${token}` } : {},
+          });
+          if (imgResp.ok) {
+            const imgData = await imgResp.json();
+            setImagingOrders(imgData.imagingOrders || []);
+          }
+        } catch {
+          setImagingOrders([]);
+        }
       }
     }
     loadData();
@@ -432,9 +506,12 @@ export const CompleteLabOrders: React.FC<CompleteLabOrdersProps> = ({
       patientName: patient.demographics.name,
       doctorId: doctor.id,
       doctorName: doctor.name,
+      appointmentId: patient.lastAppointmentId || undefined,
       orderDate: new Date().toISOString(),
       tests: selectedTests,
+      notes: clinicalIndication || 'Routine monitoring',
       clinicalIndication: clinicalIndication || 'Routine monitoring',
+      priority: urgency,
       urgency,
       status: 'ordered',
       createdAt: new Date().toISOString(),
@@ -467,6 +544,46 @@ export const CompleteLabOrders: React.FC<CompleteLabOrdersProps> = ({
     setSelectedTests([]);
     setClinicalIndication('');
     setView('results');
+  };
+
+  const handleOrderImaging = async () => {
+    if (!patient || !imagingBodyPart.trim()) {
+      alert('Please select patient and enter body part');
+      return;
+    }
+    const token = localStorage.getItem('token') || localStorage.getItem('authToken');
+    const payload = {
+      patientId: patient.id,
+      doctorId: doctor.id,
+      imagingType: imagingModality,
+      bodyPart: imagingBodyPart,
+      clinicalIndication: imagingIndication || 'Diagnostic imaging',
+      priority: urgency,
+      status: 'ordered',
+    };
+    const response = await fetch('/api/imaging-orders', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify(payload),
+    });
+    if (!response.ok) {
+      alert('Failed to place imaging order');
+      return;
+    }
+    alert('✅ Imaging order placed');
+    setImagingBodyPart('');
+    setImagingIndication('');
+    setView('imaging');
+    const imgResp = await fetch(`/api/imaging-orders/patient/${patient.id}`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+    if (imgResp.ok) {
+      const imgData = await imgResp.json();
+      setImagingOrders(imgData.imagingOrders || []);
+    }
   };
 
   return (
@@ -513,7 +630,17 @@ export const CompleteLabOrders: React.FC<CompleteLabOrdersProps> = ({
                 : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
             }`}
           >
-            View Results ({pastOrders.length})
+            Lab Results ({pastOrders.length})
+          </button>
+          <button
+            onClick={() => setView('imaging')}
+            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+              view === 'imaging'
+                ? 'bg-purple-600 text-white'
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+            }`}
+          >
+            Imaging ({imagingOrders.length})
           </button>
         </div>
 
@@ -751,20 +878,87 @@ export const CompleteLabOrders: React.FC<CompleteLabOrdersProps> = ({
                     </div>
                   )}
 
-                  {/* Not completed: Show result entry form */}
-                  {order.status !== 'completed' && (
-                    <ResultEntryForm
-                      order={order}
-                      onResultsSubmitted={async () => {
-                        if (patient) {
-                          const orders = await fetchLabOrdersByPatient(patient.id);
-                          setPastOrders(orders);
-                        }
-                      }}
-                    />
-                  )}
+                  {/* Result entry / re-upload for pending and completed orders */}
+                  <ResultEntryForm
+                    order={order}
+                    onResultsSubmitted={async () => {
+                      if (patient) {
+                        const orders = await fetchLabOrdersByPatient(patient.id);
+                        setPastOrders(orders);
+                      }
+                    }}
+                  />
                 </div>
               ))}
+            </div>
+          )}
+
+          {view === 'imaging' && (
+            <div className="space-y-6">
+              <div className="p-4 bg-indigo-50 border border-indigo-200 rounded-lg">
+                <h3 className="font-semibold text-indigo-900 mb-3">Order Imaging Study</h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <select
+                    value={imagingModality}
+                    onChange={(e) => setImagingModality(e.target.value)}
+                    className="px-3 py-2 border rounded-lg text-sm"
+                    aria-label="Imaging modality"
+                  >
+                    <option value="xray">X-Ray</option>
+                    <option value="ct">CT Scan</option>
+                    <option value="mri">MRI</option>
+                    <option value="ultrasound">Ultrasound</option>
+                  </select>
+                  <input
+                    type="text"
+                    value={imagingBodyPart}
+                    onChange={(e) => setImagingBodyPart(e.target.value)}
+                    placeholder="Body part (e.g. chest)"
+                    className="px-3 py-2 border rounded-lg text-sm"
+                  />
+                  <input
+                    type="text"
+                    value={imagingIndication}
+                    onChange={(e) => setImagingIndication(e.target.value)}
+                    placeholder="Clinical indication"
+                    className="px-3 py-2 border rounded-lg text-sm"
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={() => void handleOrderImaging()}
+                  className="mt-3 px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700"
+                >
+                  Place Imaging Order
+                </button>
+              </div>
+
+              {imagingOrders.length === 0 ? (
+                <p className="text-gray-500 text-center py-8">No imaging orders yet</p>
+              ) : (
+                imagingOrders.map((order: any) => (
+                  <div key={order.id} className="p-4 border rounded-lg bg-white">
+                    <div className="font-medium">{order.imaging_type?.toUpperCase()} — {order.body_part}</div>
+                    <div className="text-sm text-gray-500">Status: {order.status}</div>
+                    {order.status !== 'completed' && (
+                      <ImagingResultUploadForm
+                        orderId={order.id}
+                        onDone={async () => {
+                          if (!patient) return;
+                          const token = localStorage.getItem('token') || localStorage.getItem('authToken');
+                          const imgResp = await fetch(`/api/imaging-orders/patient/${patient.id}`, {
+                            headers: token ? { Authorization: `Bearer ${token}` } : {},
+                          });
+                          if (imgResp.ok) {
+                            const imgData = await imgResp.json();
+                            setImagingOrders(imgData.imagingOrders || []);
+                          }
+                        }}
+                      />
+                    )}
+                  </div>
+                ))
+              )}
             </div>
           )}
         </div>

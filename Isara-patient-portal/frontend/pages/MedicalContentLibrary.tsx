@@ -8,14 +8,16 @@
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useSettings, type Language } from '../contexts/SettingsContext';
-
-// In production, use relative URLs (proxied by nginx)
-// In development, use relative URLs (proxied by vite) 
-const API_BASE = '';
+import { useRealtimeSync } from '../lib/useRealtimeSync';
+import { renderContentWithImages } from '../lib/contentImageRenderer';
 
 function toLang(language: string): Language {
   return language === 'th' ? 'th' : 'en';
 }
+
+// In production, use relative URLs (proxied by nginx)
+// In development, use relative URLs (proxied by vite)
+const API_BASE = '';
 
 // ─── Types ───
 
@@ -241,6 +243,7 @@ function ContentCard({ article, isDark, language, onClick }: Readonly<ContentCar
   return (
     <button
       type="button"
+      data-testid="content-item"
       onClick={onClick}
       className={`rounded-xl shadow-sm overflow-hidden hover:shadow-md transition-shadow cursor-pointer text-left ${cardBg}`}
     >
@@ -397,7 +400,7 @@ function ArticleModalBody({ article, isDark, language }: Readonly<{
       )}
 
       <div className={`prose max-w-none ${proseCls}`}>
-        <div dangerouslySetInnerHTML={{ __html: mainContent.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('\n', '<br />') }} />
+        <div dangerouslySetInnerHTML={{ __html: renderContentWithImages(mainContent) }} />
       </div>
     </div>
   );
@@ -419,7 +422,7 @@ function ArticleViewModal({ article, isDark, language, onClose }: Readonly<{
   const footerBgCls = isDark ? 'bg-gray-800 border-gray-700' : 'bg-gray-50';
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" data-testid="article-detail-modal">
       <div className={`rounded-xl max-w-3xl w-full max-h-[90vh] overflow-hidden flex flex-col ${cardBg}`}>
         <div className={`flex items-center justify-between p-4 border-b ${borderCls}`}>
           <div className="flex items-center gap-2">
@@ -510,6 +513,10 @@ const MedicalContentLibrary: React.FC = () => {
     fetchContent();
   }, [fetchContent]);
 
+  useRealtimeSync({
+    onContentPublished: fetchContent,
+  });
+
   const filteredContent = useMemo(
     () => filterContent(content, searchTerm, selectedCategory, selectedType),
     [content, searchTerm, selectedCategory, selectedType]
@@ -517,9 +524,17 @@ const MedicalContentLibrary: React.FC = () => {
 
   const featuredContent = useMemo(() => content.filter((item) => item.isFeatured), [content]);
 
-  const handleViewArticle = (article: MedicalContentArticle) => {
+  const handleViewArticle = async (article: MedicalContentArticle) => {
     setSelectedArticle(article);
     setShowViewModal(true);
+    try {
+      await fetch(`${API_BASE}/api/content/medical/${article.id}/view`, { method: 'POST' });
+      setContent((prev) =>
+        prev.map((a) => (a.id === article.id ? { ...a, viewCount: (a.viewCount || 0) + 1 } : a))
+      );
+    } catch (err) {
+      console.warn('View tracking failed:', err);
+    }
   };
 
   // Pre-compute theme classes to eliminate ternaries from JSX
@@ -549,7 +564,7 @@ const MedicalContentLibrary: React.FC = () => {
   }
 
   return (
-    <div className={`p-6 min-h-screen ${pageBg}`}>
+    <div className={`p-6 min-h-screen ${pageBg}`} data-testid="health-library-page">
       {/* Header */}
       <div className="mb-8">
         <div className="flex items-center gap-3 mb-2">

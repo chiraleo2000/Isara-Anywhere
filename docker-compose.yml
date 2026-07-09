@@ -62,6 +62,8 @@ services:
       - ./scripts/database/seed-dev-data.sql:/docker-entrypoint-initdb.d/05-seed-dev.sql:ro
       - ./scripts/database/migrations/2025-add-google-sub.sql:/docker-entrypoint-initdb.d/06-google-sub.sql:ro
       - ./scripts/database/migrations/2025-ensure-appointment-columns.sql:/docker-entrypoint-initdb.d/07-appointment-columns.sql:ro
+      - ./scripts/database/migrations/v2.3.0-patient-documents-and-messages.sql:/docker-entrypoint-initdb.d/08-v2.3.0-documents.sql:ro
+      - ./scripts/database/migrations/v2.3.1-content-workflow-columns.sql:/docker-entrypoint-initdb.d/09-v2.3.1-content-workflow.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d izara_phase1"]
       interval: 10s
@@ -162,7 +164,7 @@ services:
       IZARA_DEV_TESTING: "1"
       GOOGLE_TOKEN_VERIFIER_FIXTURE: "1"
       DEMO_AUTO_LOGIN: ${DEMO_AUTO_LOGIN:-1}
-      DEMO_AUTO_MEETING: ${DEMO_AUTO_MEETING:-1}
+      DEMO_AUTO_MEETING: ${DEMO_AUTO_MEETING:-0}
       DEMO_PATIENT_EMAIL: ${DEMO_PATIENT_EMAIL:-demo.test@gmail.com}
       DEMO_PATIENT_PASSWORD: ${DEMO_PATIENT_PASSWORD:-P@ssw0rd}
     volumes:
@@ -248,7 +250,7 @@ services:
       GOOGLE_TOKEN_VERIFIER_FIXTURE: "1"
       E2E_ALLOW_PARALLEL_SESSIONS: ${E2E_ALLOW_PARALLEL_SESSIONS:-1}
       DEMO_AUTO_LOGIN: ${DEMO_AUTO_LOGIN:-1}
-      DEMO_AUTO_MEETING: ${DEMO_AUTO_MEETING:-1}
+      DEMO_AUTO_MEETING: ${DEMO_AUTO_MEETING:-0}
       DEMO_DOCTOR_EMAIL: ${DEMO_DOCTOR_EMAIL:-doctor.test@izara.com}
       DEMO_DOCTOR_PASSWORD: ${DEMO_DOCTOR_PASSWORD:-IzaraDoctor@2024}
       VITE_AUTO_ADMIT_LOBBY: ${VITE_AUTO_ADMIT_LOBBY:-0}

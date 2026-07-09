@@ -14,11 +14,11 @@ async function resolveMedicalRecordConsent(pool, patientId, doctorId) {
     return { hasAccess: false };
   }
 
-  // 1. Per-doctor medical_record_access consent
+  // 1. Per-doctor medical_record_access consent (includes legacy doctor_access)
   const consentResult = await pool.query(
     `SELECT * FROM patient_consents
      WHERE patient_id = $1 AND doctor_id = $2
-       AND consent_type = 'medical_record_access'
+       AND consent_type IN ('medical_record_access', 'doctor_access')
        AND granted = true AND revoked_at IS NULL
        AND status IN ('active', 'granted')
        AND (expires_at IS NULL OR expires_at > NOW())
@@ -34,7 +34,7 @@ async function resolveMedicalRecordConsent(pool, patientId, doctorId) {
   const revokedResult = await pool.query(
     `SELECT 1 FROM patient_consents
      WHERE patient_id = $1 AND doctor_id = $2
-       AND consent_type = 'medical_record_access'
+       AND consent_type IN ('medical_record_access', 'doctor_access')
        AND revoked_at IS NOT NULL
      LIMIT 1`,
     [patientId, doctorId]

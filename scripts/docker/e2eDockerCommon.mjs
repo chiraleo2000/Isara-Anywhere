@@ -416,8 +416,9 @@ export function resetDatabaseBaseline() {
 
   const seedSql = path.join(repoRoot, 'scripts', 'database', 'seed-dev-data.sql');
   const ssoSeedSql = path.join(repoRoot, 'scripts', 'database', 'seed-sso-test-users.sql');
+  const contentWorkflowSql = path.join(repoRoot, 'scripts', 'database', 'migrations', 'v2.3.1-content-workflow-columns.sql');
 
-  for (const sqlFile of [cleanupSql, seedSql, ssoSeedSql]) {
+  for (const sqlFile of [cleanupSql, seedSql, ssoSeedSql, contentWorkflowSql]) {
 
     const result = spawnSync(
 

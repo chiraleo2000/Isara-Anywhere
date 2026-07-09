@@ -8,6 +8,7 @@
 import { Router, Request, Response } from 'express';
 import { authMiddleware, AuthenticatedRequest } from '../middleware/auth';
 import postgresDataService from '../services/postgresDataService';
+import { listDocuments } from '../services/documentDeliveryService';
 import { errMsg } from '../utils';
 import { mapRowToLivingWillForm, resolveLivingWillAccess } from '../lib/livingWillShare';
 
@@ -92,33 +93,115 @@ function transformPHR(phr: any): any {
   };
 }
 
+function parseJsonField(value: unknown): Record<string, unknown> {
+  if (!value) return {};
+  if (typeof value === 'object' && !Array.isArray(value)) return value as Record<string, unknown>;
+  if (typeof value === 'string') {
+    try {
+      return JSON.parse(value) as Record<string, unknown>;
+    } catch {
+      return {};
+    }
+  }
+  return {};
+}
+
+function mapEmrRowToHealthLogEntry(row: Record<string, unknown>) {
+  const subjective = parseJsonField(row.subjective);
+  const assessment = parseJsonField(row.assessment);
+  const plan = parseJsonField(row.plan);
+  const diagnoses = Array.isArray(assessment.diagnoses) ? assessment.diagnoses : [];
+
+  return {
+    id: row.id,
+    patientId: row.patient_id,
+    emrId: row.id,
+    encounterDate: row.signed_at || row.created_at,
+    encounterType: 'consultation',
+    doctorName: row.doctor_name || row.doctor_name_thai || 'แพทย์',
+    doctorId: row.doctor_id,
+    chiefComplaint: subjective.chiefComplaint || subjective.text || '',
+    diagnosis: diagnoses.map((d: unknown) => {
+      if (typeof d === 'string') return { description: d, status: 'confirmed' };
+      const rec = d as Record<string, unknown>;
+      return {
+        description: String(rec.description || rec.name || rec.code || ''),
+        status: String(rec.status || 'confirmed'),
+      };
+    }),
+    treatmentPlan: plan.treatment || plan.text || row.patient_instructions || '',
+    followUpInstructions: row.patient_instructions || row.patient_instructions_thai || '',
+    aiSummary: row.ai_summary || '',
+    signedAt: row.signed_at,
+    signedBy: row.doctor_name || row.doctor_name_thai,
+    createdAt: row.created_at,
+    type: 'emr_record' as const,
+  };
+}
+
+async function loadPhrResponse(patientId: string) {
+  const phr = await PHRService.getPHR(patientId);
+  const documents = await listDocuments(patientId).catch(() => []);
+  if (!phr) {
+    return {
+      patientId,
+      allergies: [],
+      chronicConditions: [],
+      medications: [],
+      emergencyContacts: [],
+      demographics: {},
+      lifestyle: {},
+      documents,
+      createdAt: null,
+      updatedAt: null,
+    };
+  }
+  return { ...transformPHR(phr), documents };
+}
+
 // Get patient PHR (with /patient/ prefix for compatibility)
 router.get('/patient/:patientId', authMiddleware, async (req: Request, res: Response) => {
   try {
     const { patientId } = req.params;
     console.log(`[PHR] Getting PHR for patient (via /patient/): ${patientId}`);
-
-    const phr = await PHRService.getPHR(patientId);
-    if (!phr) {
-      // Return empty PHR structure if not found
-      return res.json({
-        patientId,
-        allergies: [],
-        chronicConditions: [],
-        medications: [],
-        emergencyContacts: [],
-        demographics: {},
-        lifestyle: {},
-        createdAt: null,
-        updatedAt: null
-      });
-    }
-    return res.json(transformPHR(phr));
+    return res.json(await loadPhrResponse(patientId));
   } catch (error: unknown) {
     console.error('[PHR] Get PHR error:', error);
     return res.status(500).json({ error: 'Failed to get PHR', message: errMsg(error) });
   }
 });
+
+function mapLabOrderRow(row: Record<string, unknown>) {
+  let resultsPayload: Record<string, unknown> = {};
+  if (row.results) {
+    resultsPayload = typeof row.results === 'string'
+      ? (JSON.parse(row.results as string) as Record<string, unknown>)
+      : (row.results as Record<string, unknown>);
+  }
+  const structuredResults = Array.isArray(resultsPayload.results) ? resultsPayload.results : [];
+  const documents = Array.isArray(resultsPayload.documents) ? resultsPayload.documents : [];
+  let tests: unknown[] = [];
+  if (Array.isArray(row.tests)) tests = row.tests;
+  else if (typeof row.tests === 'string') {
+    try { tests = JSON.parse(row.tests); } catch { tests = []; }
+  }
+
+  return {
+    id: row.id,
+    patient_id: row.patient_id,
+    test_name: row.test_name || row.test_type || (tests[0] as Record<string, unknown>)?.name || 'Lab Order',
+    test_type: row.test_type,
+    status: row.status,
+    priority: row.priority,
+    instructions: row.instructions || row.clinical_indication,
+    doctor_name: row.doctor_name || row.doctor_name_thai,
+    order_date: row.ordered_at || row.ordered_date || row.created_at,
+    results: structuredResults,
+    documents,
+    ai_analysis: resultsPayload.aiAnalysis || row.ai_analysis,
+    notes: resultsPayload.notes || row.notes,
+  };
+}
 
 // ============================================================================
 // LAB ORDERS ROUTES (Patient Read-Only) — MUST be before /:patientId catch-all
@@ -137,7 +220,10 @@ router.get('/lab-orders', authMiddleware, async (req: Request, res: Response) =>
 
     if (LabOrderService) {
       const labOrders = await LabOrderService.getPatientLabOrders(patientId);
-      return res.json({ labOrders: labOrders || [], count: (labOrders || []).length });
+      return res.json({
+        labOrders: (labOrders || []).map((o: Record<string, unknown>) => mapLabOrderRow(o)),
+        count: (labOrders || []).length,
+      });
     }
 
     // Fallback: direct query
@@ -147,7 +233,7 @@ router.get('/lab-orders', authMiddleware, async (req: Request, res: Response) =>
        WHERE lo.patient_id = $1 ORDER BY COALESCE(lo.ordered_at, lo.ordered_date, lo.created_at) DESC`,
       [patientId]
     );
-    res.json({ labOrders: result.rows, count: result.rows.length });
+    res.json({ labOrders: result.rows.map(mapLabOrderRow), count: result.rows.length });
   } catch (error: unknown) {
     console.error('[PHR] Get lab orders error:', error);
     // Return empty array instead of error for graceful frontend handling
@@ -261,23 +347,7 @@ router.get('/:patientId', authMiddleware, async (req: Request, res: Response) =>
   try {
     const { patientId } = req.params;
     console.log(`[PHR] Getting PHR for patient: ${patientId}`);
-
-    const phr = await PHRService.getPHR(patientId);
-    if (!phr) {
-      // Return empty PHR structure if not found
-      return res.json({
-        patientId,
-        allergies: [],
-        chronicConditions: [],
-        medications: [],
-        emergencyContacts: [],
-        demographics: {},
-        lifestyle: {},
-        createdAt: null,
-        updatedAt: null
-      });
-    }
-    return res.json(transformPHR(phr));
+    return res.json(await loadPhrResponse(patientId));
   } catch (error: unknown) {
     console.error('[PHR] Get PHR error:', error);
     return res.status(500).json({ error: 'Failed to get PHR', message: errMsg(error) });
@@ -560,7 +630,7 @@ router.get('/:patientId/health-logs', authMiddleware, async (req: Request, res: 
     const limitNum = Number.parseInt(limit as string, 10) || 50;
     const offsetNum = Number.parseInt(offset as string, 10) || 0;
 
-    // Query EMR records from PostgreSQL
+    // Query EMR records from PostgreSQL — patients only see signed records
     let query = `
       SELECT e.*, 
              u.name as doctor_name, u.name_thai as doctor_name_thai,
@@ -568,11 +638,11 @@ router.get('/:patientId/health-logs', authMiddleware, async (req: Request, res: 
       FROM emr e
       LEFT JOIN users u ON e.doctor_id = u.id
       LEFT JOIN appointments a ON e.appointment_id = a.id
-      WHERE e.patient_id = $1
+      WHERE e.patient_id = $1 AND e.status = 'signed'
     `;
     const params: any[] = [patientId];
 
-    if (type) {
+    if (type && type !== 'emr_record') {
       query += ` AND e.status = $${params.length + 1}`;
       params.push(type);
     }
@@ -584,13 +654,13 @@ router.get('/:patientId/health-logs', authMiddleware, async (req: Request, res: 
     
     // Get total count
     const countResult = await pool.query(
-      'SELECT COUNT(*) FROM emr WHERE patient_id = $1',
+      `SELECT COUNT(*) FROM emr WHERE patient_id = $1 AND status = 'signed'`,
       [patientId]
     );
     const total = Number.parseInt(countResult.rows[0].count, 10);
 
     res.json({
-      entries: result.rows,
+      entries: result.rows.map(mapEmrRowToHealthLogEntry),
       total,
       offset: offsetNum,
       limit: limitNum,
@@ -615,7 +685,7 @@ router.get('/:patientId/health-logs/:entryId', authMiddleware, async (req: Reque
        FROM emr e
        LEFT JOIN users u ON e.doctor_id = u.id
        LEFT JOIN appointments a ON e.appointment_id = a.id
-       WHERE e.id = $1 AND e.patient_id = $2`,
+       WHERE e.id = $1 AND e.patient_id = $2 AND e.status = 'signed'`,
       [entryId, patientId]
     );
 
@@ -623,7 +693,7 @@ router.get('/:patientId/health-logs/:entryId', authMiddleware, async (req: Reque
       return res.status(404).json({ error: 'Health log entry not found' });
     }
 
-    res.json(result.rows[0]);
+    res.json(mapEmrRowToHealthLogEntry(result.rows[0]));
   } catch (error: unknown) {
     console.error('[PHR] Get health log entry error:', error);
     res.status(500).json({ error: 'Failed to fetch health log entry' });

@@ -80,6 +80,9 @@ function normalizeAuditEntry(row: Record<string, unknown>): AuditLogEntry {
       action = 'DATA_ACCESSED';
     }
   }
+  if (['VIEW_PHR', 'VIEW_EMR', 'VIEW_EHR'].includes(action)) {
+    action = 'DATA_ACCESSED';
+  }
 
   const detailObj = details && typeof details === 'object' ? details : {};
   const timestamp = pickTimestamp(row) || new Date().toISOString();
@@ -89,7 +92,7 @@ function normalizeAuditEntry(row: Record<string, unknown>): AuditLogEntry {
     action,
     doctorId: (detailObj.doctorId || detailObj.doctor_id || row.doctor_id) as string | undefined,
     doctorName: (detailObj.doctorName || detailObj.doctor_name || row.doctor_name) as string | undefined,
-    dataAccessed: (detailObj.dataAccessed || detailObj.data_types) as string | undefined,
+    dataAccessed: (detailObj.dataAccessed || detailObj.data_types || detailObj.entity_type || row.entity_type) as string | undefined,
     consentId: (detailObj.consentId || detailObj.consent_id) as string | undefined,
   };
 }
@@ -399,11 +402,12 @@ interface DoctorsTabProps {
   pendingRequests: any[];
   onRevokeDoctorAccess: (doctorId: string) => void;
   onGrantDoctorAccess: () => void;
+  onRevokeAllAccess: () => void;
   onRespondToRequest: (notificationId: string, doctorId: string, action: 'grant' | 'deny') => void;
   onDownloadConsentHistory: () => void;
 }
 
-function DoctorsTab({ consents, saving, handleToggleConsent, labels, language, cls, formatDate, doctorAccessList, pendingRequests, onRevokeDoctorAccess, onGrantDoctorAccess, onRespondToRequest, onDownloadConsentHistory }: Readonly<DoctorsTabProps>) {
+function DoctorsTab({ consents, saving, handleToggleConsent, labels, language, cls, formatDate, doctorAccessList, pendingRequests, onRevokeDoctorAccess, onGrantDoctorAccess, onRevokeAllAccess, onRespondToRequest, onDownloadConsentHistory }: Readonly<DoctorsTabProps>) {
   const dataSharingConsent = consents.find(c => c.id === 'data_sharing');
 
   return (
@@ -615,6 +619,15 @@ function DoctorsTab({ consents, saving, handleToggleConsent, labels, language, c
           >
             <span>+</span> {tl(language, 'ให้สิทธิ์แพทย์', 'Grant Access')}
           </button>
+          {doctorAccessList.length > 0 && (
+            <button
+              onClick={onRevokeAllAccess}
+              data-testid="pdpa-revoke-all-access-btn"
+              className="px-4 py-2 bg-red-50 text-red-600 border border-red-200 text-sm rounded-lg hover:bg-red-100 transition-colors"
+            >
+              {tl(language, 'เพิกถอนทั้งหมด', 'Revoke All')}
+            </button>
+          )}
         </div>
         {doctorAccessList.length === 0 ? (
           <div className="p-8 text-center">
@@ -889,6 +902,11 @@ export default function PDPAPage() {
     try {
       const patientId = user.patientId || user.id;
       await pdpaService.updateConsent(patientId, consentId, granted);
+      if (consentId === 'data_sharing' && !granted) {
+        await pdpaService.revokeAllConsents();
+        const updated = await pdpaService.getDoctorAccess();
+        setDoctorAccessList(updated || []);
+      }
       setConsents((prev) =>
         prev.map((c) =>
           c.id === consentId
@@ -949,6 +967,22 @@ export default function PDPAPage() {
       alert(labels.error[language]);
     } finally {
       setGrantingConsent(false);
+    }
+  };
+
+  const handleRevokeAllAccess = async () => {
+    if (!user?.id) return;
+    if (!confirm(tl(language, 'เพิกถอนสิทธิ์เข้าถึงข้อมูลทั้งหมดของแพทย์ทุกท่านหรือไม่?', 'Revoke all doctor access to your medical records?'))) return;
+    try {
+      await pdpaService.revokeAllConsents();
+      const updated = await pdpaService.getDoctorAccess();
+      setDoctorAccessList(updated || []);
+      setConsents((prev) => prev.map((c) => (
+        c.id === 'data_sharing' ? { ...c, granted: false, grantedAt: undefined } : { ...c, granted: false, grantedAt: undefined }
+      )));
+    } catch (e) {
+      console.error('Failed to revoke all access:', e);
+      alert(labels.error[language]);
     }
   };
 
@@ -1094,6 +1128,7 @@ export default function PDPAPage() {
           pendingRequests={pendingRequests}
           onRevokeDoctorAccess={handleRevokeDoctorAccess}
           onGrantDoctorAccess={handleGrantDoctorAccessModal}
+          onRevokeAllAccess={handleRevokeAllAccess}
           onRespondToRequest={handleRespondToRequest}
           onDownloadConsentHistory={handleDownloadConsentHistory}
         />

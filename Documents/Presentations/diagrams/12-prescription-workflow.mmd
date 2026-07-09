@@ -41,6 +41,7 @@ flowchart TB
         S1["📧 Send to pharmacy"]
         S2["📱 Notify patient"]
         S3["📋 Add to PHR"]
+        S4["📁 patient_documents<br/>(prescription PDF)"]
     end
 
     subgraph PATIENT_VIEW["👤 PATIENT VIEW"]
@@ -68,7 +69,7 @@ flowchart TB
     %% Dispatch
     R3 --> S1
     R3 --> S2
-    R3 --> S3
+    R3 --> S3 --> S4
 
     %% Patient view
     S2 --> PV1 --> PV2 --> PV3
@@ -86,5 +87,5 @@ flowchart TB
     class D1,D2,D3,D4 cdsStyle
     class D5 warningStyle
     class R1,R2,R3 reviewStyle
-    class S1,S2,S3 dispatchStyle
+    class S1,S2,S3,S4 dispatchStyle
     class PV1,PV2,PV3 patientStyle

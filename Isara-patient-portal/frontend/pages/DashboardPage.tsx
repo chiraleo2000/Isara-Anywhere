@@ -6,6 +6,7 @@ import { appointmentService } from '../lib/services';
 import { useRealtimeSync } from '../lib/useRealtimeSync';
 import { Appointment } from '../types';
 import { HealthStudio, AIHealthChat } from '../components/health';
+import { buildPatientMeetingPath } from '../utils/patientMeetingRoutes';
 import {
   Calendar,
   MessageCircle,
@@ -23,6 +24,7 @@ import {
 
 interface AppointmentCardProps {
   readonly apt: Appointment;
+  readonly patientUserId: string;
   readonly isDarkMode: boolean;
   readonly isEnglish: boolean;
   readonly formatDate: (date: string | Date) => string;
@@ -34,7 +36,7 @@ function getTypeLabel(type: string, isEnglish: boolean): string {
   return isEnglish ? 'Hospital' : 'โรงพยาบาล';
 }
 
-function AppointmentCard({ apt, isDarkMode, isEnglish, formatDate, getStatusBadge }: AppointmentCardProps) {
+function AppointmentCard({ apt, patientUserId, isDarkMode, isEnglish, formatDate, getStatusBadge }: AppointmentCardProps) {
   const typeLabel = getTypeLabel(apt.type, isEnglish);
   const TypeIcon = apt.type?.toLowerCase() === 'telehealth' ? Video : MapPin;
   const isTelehealth = apt.type?.toLowerCase() === 'telehealth';
@@ -78,7 +80,7 @@ function AppointmentCard({ apt, isDarkMode, isEnglish, formatDate, getStatusBadg
       {showJoinMeeting && (
         <div className={`mt-3 pt-3 border-t ${isDarkMode ? 'border-slate-700' : 'border-gray-200'}`}>
           <Link
-            to={`/meeting/${apt.id}`}
+            to={buildPatientMeetingPath(patientUserId, apt.id)}
             data-testid="dashboard-join-meeting"
             className="flex w-full items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-sm font-semibold rounded-xl hover:from-blue-700 hover:to-indigo-700 shadow-md hover:shadow-lg transition-all"
           >
@@ -243,6 +245,7 @@ export default function DashboardPage() {
           <AppointmentCard
             key={apt.id}
             apt={apt}
+            patientUserId={user!.patientId || user!.id}
             isDarkMode={isDarkMode}
             isEnglish={isEnglish}
             formatDate={formatDate}

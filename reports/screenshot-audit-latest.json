@@ -1,19 +1,27 @@
 {
-  "checkedAt": "2026-07-08T04:22:54.566Z",
+  "checkedAt": "2026-07-09T15:12:52.795Z",
   "minBytes": 15000,
   "groups": [
     {
-      "groupName": "group-I",
-      "directory": "docs\\screenshots\\group-I",
+      "groupName": "group-Q2",
+      "directory": "docs\\screenshots\\group-Q2",
       "errors": [],
       "files": {
-        "I01-admin-dashboard.png": {
-          "bytes": 330063,
-          "sha256": "867f3b6e49943ecc6a6a6f08e1fa628329430c7122933a90d66b58c07fee18b6"
+        "Q2-01-results-route.png": {
+          "bytes": 157439,
+          "sha256": "6856ea6f605eb63c659b1ba47714889e838c72bd103467dffbb59e133d3386d7"
         },
-        "I02-manage-doctors.png": {
-          "bytes": 161225,
-          "sha256": "74a8e7da17d585ef569547c998e851bf6e9729aec2084d307d4ffaa61e8b0a42"
+        "Q2-03-transcript-tab.png": {
+          "bytes": 123829,
+          "sha256": "a31414414f53b03e15db04c870406e8cfbc688e2fd1eac336dcab7f9aa8ca0d6"
+        },
+        "Q2-04-summary-tab.png": {
+          "bytes": 56892,
+          "sha256": "fc4a96b5fdab3c7e7389b3f4f15f44141ac154c78ca1ff7925a47e87c3953ad6"
+        },
+        "Q2-05-dashboard-summary.png": {
+          "bytes": 410677,
+          "sha256": "4d800efdff8c324a5cb35507abfcb2387d7e95ba4dcbaa41c971c200efdc01de"
         }
       },
       "pass": true

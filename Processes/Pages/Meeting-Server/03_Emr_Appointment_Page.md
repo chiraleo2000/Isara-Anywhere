@@ -170,3 +170,17 @@ Production ใช้ `meet.jit.si` — บันทึกจากเบรา�
 - อย่าแชร์ลิงก์ประชุมหรือ JWT ทางช่องทางไม่ปลอดภัย
 - ผลลัพธ์ AI ไม่ใช่การวินิจฉัย — แพทย์ต้องตรวจก่อนลง EMR
 
+
+## UI Controls Inventory
+
+| # | Control | testid | Action | Expected | Screenshot |
+|---|---------|--------|--------|----------|------------|
+| 1 | Completeemreditor | `CompleteEMREditor` | click | Documented control | U-CompleteEMREditor |
+| 2 | Emr Ai Draft | `emr-ai-draft` | click | Documented control | U-emr-ai-draft |
+| 3 | Data Testid | `data-testid` | click | Documented control | U-data-testid |
+| 4 | Confirmed | `confirmed` | click | Documented control | U-confirmed |
+| 5 | Appointment Join Meeting Btn | `appointment-join-meeting-btn` | click | Documented control | U-appointment-join-meeting-btn |
+| 6 | Appointmentid | `appointmentId` | click | Documented control | U-appointmentId |
+| 7 | Meetingid | `meetingId` | click | Documented control | U-meetingId |
+| 8 | Queue Count | `queue-count` | click | Documented control | U-queue-count |
+| 9 | Queue List | `queue-list` | click | Documented control | U-queue-list |

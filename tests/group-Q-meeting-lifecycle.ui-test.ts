@@ -282,7 +282,8 @@ test.describe('Group Q - Meeting Lifecycle (3-party)', () => {
     await test.step('Q01c - Patient joins lobby (waiting, no Jitsi yet)', async () => {
       await overrideBrowserMeetingServerUrl(patient.page, MEETING_URL);
       await proxyLocalMeetingServer(patient.page, MEETING_URL);
-      await patient.page.goto(`${PATIENT_URL}/meeting/${appointmentId}`, {
+      const { userId: patientUserId } = await requirePatientAuth(patient.page, 'Q01c');
+      await patient.page.goto(`${PATIENT_URL}/patient/${patientUserId}/meeting/${appointmentId}`, {
         waitUntil: 'domcontentloaded',
         timeout: IS_CLOUD ? 90_000 : 45_000,
       });
@@ -293,7 +294,6 @@ test.describe('Group Q - Meeting Lifecycle (3-party)', () => {
       await assertNoActiveJitsi(patient.page, 'Q01c-patient');
 
       const doctorToken = await readPageBearerToken(doctor.page);
-      const { userId: patientUserId } = await requirePatientAuth(patient.page, 'Q01c');
       let lobbySnap = await lobbyGetSnapshot(doctor.page, lobbyKey, doctorToken);
       if (!participantIdByRole(lobbySnap, 'patient')) {
         const joinKeys = [...new Set([lobbyKey, meetingKey, meetingId].filter(Boolean))];

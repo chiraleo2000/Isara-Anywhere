@@ -274,7 +274,8 @@ router.delete('/consent', authMiddleware, async (req: Request, res: Response) =>
       success: true,
       patientId,
       message: 'All consents revoked',
-      revokedAt: now.toISOString()
+      revokedAt: now.toISOString(),
+      doctorAccessRevoked: true,
     });
   } catch (error: unknown) {
     console.error('[PDPA] Revoke all consents error:', error);
@@ -386,7 +387,7 @@ router.post('/consents/:patientId', authMiddleware, async (req: Request, res: Re
     await pool.query(
       `INSERT INTO patient_consents 
        (id, patient_id, consent_type, granted, doctor_id, doctor_name, data_types, granted_at, expires_at, status, created_at, updated_at)
-       VALUES ($1, $2, 'doctor_access', true, $3, $4, $5, $6, $7, 'granted', $6, $6)`,
+       VALUES ($1, $2, 'medical_record_access', true, $3, $4, $5, $6, $7, 'granted', $6, $6)`,
       [consentId, patientId, doctorId, doctorName, JSON.stringify(dataTypes || ['all']), now, expiresAt || null]
     );
 
@@ -457,7 +458,9 @@ router.post('/verify', authMiddleware, async (req: Request, res: Response) => {
 
     const result = await pool.query(
       `SELECT * FROM patient_consents 
-       WHERE patient_id = $1 AND doctor_id = $2 AND status = 'granted' 
+       WHERE patient_id = $1 AND doctor_id = $2 AND status = 'granted' AND granted = true
+       AND revoked_at IS NULL
+       AND consent_type IN ('medical_record_access', 'doctor_access')
        AND (expires_at IS NULL OR expires_at > NOW())`,
       [patientId, doctorId]
     );

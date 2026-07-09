@@ -1,10 +1,11 @@
-import { test, expect, navPatient, assertFullHealth, snap } from './helpers/multi-portal';
+import { test, expect, navPatient, assertFullHealth, snap, ensurePatientPortalAuthenticated } from './helpers/multi-portal';
 
 test.describe('Defect — AI new chat and language', () => {
   test.describe.configure({ mode: 'serial' });
 
   test('DA1 — new chat clears visible history after reload', async ({ portals }) => {
     const { patient } = portals;
+    await ensurePatientPortalAuthenticated(patient.page, 'DA1-auth');
     await navPatient(patient.page, '/ai-doctor', 'DA1');
     await assertFullHealth(patient.page, 'DA1');
 
@@ -41,6 +42,7 @@ test.describe('Defect — AI new chat and language', () => {
 
   test('DA2 — English setting yields Latin script in AI reply area', async ({ portals }) => {
     const { patient } = portals;
+    await ensurePatientPortalAuthenticated(patient.page, 'DA2-auth');
     await navPatient(patient.page, '/settings', 'DA2');
     await assertFullHealth(patient.page, 'DA2-setup');
 

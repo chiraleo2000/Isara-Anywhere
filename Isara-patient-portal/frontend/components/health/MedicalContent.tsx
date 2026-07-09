@@ -5,6 +5,8 @@
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
+import { useRealtimeSync } from '../../lib/useRealtimeSync';
+import { renderContentWithImages } from '../../lib/contentImageRenderer';
 import {
   BookOpen, Video, FileText, Heart, Brain, Pill, ChevronRight, Clock,
   User, Star, Eye, Search, RefreshCw, ChevronLeft, Tag, Calendar
@@ -163,6 +165,10 @@ export const MedicalContent: React.FC<MedicalContentProps> = ({ className = '' }
     fetchTags();
   }, [fetchArticles, fetchTags]);
 
+  useRealtimeSync({
+    onContentPublished: fetchArticles,
+  });
+
   const filteredArticles = articles.filter(article => {
     // Category filter
     if (activeCategory === 'featured') {
@@ -262,7 +268,7 @@ export const MedicalContent: React.FC<MedicalContentProps> = ({ className = '' }
     const CategoryIcon = getCategoryIcon(selectedArticle.category);
 
     return (
-      <div className={`${className}`}>
+      <div className={`${className}`} data-testid="health-studio-medical-content">
         {/* Back Button */}
         <button
           onClick={handleBackToList}
@@ -354,50 +360,12 @@ export const MedicalContent: React.FC<MedicalContentProps> = ({ className = '' }
 
         {/* Article Content */}
         <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-          <div className="prose prose-emerald max-w-none">
-            {/* Parse and render markdown-like content */}
-            {(() => {
-              const elements: React.ReactElement[] = [];
-              let pendingListItems: { key: string; text: string }[] = [];
-              const lines = (selectedArticle.contentTh || selectedArticle.content).split('\n');
-              
-              const flushList = (ulKey: string) => {
-                if (pendingListItems.length > 0) {
-                  elements.push(
-                    <ul key={ulKey} className="list-disc ml-6 mb-4">
-                      {pendingListItems.map(item => (
-                        <li key={item.key} className="text-gray-700">{item.text}</li>
-                      ))}
-                    </ul>
-                  );
-                  pendingListItems = [];
-                }
-              };
-
-              lines.forEach((paragraph, idx) => {
-                const key = `${selectedArticle.id}-p-${idx}`;
-                if (paragraph.startsWith('# ')) {
-                  flushList(`${selectedArticle.id}-ul-${elements.length}`);
-                  elements.push(<h1 key={key} className="text-2xl font-bold text-gray-800 mb-4">{paragraph.slice(2)}</h1>);
-                } else if (paragraph.startsWith('## ')) {
-                  flushList(`${selectedArticle.id}-ul-${elements.length}`);
-                  elements.push(<h2 key={key} className="text-xl font-bold text-gray-800 mb-3 mt-6">{paragraph.slice(3)}</h2>);
-                } else if (paragraph.startsWith('### ')) {
-                  flushList(`${selectedArticle.id}-ul-${elements.length}`);
-                  elements.push(<h3 key={key} className="text-lg font-bold text-gray-800 mb-2 mt-4">{paragraph.slice(4)}</h3>);
-                } else if (paragraph.startsWith('- ')) {
-                  pendingListItems.push({ key, text: paragraph.slice(2) });
-                } else if (paragraph.trim()) {
-                  flushList(`${selectedArticle.id}-ul-${elements.length}`);
-                  elements.push(<p key={key} className="text-gray-700 leading-relaxed mb-4">{paragraph}</p>);
-                }
-              });
-              
-              flushList(`${selectedArticle.id}-ul-${elements.length}`);
-              
-              return elements;
-            })()}
-          </div>
+          <div
+            className="prose prose-emerald max-w-none text-gray-700 leading-relaxed"
+            dangerouslySetInnerHTML={{
+              __html: renderContentWithImages(selectedArticle.contentTh || selectedArticle.contentThai || selectedArticle.content),
+            }}
+          />
         </div>
 
         {/* Tags */}
@@ -419,7 +387,7 @@ export const MedicalContent: React.FC<MedicalContentProps> = ({ className = '' }
   }
 
   return (
-    <div className={`space-y-4 ${className}`}>
+    <div className={`space-y-4 ${className}`} data-testid="health-studio-medical-content">
       {/* Search Bar */}
       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -520,6 +488,7 @@ export const MedicalContent: React.FC<MedicalContentProps> = ({ className = '' }
               <button
                 type="button"
                 key={article.id}
+                data-testid="content-item"
                 onClick={() => handleOpenArticle(article)}
                 className={`w-full text-left rounded-xl p-4 transition-all cursor-pointer border ${article.isFeatured
                     ? 'bg-gradient-to-r from-yellow-50 to-amber-50 border-yellow-200 hover:border-yellow-300'

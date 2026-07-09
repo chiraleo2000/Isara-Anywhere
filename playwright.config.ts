@@ -209,6 +209,11 @@ export default defineConfig({
       dependencies: ['A-auth'],
     },
     {
+      name: 'U-ui-element-audit',
+      testMatch: 'group-U-ui-element-audit.ui-test.ts',
+      dependencies: ['A-auth'],
+    },
+    {
       name: 'R-jitsi-role-permissions',
       testMatch: 'group-R-jitsi-role-permissions.ui-test.ts',
       dependencies: ['A-auth'],

@@ -75,12 +75,12 @@ describe('Meeting UX contract (MEET-UX)', () => {
     expect(fs.existsSync(path.join(root, 'Isara-doctor-portal/frontend/pages/VirtualMeeting.tsx'))).toBe(false);
   });
 
-  it('MEET-UX-11 — patient appointment UI joins in-app /meeting/:id, no external Jitsi tab', () => {
+  it('MEET-UX-11 — patient appointment UI joins in-app user-scoped meeting path', () => {
     const appt = fs.readFileSync(path.join(root, 'Isara-patient-portal/frontend/pages/AppointmentPages.tsx'), 'utf8');
-    expect(appt).toMatch(/to=\{`\/meeting\/\$\{apt\.id\}`\}/);
+    expect(appt).toMatch(/buildPatientMeetingPath/);
     expect(appt).not.toMatch(/window\.open\([^)]*meetingLink/);
     const dash = fs.readFileSync(path.join(root, 'Isara-patient-portal/frontend/pages/DashboardPage.tsx'), 'utf8');
-    expect(dash).toMatch(/to=\{`\/meeting\/\$\{apt\.id\}`\}/);
+    expect(dash).toMatch(/buildPatientMeetingPath/);
   });
 
   it('MEET-UX-12 — patient lobby join never bypasses the host gate', () => {
@@ -149,7 +149,15 @@ describe('Meeting UX contract (MEET-UX)', () => {
     expect(doctorGuest).toMatch(/PATIENT_PORTAL_URL/);
   });
 
-  it('MEET-UX-19 — doctor AuthProvider never navigates to /login on meeting route when DEMO_AUTO_LOGIN', () => {
+  it('MEET-UX-19 — patient AuthContext demo auto-login on meeting route', () => {
+    const auth = fs.readFileSync(path.join(root, 'Isara-patient-portal/frontend/utils/demoAutoAuth.ts'), 'utf8');
+    expect(auth).toMatch(/shouldBypassLoginRedirectForMeeting/);
+    expect(auth).toMatch(/isPatientMeetingRoute/);
+    const guard = fs.readFileSync(path.join(root, 'Isara-patient-portal/frontend/pages/PatientMeetingRoute.tsx'), 'utf8');
+    expect(guard).toMatch(/meeting-auth-starting/);
+  });
+
+  it('MEET-UX-19b — doctor AuthProvider never navigates to /login on meeting route when DEMO_AUTO_LOGIN', () => {
     const auth = fs.readFileSync(path.join(root, 'Isara-doctor-portal/frontend/components/common/AuthProvider.tsx'), 'utf8');
     expect(auth).toMatch(/shouldBypassLoginRedirectForMeeting/);
     expect(auth).toMatch(/isDoctorMeetingRoute/);
@@ -157,10 +165,13 @@ describe('Meeting UX contract (MEET-UX)', () => {
     expect(auth).toMatch(/!shouldBypassLoginRedirectForMeeting\(location\.pathname\)[\s\S]*navigate\('\/login'/);
   });
 
-  it('MEET-UX-20 — patient /meeting route is public (not behind ProtectedRoute)', () => {
+  it('MEET-UX-20 — patient meeting route requires auth (user-scoped like doctor)', () => {
     const app = fs.readFileSync(path.join(root, 'Isara-patient-portal/frontend/App.tsx'), 'utf8');
-    expect(app).toMatch(/path="\/meeting\/:appointmentId"/);
-    expect(app).not.toMatch(/path="\/meeting\/:appointmentId" element=\{<ProtectedRoute>/);
+    expect(app).toMatch(/path="\/patient\/:userId\/meeting\/:appointmentId"/);
+    expect(app).toMatch(/PatientMeetingRouteGuard/);
+    expect(app).toMatch(/LegacyPatientMeetingRedirect/);
+    const room = fs.readFileSync(path.join(root, 'Isara-patient-portal/frontend/pages/PatientMeetingRoom.tsx'), 'utf8');
+    expect(room).not.toMatch(/guestParticipantId/);
   });
 
   it('MEET-UX-21 — docker env: DEMO_AUTO_LOGIN=1 and VITE_AUTO_ADMIT_LOBBY=0', () => {
@@ -191,10 +202,11 @@ describe('Meeting UX contract (MEET-UX)', () => {
     expect(patientRoom).toMatch(/mountJitsiMeeting/);
   });
 
-  it('MEET-UX-25 — doctor HealthMeeting autostart when DEMO_AUTO_MEETING + stayOnQueue guard', () => {
+  it('MEET-UX-25 — doctor HealthMeeting only autostarts on explicit ?autostart= / ?appointmentId=', () => {
     const hm = fs.readFileSync(path.join(root, 'Isara-doctor-portal/frontend/pages/meetings/HealthMeeting.tsx'), 'utf8');
     expect(hm).toMatch(/isDemoAutoMeetingEnabled/);
-    expect(hm).toMatch(/meetings\.find/);
+    expect(hm).toMatch(/searchParams\.get\('autostart'\)/);
+    expect(hm).not.toMatch(/meetings\.find\(/);
     expect(hm).toMatch(/shouldStayOnHealthMeetingQueue|stayOnQueue/);
   });
 
@@ -211,10 +223,8 @@ describe('Meeting UX contract (MEET-UX)', () => {
     expect(mp).toMatch(/ensureHealthMeetingStayOnQueue/);
   });
 
-  it('MEET-UX-28 — gate env keeps DEMO_AUTO_MEETING=1', () => {
-    const gate = fs.readFileSync(path.join(root, 'scripts/run-local-pre-deploy-gate.mjs'), 'utf8');
-    const headed = fs.readFileSync(path.join(root, 'scripts/gates/lib/run-step.mjs'), 'utf8');
-    expect(gate).toMatch(/DEMO_AUTO_MEETING:\s*'1'/);
-    expect(headed).toMatch(/DEMO_AUTO_MEETING:\s*'1'/);
+  it('MEET-UX-28 — doctor env-config defaults DEMO_AUTO_MEETING off', () => {
+    const env = fs.readFileSync(path.join(root, 'Isara-doctor-portal/frontend/public/env-config.js'), 'utf8');
+    expect(env).toMatch(/DEMO_AUTO_MEETING:\s*'0'/);
   });
 });

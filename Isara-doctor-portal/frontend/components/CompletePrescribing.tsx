@@ -126,6 +126,7 @@ export const CompletePrescribing: React.FC<CompletePrescribingProps> = ({
   // Send prescription to patient's health logs
   const sendPrescriptionToPatientHealthLogs = async (prescription: any): Promise<boolean> => {
     try {
+      const token = localStorage.getItem('token') || localStorage.getItem('authToken');
       // Prepare patient-friendly medication list
       const patientMedications = prescription.medications.map((med: any) => ({
         id: med.id || `med-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`,
@@ -157,7 +158,10 @@ export const CompletePrescribing: React.FC<CompletePrescribingProps> = ({
 
       const response = await fetch(`/api/patients/${patient.id}/health-logs`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
         body: JSON.stringify(healthLogEntry),
       });
 
@@ -174,6 +178,14 @@ export const CompletePrescribing: React.FC<CompletePrescribingProps> = ({
   };
 
   const handleSavePrescription = async () => {
+    const allergyBlocks = prescriptionItems.filter((item) =>
+      (item.warnings || []).some((w: string) => w.includes('ALLERGY ALERT'))
+    );
+    if (allergyBlocks.length > 0) {
+      alert('❌ ไม่สามารถสั่งยาได้: พบการแพ้ยาที่ขัดแย้ง (Allergy BLOCK)');
+      return;
+    }
+
     const prescription = {
       id: `RX-${Date.now()}`,
       patientId: patient.id,

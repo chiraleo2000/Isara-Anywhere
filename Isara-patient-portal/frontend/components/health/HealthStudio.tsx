@@ -21,6 +21,8 @@ export const HealthStudio: React.FC<HealthStudioProps> = ({ className = '' }) =>
   useEffect(() => {
     if (user) {
       loadData();
+    } else {
+      setLoading(false);
     }
   }, [user]);
 
@@ -98,7 +100,7 @@ export const HealthStudio: React.FC<HealthStudioProps> = ({ className = '' }) =>
   ];
 
   return (
-    <div className={`bg-white rounded-2xl border border-gray-100 overflow-hidden ${className}`}>
+    <div className={`bg-white rounded-2xl border border-gray-100 overflow-hidden ${className}`} data-testid="health-studio-ready">
       {/* Header */}
       <div className="bg-gradient-to-r from-emerald-600 to-teal-600 p-6 text-white">
         <div className="flex items-center gap-3 mb-2">
@@ -119,6 +121,7 @@ export const HealthStudio: React.FC<HealthStudioProps> = ({ className = '' }) =>
           return (
             <button
               key={tab.id}
+              data-testid={tab.id === 'content' ? 'health-studio-content-tab' : undefined}
               onClick={() => setActiveTab(tab.id as any)}
               className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 text-sm font-medium transition-all ${activeTab === tab.id
                   ? 'text-emerald-600 border-b-2 border-emerald-600 bg-emerald-50/50'
@@ -134,7 +137,7 @@ export const HealthStudio: React.FC<HealthStudioProps> = ({ className = '' }) =>
 
       {/* Tab Content */}
       <div className="p-5">
-        {loading ? (
+        {loading && activeTab === 'overview' ? (
           <div className="space-y-4">
             {[1, 2, 3].map((i) => (
               <div key={i} className="animate-pulse bg-gray-100 h-20 rounded-xl" />

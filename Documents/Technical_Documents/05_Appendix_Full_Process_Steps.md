@@ -1,8 +1,8 @@
 # ภาคผนวก — ขั้นตอนกระบวนการเต็ม (Full Process Steps)
 
-> **อัปเดต:** 2 มิถุนายน 2569 — สร้างอัตโนมัติจาก `Processes/Pages` และ `Processes/*.md`  
-> **ชุด:** `Documents/Technical_Documents` · [ดัชนี](../README.md) · **สร้างซ้ำ:** `python scripts/build-appendix-process-steps.py`  
-> **เอกสารหลัก:** [01](01_System_Architecture_and_Workflow.md) · [02](02_Authentication_and_Authorization.md) · [03](03_Data_Storage_Architecture.md) · [04](04_Jitsi_Integration_and_Code_Examples.md)
+> **อัปเดต:** สร้างอัตโนมัติจาก `Processes/Pages` และ `Processes/*.md`
+> **ขอบเขต:** As-is — ไม่มีข้อเสนอแนะเพิ่ม
+> **เอกสารหลัก:** [01 Architecture](01_System_Architecture_and_Workflow.md) · [02 Auth](02_Authentication_and_Authorization.md) · [03 Storage](03_Data_Storage_Architecture.md) · [04 Jitsi](04_Jitsi_Integration_and_Code_Examples.md)
 
 เอกสารนี้รวบรวม **Workflow** และ **ขั้นตอนการใช้งาน (สรุป)** จากสเปก Processes — รายละเอียด `data-testid` และ boilerplate ENRICH เต็มอยู่ในไฟล์ต้นฉบับแต่ละหน้า
 
@@ -536,7 +536,7 @@ Step 5: Patient can continue conversation or close
 
 หน้า **05 Appointments** อธิบายการทำงานของพอร์ทัลผู้ป่วย ในระบบ Isara Anywhere ให้เจ้าหน้าที่ปฏิบัติการและทีมสนับสนุนใช้เป็นแนวทางเดียวกันกับคู่มือผู้ใช้และการทดสอบอัตโนมัติ
 
-## 6. Workflows
+## 7. Workflows
 
 
 ### Workflow 1: Book New Appointment
@@ -2600,52 +2600,97 @@ Step 7: Signs EMR → Patient notified
 
 ## 4. Workflows
 
-
-### Workflow: View Daily Schedule (v1.7.51 — calendar sync on confirm)
+### Workflow A: View schedule after confirming an appointment
 
 ```text
-Step 1: Doctor confirms telehealth appointment (Health Meeting queue or POST /api/appointments/:id/confirm)
-Step 2: API sets confirmed_date/time, meeting_link, calendarEventUrl; inserts schedule_entry_ready notification
-Step 3: Navigate to /schedule (data-testid=doctor-schedule-page)
-Step 4: GET /api/appointments → mapAppointmentForClient → filter doctor_id + status confirmed|scheduled
-Step 5: resolveAppointmentSchedule(apt) picks confirmed_date over requested_date
-Step 6: Today's list: data-testid=schedule-appointment-{id}; Join: data-testid=schedule-meeting-link
-Step 7: Month view: emerald dot on days with appointments (schedule-month-appointment-day)
-Step 8: Upcoming section lists dates strictly after today (no duplicate of today)
-Step 9: Optional: open calendarEventUrl from schedule_entry_ready notification → Google Calendar TEMPLATE
+Step 1: Doctor confirms telehealth appointment (Health Meeting or API confirm)
+        POST /api/appointments/{id}/confirm
+        Body: { doctorId, confirmedDate, confirmedTime, notes? }
+
+Step 2: System generates Jitsi room + calendarEventUrl + notifications
+
+Step 3: Doctor opens /schedule (menu: ตารางนัดหมาย)
+
+Step 4: GET /api/appointments → filtered by doctor.id
+
+Step 5: If confirmed_date = today → appears under "Today"
+        Else → appears under "Upcoming"
+
+Step 6: Month view → emerald dot on appointment day
+
+Step 7: Click "Join Video Meeting" → new tab with meeting_link
 ```
 
-**E2E:** Playwright D4cal (group-D) · Vitest: `appointmentMapper.test.ts`, `calendarEventLinks.test.ts`
+### Workflow B: Add to personal Google Calendar
+
+```text
+Step 1: Doctor receives in-app notification type schedule_entry_ready
+Step 2: Open notification → data.calendarEventUrl
+Step 3: Browser opens Google Calendar TEMPLATE (no OAuth required)
+Step 4: Doctor saves event to Google account
+```
+
+### Workflow C: E2E proof (D4cal)
+
+```text
+Step 1: D4 workflow confirms appointment (D4a)
+Step 2: D4cal loads patient notifications → assert calendarEventUrl in appointment_confirmed data
+Step 3: navDoctor → schedule → assert doctor-schedule-page visible
+Step 4: assert schedule-appointment-{workflowAppointmentId} visible
+Step 5: assert schedule-meeting-link visible
+Step 6: Patient reload → optional mini-calendar-appointment-day on sidebar
+```
 
 ---
-
 
 ## 5. API Endpoints
 
 | Method | Endpoint | Purpose |
-| ------ | -------- | ------- |
-| GET | `/api/appointments` | Fetch appointments (`mapAppointmentForClient`; optional `?doctorId=`) |
-| GET | `/api/schedule/:doctorId` | Schedule alias — date from confirmed_date, meetingLink |
-| POST | `/api/appointments/:id/confirm` | Confirm + Jitsi URLs + calendarEventUrl + notifications |
+|--------|----------|---------|
+| GET | `/api/appointments` | List appointments (`mapAppointmentForClient`); optional `?doctorId=` |
+| GET | `/api/schedule/:doctorId` | Lightweight schedule alias (date, time, meetingLink per row) |
+| POST | `/api/appointments/:id/confirm` | Confirm + calendarEventUrl + meeting links |
 
 ---
 
+## 6. Key source files
 
-## 6. AI Agent Improvement Opportunities
-
-
-- **Smart scheduling**: AI optimize appointment spacing
-
-
-- **No-show prediction**: AI predict likelihood of patient no-shows
-
-
-- **Buffer management**: AI suggest break times based on appointment complexity
-
-
-- **Calendar sync**: AI sync with external calendars (Google, Apple)
+| File | Role |
+|------|------|
+| [`appointmentMapper.cjs`](../../../Isara-doctor-portal/backend/appointmentMapper.cjs) | Snake_case → camelCase for API consumers |
+| [`calendarEventLinks.cjs`](../../../Isara-doctor-portal/backend/calendarEventLinks.cjs) | `buildTelehealthCalendarUrl`, `buildGoogleCalendarUrl` |
+| [`appointmentSchedule.ts`](../../../Isara-doctor-portal/frontend/utils/appointmentSchedule.ts) | `resolveAppointmentSchedule(apt)` — unified date/time |
+| [`mainApiServer.cjs`](../../../Isara-doctor-portal/backend/mainApiServer.cjs) | Confirm handler + schedule route |
 
 ---
+
+## 7. AI Agent Improvement Opportunities
+
+- **Smart scheduling:** AI optimize appointment spacing based on urgency and no-show risk  
+- **No-show prediction:** Flag high-risk slots on schedule cards  
+- **Calendar sync:** Future OAuth Google Calendar API write (current: TEMPLATE URL only)  
+- **External calendar:** ICS download for Outlook/Apple Calendar  
+
+---
+
+## 8. Expected results (ผลลัพธ์ที่คาดหวัง)
+
+| Action | DB | Doctor UI | Patient UI |
+|--------|-----|-----------|------------|
+| Doctor confirms telehealth | `status=confirmed`, `confirmed_date/time` set, `meeting_link` set | Row on `/schedule` with join link | Confirmed tab + MiniCalendar dot + calendar link on detail |
+| Doctor opens month view | — | Dots on days with confirmed visits | — |
+| Playwright D4cal | Notification row with `calendarEventUrl` | `schedule-appointment-*` visible | Optional `mini-calendar-appointment-day` |
+
+---
+
+## 9. Troubleshooting
+
+| Symptom | Cause | Fix |
+|---------|-------|-----|
+| Schedule empty after confirm | Old image without `mapAppointmentForClient` | Rebuild `doctor-portal` Docker image |
+| Wrong date on card | `requested_date` used instead of `confirmed_date` | Confirm API must pass `confirmedDate`; UI uses `resolveAppointmentSchedule` |
+| No join button | `meeting_link` null for non-telehealth | Confirm only generates links for `appointment_type=telehealth` |
+| Duplicate cards same day | Today + upcoming both listed | Fixed: upcoming uses `date > today` only |
 
 ## ขั้นตอนการใช้งาน (สรุปจาก ENRICH-9)
 
@@ -2783,10 +2828,10 @@ Step 2: Click "ยืนยัน" (Confirm)
 Step 3: Select date/time in confirmation dialog
 Step 4: Select email recipients
 Step 5: Click "ยืนยันนัดหมาย"
-Step 6: PATCH /api/appointments/:id → status: confirmed (row retained — UI label accepted)
+Step 6: PATCH /api/appointments/:id → status: confirmed
 Step 7: POST /api/meetings/create → generates Jitsi URLs
 Step 8: Confirmation email sent to patient
-Step 9: Appointment stays in pool/accepted tab (includeAccepted=true, 7-day window)
+Step 9: Appointment moves to Meetings tab
 ```
 
 
@@ -2795,10 +2840,11 @@ Step 9: Appointment stays in pool/accepted tab (includeAccepted=true, 7-day wind
 ```text
 Step 1: Find confirmed appointment in Meetings tab
 Step 2: Click "เริ่มประชุม" (Start Meeting)
-Step 3: Jitsi opens in new tab (doctor as HOST)
-Step 4: Doctor waits for patient to join lobby
-Step 5: Doctor admits patient from lobby
-Step 6: Consultation begins with live transcription
+Step 3: In-app MeetingRoom opens at /doctor/:userId/meeting/:appointmentId (doctor as HOST)
+Step 4: Doctor Jitsi iframe mounts; host-present fires on videoConferenceJoined
+Step 5: Patient waits in Izara lobby until host-ready
+Step 6: Doctor admits patient from lobby panel
+Step 7: Consultation begins with live transcription (Web Speech API)
 ```
 
 
@@ -2850,9 +2896,9 @@ Step 1: Doctor opens confirmed appointment in Meetings tab
 Step 2: Clicks "เชิญผู้เข้าร่วม" (Invite Participants)
 Step 3: Search and add other doctors/admin by name or specialty
 Step 4: POST /api/meetings/:id/invite → Sends invitation + meeting URL
-Step 5: Patient separately shares Guest URL with relatives/friends (scoped guest-invite token)
-Step 6: Guests open invite link — anonymous join-config denied without token
-Step 7: All guests enter Izara lobby on meeting day
+Step 5: Patient separately shares Guest URL with relatives/friends
+Step 6: Non-registered guests create display name on join page
+Step 7: All guests enter lobby on meeting day
 Step 8: Doctor (HOST) approves/rejects each lobby participant
 Step 9: Admitted participants join multi-party video meeting
 ```
@@ -2972,176 +3018,6 @@ Step 9: Data appears in Patient Dashboard + Timeline + Health History
 **วัตถุประสงค์ (ย่อ):**
 
 หน้า **07 Virtual Meeting** อธิบายการทำงานของพอร์ทัลแพทย์/ผู้ดูแล ในระบบ Isara Anywhere ให้เจ้าหน้าที่ปฏิบัติการและทีมสนับสนุนใช้เป็นแนวทางเดียวกันกับคู่มือผู้ใช้และการทดสอบอัตโนมัติ
-
-## 4. Workflows
-
-
-### Workflow 1: Complete Video Consultation
-
-```text
-Step 1:  Doctor clicks "Start Meeting" from Health Meeting page
-Step 2:  Time check validates meeting window
-Step 3:  Consent screen shown → Doctor accepts recording terms
-Step 4:  Jitsi video loads in iframe (doctor as moderator)
-Step 5:  Patient joins lobby → Doctor admits
-Step 6:  Doctor starts live transcription
-Step 7:  AI Copilot panel provides real-time suggestions
-Step 8:  Doctor conducts consultation
-Step 9:  Doctor clicks "End Meeting"
-Step 10: Recording stops and uploads
-Step 11: AI generates consultation report (SOAP format)
-Step 12: Doctor reviews AI report (Man-in-the-Loop)
-Step 13: Approves → Content available for EMR
-```
-
-
-### Workflow 2: Live Transcription During Meeting
-
-```text
-Step 1: Doctor clicks "Start Transcription"
-Step 2: POST /api/meetings/:id/start-transcription
-Step 3: Web Speech API begins listening
-Step 4: Real-time transcript displays with speaker labels
-Step 5: Segments saved to PostgreSQL periodically
-Step 6: Doctor can pause/resume transcription
-Step 7: Switch language (TH ↔ EN) as needed
-Step 8: On meeting end → POST /api/meetings/:id/stop-transcription
-Step 9: Full transcript compiled for AI summary
-```
-
-
-### Workflow 3: Multi-Party Meeting Management
-
-```text
-Step 1:  Doctor starts meeting as HOST/moderator
-Step 2:  Patient joins via Patient URL → enters lobby
-Step 3:  Doctor admits patient from lobby panel
-Step 4:  Patient's relatives join via Guest URL → enter lobby
-Step 5:  Non-registered guests enter display name → enter lobby
-Step 6:  Doctor reviews each lobby participant → Admit or Reject
-Step 7:  Invited doctors join via Doctor URL → auto-admitted (moderator role)
-Step 8:  All admitted participants visible in Participants Panel
-Step 9:  Doctor controls: mute individual/all, remove participant
-Step 10: All participants can use text chat (captured for AI summary)
-```
-
-
-### Workflow 4: Meeting End → AI Summary Pipeline
-
-```text
-Step 1:  Doctor clicks "End Meeting for All" (HOST control)
-Step 2:  Jitsi meeting room closes for all participants
-Step 3:  Backend triggers: POST /api/meetings/:id/end
-Step 4:  System compiles:
-         → Full transcript (Web Speech API segments via Socket.IO)
-         → All chat messages (Socket.IO captured)
-         → Meeting metadata (duration, participants, recording URL)
-Step 5:  POST /api/meetings/:id/generate-summary
-Step 6:  Gemini 2.5 Flash Lite processes all meeting data
-Step 7:  For meetings > 30 min: generates sectioned summaries (30-min intervals)
-Step 8:  AI generates SOAP format summary:
-         S = Subjective (from patient statements in transcript)
-         O = Objective (from doctor observations in transcript)
-         A = Assessment (AI-suggested diagnoses from clinical context)
-         P = Plan (treatment discussion + follow-up from transcript)
-Step 9:  Summary saved to PostgreSQL with status: pending_validation
-Step 10: Doctor notified → Meeting Results tab shows new pending item
-Step 11: Doctor reviews via Man-in-the-Loop validation (see Health Meeting page)
-Step 12: Approved summary → pre-fills EMR Editor for finalization
-```
-
-
-### Workflow 5: Real-Time Transcript Display
-
-```text
-Step 1:  Doctor presses [▶️ START] transcript streaming
-Step 2:  Web Speech API activates in browser (FREE, Chrome recommended)
-Step 3:  Socket.IO streams transcript segments to Meeting Server (port 3020)
-Step 4:  Live transcript panel displays with speaker identification:
-         👨‍⚕️ Doctor: สวัสดีครับ คุณสมชาย วันนี้เป็นอย่างไรบ้าง...
-         🧑 Patient: สวัสดีครับหมอ ปวดหัวมา 3 วัน...
-         👥 Guest: (wife) หมอคะ สามีนอนไม่หลับด้วย...
-Step 5:  Interim text shown with yellow background + pulsing cursor
-Step 6:  Confidence < 0.8 shows ⚠️ indicator
-Step 7:  Doctor can [⏸️ PAUSE] during breaks
-Step 8:  Doctor can [▶️ RESUME] to continue
-Step 9:  Language switchable: Thai (th-TH) ↔ English (en-US)
-Step 10: Segments auto-saved to PostgreSQL periodically
-Step 11: Doctor presses [⏹️ STOP] at meeting end
-Step 12: Full transcript compiled and stored
-```
-
----
-
-
-## 5. API Endpoints
-
-| Method | Endpoint | Purpose |
-| ------ | -------- | ------- |
-| POST | `/api/meetings/:id/start-transcription` | Start transcription session |
-| POST | `/api/meetings/:id/transcript` | Add transcript segment |
-| POST | `/api/meetings/:id/stop-transcription` | Stop and compile transcript |
-| POST | `/api/meetings/:id/generate-summary` | Generate AI SOAP summary |
-| GET | `/api/meetings/:id/summary` | Get stored AI summary |
-| GET | `/api/meetings/:id/transcript` | Get full transcript |
-| POST | `/api/meetings/:id/end` | End meeting and trigger AI pipeline |
-| POST | `/api/meetings/:id/lobby` | Approve/reject lobby participant |
-| GET | `/api/meetings/:id/participants` | List all meeting participants |
-| POST | `/api/meetings/:id/mute-all` | Mute all participants (HOST only) |
-| POST | `/api/meetings/:id/remove-participant` | Remove participant from meeting |
-| POST | `/api/meetings/:id/chat` | Send/capture chat message |
-| GET | `/api/meetings/:id/chat` | Get all chat messages |
-| POST | `/api/meetings/:id/screen-share` | Start/stop screen sharing |
-| POST | `/api/meetings/:id/recording/start` | Start meeting recording |
-| POST | `/api/meetings/:id/recording/stop` | Stop meeting recording |
-
----
-
-
-## 6. Meeting Technology Stack
-
-| Component | Technology | Cost | Details |
-| --------- | ---------- | ---- | ------- |
-| Video Platform | Jitsi Meet (meet.jit.si) | FREE | With lobby, moderator controls |
-| Transcription | Web Speech API (browser-native) | FREE | Chrome recommended, TH/EN support |
-| AI Processing | Gemini 2.5 Flash Lite | FREE tier | SOAP summary generation |
-| Real-time Transport | Socket.IO | FREE | Transcript streaming to port 3020 |
-| Meeting Server | Express.js (port 3020) | Self-hosted | Manages meeting state |
-| Database | PostgreSQL (izara_phase1) | Self-hosted | Stores transcripts, summaries, chat |
-
----
-
-
-## 7. AI Agent Improvement Opportunities
-
-
-- **Auto-dictation**: AI transcribe doctor's verbal notes directly to EMR fields
-
-
-- **Real-time diagnosis support**: AI suggest differential diagnosis during conversation
-
-
-- **Auto-summary**: AI generate meeting summary in real-time as conversation progresses
-
-
-- **Sentiment analysis**: AI detect patient distress or confusion
-
-
-- **Follow-up extraction**: AI automatically identify follow-up items from conversation
-
-
-- **Speaker diarization enhancement**: AI improve speaker identification accuracy
-
-
-- **Multi-language real-time translation**: AI translate between Thai and English in real-time
-
-
-- **Clinical keyword highlighting**: AI highlight medical terms in transcript for quick review
-
-
-- **Automatic section markers**: AI detect topic changes and mark 30-min summary boundaries
-
----
 
 ## ขั้นตอนการใช้งาน (สรุปจาก ENRICH-9)
 
@@ -4516,6 +4392,94 @@ Step 8: Skip with reason if patient unavailable
 
 ---
 
+### 01_Meeting_Room.md
+
+**ต้นฉบับ:** [`Processes/Pages/Meeting-Server/01_Meeting_Room.md`](../../Processes/Pages/Meeting-Server/01_Meeting_Room.md)
+
+**วัตถุประสงค์ (ย่อ):**
+
+หน้า **01 Meeting Room** อธิบายการทำงานของพอร์ทัลMeeting Server ในระบบ Isara Anywhere ให้เจ้าหน้าที่ปฏิบัติการและทีมสนับสนุนใช้เป็นแนวทางเดียวกันกับคู่มือผู้ใช้และการทดสอบอัตโนมัติ
+
+## ขั้นตอนการใช้งาน (สรุปจาก ENRICH-9)
+
+**เงื่อนไขก่อนเริ่ม:** เข้าสู่ระบบด้วยบัญชีที่มีสิทธิ์ถูกต้อง, ใช้ HTTPS, เบราว์เซอร์ Chrome/Edge ล่าสุด, อินเทอร์เน็ตเสถียร (วิดีโอ ≥10 Mbps)
+1. แพทย์ (HOST) สร้าง/เปิดห้องประชุมก่อน — ระบบตั้ง `host-ready` ผ่าน Socket.IO (`notifyHostPresent`)
+2. คัดลอก `guestJoinUrl` จาก Patient Portal API (`share-link` / `guest-invite`) — ห้ามแชร์ URL พอร์ทัลแพทย์
+3. ผู้ป่วยและ Guest รอใน Izara Lobby (`lobby-waiting-screen` / `guest-lobby-waiting`) — ไม่ใช้ Jitsi lobby บน meet.jit.si
+4. แพทย์กด Admit รายคน หรือ `admit-all-btn` — ตรวจ badge Guest/Patient บน Meeting Room
+5. Guest: รอ overlay host-ready แล้ว mount Jitsi (`jitsi-guest-container` เต็มจอ ไม่ซ่อนด้วย h-0)
+6. ทุกฝ่ายเข้า Jitsi บน `meet.jit.si` — เปิดกล้อง/ไมค์; ตรวจ CSP `frame-src` / `connect-src`
+7. ระหว่างประชุม: ส่ง transcript segment (`/transcript`, `guest-transcript-segment`)
+8. จบประชุม: MediaRecorder → `POST /api/meetings/:id/save-recording` (≤50MB) → path `meetings/{doctorId}/{meetingId}/video.webm`
+9. เรียก `POST /api/meetings/:id/end` — pipeline สรุป AI (Gemini) + Socket `meeting-summary-ready`
+10. แดชบอร์ดแพทย์: `GET /api/video-meeting/:appointmentId/files` → แท็บ AI Summary / `insert-meeting-summary-emr-btn`
+11. ตรวจ `GET /api/meetings/:id/pipeline-status` หากสรุปยังไม่ขึ้น (stage: completed)
+
+### ผลลัพธ์ที่คาดหวัง (สรุป)
+- หน้าจอแสดงสถานะสำเร็จตามบทบาท (patient / doctor / guest)
+
+### ข้อควรระวัง
+- ข้อมูลสุขภาพเป็นความละเอียดอ่อน — ปฏิบัติตาม PDPA และนโยบายโรงพยาบาล
+
+---
+
+### 02_Meeting_Results.md
+
+**ต้นฉบับ:** [`Processes/Pages/Meeting-Server/02_Meeting_Results.md`](../../Processes/Pages/Meeting-Server/02_Meeting_Results.md)
+
+**วัตถุประสงค์ (ย่อ):**
+
+หน้า **02 Meeting Results** อธิบายการทำงานของพอร์ทัลMeeting Server ในระบบ Isara Anywhere ให้เจ้าหน้าที่ปฏิบัติการและทีมสนับสนุนใช้เป็นแนวทางเดียวกันกับคู่มือผู้ใช้และการทดสอบอัตโนมัติ
+
+## ขั้นตอนการใช้งาน (สรุปจาก ENRICH-9)
+
+**เงื่อนไขก่อนเริ่ม:** เข้าสู่ระบบด้วยบัญชีที่มีสิทธิ์ถูกต้อง, ใช้ HTTPS, เบราว์เซอร์ Chrome/Edge ล่าสุด, อินเทอร์เน็ตเสถียร (วิดีโอ ≥10 Mbps)
+1. แพทย์ (HOST) สร้าง/เปิดห้องประชุมก่อน — ระบบตั้ง `host-ready` ผ่าน Socket.IO (`notifyHostPresent`)
+2. คัดลอก `guestJoinUrl` จาก Patient Portal API (`share-link` / `guest-invite`) — ห้ามแชร์ URL พอร์ทัลแพทย์
+3. ผู้ป่วยและ Guest รอใน Izara Lobby (`lobby-waiting-screen` / `guest-lobby-waiting`) — ไม่ใช้ Jitsi lobby บน meet.jit.si
+4. แพทย์กด Admit รายคน หรือ `admit-all-btn` — ตรวจ badge Guest/Patient บน Meeting Room
+5. Guest: รอ overlay host-ready แล้ว mount Jitsi (`jitsi-guest-container` เต็มจอ ไม่ซ่อนด้วย h-0)
+6. ทุกฝ่ายเข้า Jitsi บน `meet.jit.si` — เปิดกล้อง/ไมค์; ตรวจ CSP `frame-src` / `connect-src`
+7. ระหว่างประชุม: ส่ง transcript segment (`/transcript`, `guest-transcript-segment`)
+8. จบประชุม: MediaRecorder → `POST /api/meetings/:id/save-recording` (≤50MB) → path `meetings/{doctorId}/{meetingId}/video.webm`
+9. เรียก `POST /api/meetings/:id/end` — pipeline สรุป AI (Gemini) + Socket `meeting-summary-ready`
+10. แดชบอร์ดแพทย์: `GET /api/video-meeting/:appointmentId/files` → แท็บ AI Summary / `insert-meeting-summary-emr-btn`
+11. ตรวจ `GET /api/meetings/:id/pipeline-status` หากสรุปยังไม่ขึ้น (stage: completed)
+
+### ผลลัพธ์ที่คาดหวัง (สรุป)
+- หน้าจอแสดงสถานะสำเร็จตามบทบาท (patient / doctor / guest)
+
+### ข้อควรระวัง
+- ข้อมูลสุขภาพเป็นความละเอียดอ่อน — ปฏิบัติตาม PDPA และนโยบายโรงพยาบาล
+
+---
+
+### 03_Emr_Appointment_Page.md
+
+**ต้นฉบับ:** [`Processes/Pages/Meeting-Server/03_Emr_Appointment_Page.md`](../../Processes/Pages/Meeting-Server/03_Emr_Appointment_Page.md)
+
+**วัตถุประสงค์ (ย่อ):**
+
+หน้า **03 Emr Appointment** อธิบายการทำงานของพอร์ทัลMeeting Server ในระบบ Isara Anywhere ให้เจ้าหน้าที่ปฏิบัติการและทีมสนับสนุนใช้เป็นแนวทางเดียวกันกับคู่มือผู้ใช้และการทดสอบอัตโนมัติ
+
+## ขั้นตอนการใช้งาน (สรุปจาก ENRICH-9)
+
+**เงื่อนไขก่อนเริ่ม:** เข้าสู่ระบบด้วยบัญชีที่มีสิทธิ์ถูกต้อง, ใช้ HTTPS, เบราว์เซอร์ Chrome/Edge ล่าสุด, อินเทอร์เน็ตเสถียร (วิดีโอ ≥10 Mbps)
+1. ตรวจสอบสถานะนัดปัจจุบัน (pending / in_pool / awaiting_doctor_response / confirmed)
+2. ดำเนินการตามบทบาท: ผู้ป่วยจอง | แอดมินจัดสรร | แพทย์ยืนยัน
+3. ตรวจ KPI คิว (`queue-count`) และรายการใน `queue-list`
+4. อัปเดต realtime ผ่าน Socket.IO / รีเฟรช
+5. เริ่มวิดีโอคอลเมื่อสถานะ confirmed
+6. บันทึก EMR/สั่งยา/แล็บหลังจบการพบ
+
+### ผลลัพธ์ที่คาดหวัง (สรุป)
+- หน้าจอแสดงสถานะสำเร็จตามบทบาท (patient / doctor / guest)
+
+### ข้อควรระวัง
+- ข้อมูลสุขภาพเป็นความละเอียดอ่อน — ปฏิบัติตาม PDPA และนโยบายโรงพยาบาล
+
+---
+
 <a id="system-workflows"></a>
 
 ## เอกสาร Workflow ระดับระบบ
@@ -4713,35 +4677,22 @@ The meeting experience is designed to work like **Microsoft Teams** — the doct
    - Screen sharing for medical images/reports
    - Local recording enabled
 4. **Meeting ends:**
-   - Doctor ends meeting
-   - Recording uploaded to GCS via API
+   - Doctor ends meeting via Meeting Server
+   - Recording → `meeting_records` (BYTEA) + transcript → `meeting_transcripts`
 
 ### Recording & Transcription Flow
 
+> **Current:** Meeting Server + PostgreSQL. See [VIDEO_MEETING_JITSI_GEMINI.md](VIDEO_MEETING_JITSI_GEMINI.md) and [POST_MEETING_WORKFLOW.md](POST_MEETING_WORKFLOW.md).
+
 ```text
 ┌──────────────────────────────────────────────────────────────────────────┐
-│  POST-MEETING AI PROCESSING                                               │
+│  POST-MEETING AI PROCESSING (PostgreSQL)                                  │
 ├──────────────────────────────────────────────────────────────────────────┤
-│                                                                           │
-│  1. Video Upload                                                          │
-│     └─→ POST /api/video-meeting/:id/end                                  │
-│     └─→ Video → GCS: izara-doctors-data/doctors/{doctorId}/meetings/     │
-│                                                                           │
-│  2. Speech-to-Text Transcription                                          │
-│     └─→ Audio extracted → Google Cloud Speech-to-Text API                │
-│     └─→ Thai/English medical speech recognition                          │
-│     └─→ Output: transcript.txt                                           │
-│                                                                           │
-│  3. AI Summary Generation (Gemini)                                        │
-│     └─→ Transcript → Gemini AI                                           │
-│     └─→ Thai SOAP format: อาการสำคัญ, ประวัติ, การตรวจ, การวินิจฉัย      │
-│     └─→ Output: summary.txt                                              │
-│                                                                           │
-│  4. Doctor Recommendations (Gemini)                                       │
-│     └─→ Clinical decision support                                        │
-│     └─→ Differential diagnosis suggestions                               │
-│     └─→ Output: recommendations.txt                                      │
-│                                                                           │
+│  1. End meeting → Meeting Server POST /api/meetings/:id/end              │
+│  2. Transcript → meeting_transcripts (Web Speech API segments)           │
+│  3. Gemini SOAP → meeting_records.ai_summary                             │
+│  4. Man-in-the-loop → ai_validations                                     │
+│  5. Doctor signs EMR → patient_documents via DocumentDeliveryService     │
 └──────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -4790,18 +4741,20 @@ The meeting experience is designed to work like **Microsoft Teams** — the doct
 
 2. **Prescription saved:**
    - Prescription saved to `prescriptions.json`
-   - **Prescription sent to patient health logs** (`health-logs.json`)
+   - **Prescription published to `patient_documents`** (source_type `prescription`)
    - Patient can view prescribed medications in Health Studio
 
 ### 10.3 EMR Delivery to Patient
 
 #### Delivery Flow
 
-1. EMR signed → POST to `/api/patients/{patientId}/health-logs`
-2. Data saved to GCS: `patients/{patientId}/health-logs.json`
-3. Patient notification sent
-4. Patient views in Health Studio → ผลการรักษา (Treatment Results)
+1. EMR signed → `PUT /api/emr/:id` + `DocumentDeliveryService.publishDocument`
+2. Rows in `patient_documents` + `health_timeline`; patient reads via `GET /api/phr/:id/health-logs` (signed only)
+3. Patient notification sent (`emr_signed`)
+4. Patient views in PHR → ผลการรักษา / เอกสารทางการแพทย์
 5. Patient views in Latest Appointment Result on dashboard
+
+See [Clinical_Document_Delivery_Workflows.md](Clinical_Document_Delivery_Workflows.md).
 
 ### 10.4 If EMR Not Signed
 
@@ -5019,7 +4972,7 @@ POST /api/meetings/:id/stop-transcription
 #### Security Considerations
 
 1. **Room Name Hashing**: Room names include secure hash to prevent guessing
-2. **Pre-join Verification**: Users must click "Join" button, can't auto-join
+2. **Role-based auto-join**: Authenticated doctors and patients auto-enter meetings with account display names; only URL guests enter a name manually
 3. **No Persistent Storage**: Meeting URLs expire after meeting ends
 4. **PDPA Compliance**: Transcripts stored according to PDPA guidelines
 5. **End-to-End Encryption**: Jitsi supports E2EE for sensitive consultations
@@ -5679,7 +5632,7 @@ pending ──→ in_pool ──→ ai_matched ──→ doctor_claimed ──�
 
 ### C1. Doctor Opens Meeting Room
 
-**Pages:** `HealthMeetingPage.tsx`, `VirtualMeeting.tsx` (modal)
+**Pages:** `HealthMeeting.tsx`, `MeetingRoom.tsx` (`/meeting/:id` — VirtualMeeting removed v1.7.53)
 **API:** `POST /api/meetings/create`
 **Tables:** `meeting_records`
 
@@ -6090,9 +6043,9 @@ try {
 | DoctorNotificationBell | ✅ Done | Fixed: uses real API, no mock data |
 | Jitsi Meeting Links | ✅ Done | Format: meet.jit.si/izara-{id}-{ts} |
 | Meeting Link on Confirm | ✅ Done | Auto-generated on confirmation |
-| GCS Notification Storage | ✅ Done | Path: notifications/{role}/{id}/ |
-| Notification API (Patient) | ✅ Done | Port 3004 |
-| Notification API (Doctor) | ✅ Done | Port 3012 (GCS Server) |
+| PostgreSQL `notifications` table | ✅ Done | NOTIFY → Socket.IO real-time |
+| Notification API (Patient) | ✅ Done | Port 3005 unified / 3004 dev |
+| Notification API (Doctor) | ✅ Done | `mainApiServer.cjs` `/api/notifications` |
 | Email Templates | ✅ Done | Thai templates ready |
 | E2E Test Coverage | ✅ Done | 100% pass rate |
 
@@ -6103,7 +6056,7 @@ try {
 | --------- | -------- | ---------- |
 | Gmail API Integration | 🔄 Planned | High |
 | SMS Notifications | 📋 Future | Medium |
-| WebSocket Real-time | 📋 Future | Medium |
+| WebSocket Real-time | ✅ Done | PostgreSQL NOTIFY + Socket.IO `/ws` |
 | Line Official Account | 📋 Future | Low |
 | Push Notifications | 📋 Future | Low |
 
@@ -6111,7 +6064,7 @@ try {
 ### 11.3 Recent Changes (January 2025)
 
 1. **DoctorNotificationBell.tsx** - Removed mock data fallback, now uses real API only
-2. **Notification API** - Verified working on ports 3004 (patient) and 3012 (doctor)
+2. **Notification API** - Patient + doctor portals read/write `notifications` table via Express
 3. **Jitsi Integration** - Meeting links successfully generated and accessible
 4. **E2E Tests** - All test suites passing with 100% rate
 
@@ -6208,13 +6161,13 @@ try {
 ### 4.1. Page & Navigation
 
 
-- **Page:** `src/pages/health/PHRPage.tsx`
+- **Page:** `frontend/pages/health/PHRPage.tsx`
 
 
 - **Tab:** "Living Will" / "พินัยกรรมชีวิต"
 
 
-- **Component:** `src/components/health/LivingWillForm.tsx`
+- **Component:** `frontend/components/health/LivingWillForm.tsx`
 
 
 ### 4.2. Step-by-Step Process
@@ -6258,7 +6211,7 @@ try {
 
 1. Patient reviews summary
 2. Clicks "Save Living Will"
-3. System stores to GCS: `patients/{patientId}/living-will.json`
+3. System persists to PostgreSQL: `INSERT/UPDATE living_wills` (+ `living_will_versions` on finalize/edit)
 4. Confirmation message with share status displayed
 
 
@@ -6310,7 +6263,7 @@ try {
 
 ### 11.1. Patient Portal Components
 
-**`Isara-patient-portal/src/components/health/LivingWillForm.tsx`** — Key sections:
+**`Isara-patient-portal/frontend/components/health/LivingWillForm.tsx`** — Key sections:
 1. Statement of wishes (textarea)
 2. Treatment preferences (checkboxes with notes)
 3. Representative information (form fields)
@@ -6318,7 +6271,7 @@ try {
 5. Digital signature canvas
 6. Save/Cancel buttons
 
-**`Isara-patient-portal/src/components/health/LivingWillView.tsx`** — Display existing Living Will with:
+**`Isara-patient-portal/frontend/components/health/LivingWillView.tsx`** — Display existing Living Will with:
 
 
 - Status badge (Active/Revoked)
@@ -6338,7 +6291,7 @@ try {
 
 - Edit/Revoke buttons
 
-**`Isara-patient-portal/src/pages/health/PHRPage.tsx`** — Tab integration:
+**`Isara-patient-portal/frontend/pages/health/PHRPage.tsx`** — Tab integration:
 
 ```tsx
 <Tab id="living-will" label="พินัยกรรมชีวิต">
@@ -6346,7 +6299,7 @@ try {
 </Tab>
 ```
 
-**`Isara-patient-portal/server/routes/phr.ts`** — API route stubs:
+**`Isara-patient-portal/backend/routes/phr.ts`** — API route stubs:
 
 ```typescript
 // GET /api/phr/:patientId/living-will
@@ -6361,14 +6314,14 @@ try {
 
 ### 11.2. Doctor Portal Components
 
-**`Isara-doctor-portal/src/services/patientRecordService.ts`** — Service methods:
+**`Isara-doctor-portal/frontend/services/patientRecordService.ts`** — Service methods:
 
 ```typescript
 async getLivingWill(patientId: string): Promise<LivingWillForDoctor>
 async checkLivingWillAccess(patientId: string, doctorId: string): Promise<boolean>
 ```
 
-**`Isara-doctor-portal/src/components/PatientRecordViewer.tsx`** — Living Will at top of PHR tab:
+**`Isara-doctor-portal/frontend/components/PatientRecordViewer.tsx`** — Living Will at top of PHR tab:
 
 ```tsx
 const PHRView = ({ phrData, patient }) => {
@@ -6391,7 +6344,7 @@ const PHRView = ({ phrData, patient }) => {
 };
 ```
 
-**`Isara-doctor-portal/server/mainApiServer.cjs`** — Doctor API endpoint:
+**`Isara-doctor-portal/backend/mainApiServer.cjs`** — Doctor API endpoint:
 
 ```javascript
 // GET /api/patients/:patientId/living-will
@@ -6475,7 +6428,7 @@ Scenarios:
 3. [User Roles & Permissions](#3-user-roles--permissions)
 4. [Workflow Steps](#4-workflow-steps)
 5. [Data Structures](#5-data-structures)
-6. [GCS Storage Structure](#6-gcs-storage-structure)
+6. [PostgreSQL Storage Structure](#6-postgresql-storage-structure-canonical)
 7. [Cross-Portal Data Synchronization](#7-cross-portal-data-synchronization)
 8. [API Endpoints](#8-api-endpoints)
 9. [Content Categories](#9-content-categories)
@@ -6501,15 +6454,15 @@ Scenarios:
 
 ```text
 Doctor Portal:
-├── src/pages/MedicalContent.tsx          # Medical content management
-├── src/pages/ClinicalResources.tsx       # Clinical resources with approval
-├── src/types/contentTypes.ts             # Type definitions
-└── src/services/contentService.ts        # API service layer
+├── frontend/pages/MedicalContent.tsx          # Medical content management
+├── frontend/pages/ClinicalResources.tsx       # Clinical resources with approval
+├── frontend/types/contentTypes.ts             # Type definitions
+└── frontend/services/contentService.ts        # API service layer
 
 Patient Portal:
-├── src/pages/health/MedicalContentLibrary.tsx  # Read-only library
-├── src/components/health/MedicalContent.tsx    # Content display component
-└── src/lib/services.ts                         # API calls
+├── frontend/pages/health/MedicalContentLibrary.tsx  # Read-only library
+├── frontend/components/health/MedicalContent.tsx    # Content display component
+└── frontend/lib/services.ts                         # API calls
 
 Backend:
 └── server/gcsApiServer.cjs               # GCS API handling
@@ -6793,6 +6746,52 @@ LIMIT 5;
 
 ---
 
+### Clinical_Document_Delivery_Workflows.md
+
+**ต้นฉบับ:** [`Processes/Clinical_Document_Delivery_Workflows.md`](../../Processes/Clinical_Document_Delivery_Workflows.md)
+
+#### 4. EMR delivery chain
+
+1. Doctor signs EMR → `PUT /api/emr/:id` + `POST /api/patients/:id/health-logs` (authenticated)
+2. Backend sets `emr.status = signed`, publishes `emr_report` + `instruction_sheet` to `patient_documents`
+3. `POST /api/notifications/emr-signed` notifies patient
+4. Patient reads mapped `HealthLogEntry` via `GET /api/phr/:id/health-logs` (signed-only)
+
+---
+
+#### 5. Lab / imaging delivery
+
+1. Doctor submits `PUT /api/lab-orders/:id/results` or `PUT /api/imaging-orders/:id/results` with optional PDF base64 in `documents[]`
+2. Each attachment → `publishDocument({ sourceType: 'lab_report' | 'imaging_report' })`
+3. Notification `lab_results` / `imaging_results`
+
+---
+
+#### 6. Prescription delivery
+
+1. `POST /api/prescriptions` creates Rx + publishes text/PDF artifact
+2. Notification `prescription_ready`
+3. Patient `GET /api/prescriptions` + Documents tab
+
+---
+
+#### 7. Patient upload
+
+1. `POST /api/patients/documents` (JSON base64)
+2. `GET /api/documents/:id/download`
+
+---
+
+---
+
+### WORKFLOW_CONNECTIONS.md
+
+**ต้นฉบับ:** [`Processes/WORKFLOW_CONNECTIONS.md`](../../Processes/WORKFLOW_CONNECTIONS.md)
+
+*ดูขั้นตอนเต็มในไฟล์ต้นฉบับ — เอกสารนี้ยาวเกินกว่าจะคัดลอกทั้งหมดอัตโนมัติ*
+
+---
+
 ### System_Architecture_Overview.md
 
 **ต้นฉบับ:** [`Processes/System_Architecture_Overview.md`](../../Processes/System_Architecture_Overview.md)
@@ -7003,38 +7002,6 @@ Status Flow:
 
 ---
 
-### PHASE1_BASELINE_WORKFLOW_CONTRACT.md
-
-**ต้นฉบับ:** [`Processes/PHASE1_BASELINE_WORKFLOW_CONTRACT.md`](../../Processes/PHASE1_BASELINE_WORKFLOW_CONTRACT.md)
-
-#### Must-Pass Workflow Contract
-
-1. **Auth + access control**
-   - Patient/doctor/admin login succeeds with JWT and role-scoped route access.
-   - Doctor/admin pages are protected from patient tokens and vice versa.
-
-2. **Appointment lifecycle**
-   - Booking creates `pending` (doctor selected) or `in_pool` (system assigned).
-   - Admin can assign pool requests to doctor -> `awaiting_doctor_response`.
-   - Assigned doctor confirms -> `confirmed` with generated meeting URLs.
-   - Decline and cancel flows set terminal statuses and trigger notifications.
-
-3. **Meeting role and lobby contract**
-   - Assigned doctor is HOST/moderator for confirmed appointment meeting.
-   - Patient and guests join lobby and require host admission.
-   - Guest join (including non-registered) requires token/display-name path and host approval.
-
-4. **Realtime sync contract**
-   - Appointment updates propagate to doctor/admin/patient rooms without manual refresh.
-   - Queue/pool/dashboard updates arrive from DB-triggered events (not file polling).
-
-5. **Post-meeting clinical contract**
-   - Meeting transcript/chat can be persisted and used for AI summary generation.
-   - AI output requires doctor validation (approve/edit/reject) before patient delivery.
-   - Signed EMR/instruction output is visible to patient history flows.
-
----
-
 ### GATE0_IMPLEMENTATION_STATUS.md
 
 **ต้นฉบับ:** [`Processes/GATE0_IMPLEMENTATION_STATUS.md`](../../Processes/GATE0_IMPLEMENTATION_STATUS.md)
@@ -7051,520 +7018,21 @@ Status Flow:
 
 ---
 
-### UI_Pages_Workflows.md
+### POST_MEETING_WORKFLOW.md
 
-**ต้นฉบับ:** [`Processes/UI_Pages_Workflows.md`](../../Processes/UI_Pages_Workflows.md)
+**ต้นฉบับ:** [`Processes/POST_MEETING_WORKFLOW.md`](../../Processes/POST_MEETING_WORKFLOW.md)
 
-#### 1. แดชบอร์ด (Dashboard)
+#### Overview
 
-**Route:** `/dashboard`
-**Access:** Doctor, Admin
-**Component:** `DoctorDashboard.tsx`
+After the doctor ends a telehealth consultation, Izara runs a post-meeting pipeline:
 
-
-### Purpose
-
-Central hub displaying today's appointments, pending tasks, notifications, and quick access to AI assistance.
-
-
-### UI Layout
-
-```text
-┌─────────────────────────────────────────────────────────────────────────┐
-│  🏥 Izara Doctor Portal                    🔔(3)  👤 Dr. Test  ⚙️      │
-├─────────────────────────────────────────────────────────────────────────┤
-│                                                                          │
-│  สวัสดี, นพ. ทดสอบ ระบบ                              วันอังคารที่ 21 ม.ค. │
-│                                                                          │
-│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐          │
-│  │  📅 นัดหมายวันนี้  │  │  ⏳ รอดำเนินการ  │  │  ✅ เสร็จสิ้นแล้ว │          │
-│  │       5         │  │       2         │  │       12        │          │
-│  └─────────────────┘  └─────────────────┘  └─────────────────┘          │
-│                                                                          │
-│  ┌──────────────────────────────────────────────────────────────────┐   │
-│  │  📋 นัดหมายถัดไป                                                   │   │
-│  ├──────────────────────────────────────────────────────────────────┤   │
-│  │  🟢 09:00  นายสมชาย มั่นคง - เบาหวาน Follow-up                    │   │
-│  │           [ดูประวัติ] [AI สรุปก่อนพบ] [เริ่มประชุม]                  │   │
-│  │                                                                    │   │
-│  │  🟡 10:30  นายอนันต์ ขยันเรียน - เบาหวาน + CKD                     │   │
-│  │           [ดูประวัติ] [AI สรุปก่อนพบ] [เริ่มประชุม]                  │   │
-│  │           ⚠️ CDS Alert: ปรับยา Metformin สำหรับ eGFR 38           │   │
-│  └──────────────────────────────────────────────────────────────────┘   │
-│                                                                          │
-│  ┌─────────────────────────────┐  ┌─────────────────────────────────┐   │
-│  │  🤖 AI Assistant            │  │  📄 เอกสารรอตรวจสอบ              │   │
-│  │  ─────────────────────────  │  │  ─────────────────────────────  │   │
-│  │  💬 "มีอะไรให้ช่วยครับ?"     │  │  • EMR สรุป AI (2)              │   │
-│  │  [เริ่มสนทนา]               │  │  • คำแนะนำผู้ป่วย (1)            │   │
-│  │                             │  │  • ผลวิเคราะห์เอกสาร (3)         │   │
-│  │  📊 วิเคราะห์เอกสาร         │  │  [ดูทั้งหมด]                     │   │
-│  │  [อัปโหลด PDF/Lab]          │  │                                  │   │
-│  └─────────────────────────────┘  └─────────────────────────────────┘   │
-│                                                                          │
-└─────────────────────────────────────────────────────────────────────────┘
-```
-
-
-### Actions & Buttons
-
-| Button | Action | Backend API |
-| -------- | -------- | ------------- |
-| **ดูประวัติ** (View History) | Opens patient record viewer modal | `GET /api/patients/:id` |
-| **AI สรุปก่อนพบ** (AI Pre-Summary) | Generates AI pre-consultation summary | `POST /api/ai/pre-consultation-summary` |
-| **เริ่มประชุม** (Start Meeting) | Opens Jitsi meeting as HOST | `POST /api/meetings/start` |
-| **เริ่มสนทนา** (Start Chat) | Opens AI Chat Assistant panel | Opens sidebar |
-| **อัปโหลด PDF/Lab** | Opens document upload modal | `POST /api/ai/analyze-document` |
-| **ดูทั้งหมด** (View All) | Navigate to pending validations | `/validations` |
-
-
-### Workflows
-
-
-#### WF-DASH-001: View AI Pre-Consultation Summary
-
-```text
-1. Doctor clicks [AI สรุปก่อนพบ] on appointment card
-2. System fetches patient EMR history, PHR, past Q&A
-3. AI generates summary with key points
-4. Modal displays:
-   - Patient demographics
-   - Current medications & allergies
-   - Recent vital signs
-   - Past consultations summary
-   - AI-identified concerns/alerts
-5. Doctor reviews and closes modal or proceeds to meeting
-```
-
-
-#### WF-DASH-002: CDS Alert Interaction
-
-```text
-1. Appointment card shows ⚠️ CDS Alert badge
-2. Doctor clicks alert to expand
-3. System shows:
-   - Alert type (dose adjustment, drug interaction, etc.)
-   - Current prescription vs recommended
-   - Guideline reference (e.g., KDIGO 2024)
-   - Evidence level
-4. Actions: [Accept] [Modify] [Reject with reason]
-5. Decision logged to cds_logs table
-```
+1. Stop recording and persist media to meeting server / storage  
+2. Finalize transcript segments (Web Speech + optional Google STT)  
+3. Generate Gemini AI summary (SOAP-oriented)  
+4. Present results on **MeetingResults** page for doctor review  
+5. Doctor validates → EMR auto-fill → patient instruction sheet delivery  
 
 ---
-
-#### 4. นัดหมาย & ประชุม (Appointments & Meetings)
-
-**Route:** `/appointments`
-**Access:** Doctor, Admin
-**Component:** `AppointmentManagement.tsx`, `MeetingRoom.tsx`
-
-
-### Purpose (4)
-
-Manage appointment queue, conduct video meetings, document EMR, and generate patient instructions.
-
-
-### UI Layout - Meeting Room
-
-```text
-┌─────────────────────────────────────────────────────────────────────────┐
-│  🎥 ห้องประชุม - นายสมชาย มั่นคง                    🔴 REC  [ออกจากห้อง]  │
-├─────────────────────────────────────────────────────────────────────────┤
-│                                                                          │
-│  ┌─────────────────────────────────────┐  ┌──────────────────────────┐  │
-│  │                                     │  │  📋 EMR Editor (SOAP)    │  │
-│  │                                     │  │  ─────────────────────── │  │
-│  │         🎥 VIDEO FEED               │  │  [S] ประวัติ (Subjective)│  │
-│  │         Jitsi Meet                  │  │  CC: เบาหวาน follow-up   │  │
-│  │                                     │  │  HPI: _______________   │  │
-│  │                                     │  │                          │  │
-│  │  ┌─────────┐  ┌─────────┐           │  │  [O] ตรวจร่างกาย         │  │
-│  │  │ 🎤 Mute │  │ 📹 Cam  │  💬 Chat  │  │  VS: BP ___  HR ___     │  │
-│  │  └─────────┘  └─────────┘           │  │  PE: _______________    │  │
-│  └─────────────────────────────────────┘  │                          │  │
-│                                           │  [A] วินิจฉัย            │  │
-│  ┌─────────────────────────────────────┐  │  Dx: E11.9 DM Type 2    │  │
-│  │  🤖 AI Assistant                    │  │                          │  │
-│  │  ─────────────────────────────────  │  │  [P] แผนการรักษา         │  │
-│  │  💬 "มีอะไรให้ช่วยครับ?"             │  │  • Continue Metformin   │  │
-│  │  ┌─────────────────────────────┐   │  │  • Diet control         │  │
-│  │  │ พิมพ์ข้อความ...        [ส่ง]│   │  │  • F/U 3 months         │  │
-│  │  └─────────────────────────────┘   │  │                          │  │
-│  │                                     │  │  [🤖 AI สรุป EMR]        │  │
-│  │  📎 แนบไฟล์ Lab/PDF                 │  │  [💾 บันทึก] [✅ ลงนาม]   │  │
-│  └─────────────────────────────────────┘  └──────────────────────────┘  │
-│                                                                          │
-└─────────────────────────────────────────────────────────────────────────┘
-```
-
-
-### Meeting Features (Phase 1)
-
-| Feature | Status | Description |
-| --------- | -------- | ------------- |
-| Video Call (Jitsi) | ✅ | Doctor as HOST, patient in lobby |
-| Audio/Video Controls | ✅ | Mute, camera toggle |
-| Text Chat | ✅ | In-meeting chat |
-| Screen Share | ✅ | Share screen for education |
-| Recording | 🚧 | Record to GCS |
-| Transcription | 🚧 | Device Speech-to-Text |
-| EMR Editor | ✅ | SOAP format documentation |
-| AI Chat Assistant | ✅ | Side panel AI help |
-| Document Upload | ✅ | Lab/PDF for AI analysis |
-
-
-### Post-Meeting Workflow
-
-```text
-┌─────────────────────────────────────────────────────────────────────────┐
-│  ✅ สิ้นสุดการประชุม                                                     │
-├─────────────────────────────────────────────────────────────────────────┤
-│                                                                          │
-│  ┌──────────────────────────────────────────────────────────────────┐   │
-│  │  📋 สรุป EMR                                    🟡 รอตรวจสอบ       │   │
-│  │  ───────────────────────────────────────────────────────────────  │   │
-│  │  AI สรุป:                                                         │   │
-│  │  "ผู้ป่วยเบาหวาน type 2 มาติดตามผล HbA1c ดีขึ้น (7.1%)             │   │
-│  │   ควบคุมอาหารได้ดี ไม่มีอาการ hypoglycemia..."                     │   │
-│  │                                                                    │   │
-│  │  [✏️ แก้ไข]  [✅ อนุมัติ]  [❌ ปฏิเสธ]                              │   │
-│  └──────────────────────────────────────────────────────────────────┘   │
-│                                                                          │
-│  ┌──────────────────────────────────────────────────────────────────┐   │
-│  │  📄 คำแนะนำผู้ป่วย (Patient Instruction)        🟡 รอตรวจสอบ       │   │
-│  │  ───────────────────────────────────────────────────────────────  │   │
-│  │  AI สร้าง:                                                        │   │
-│  │  "คำแนะนำหลังพบแพทย์                                               │   │
-│  │   1. รับประทานยา Metformin 500mg วันละ 2 ครั้ง หลังอาหาร          │   │
-│  │   2. ควบคุมอาหาร ลดแป้ง น้ำตาล                                    │   │
-│  │   3. ออกกำลังกาย 30 นาที/วัน..."                                  │   │
-│  │                                                                    │   │
-│  │  [✏️ แก้ไข]  [✅ อนุมัติ & ส่ง]  [❌ ไม่ส่ง]                        │   │
-│  └──────────────────────────────────────────────────────────────────┘   │
-│                                                                          │
-│  ┌──────────────────────────────────────────────────────────────────┐   │
-│  │  💊 ใบสั่งยา (Prescription)                                       │   │
-│  │  ───────────────────────────────────────────────────────────────  │   │
-│  │  • Metformin 500mg #60 - 1x2 หลังอาหาร                           │   │
-│  │  • Losartan 50mg #30 - 1x1 เช้า                                  │   │
-│  │                                                                    │   │
-│  │  [✏️ แก้ไขยา]  [🖨️ พิมพ์]  [✅ ยืนยัน]                            │   │
-│  └──────────────────────────────────────────────────────────────────┘   │
-│                                                                          │
-│  [📅 นัดหมายถัดไป]  [เสร็จสิ้น]                                         │
-│                                                                          │
-└─────────────────────────────────────────────────────────────────────────┘
-```
-
-
-### Man-in-the-Loop Validation Flow
-
-```text
-1. AI generates content (EMR summary, patient instructions)
-2. Content shows 
-
-… *(ตัด — ดูต้นฉบับ)*
-
-#### 6. เนื้อหาทางการแพทย์ (Medical Content)
-
-**Route:** `/medical-content`
-**Access:** Doctor, Admin
-**Component:** `MedicalContent.tsx`
-
-
-### Purpose (6)
-
-Health education articles for patients. Doctors create, admin approves before publishing.
-
-
-### UI Layout (4)
-
-```text
-┌─────────────────────────────────────────────────────────────────────────┐
-│  📚 เนื้อหาทางการแพทย์                               [+ สร้างบทความใหม่]  │
-├─────────────────────────────────────────────────────────────────────────┤
-│                                                                          │
-│  [ทั้งหมด] [เผยแพร่แล้ว] [รอตรวจสอบ (3)] [แบบร่าง] [ปฏิเสธ]             │
-│                                                                          │
-│  🔍 ค้นหา...                    [หมวดหมู่ ▼] [เรียงตาม ▼]                │
-│                                                                          │
-│  ┌──────────────────────────────────────────────────────────────────┐   │
-│  │  📄 การดูแลสุขภาพหัวใจ                                 🟢 เผยแพร่  │   │
-│  │  Heart Health Care                                                │   │
-│  │  หมวด: cardiovascular | 👁️ 150 views | ✍️ DOC-SPECIALIST-001     │   │
-│  │  [👁️ ดู] [✏️ แก้ไข] [🗑️ ลบ]                                       │   │
-│  ├──────────────────────────────────────────────────────────────────┤   │
-│  │  📄 การจัดการโรคเบาหวาน                               🟡 รอตรวจสอบ │   │
-│  │  Diabetes Management                                              │   │
-│  │  หมวด: endocrinology | ✍️ DOC-TEST-001                           │   │
-│  │  [👁️ ดู] [✏️ แก้ไข] [Admin: ✅/❌]                                 │   │
-│  └──────────────────────────────────────────────────────────────────┘   │
-│                                                                          │
-└─────────────────────────────────────────────────────────────────────────┘
-```
-
-
-### Content Workflow
-
-```text
-1. Doctor creates article (Draft)
-2. Doctor submits for review → Status: Pending
-3. Admin reviews content
-4. Admin: Approve → Status: Published (visible to patients)
-   Admin: Reject → Status: Rejected (with feedback)
-5. Published content syncs to Patient Portal health library
-```
-
----
-
-#### 9. อนุมัติแพทย์ใหม่ (Approve New Doctors) - Admin Only
-
-**Route:** `/admin/pending-doctors`
-**Access:** Admin only
-**Component:** `PendingDoctorApproval.tsx`
-
-
-### Purpose (9)
-
-Review and approve/reject new doctor registration requests.
-
-
-### UI Layout (6)
-
-```text
-┌─────────────────────────────────────────────────────────────────────────┐
-│  ✅ อนุมัติแพทย์ใหม่                                      🔴 รอดำเนินการ: 2│
-├─────────────────────────────────────────────────────────────────────────┤
-│                                                                          │
-│  ┌──────────────────────────────────────────────────────────────────┐   │
-│  │  👤 นพ. ใหม่ ลงทะเบียน                              📅 20/01/2026   │   │
-│  │  ───────────────────────────────────────────────────────────────  │   │
-│  │  📧 new.doctor@hospital.com                                       │   │
-│  │  🏥 โรงพยาบาลรัฐ                                                  │   │
-│  │  🔬 อายุรศาสตร์                                                   │   │
-│  │  📜 ใบอนุญาต: กว. 12345                                          │   │
-│  │  📄 เอกสารแนบ: [ใบปริญญา.pdf] [ใบอนุญาต.pdf]                      │   │
-│  │                                                                    │   │
-│  │  [👁️ ดูรายละเอียด]  [✅ อนุมัติ]  [❌ ปฏิเสธ]                      │   │
-│  └──────────────────────────────────────────────────────────────────┘   │
-│                                                                          │
-└─────────────────────────────────────────────────────────────────────────┘
-```
-
-
-### Approval Workflow
-
-```text
-1. New doctor registers via Doctor Portal
-2. Status: Pending → appears in admin queue
-3. Admin reviews:
-   - Credentials
-   - License documents
-   - Hospital affiliation
-4. Admin decides:
-   a. [✅ อนุมัติ] → Status: Approved, doctor can login
-   b. [❌ ปฏิเสธ] → Status: Rejected, with reason
-5. Doctor receives email notification
-```
-
----
-
-#### 2. นัดหมาย (Appointments)
-
-**Route:** `/appointments`
-**Access:** Patient
-**Component:** `PatientAppointments.tsx`
-
-
-### Purpose (11)
-
-View, book, and manage appointments.
-
-
-### UI Layout (8)
-
-```text
-┌─────────────────────────────────────────────────────────────────────────┐
-│  📅 นัดหมาย                                           [+ นัดหมายใหม่]   │
-├─────────────────────────────────────────────────────────────────────────┤
-│                                                                          │
-│  [ทั้งหมด] [ที่จะถึง] [เสร็จสิ้น] [ยกเลิก]                               │
-│                                                                          │
-│  ┌──────────────────────────────────────────────────────────────────┐   │
-│  │  📅 21 ม.ค. 2026 | 09:00                           🟢 ยืนยันแล้ว   │   │
-│  │  ──────────────────────────────────────────────────────────────  │   │
-│  │  👨‍⚕️ นพ. ทดสอบ ระบบ                                               │   │
-│  │  🏥 Izara Medical Center | อายุรศาสตร์                            │   │
-│  │  📍 Telehealth                                                    │   │
-│  │  📝 อาการ: ปวดหัว ไข้ต่ำ                                           │   │
-│  │                                                                    │   │
-│  │  [ดูรายละเอียด]  [เข้าห้องประชุม]  [เลื่อนนัด]  [ยกเลิก]             │   │
-│  └──────────────────────────────────────────────────────────────────┘   │
-│                                                                          │
-│  ┌──────────────────────────────────────────────────────────────────┐   │
-│  │  📅 14 ม.ค. 2026 | 10:00                           ✅ เสร็จสิ้น    │   │
-│  │  ──────────────────────────────────────────────────────────────  │   │
-│  │  👨‍⚕️ นพ. ทดสอบ ระบบ                                               │   │
-│  │  วินิจฉัย: J00 หวัด                                               │   │
-│  │                                                                    │   │
-│  │  [ดู EMR สรุป]  [ดูคำแนะนำ]  [นัดติดตาม]                            │   │
-│  └──────────────────────────────────────────────────────────────────┘   │
-│                                                                          │
-└─────────────────────────────────────────────────────────────────────────┘
-```
-
-
-### Book New Appointment Flow
-
-```text
-1. Patient clicks [+ นัดหมายใหม่]
-2. Step 1: Select specialty/doctor
-3. Step 2: Select date/time from available slots
-4. Step 3: Describe symptoms
-5. Step 4: Select appointment type (Telehealth/In-person)
-6. Step 5: Confirm & submit
-7. Status: Pending → waiting for doctor confirmation
-8. When confirmed: Patient receives notification + meeting link
-```
-
----
-
-#### Dark Mode Implementation
-
-### How It Works
-
-1. **Settings Storage:** Theme preference is stored in `localStorage` as `patient-portal-theme` with values `'light'` or `'dark'`
-2. **CSS Class Toggle:** When dark mode is enabled, the `html` element receives the class `dark`
-3. **Tailwind Dark Mode:** Uses Tailwind's `class` strategy for dark mode with CSS overrides in `index.css`
-
-
-### Dark Mode Requirements
-
-All UI components MUST support dark mode. This includes:
-
-| Component Type | Light Mode | Dark Mode |
-| ---------------- | ------------ | ----------- |
-| **Cards/Boxes** | `bg-white border-gray-100` | `bg-slate-800 border-slate-700` |
-| **Text - Primary** | `text-slate-900` | `text-slate-100` |
-| **Text - Secondary** | `text-gray-600` | `text-slate-400` |
-| **Input Fields** | `bg-white border-gray-300` | `bg-slate-700 border-slate-600` |
-| **Buttons (Primary)** | Standard teal/blue | Same with adjusted hover |
-| **Modals/Popups** | White background | `bg-slate-800` |
-| **Navigation** | Light sidebar | Dark sidebar |
-
-
-### Implementation Pattern
-
-```tsx
-// Use the useSettings hook to get dark mode state
-const { isDarkMode } = useSettings();
-
-// Apply conditional classes
-<div className={`rounded-xl border ${
-  isDarkMode
-    ? 'bg-slate-800 border-slate-700 text-slate-100'
-    : 'bg-white border-gray-100 text-slate-900'
-}`}>
-  Content here
-```
-
-
-### CSS Override Rules (index.css)
-
-The `index.css` file contains comprehensive dark mode overrides using the `html.dark` selector:
-
-```css
-/* Force dark backgrounds on dynamically styled elements */
-html.dark .bg-white {
-  background-color: rgb(30 41 59) !important; /* slate-800 */
-}
-
-html.dark [class*="bg-gradient-to-"] {
-  background: linear-gradient(to br, rgb(30 41 59), rgb(51 65 85)) !important;
-}
-```
-
-#### Language/Internationalization (i18n)
-
-### Supported Languages
-
-| Language | Code | Storage Key |
-| ---------- | ------ | ------------- |
-| Thai | `th` | Default |
-| English | `en` | Option |
-
-
-### How It Works (2)
-
-1. **Settings Storage:** Language preference is stored in `localStorage` as `patient-portal-language`
-2. **Translation Function:** The `t(key)` function from `SettingsContext` returns the translated string
-3. **Fallback:** If a translation key is missing, the key name is returned
-
-
-### Translation Keys Structure
-
-```tsx
-const translations = {
-  th: {
-    'dashboard.hello': 'สวัสดี',
-    'dashboard.upcomingAppointments': 'นัดหมายที่จะถึง',
-    'booking.title': 'นัดหมายปรึกษาแพทย์',
-    'phr.vitalSigns': 'สัญญาณชีพ',
-    // ... more keys
-  },
-  en: {
-    'dashboard.hello': 'Hello',
-    'dashboard.upcomingAppointments': 'Upcoming Appointments',
-    'booking.title': 'Book Medical Consultation',
-    'phr.vitalSigns': 'Vital Signs',
-    // ... more keys
-  }
-};
-```
-
-
-### Implementation Pattern (2)
-
-```tsx
-// Use the useSettings hook to get translation function
-const { t, language } = useSettings();
-
-// Use t() function for all user-facing text
-<h2 className="text-xl font-bold">
-  {t('dashboard.hello')}, {userName}
-</h2>
-
-<button>
-  {t('booking.next')}
-</button>
-```
-
-
-### Required Translation Keys by Page
-
-| Page | Required Keys |
-| ------ | --------------- |
-| **Dashboard** | `dashboard.hello`, `dashboard.upcomingAppointments`, `dashboard.quickActions` |
-| **Booking** | `booking.title`, `booking.symptoms`, `booking.next`, `booking.confirm` |
-| **PHR** | `phr.vitalSigns`, `phr.medications`, `phr.allergies`, `phr.conditions` |
-| **Library** | `library.title`, `library.search`, `library.categories` |
-| **Timeline** | `timeline.title`, `timeline.year`, `timeline.appointment` |
-| **PDPA/Living Will** | `pdpa.consent`, `livingWill.title`, `livingWill.signature` |
-| **Map** | `map.title`, `map.search`, `map.nearbyHospitals` |
-| **Settings** | `settings.title`, `settings.theme`, `settings.language` |
-
----
-
-### FULL_WORKFLOW_CONTRACT.md
-
-**ต้นฉบับ:** [`Processes/FULL_WORKFLOW_CONTRACT.md`](../../Processes/FULL_WORKFLOW_CONTRACT.md)
-
-#### Residual notes
-
-1. **Deploy** — Meeting BYTEA + portal recording-order fixes require `npm run cloud:deploy` before cloud Q02 passes against live code.
-2. **Headed browsers** — Default `Workers=1` in hardening script avoids parallel headed launch failures on Windows.
-3. **gate0** — API chain may fail while UI pipeline passes; both are logged in the ledger.
 
 ---
 
@@ -7589,44 +7057,6 @@ const { t, language } = useSettings();
    - `GET /api/meetings/{appointmentId}/join-config?role=doctor` (with doctor JWT)
    - `GET /api/meetings/{appointmentId}/host-ready`
    - URLs must include `requireDisplayName=false`, `enableLobby=false`
-
----
-
-### Living_Will_Implementation_Plan.md
-
-**ต้นฉบับ:** [`Processes/Living_Will_Implementation_Plan.md`](../../Processes/Living_Will_Implementation_Plan.md)
-
-#### 3. Testing Plan
-
-### 3.1. Unit Tests
-
-| Test Case | Expected Result |
-| ----------- | ----------------- |
-| Create Living Will | Success, saved to GCS |
-| Update Living Will | Success, version incremented |
-| Revoke Living Will | Status changed to revoked |
-| Share Living Will | isSharedWithDoctors = true |
-| Unshare Living Will | isSharedWithDoctors = false |
-| Doctor access (shared) | Returns full Living Will |
-| Doctor access (not shared) | Returns { exists: true, isShared: false } |
-| Doctor access (no history) | Returns 403 error |
-| Admin access (shared) | Returns full Living Will |
-
-
-### 3.2. E2E Tests
-
-**File:** `scripts/tests/e2e/livingWillTests.cjs`
-
-Scenarios:
-
-1. Patient creates Living Will with sharing enabled
-2. Patient updates Living Will
-3. Patient revokes sharing
-4. Doctor views shared Living Will
-5. Doctor cannot view unshared Living Will
-6. Admin views shared Living Will
-
----
 
 ---
 

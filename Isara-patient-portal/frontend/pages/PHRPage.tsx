@@ -2,11 +2,24 @@ import { useEffect, useState, type Dispatch, type SetStateAction } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useSettings } from '../contexts/SettingsContext';
 import { phrService, labOrderService, imagingOrderService } from '../lib/services';
+import { uploadDocument } from '../lib/postgresService';
 import { PersonalHealthRecord, VitalSigns, Medication, User, LifestyleData, MedicalDocument } from '../types';
 import { Heart, Activity, Pill, AlertTriangle, Plus, Edit3, Save, X, TrendingUp, TrendingDown, Minus, Scale, Thermometer, Droplet, User as UserIcon, FileText, FlaskConical, Image as ImageIcon, Download, FileImage, FileVideo, Paperclip } from 'lucide-react';
 import { normalizeAllergiesList } from '../utils/healthListNormalize';
 
-type TabId = 'overview' | 'vitals' | 'medications' | 'allergies' | 'lab-imaging' | 'documents' | 'profile';
+type TabId = 'overview' | 'vitals' | 'medications' | 'allergies' | 'lab-imaging' | 'prescriptions' | 'documents' | 'profile';
+
+/** Static testids for E2E / UI_ELEMENT_COVERAGE_MATRIX (do not use template literals). */
+const PHR_TAB_TESTIDS: Record<TabId, string> = {
+  overview: 'phr-tab-overview',
+  vitals: 'phr-tab-vitals',
+  medications: 'phr-tab-medications',
+  allergies: 'phr-tab-allergies',
+  'lab-imaging': 'phr-tab-lab-imaging',
+  prescriptions: 'phr-tab-prescriptions',
+  documents: 'phr-tab-documents',
+  profile: 'phr-tab-profile',
+};
 
 type SetState<T> = Dispatch<SetStateAction<T>>;
 
@@ -1294,28 +1307,58 @@ const DOCUMENT_TYPE_LABELS: Record<MedicalDocument['type'], { en: string; th: st
   other: { en: 'Other', th: 'อื่นๆ' },
 };
 
-function DocumentsTab({ documents, language, isDark }: Readonly<{
+function DocumentsTab({ documents, language, isDark, onUpload }: Readonly<{
   documents: MedicalDocument[];
   language: string;
   isDark: boolean;
+  onUpload?: (file: File, type: 'lab_result' | 'prescription' | 'imaging' | 'other') => Promise<void>;
 }>) {
   const cardClass = isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200';
   const textClass = isDark ? 'text-gray-200' : 'text-gray-800';
   const subTextClass = isDark ? 'text-gray-400' : 'text-gray-500';
   const locale = language === 'th' ? 'th-TH' : 'en-US';
+  const [uploading, setUploading] = useState(false);
 
-  if (documents.length === 0) {
-    return (
-      <div className={`p-8 text-center rounded-xl border ${cardClass}`}>
-        <FileText className={`w-12 h-12 mx-auto mb-3 ${subTextClass}`} />
-        <p className={subTextClass}>
-          {language === 'th' ? 'ยังไม่มีเอกสารทางการแพทย์' : 'No medical documents yet'}
-        </p>
-      </div>
-    );
-  }
+  const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !onUpload) return;
+    setUploading(true);
+    try {
+      await onUpload(file, 'other');
+    } finally {
+      setUploading(false);
+      e.target.value = '';
+    }
+  };
 
   return (
+    <div className="space-y-4">
+      {onUpload && (
+        <div className={`p-4 rounded-xl border border-dashed ${cardClass}`}>
+          <label htmlFor="phr-doc-upload" className="block text-sm font-medium mb-2 cursor-pointer">
+            {language === 'th' ? 'อัปโหลดเอกสารทางการแพทย์ (PDF/รูปภาพ)' : 'Upload medical document (PDF/image)'}
+          </label>
+          <input
+            id="phr-doc-upload"
+            data-testid="phr-document-upload"
+            type="file"
+            accept="application/pdf,image/png,image/jpeg,image/webp"
+            disabled={uploading}
+            onChange={(e) => void handleFile(e)}
+            className="block w-full text-sm"
+          />
+          {uploading && <p className={`text-xs mt-1 ${subTextClass}`}>{language === 'th' ? 'กำลังอัปโหลด...' : 'Uploading...'}</p>}
+        </div>
+      )}
+
+      {documents.length === 0 ? (
+        <div className={`p-8 text-center rounded-xl border ${cardClass}`}>
+          <FileText className={`w-12 h-12 mx-auto mb-3 ${subTextClass}`} />
+          <p className={subTextClass}>
+            {language === 'th' ? 'ยังไม่มีเอกสารทางการแพทย์' : 'No medical documents yet'}
+          </p>
+        </div>
+      ) : (
     <div className="space-y-3">
       {documents.map((doc) => {
         const Icon = getDocumentFileIcon(doc.mimeType);
@@ -1367,6 +1410,89 @@ function DocumentsTab({ documents, language, isDark }: Readonly<{
           </div>
         );
       })}
+    </div>
+      )}
+    </div>
+  );
+}
+
+function PrescriptionsTab({ language, isDark }: Readonly<{ language: string; isDark: boolean }>) {
+  const [prescriptions, setPrescriptions] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const cardClass = isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200';
+  const textClass = isDark ? 'text-gray-200' : 'text-gray-800';
+
+  useEffect(() => {
+    void (async () => {
+      try {
+        const token = localStorage.getItem('authToken');
+        const resp = await fetch('/api/prescriptions', {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        });
+        const data = resp.ok ? await resp.json() : { prescriptions: [] };
+        setPrescriptions(data.prescriptions || []);
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, []);
+
+  const downloadPrescription = async (rx: { id: string; download_url?: string | null }) => {
+    const token = localStorage.getItem('authToken');
+    const url = rx.download_url || `/api/documents?source=prescription&sourceId=${rx.id}`;
+    if (rx.download_url) {
+      const resp = await fetch(rx.download_url, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (!resp.ok) return;
+      const blob = await resp.blob();
+      const objectUrl = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = objectUrl;
+      a.download = `prescription-${rx.id}.txt`;
+      a.click();
+      URL.revokeObjectURL(objectUrl);
+      return;
+    }
+    window.open(url, '_blank');
+  };
+
+  if (loading) return <div className="p-8 text-center">Loading...</div>;
+  if (prescriptions.length === 0) {
+    return (
+      <div className={`p-8 text-center rounded-xl border ${cardClass}`}>
+        <Pill className="w-12 h-12 mx-auto mb-3 opacity-40" />
+        <p>{language === 'th' ? 'ยังไม่มีใบสั่งยา' : 'No prescriptions yet'}</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      {prescriptions.map((rx) => (
+        <div key={rx.id} className={`p-4 rounded-xl border ${cardClass}`}>
+          <div className="flex justify-between items-start gap-2">
+            <div>
+              <h4 className={`font-semibold ${textClass}`}>
+                {language === 'th' ? 'ใบสั่งยา' : 'Prescription'} — {rx.doctor_name || 'แพทย์'}
+              </h4>
+              <p className="text-sm opacity-70">{new Date(rx.created_at).toLocaleDateString()}</p>
+            </div>
+            <button
+              type="button"
+              className="text-sm px-3 py-1 bg-emerald-600 text-white rounded-lg"
+              onClick={() => void downloadPrescription(rx)}
+            >
+              {language === 'th' ? 'ดาวน์โหลด' : 'Download'}
+            </button>
+          </div>
+          <ul className="mt-2 text-sm space-y-1">
+            {(Array.isArray(rx.medications) ? rx.medications : []).map((m: any, i: number) => (
+              <li key={m.id || i}>• {m.drugName || m.name} {m.dosage} {m.frequency}</li>
+            ))}
+          </ul>
+        </div>
+      ))}
     </div>
   );
 }
@@ -1695,6 +1821,18 @@ function PHRPage() {
       setLoading(false);
     }
   };
+  const handleDocumentUpload = async (
+    file: File,
+    documentType: 'lab_result' | 'prescription' | 'imaging' | 'other'
+  ) => {
+    const result = await uploadDocument(file, documentType);
+    if (!result.success) {
+      alert(result.error || 'อัปโหลดไม่สำเร็จ');
+      return;
+    }
+    await loadData();
+  };
+
   const handleAddVitals = async () => {
     if (!user) return;
     setSaving(true);
@@ -1879,6 +2017,7 @@ function PHRPage() {
     { id: 'medications', label: t('phr.medications'), icon: Pill },
     { id: 'allergies', label: t('phr.allergies'), icon: AlertTriangle },
     { id: 'lab-imaging', label: language === 'th' ? 'ผลตรวจ' : 'Lab & Imaging', icon: FlaskConical },
+    { id: 'prescriptions', label: language === 'th' ? 'ใบสั่งยา' : 'Prescriptions', icon: Pill },
     { id: 'documents', label: t('health.documents') || (language === 'th' ? 'เอกสาร' : 'Documents'), icon: Paperclip },
     { id: 'profile', label: t('phr.personalInfo'), icon: UserIcon },
   ] as const;
@@ -1939,11 +2078,15 @@ function PHRPage() {
     'lab-imaging': (
       <LabImagingTab />
     ),
+    prescriptions: (
+      <PrescriptionsTab language={language} isDark={isDark} />
+    ),
     documents: (
       <DocumentsTab
         documents={phr?.documents || []}
         language={language}
         isDark={isDark}
+        onUpload={handleDocumentUpload}
       />
     ),
     profile: (
@@ -1967,15 +2110,18 @@ function PHRPage() {
     )
   };
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className="max-w-4xl mx-auto" data-testid="phr-page">
       <div className="flex items-center justify-between mb-6">
         <h1 className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>{t('phr.title')}</h1>
       </div>
 
-      <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
+      <div className="flex gap-2 mb-6 overflow-x-auto pb-2" data-testid="phr-tab-bar">
         {tabs.map((tabItem) => (
           <button
             key={tabItem.id}
+            type="button"
+            data-testid={PHR_TAB_TESTIDS[tabItem.id]}
+            data-phr-tab={tabItem.id}
             onClick={() => setTab(tabItem.id)}
             className={`flex items-center gap-2 px-4 py-2 rounded-lg whitespace-nowrap transition-colors ${getTabClass(tab === tabItem.id)}`}
           >

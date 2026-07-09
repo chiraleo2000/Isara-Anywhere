@@ -29,18 +29,34 @@ function buildTelehealthMeetingUrls(appointmentId, opts = {}) {
   const baseUrl = `https://${domain}/${roomName}`;
   const patientName = opts.patientName || 'Patient';
   const doctorName = opts.doctorName || 'Doctor';
+  const patientPortal = String(opts.patientPortalUrl || process.env.PATIENT_PORTAL_URL || 'http://127.0.0.1:3005').replace(/\/$/, '');
+  const doctorPortal = String(opts.doctorPortalUrl || process.env.DOCTOR_PORTAL_URL || 'http://127.0.0.1:3010').replace(/\/$/, '');
+  const patientId = opts.patientId || opts.patient_id;
+  const doctorId = opts.doctorId || opts.doctor_id;
+  const aptEnc = encodeURIComponent(String(appointmentId || ''));
+
+  const portalPatientMeetingUrl = patientId
+    ? `${patientPortal}/patient/${encodeURIComponent(String(patientId))}/meeting/${aptEnc}`
+    : `${patientPortal}/meeting/${aptEnc}`;
+  const portalDoctorMeetingUrl = doctorId
+    ? `${doctorPortal}/doctor/${encodeURIComponent(String(doctorId))}/meeting/${aptEnc}`
+    : null;
 
   return {
     roomName,
     meetingLink: baseUrl,
-    doctorMeetingUrl: buildJitsiHashUrl(baseUrl, doctorName, {
+    doctorMeetingUrl: portalDoctorMeetingUrl || buildJitsiHashUrl(baseUrl, doctorName, {
       'config.startWithAudioMuted': 'false',
     }),
-    patientMeetingUrl: buildJitsiHashUrl(baseUrl, patientName, {
-      'config.startWithVideoMuted': 'false',
-    }),
+    patientMeetingUrl: portalPatientMeetingUrl,
     guestMeetingUrl: buildJitsiHashUrl(baseUrl, 'Guest', {
       'config.startWithVideoMuted': 'true',
+    }),
+    jitsiDoctorMeetingUrl: buildJitsiHashUrl(baseUrl, doctorName, {
+      'config.startWithAudioMuted': 'false',
+    }),
+    jitsiPatientMeetingUrl: buildJitsiHashUrl(baseUrl, patientName, {
+      'config.startWithVideoMuted': 'false',
     }),
   };
 }

@@ -5,7 +5,7 @@ export function isDemoAutoLoginEnabled(): boolean {
   return resolveEnvBool('DEMO_AUTO_LOGIN');
 }
 
-/** Dev/docker: auto-enter first ready telehealth meeting from Health Meeting (zero-click demo). */
+/** Dev/E2E: honor ?appointmentId= deep-links on Health Meeting (never auto-jump on sidebar nav). */
 export function isDemoAutoMeetingEnabled(): boolean {
   return resolveEnvBool('DEMO_AUTO_MEETING');
 }

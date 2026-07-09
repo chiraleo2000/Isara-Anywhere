@@ -18,6 +18,7 @@ import {
   clickLocatorSafe,
   PATIENT_URL, DOCTOR_URL, MEETING_URL,
   readPageBearerToken,
+  requirePatientAuth,
   refreshPageAuth,
 } from './helpers/multi-portal';
 import { loadWorkflowState, reloadWorkflowStateFromDisk, saveWorkflowState } from './helpers/workflow-state';
@@ -386,7 +387,8 @@ test.describe('Group E - Meeting Server & Clinical Workflow', () => {
         await overrideBrowserMeetingServerUrl(patient.page, MEETING_URL);
         await proxyLocalMeetingServer(patient.page, MEETING_URL);
       }
-      await patient.page.goto(`${PATIENT_URL}/meeting/${sharedAppointmentId}`, {
+      const { userId: patientUserId } = await requirePatientAuth(patient.page, 'E10d');
+      await patient.page.goto(`${PATIENT_URL}/patient/${patientUserId}/meeting/${sharedAppointmentId}`, {
         waitUntil: 'domcontentloaded',
         timeout: IS_CLOUD ? 90_000 : 30_000,
       });
@@ -764,7 +766,7 @@ test.describe('Group E - Meeting Server & Clinical Workflow', () => {
         invite: invite2.token,
       });
       expect(data.status, 'Second guest waits in lobby').toBe('waiting');
-      const snap1 = await lobbyGetSnapshot(doctor.page, sharedAppointmentId);
+      const snap1 = await lobbyGetSnapshot(doctor.page, lobbyKey);
       expect(snap1.waiting.length, 'At least 2 waiting before admit-all').toBeGreaterThanOrEqual(2);
       console.log('  E21b: Multi-guest lobby — waiting count: ' + snap1.waiting.length);
     });
@@ -798,7 +800,7 @@ test.describe('Group E - Meeting Server & Clinical Workflow', () => {
     });
 
     await test.step('E22c - Reject second guest; stays rejected', async () => {
-      const snapBefore = await lobbyGetSnapshot(doctor.page, sharedAppointmentId);
+      const snapBefore = await lobbyGetSnapshot(doctor.page, lobbyKey);
       const waitingGuests = snapBefore.waiting.filter(
         (p) => p.role === 'guest' || String(p.participantId || '').startsWith('guest-'),
       );
@@ -809,18 +811,18 @@ test.describe('Group E - Meeting Server & Clinical Workflow', () => {
       if (!rejectParticipantId) return;
       await lobbyReject(
         doctor.page,
-        sharedAppointmentId,
+        lobbyKey,
         rejectParticipantId,
         'DOC-TEST-001',
         'E2E reject',
       );
       const status = await lobbyParticipantStatus(
         doctor.page,
-        sharedAppointmentId,
+        lobbyKey,
         rejectParticipantId,
       );
       expect(status, 'rejected guest status').toBe('rejected');
-      const after = await lobbyGetSnapshot(doctor.page, sharedAppointmentId);
+      const after = await lobbyGetSnapshot(doctor.page, lobbyKey);
       const stillWaiting = after.waiting.some((p) => p.participantId === rejectParticipantId);
       expect(stillWaiting, 'rejected guest not in waiting list').toBe(false);
       console.log('  E22c: Guest rejected — ' + rejectParticipantId);
@@ -828,10 +830,10 @@ test.describe('Group E - Meeting Server & Clinical Workflow', () => {
 
     await test.step('E22d - Admit single guest (token join) vs admit-all', async () => {
       expect(e22GuestParticipantId, 'E22 token guest id').toBeTruthy();
-      await lobbyAdmitOne(doctor.page, sharedAppointmentId, e22GuestParticipantId, 'DOC-TEST-001');
+      await lobbyAdmitOne(doctor.page, lobbyKey, e22GuestParticipantId, 'DOC-TEST-001');
       const admittedStatus = await lobbyParticipantStatus(
         doctor.page,
-        sharedAppointmentId,
+        lobbyKey,
         e22GuestParticipantId,
       );
       expect(admittedStatus, 'token guest admitted individually').toBe('admitted');
@@ -839,10 +841,10 @@ test.describe('Group E - Meeting Server & Clinical Workflow', () => {
     });
 
     await test.step('E22b - Doctor HOST admits all guests from lobby', async () => {
-      expect(sharedAppointmentId, 'appointment id for admit-all').toBeTruthy();
-      const admitResult = await lobbyAdmitAll(doctor.page, sharedAppointmentId, 'DOC-TEST-001');
+      expect(lobbyKey, 'meeting id for admit-all').toBeTruthy();
+      const admitResult = await lobbyAdmitAll(doctor.page, lobbyKey, 'DOC-TEST-001');
       const lobbyCheck = await doctor.page.request.get(
-        MEETING_URL + '/api/meetings/' + sharedAppointmentId + '/lobby',
+        MEETING_URL + '/api/meetings/' + lobbyKey + '/lobby',
         { timeout: API_TIMEOUT },
       );
       expect(lobbyCheck.ok()).toBe(true);

@@ -63,8 +63,12 @@ Same as doctor where applicable; root: `patient-meeting-room`.
 | `emr-autosave-status` | EMR editor save indicator |
 | `prescribe-submit` | Prescribing submit |
 | `allergy-block-banner` | Allergy conflict block |
-| `queue-list` | Health meeting queue |
-| `queue-count` | KPI queue count |
+| `phr-document-upload` | PHR Documents upload input |
+| `phr-tab-overview` … `phr-tab-profile` | PHR tab buttons |
+| `phr-page` | PHR root |
+| `patient-message-send-btn` | Doctor message composer send |
+| `patient-message-open-btn` | Patient detail → open composer |
+| `queue-claim-btn` / `queue-ai-match-btn` | Health Meeting queue card |
 
 ## Auth — Doctor ([`LoginPage.tsx`](../Isara-doctor-portal/src/pages/auth/LoginPage.tsx))
 

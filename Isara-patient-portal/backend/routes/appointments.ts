@@ -500,25 +500,38 @@ router.post('/', authMiddleware, async (req: Request, res: Response) => { // NOS
       `INSERT INTO appointments (
         id, patient_id, doctor_id, requested_date, requested_time,
         appointment_type, status, urgency_level, symptoms, symptom_description,
-        notes, meet_link, jitsi_room_name, invitees, created_at, updated_at
+        notes, meet_link, jitsi_room_name, invitees,
+        preferred_dates, preferred_time_slot, required_specialty, suggested_specialty, booking_metadata,
+        created_at, updated_at
       )
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $15)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $20)
        RETURNING *`,
       [
         appointmentId,
-        patientId,  // Use authenticated patient ID
+        patientId,
         effectiveDoctorId,
-        appointmentData.preferredDate || appointmentData.requestedDate,
-        appointmentData.preferredTime || appointmentData.requestedTime,
+        appointmentData.preferredDate || appointmentData.requestedDate
+          || (appointmentData.preferredDates?.[0] ?? null),
+        appointmentData.preferredTime || appointmentData.requestedTime
+          || appointmentData.preferredTimeSlot || null,
         (appointmentData.appointmentType || appointmentData.type || 'telehealth').toLowerCase(),
         initialStatus,
-        appointmentData.urgency || 'normal',
+        appointmentData.urgency || appointmentData.urgencyLevel || 'normal',
         JSON.stringify(appointmentData.symptoms || []),
         appointmentData.reason || appointmentData.symptomDescription,
-        appointmentData.notes,
+        appointmentData.notes || appointmentData.clinicalIndication,
         meetingLink,
         jitsiRoomName,
         JSON.stringify(appointmentData.invitees || []),
+        JSON.stringify(appointmentData.preferredDates || []),
+        appointmentData.preferredTimeSlot || appointmentData.preferredTime || null,
+        appointmentData.requiredSpecialty || appointmentData.specialty || null,
+        appointmentData.suggestedSpecialty || appointmentData.aiSuggestedSpecialty || null,
+        JSON.stringify({
+          wizardStep: appointmentData.wizardStep,
+          skipDoctorSelection: appointmentData.skipDoctorSelection,
+          aiTriage: appointmentData.aiTriage || appointmentData.ai_triage,
+        }),
         now
       ]
     );

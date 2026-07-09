@@ -39,6 +39,19 @@ node scripts/jitsi/setup-local-jitsi.mjs
 
 **Jitsi on Windows:** E2E maps `meet.localhost` via Chromium `--host-resolver-rules`; optional admin hosts entry `127.0.0.1 meet.localhost`.
 
+### Apply v2.3.0 migration (existing Postgres volumes)
+
+If `patient_documents` or content workflow columns are missing on a running DB:
+
+```powershell
+Get-Content scripts\database\migrations\v2.3.0-patient-documents-and-messages.sql -Raw |
+  docker compose exec -T postgres psql -U postgres -d izara_phase1
+docker compose build doctor-portal patient-portal
+docker compose up -d doctor-portal patient-portal
+```
+
+Auto-migration on doctor-portal startup also adds `medical_content` / `clinical_resources` workflow columns.
+
 ## 2b. Phased local gate ladder (Round 6)
 
 Run in order (headed, `PW_SKIP_LIVE_GEMINI=1`, `BASELINE_VISUAL=1`):
@@ -166,7 +179,7 @@ npm run test:lan:deploy-gate
 ## Visual test evidence (local, headed UI)
 
 > Browsers run **visible** during gates: `$env:PW_HEADED='1'` + `$env:BASELINE_VISUAL='1'`
-> Updated: 2026-07-06
+> Updated: 2026-07-09
 
 **Ledger:** `reports/local-error-ledger/round-9-latest.json` — tests **?**, **P0=0**
 

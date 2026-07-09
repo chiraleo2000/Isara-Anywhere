@@ -45,9 +45,8 @@ test.describe('Group I — Admin, Users & Notifications', () => {
     const { admin } = portals;
     resetScreenshotSession('group-I');
 
-    if (IS_CLOUD) {
-      await refreshPageAuth(admin.page, DOCTOR_URL, 'admin');
-    }
+    // Re-inject admin session before admin-only routes (long headed runs can drop isAdmin flags).
+    await refreshPageAuth(admin.page, DOCTOR_URL, 'admin');
 
     await test.step('I01 — Admin → Dashboard', async () => {
       await navDoctor(admin.page, 'dashboard', 'I01');

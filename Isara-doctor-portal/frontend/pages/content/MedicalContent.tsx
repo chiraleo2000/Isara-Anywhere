@@ -124,8 +124,11 @@ const renderContentWithImages = (content: string) => {
   if (!content) return '';
 
   // Replace [image:URL:description] with actual img tags (sanitized)
-  const imagePattern = /\[image:([^\]:]+):([^\]]*)\]/g;
-  let processedContent = content.replaceAll(imagePattern, (_match, url, description) => {
+  let processedContent = content.replaceAll(/\[image:([^\]]+)\]/g, (_match, inner: string) => {
+    const lastColon = inner.lastIndexOf(':');
+    if (lastColon <= 0) return _match;
+    const url = inner.slice(0, lastColon).trim();
+    const description = inner.slice(lastColon + 1).trim();
     const safeUrl = sanitizeUrl(url);
     const safeDesc = escapeHtml(description);
     return `<figure class="my-6"><img src="${safeUrl}" alt="${safeDesc}" class="w-full max-w-2xl mx-auto rounded-lg shadow-md" loading="lazy" /><figcaption class="text-center text-sm text-gray-500 mt-2">${safeDesc}</figcaption></figure>`;
@@ -347,9 +350,17 @@ const MedicalContent: React.FC = () => {
         credentials: 'include',
         body: JSON.stringify({
           titleThai: formData.titleTh || formData.title,
+          titleEnglish: formData.title,
           contentThai: formData.contentTh || formData.content,
+          contentEnglish: formData.content,
+          summaryTh: formData.summaryTh || formData.summary,
+          summaryEnglish: formData.summary,
           category: formData.category,
+          type: formData.type,
           tags: formData.tags,
+          thumbnail: formData.thumbnail,
+          videoUrl: formData.videoUrl,
+          isFeatured: formData.isFeatured,
           status: 'draft',
         }),
       });
@@ -388,8 +399,7 @@ const MedicalContent: React.FC = () => {
         throw new Error(errorData.error || `Failed to update article (${response.status})`);
       }
       const result = await response.json();
-      // Backend returns { success: true, article: {...} }
-      const article = result.article || result;
+      const article = normalizeArticle(result.article || result);
       setContent((prev) => prev.map((a) => (a.id === article.id ? article : a)));
       setShowEditModal(false);
       resetForm();
@@ -460,8 +470,9 @@ const MedicalContent: React.FC = () => {
       });
       if (!response.ok) throw new Error(`Failed to ${action} article`);
       const result = await response.json();
-      setContent((prev) => prev.map((a) => (a.id === result.article.id ? result.article : a)));
-      setSelectedArticle(result.article);
+      const article = normalizeArticle(result.article || result);
+      setContent((prev) => prev.map((a) => (a.id === article.id ? article : a)));
+      setSelectedArticle(article);
       setShowApprovalModal(false);
       setApprovalComment('');
       setRejectionReason('');
@@ -483,12 +494,19 @@ const MedicalContent: React.FC = () => {
     try {
       const response = await fetch(`${API_BASE}/api/content/tags/medical`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: newTag, userId: user?.id }),
       });
       if (!response.ok) throw new Error('Failed to create tag');
-      const tag = await response.json();
-      setTags((prev) => [...prev, tag]);
+      const result = await response.json();
+      const tag = result.tag || result;
+      setTags((prev) => [...prev, {
+        id: tag.id || tag.name,
+        name: tag.name,
+        createdBy: user?.id || '',
+        createdAt: new Date().toISOString(),
+        usageCount: 1,
+      }]);
       setFormData((prev) => ({ ...prev, tags: [...prev.tags, tag.name] }));
       setNewTag('');
     } catch (err) {
@@ -549,9 +567,21 @@ const MedicalContent: React.FC = () => {
     setShowViewModal(true);
   };
 
-  const openHistoryModal = (article: MedicalContentArticle) => {
+  const openHistoryModal = async (article: MedicalContentArticle) => {
     setSelectedArticle(article);
     setShowHistoryModal(true);
+    try {
+      const response = await fetch(`${API_BASE}/api/content/medical/${article.id}/history`, {
+        headers: getAuthHeaders(),
+        credentials: 'include',
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setSelectedArticle((prev) => prev ? { ...prev, history: data.history || [], version: data.version || prev.version } : prev);
+      }
+    } catch (err) {
+      console.error('Error fetching history:', err);
+    }
   };
 
   const openDeleteConfirm = (article: MedicalContentArticle) => {
@@ -1250,6 +1280,20 @@ const MedicalContent: React.FC = () => {
             </div>
 
             <div className="p-6">
+              {selectedArticle.status === 'rejected' && selectedArticle.rejectionReason && (
+                <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-xl">
+                  <p className="font-medium text-red-700">Rejected</p>
+                  <p className="text-red-600 text-sm mt-1">{selectedArticle.rejectionReason}</p>
+                </div>
+              )}
+              {selectedArticle.comments && selectedArticle.comments.length > 0 && (
+                <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-xl">
+                  <p className="font-medium text-yellow-800 mb-2">Admin Feedback</p>
+                  {selectedArticle.comments.filter((c) => c.isAdminFeedback).map((c) => (
+                    <p key={c.id} className="text-sm text-yellow-700">{c.content} — {c.authorName}</p>
+                  ))}
+                </div>
+              )}
               {selectedArticle.thumbnail && (
                 <img
                   src={selectedArticle.thumbnail}

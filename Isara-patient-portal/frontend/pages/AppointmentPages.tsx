@@ -5,6 +5,7 @@ import { useSettings } from '../contexts/SettingsContext';
 import { appointmentService, doctorService, googleService, notificationService } from '../lib/services';
 import { Appointment, Doctor, AppointmentStatus } from '../types';
 import { isDemoAutoMeetingEnabled } from '../utils/demoAutoAuth';
+import { buildPatientMeetingPath } from '../utils/patientMeetingRoutes';
 import { Calendar, Clock, Video, MapPin, Plus, ChevronLeft, CalendarPlus, FileText, AlertCircle, Activity, Pill, Stethoscope, CheckCircle2, Info, Mic, Image, Play } from 'lucide-react';
 import SymptomInputStep from '../components/SymptomInputStep';
 import { useRealtimeSync } from '../lib/useRealtimeSync';
@@ -312,7 +313,7 @@ export function AppointmentListPage() {
                   {apt.type === 'telehealth' && (apt.meetingLink || apt.patientMeetingUrl) && (
                     <div className="mt-3 flex flex-col gap-2">
                       <Link
-                        to={`/meeting/${apt.id}`}
+                        to={buildPatientMeetingPath(user!.patientId || user!.id, apt.id)}
                         data-testid="appointment-join-meeting"
                         onClick={(e) => e.stopPropagation()}
                         className="w-full flex items-center justify-center gap-2 bg-emerald-600 text-white py-2.5 rounded-lg hover:bg-emerald-700 font-medium"
@@ -1445,9 +1446,12 @@ export function AppointmentDetailPage() {
       || (appointment as { appointmentType?: string }).appointmentType === 'telehealth';
     const hasMeeting = Boolean(meetLink || appointment.meetingLink || appointment.patientMeetingUrl);
     if (appointment.status === 'confirmed' && isTelehealth && hasMeeting) {
-      navigate(`/meeting/${id}`, { replace: true });
+      const patientId = user?.patientId || user?.id;
+      if (patientId) {
+        navigate(buildPatientMeetingPath(patientId, id), { replace: true });
+      }
     }
-  }, [appointment, meetLink, loading, id, navigate, searchParams]);
+  }, [appointment, meetLink, loading, id, navigate, searchParams, user]);
 
   const loadAppointment = async () => {
     if (!id) return;
@@ -1721,7 +1725,7 @@ export function AppointmentDetailPage() {
         {/* Join Meeting button for telehealth — in-app real Jitsi meeting (Izara lobby + doctor host) */}
         {appointment.status === 'confirmed' && (meetLink || appointment.meetingLink) && (
           <Link
-            to={`/meeting/${appointment.id}`}
+            to={buildPatientMeetingPath(user!.patientId || user!.id, appointment.id)}
             data-testid="appointment-detail-join-meeting"
             className="flex items-center justify-center gap-2 w-full bg-blue-600 text-white py-3 rounded-xl text-center hover:bg-blue-700 mb-3"
           >

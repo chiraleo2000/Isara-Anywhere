@@ -27,6 +27,7 @@ const PATIENT_ROUTES: RouteSpec[] = [
   { path: '/profile', authRequired: true, processPage: '12_Profile_Page' },
   { path: '/settings', authRequired: true, processPage: '13_Settings_Page' },
   { path: '/timeline', authRequired: true, processPage: '14_Timeline_Page' },
+  { path: '/patient/:userId/meeting/:id', authRequired: true, processPage: '05_Appointments_Page' },
   { path: '/meeting/:id', authRequired: true, processPage: '05_Appointments_Page' },
 ];
 

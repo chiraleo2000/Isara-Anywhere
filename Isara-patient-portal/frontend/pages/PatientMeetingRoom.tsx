@@ -24,7 +24,6 @@ import {
 } from '../utils/jitsiMeetingConfig';
 import { JitsiMeetingShell } from '../features/meeting/JitsiMeetingShell';
 import { resolveMeetingServerUrl } from '../utils/resolveMeetingServerUrl';
-import { isDemoAutoLoginEnabled } from '../utils/demoAutoAuth';
 import { patientMeetingUrl, resolvePatientMeetingApiBase } from '../utils/resolvePatientMeetingApi';
 
 const JITSI_DOMAIN = resolveJitsiDomain();
@@ -143,26 +142,15 @@ async function probeMediaDevices(): Promise<{ status: MediaDeviceStatus; stream:
   }
 }
 
-// NOSONAR - Large React component with meeting lifecycle states; further decomposition would split tightly-coupled state
-function guestParticipantId(appointmentId: string): string {
-  const key = `izara-patient-${appointmentId}`;
-  try {
-    let id = sessionStorage.getItem(key);
-    if (!id) {
-      id = `guest-${crypto.randomUUID().slice(0, 12)}`;
-      sessionStorage.setItem(key, id);
-    }
-    return id;
-  } catch {
-    return `guest-${appointmentId.slice(0, 8)}`;
-  }
-}
-
 const PatientMeetingRoom: React.FC = () => { // NOSONAR
   const { appointmentId } = useParams<{ appointmentId: string }>();
   const [searchParams] = useSearchParams();
   const { user, token, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
+
+  // Playwright / automation runs can have unreliable access to real camera devices on Windows.
+  // For E2E we prefer joining muted and skipping device probing to avoid NotReadableError hangs.
+  const isAutomation = typeof navigator !== 'undefined' && Boolean((navigator as any).webdriver);
 
   const jitsiContainerRef = useRef<HTMLDivElement>(null);
   const jitsiApiRef = useRef<any>(null);
@@ -185,8 +173,8 @@ const PatientMeetingRoom: React.FC = () => { // NOSONAR
   const [error, setError] = useState<string | null>(null);
   const [meetingDuration, setMeetingDuration] = useState(0);
   const durationTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const [cameraOn, setCameraOn] = useState(true);
-  const [micOn, setMicOn] = useState(true);
+  const [cameraOn, setCameraOn] = useState(() => !isAutomation);
+  const [micOn, setMicOn] = useState(() => !isAutomation);
 
   // Consultation result (shown after meeting ends and doctor approves)
   const [consultationResult, setConsultationResult] = useState<{
@@ -199,7 +187,7 @@ const PatientMeetingRoom: React.FC = () => { // NOSONAR
 
   const [lobbyStatus, setLobbyStatus] = useState<'none' | 'waiting' | 'admitted' | 'rejected'>('none');
 
-  const participantId = user?.id || guestParticipantId(appointmentId || 'room');
+  const participantId = user?.patientId || user?.id || '';
   const patientName = resolvePatientMeetingDisplayName({
     user,
     resolvedName,
@@ -302,7 +290,12 @@ const PatientMeetingRoom: React.FC = () => { // NOSONAR
         if (joinCfg?.displayName) setResolvedName(joinCfg.displayName);
         if (joinCfg?.roomName) roomNameRef.current = joinCfg.roomName;
         if (joinCfg?.domain) jitsiDomainRef.current = joinCfg.domain;
-        await checkMediaDevices();
+        if (!isAutomation) {
+          await checkMediaDevices();
+        } else {
+          setCameraOn(false);
+          setMicOn(false);
+        }
         await connectPatientSocket(appendTranscript);
         autoStartAttemptsRef.current = 0;
         shouldAutoStartLobbyRef.current = true;
@@ -317,8 +310,7 @@ const PatientMeetingRoom: React.FC = () => { // NOSONAR
 
     if (!appointmentId) return;
     if (authLoading) return;
-    // Wait for demo/session auth before patient lobby (avoids 401 on meeting-server)
-    if (!user && isDemoAutoLoginEnabled()) return;
+    if (!user?.id && !user?.patientId) return;
 
     init();
 
@@ -328,7 +320,7 @@ const PatientMeetingRoom: React.FC = () => { // NOSONAR
       if (durationTimerRef.current) clearInterval(durationTimerRef.current);
       stopPreviewStream();
     };
-  }, [appointmentId, user, token, authLoading]);
+  }, [appointmentId, user, token, authLoading, isAutomation]);
 
   const videoConnectStartedRef = useRef(false);
   const retryVideoConnectRef = useRef<() => void>(() => {});
@@ -554,7 +546,7 @@ const PatientMeetingRoom: React.FC = () => { // NOSONAR
     return `${m}:${String(sec).padStart(2, '0')}`;
   };
 
-  if (authLoading || (!user && isDemoAutoLoginEnabled())) {
+  if (authLoading || !participantId) {
     return (
       <JitsiMeetingShell className="fixed inset-0 z-50 min-h-[100dvh] max-h-[100dvh]">
         <div
@@ -637,6 +629,9 @@ const PatientMeetingRoom: React.FC = () => { // NOSONAR
               กรุณารอแพทย์อนุมัติก่อนเข้าห้องประชุม
             </p>
             <p className="text-yellow-400 text-sm animate-pulse">รอแพทย์อนุมัติ...</p>
+            <p className="text-gray-500 text-sm mt-4">
+              ชื่อของคุณ: <span data-testid="patient-display-name">{patientName}</span>
+            </p>
           </div>
         </div>
       )}

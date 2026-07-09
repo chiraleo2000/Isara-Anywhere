@@ -8,6 +8,7 @@ import { Bell, Check, Calendar, Video, FileText, AlertCircle, X, ChevronRight, F
 import { Link } from 'react-router-dom';
 import { notificationService, Notification } from '../../lib/services';
 import { useAuth } from '../../contexts/AuthContext';
+import { buildPatientMeetingPath } from '../../utils/patientMeetingRoutes';
 import { useRealtimeSync } from '../../lib/useRealtimeSync';
 
 interface NotificationBellProps {
@@ -234,9 +235,9 @@ export function NotificationBell({ className = '' }: Readonly<NotificationBellPr
                             </Link>
                           )}
 
-                          {notification.meetingLink && notification.appointmentId && (
+                          {notification.meetingLink && notification.appointmentId && user && (
                             <Link
-                              to={`/meeting/${notification.appointmentId}`}
+                              to={buildPatientMeetingPath(user.patientId || user.id, notification.appointmentId)}
                               onClick={(e) => { e.stopPropagation(); setIsOpen(false); }}
                               className="text-xs text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1"
                             >

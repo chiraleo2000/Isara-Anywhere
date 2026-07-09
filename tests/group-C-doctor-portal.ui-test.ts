@@ -70,13 +70,17 @@ test.describe('Group C — Doctor & Admin Portal Continuous Flow', () => {
       console.log('  ✅ C04: Health Meeting page');
     });
 
-    await test.step('C05 — Health Meeting → Appointment Pool', async () => {
+    await test.step('C05 — Appointment Pool redirects to Health Meeting queue', async () => {
       await navDoctor(doctor.page, 'appointment-pool', 'C05');
+      await doctor.page.waitForTimeout(1000);
+      expect(doctor.page.url()).toMatch(/health-meeting/);
       await assertFullHealth(doctor.page, 'C05');
-      await snap(doctor.page, 'C05-appointment-pool', 'group-C');
+      await snap(doctor.page, 'C05-health-meeting-queue', 'group-C');
+      await expect(doctor.page.getByTestId('health-meeting-page')).toBeVisible({ timeout: 15_000 });
+      await expect(doctor.page.getByTestId('queue-list')).toBeVisible();
       const body = await doctor.page.locator('body').innerText();
-      expect(/pool|กลุ่ม|appointment|นัดหมาย|pending|available/i.test(body)).toBeTruthy();
-      console.log('  ✅ C05: Appointment Pool page');
+      expect(/pool|กลุ่ม|appointment|นัดหมาย|pending|queue|คิว/i.test(body)).toBeTruthy();
+      console.log('  ✅ C05: Pool redirect → Health Meeting queue');
     });
 
     // C06 — Medical Consultants — REMOVED in Phase 1 (page disabled, will be rebuilt in Phase 2)

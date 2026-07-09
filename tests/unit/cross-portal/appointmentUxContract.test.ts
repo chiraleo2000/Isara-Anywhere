@@ -46,8 +46,8 @@ describe('Appointment UX contract (APPT-UX)', () => {
       .toMatch(/accepted-queue-list/);
   });
 
-  it('APPT-UX-07 — pool enrollment response.ok', () => {
-    expect(fs.readFileSync(path.join(root, 'Isara-doctor-portal/frontend/pages/AppointmentPoolManagement.tsx'), 'utf8'))
+  it('APPT-UX-07 — pool enrollment response.ok (Health Meeting queue)', () => {
+    expect(fs.readFileSync(path.join(root, 'Isara-doctor-portal/frontend/pages/meetings/HealthMeeting.tsx'), 'utf8'))
       .toMatch(/response\.ok/);
   });
 
