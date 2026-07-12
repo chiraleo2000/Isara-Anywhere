@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, useEffect, useRef, ReactNode, useCallback, useMemo } from 'react';
 import { User } from '../types';
 import { resolveApiBaseUrl } from '../utils/resolveApiBaseUrl';
-import { getDemoPatientCredentials, isDemoAutoLoginEnabled, shouldSkipDemoAutoLogin } from '../utils/demoAutoAuth';
+import { getDemoPatientCredentials, isDemoAutoLoginEnabled, isPatientMeetingPath, shouldSkipDemoAutoLogin } from '../utils/demoAutoAuth';
 
 interface AuthContextType {
   user: User | null;
@@ -195,6 +195,7 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
   useEffect(() => {
     if (!isDemoAutoLoginEnabled() || user || isLoading || demoAutoLoginAttempted.current) return;
     if (shouldSkipDemoAutoLogin()) return;
+    if (isPatientMeetingPath(globalThis.location?.pathname)) return;
     demoAutoLoginAttempted.current = true;
     const creds = getDemoPatientCredentials();
     login(creds.email, creds.password).catch((err) => {

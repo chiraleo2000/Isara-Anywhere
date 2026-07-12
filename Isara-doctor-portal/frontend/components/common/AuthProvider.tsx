@@ -98,7 +98,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         const token = authService.getToken();
 
         if (!currentUser || !token) {
-          if (isDemoAutoLoginEnabled() && !shouldSkipDemoAutoLogin()) {
+          if (isDemoAutoLoginEnabled() && !shouldSkipDemoAutoLogin() && !isDoctorMeetingRoute(location.pathname)) {
             const creds = getDemoDoctorCredentials();
             try {
               const result = await authService.login({ email: creds.email, password: creds.password });
@@ -251,17 +251,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 
   if (!isAuthenticated) {
     if (shouldBypassLoginRedirectForMeeting(location.pathname)) {
-      return (
-        <div
-          className="min-h-screen bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50 flex items-center justify-center"
-          data-testid="meeting-auth-starting"
-        >
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-emerald-600 mx-auto mb-4" />
-            <p className="text-gray-600">กำลังเข้าสู่ระบบแพทย์...</p>
-          </div>
-        </div>
-      );
+      return <>{children}</>;
     }
     return <Navigate to="/login" state={{ from: location }} replace />;
   }

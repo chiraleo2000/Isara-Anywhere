@@ -171,20 +171,67 @@ export interface LabResultGroup {
   tests: LabTestResult[];
   aiAnalysis: string | null;
   priority: string;
+  downloadUrl?: string | null;
+}
+
+export interface ImagingResultGroup {
+  id: string;
+  orderDate: string;
+  completedDate: string;
+  doctorName: string;
+  imagingType?: string;
+  bodyPart?: string;
+  findings?: string;
+  priority?: string;
+  downloadUrl?: string | null;
 }
 
 export interface EHRData {
   labGroups: LabResultGroup[];
+  imagingGroups?: ImagingResultGroup[];
   externalRecords: ExternalRecord[];
+  documents?: ExternalRecord[];
   patientId: string;
 }
 
 export interface ExternalRecord {
   id: string;
   documentType: string;
+  sourceType?: string;
   uploadedAt: string;
   uploadedBy: string;
   viewUrl: string;
+  downloadUrl?: string | null;
+  fileName?: string;
+  mimeType?: string;
+}
+
+export interface PrescriptionHistoryItem {
+  id: string;
+  medications?: Array<Record<string, unknown>>;
+  doctor_name?: string;
+  doctorName?: string;
+  status?: string;
+  created_at?: string;
+  prescribed_date?: string;
+  notes?: string;
+  download_url?: string | null;
+  downloadUrl?: string | null;
+}
+
+export interface MeetingHistoryItem {
+  id: string;
+  appointmentId?: string;
+  doctorId?: string;
+  doctorName?: string;
+  status?: string;
+  startedAt?: string;
+  endedAt?: string;
+  createdAt?: string;
+  hasRecording?: boolean;
+  recordingUrl?: string | null;
+  downloadUrl?: string | null;
+  hasSummary?: boolean;
 }
 
 export interface PDPAPatientSummary {
@@ -409,6 +456,76 @@ class PatientRecordService {
     } catch (error) {
       console.error('Error fetching PDPA summary:', error);
       return null;
+    }
+  }
+
+  async getPrescriptions(patientId: string): Promise<PrescriptionHistoryItem[]> {
+    const cacheKey = `rx:${patientId}`;
+    const cached = this.getCached<PrescriptionHistoryItem[]>(cacheKey);
+    if (cached) return cached;
+    try {
+      const res = await apiFetch<{ prescriptions: PrescriptionHistoryItem[] }>(
+        `/api/prescriptions/patient/${encodeURIComponent(patientId)}`
+      );
+      const list = res.prescriptions || [];
+      this.setCache(cacheKey, list);
+      return list;
+    } catch (error) {
+      console.error('Error fetching prescriptions:', error);
+      return [];
+    }
+  }
+
+  async getMeetings(patientId: string): Promise<MeetingHistoryItem[]> {
+    const cacheKey = `meetings:${patientId}`;
+    const cached = this.getCached<MeetingHistoryItem[]>(cacheKey);
+    if (cached) return cached;
+    try {
+      const res = await apiFetch<{ meetings: MeetingHistoryItem[] }>(
+        `/api/patients/${encodeURIComponent(patientId)}/meetings`
+      );
+      const list = res.meetings || [];
+      this.setCache(cacheKey, list);
+      return list;
+    } catch (error) {
+      console.error('Error fetching meetings:', error);
+      return [];
+    }
+  }
+
+  /** Drop cached clinical data so realtime handlers can refetch. */
+  invalidatePatient(patientId: string): void {
+    for (const key of [...this.cache.keys()]) {
+      if (key.endsWith(`:${patientId}`)) this.cache.delete(key);
+    }
+  }
+
+  async uploadSharedDocument(
+    patientId: string,
+    payload: {
+      title: string;
+      fileName: string;
+      mimeType: string;
+      fileData: string;
+      fileSize: number;
+      sourceType?: string;
+    },
+  ): Promise<{ success: boolean; document?: ExternalRecord }> {
+    try {
+      return await apiFetch(`/api/patients/${encodeURIComponent(patientId)}/documents`, {
+        method: 'POST',
+        body: JSON.stringify({
+          sourceType: payload.sourceType || 'patient_upload',
+          title: payload.title,
+          fileName: payload.fileName,
+          mimeType: payload.mimeType,
+          fileData: payload.fileData,
+          fileSize: payload.fileSize,
+        }),
+      });
+    } catch (error) {
+      console.error('Error uploading shared document:', error);
+      return { success: false };
     }
   }
 }

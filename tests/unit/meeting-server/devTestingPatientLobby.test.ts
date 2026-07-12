@@ -1,17 +1,16 @@
 /**
- * Dev-testing patient lobby auth — session tokens vs meeting-server JWT.
+ * Meeting-scoped lobby auth — participantId must match appointment assignment.
  */
 import { describe, it, expect, vi } from 'vitest';
 import { resolveDevTestingPatientLobbyUser } from '../../../Izara-jitsi-server/backend/meetingAuth.js';
 
-describe('resolveDevTestingPatientLobbyUser', () => {
+describe('resolveMeetingScopedLobbyUser (via resolveDevTestingPatientLobbyUser)', () => {
   it('DTP01 — matches in-memory active meeting patient', async () => {
     const activeMeetings = new Map([
       ['meet-1', { patientId: 'PATIENT-DEMO' }],
     ]);
     const user = await resolveDevTestingPatientLobbyUser(
       {
-        isDevTesting: true,
         activeMeetings,
         resolveLobbyKey: async (id: string) => id,
         pool: null,
@@ -27,7 +26,6 @@ describe('resolveDevTestingPatientLobbyUser', () => {
     const activeMeetings = new Map([['meet-1', { patientId: 'PATIENT-DEMO' }]]);
     const user = await resolveDevTestingPatientLobbyUser(
       {
-        isDevTesting: true,
         activeMeetings,
         resolveLobbyKey: async (id: string) => id,
         pool: null,
@@ -39,17 +37,16 @@ describe('resolveDevTestingPatientLobbyUser', () => {
     expect(user).toBeNull();
   });
 
-  it('DTP03 — disabled outside dev testing', async () => {
+  it('DTP03 — rejects participant when meeting id does not match assignment', async () => {
     const activeMeetings = new Map([['meet-1', { patientId: 'PATIENT-DEMO' }]]);
     const user = await resolveDevTestingPatientLobbyUser(
       {
-        isDevTesting: false,
         activeMeetings,
         resolveLobbyKey: async (id: string) => id,
         pool: null,
         dbAvailable: false,
       },
-      'meet-1',
+      'meet-other',
       'PATIENT-DEMO',
     );
     expect(user).toBeNull();
@@ -59,7 +56,6 @@ describe('resolveDevTestingPatientLobbyUser', () => {
     const query = vi.fn().mockResolvedValue({ rows: [{ patient_id: 'PATIENT-DB' }] });
     const user = await resolveDevTestingPatientLobbyUser(
       {
-        isDevTesting: true,
         activeMeetings: new Map(),
         resolveLobbyKey: async (id: string) => id,
         pool: { query },

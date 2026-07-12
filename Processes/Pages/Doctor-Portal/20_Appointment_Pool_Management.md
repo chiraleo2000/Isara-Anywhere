@@ -1,10 +1,10 @@
-**Status: DEPRECATED** — redirects to `/health-meeting?tab=queue`. See `06_Health_Meeting_Page.md`.
+**Status: DEPRECATED** — `/appointment-pool` and `/admin/pool` redirect to `/health-meeting?tab=queue`. Canonical UI: `06_Health_Meeting_Page.md` (Patient Queue tab).
 
-# 📋 Doctor Portal — Appointment Pool Management
+# 📋 Doctor Portal — Appointment Pool Management (legacy redirect)
 
-**Component:** `frontend/pages/AppointmentPoolManagement.tsx`
+**Component:** Redirect only (`DoctorPortal.tsx` → `HealthMeeting.tsx?tab=queue`)
 **Access:** 🔒 Doctor / Admin
-**Thai Title:** กลุ่มนัดหมายรอจัดสรร / Appointment Pool
+**Thai Title:** กลุ่มนัดหมายรอจัดสรร → คิวใน Health Meeting
 
 
 ## มาตรฐานเอกสาร (รายงานภาษาไทย)

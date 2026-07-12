@@ -20,6 +20,7 @@ import {
   readPageBearerToken,
   requirePatientAuth,
   refreshPageAuth,
+  pageRequestGetWithAuthRetry,
 } from './helpers/multi-portal';
 import { loadWorkflowState, reloadWorkflowStateFromDisk, saveWorkflowState } from './helpers/workflow-state';
 import {
@@ -609,10 +610,12 @@ test.describe('Group E - Meeting Server & Clinical Workflow', () => {
 
     await test.step('E15 - Patient can access meeting record via API', async () => {
       expect(sharedMeetingId, 'Meeting from E2').toBeTruthy();
-      const token = await patient.page.evaluate(() => localStorage.getItem('auth_token'));
-      const resp = await patient.page.request.get(
+      await requirePatientAuth(patient.page, 'E15');
+      const resp = await pageRequestGetWithAuthRetry(
+        patient.page,
         MEETING_URL + '/api/meetings/' + sharedMeetingId,
-        { headers: { Authorization: 'Bearer ' + token }, timeout: API_TIMEOUT },
+        PATIENT_URL,
+        { timeout: API_TIMEOUT },
       );
       expect(resp.ok(), 'Patient can access meeting record').toBe(true);
       const data = await resp.json();
@@ -632,10 +635,12 @@ test.describe('Group E - Meeting Server & Clinical Workflow', () => {
     });
 
     await test.step('E17 - Patient appointments API shows real data', async () => {
-      const token = await patient.page.evaluate(() => localStorage.getItem('auth_token'));
-      const resp = await patient.page.request.get(
+      await requirePatientAuth(patient.page, 'E17');
+      const resp = await pageRequestGetWithAuthRetry(
+        patient.page,
         PATIENT_URL + '/api/appointments',
-        { headers: { Authorization: 'Bearer ' + token }, timeout: API_TIMEOUT },
+        PATIENT_URL,
+        { timeout: API_TIMEOUT },
       );
       expect(resp.ok(), 'Patient appointments API').toBe(true);
       const data = await resp.json();

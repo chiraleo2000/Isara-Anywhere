@@ -32,6 +32,7 @@ import AdminDoctorManagement from './admin/AdminDoctorManagement';
 import AdminAppointmentManagement from './admin/AdminAppointmentManagement';
 import DoctorProfilePage from './DoctorProfilePage';
 import RouteErrorBoundary from '../components/common/RouteErrorBoundary';
+import { shouldBypassLoginRedirectForMeeting } from '../utils/demoAutoAuth';
 // DoctorAvailabilitySettings removed as per requirements
 
 function GuardedRoute({ name, children }: Readonly<{ name: string; children: React.ReactNode }>) {
@@ -86,14 +87,15 @@ const DoctorPortal: React.FC = () => {
     setShowPatientRecord(true);
   };
 
-  // Verify user access - allow doctors and admins
+  // Verify user access - allow doctors and admins (meeting URLs are public)
   useEffect(() => {
+    if (shouldBypassLoginRedirectForMeeting(location.pathname)) return;
     const isUnauthorized = !loading && (!user || user?.id !== userId || (user?.role !== 'doctor' && user?.role !== 'admin'));
     if (isUnauthorized) {
       console.warn('Unauthorized access to doctor portal');
       navigate('/login', { replace: true });
     }
-  }, [user, userId, loading, navigate]);
+  }, [user, userId, loading, navigate, location.pathname]);
 
   useEffect(() => {
     if (user && (user.role === 'doctor' || user.role === 'admin')) {
@@ -141,7 +143,7 @@ const DoctorPortal: React.FC = () => {
     return 'dashboard';
   };
 
-  if (loading) {
+  if (loading && !shouldBypassLoginRedirectForMeeting(location.pathname)) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50 flex items-center justify-center">
         <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-emerald-600"></div>
@@ -149,11 +151,7 @@ const DoctorPortal: React.FC = () => {
     );
   }
 
-  if (!user || (user.role !== 'doctor' && user.role !== 'admin')) {
-    return <Navigate to="/login" replace />;
-  }
-
-  // Fullscreen meeting routes break out of portal chrome (sidebar / mobile nav)
+  // Fullscreen meeting routes break out of portal chrome — no portal login required
   const isMeetingBreakout = /\/meeting\/[^/]+/.test(location.pathname);
 
   if (isMeetingBreakout) {
@@ -163,6 +161,10 @@ const DoctorPortal: React.FC = () => {
         <Route path="meeting/:appointmentId/results" element={<GuardedRoute name="meeting-results"><MeetingResultsPage /></GuardedRoute>} />
       </Routes>
     );
+  }
+
+  if (!user || (user.role !== 'doctor' && user.role !== 'admin')) {
+    return <Navigate to="/login" replace />;
   }
 
   return (

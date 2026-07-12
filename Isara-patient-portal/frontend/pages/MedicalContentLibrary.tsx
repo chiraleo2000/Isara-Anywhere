@@ -75,17 +75,17 @@ const CATEGORIES: ContentCategory[] = [
 ];
 
 const CONTENT_TYPES = [
-  { value: 'all', label: 'ทุกประเภท', icon: '📁' },
-  { value: 'article', label: 'บทความ', icon: '📄' },
-  { value: 'video', label: 'วิดีโอ', icon: '🎥' },
-  { value: 'guide', label: 'คู่มือ', icon: '📚' },
-  { value: 'infographic', label: 'อินโฟกราฟิก', icon: '📊' },
+  { value: 'all', label: { en: 'All types', th: 'ทุกประเภท' }, icon: '📁' },
+  { value: 'article', label: { en: 'Article', th: 'บทความ' }, icon: '📄' },
+  { value: 'video', label: { en: 'Video', th: 'วิดีโอ' }, icon: '🎥' },
+  { value: 'guide', label: { en: 'Guide', th: 'คู่มือ' }, icon: '📚' },
+  { value: 'infographic', label: { en: 'Infographic', th: 'อินโฟกราฟิก' }, icon: '📊' },
 ];
 
 // i18n Labels (module-level to reduce component cognitive complexity)
 const LABELS: Record<string, Record<LangKey, string>> = {
   title: { en: 'Health Knowledge Library', th: 'คลังความรู้สุขภาพ' },
-  subtitle: { en: 'Medical Content Library - Your trusted health resource', th: 'Medical Content Library - แหล่งความรู้เพื่อสุขภาพที่ดีของคุณ' },
+  subtitle: { en: 'Your trusted health resource', th: 'แหล่งความรู้เพื่อสุขภาพที่ดีของคุณ' },
   loading: { en: 'Loading medical content...', th: 'กำลังโหลดเนื้อหาทางการแพทย์...' },
   retry: { en: 'Try again', th: 'ลองใหม่อีกครั้ง' },
   featured: { en: '✨ Featured Content', th: '✨ เนื้อหาแนะนำ' },
@@ -639,7 +639,7 @@ const MedicalContentLibrary: React.FC = () => {
           >
             {CONTENT_TYPES.map((type) => (
               <option key={type.value} value={type.value}>
-                {type.icon} {type.label}
+                {type.icon} {type.label[lang]}
               </option>
             ))}
           </select>

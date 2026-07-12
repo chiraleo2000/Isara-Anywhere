@@ -1,6 +1,6 @@
 {
   "round": 7,
-  "timestamp": "2026-07-09T08:43:58.023Z",
+  "timestamp": "2026-07-09T19:28:38.882Z",
   "immutable": true,
   "environment": {
     "testEnv": "local",
@@ -12,7 +12,7 @@
     "expected": 21,
     "unexpected": 0,
     "skipped": 0,
-    "durationMs": 152431.533
+    "durationMs": 85271.641
   },
   "failures": [],
   "p0Count": 0,

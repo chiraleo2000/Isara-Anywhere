@@ -262,9 +262,11 @@ const isAppointmentToday = (apt: { appointmentDate?: string; scheduledDate?: str
 
 // i18n labels for Health Meeting page
 const labels = {
-  pageTitle: { en: 'Health Meeting', th: 'การประชุมสุขภาพ' },
+  pageTitle: { en: 'Appointments & Meetings', th: 'นัดหมายและการประชุม' },
+  healthMeeting: { en: 'Health Meeting', th: 'การประชุมสุขภาพ' },
   patientQueue: { en: 'Patient Queue', th: 'คิวผู้ป่วย' },
   scheduledMeetings: { en: 'Scheduled Meetings', th: 'การประชุมที่กำหนด' },
+  todayMeetings: { en: "Today's Meetings", th: 'การประชุมวันนี้' },
   allAppointments: { en: 'All Appointments', th: 'การนัดหมายทั้งหมด' },
   search: { en: 'Search patients...', th: 'ค้นหาผู้ป่วย...' },
   refresh: { en: 'Refresh', th: 'รีเฟรช' },
@@ -273,6 +275,12 @@ const labels = {
   pending: { en: 'Pending', th: 'รอดำเนินการ' },
   confirmed: { en: 'Confirmed', th: 'ยืนยันแล้ว' },
   joinMeeting: { en: 'Join Meeting', th: 'เข้าร่วมประชุม' },
+  dashboard: { en: 'Dashboard', th: 'แดชบอร์ด' },
+  queue: { en: 'Queue', th: 'คิว' },
+  today: { en: 'Today', th: 'วันนี้' },
+  actions: { en: 'Actions', th: 'การดำเนินการ' },
+  queueAwaiting: { en: 'Patient Queue - Appointments Awaiting Confirmation', th: 'คิวผู้ป่วย - นัดหมายรอยืนยัน' },
+  noMeetingsToday: { en: 'No meetings scheduled for today. Confirm appointments from Patient Queue.', th: 'ไม่มีการประชุมวันนี้ ยืนยันนัดหมายจากคิวผู้ป่วย' },
 };
 
 // Helper: get inactive tab class based on dark mode
@@ -289,8 +297,9 @@ const hmDarkSubtext = (isDark: boolean) => isDark ? 'text-gray-400' : 'text-gray
 const hmDarkCard = (isDark: boolean) => isDark ? 'bg-gray-800' : 'bg-white';
 
 const HealthMeeting: React.FC<HealthMeetingProps> = ({ doctor }) => {
-  const { theme } = useSettings();
+  const { theme, language } = useSettings();
   const isDark = theme === 'dark';
+  const L = (key: keyof typeof labels) => labels[key][language];
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const autostartHandledRef = useRef(false);
@@ -1422,14 +1431,14 @@ Izara Telehealth Team
       )}
       {/* Breadcrumb hints */}
       <nav aria-label="Breadcrumb" className={`text-sm mb-4 ${hmDarkSubtext(isDark)}`} data-testid="health-meeting-breadcrumb">
-        <span>Dashboard</span>
+        <span>{L('dashboard')}</span>
         <span className="mx-2">›</span>
-        <span className={hmDarkText(isDark)}>Health Meeting</span>
+        <span className={hmDarkText(isDark)}>{L('healthMeeting')}</span>
         <span className="mx-2">›</span>
         <span className="text-emerald-600 font-medium">
           {isMobile
-            ? ({ queue: 'Queue', today: 'Today', actions: 'Actions' } as const)[mobileSection]
-            : ({ queue: 'Patient Queue', meetings: 'Today\'s Meetings', 'all-appointments': 'All Appointments' } as const)[activeTab]}
+            ? ({ queue: L('queue'), today: L('today'), actions: L('actions') } as const)[mobileSection]
+            : ({ queue: L('patientQueue'), meetings: L('todayMeetings'), 'all-appointments': L('allAppointments') } as const)[activeTab]}
         </span>
       </nav>
 
@@ -1437,9 +1446,9 @@ Izara Telehealth Team
       {isMobile && (
         <div className="flex rounded-lg overflow-hidden border border-gray-200 mb-4" data-testid="health-meeting-mobile-tabs">
           {([
-            { key: 'queue' as const, label: 'Queue' },
-            { key: 'today' as const, label: 'Today' },
-            { key: 'actions' as const, label: 'Actions' },
+            { key: 'queue' as const, label: L('queue') },
+            { key: 'today' as const, label: L('today') },
+            { key: 'actions' as const, label: L('actions') },
           ]).map((tab) => (
             <button
               key={tab.key}
@@ -1462,7 +1471,7 @@ Izara Telehealth Team
         <div>
           <h1 className={`text-2xl font-bold flex items-center gap-2 ${hmDarkText(isDark)}`}>
             <VideoCameraIcon className="w-8 h-8 text-emerald-600" />
-            Appointments & Meetings
+            {L('pageTitle')}
           </h1>
           <p className={`mt-1 ${hmDarkSubtext(isDark)}`}>
             Manage patient queue and meetings with patients, doctors, and consultants
@@ -1534,7 +1543,7 @@ Izara Telehealth Team
               : inactiveTabClass(isDark)
             }`}
         >
-          🏥 Patient Queue ({pendingQueue.length + acceptedQueue.length})
+          🏥 {L('patientQueue')} ({pendingQueue.length + acceptedQueue.length})
         </button>
         <button
           onClick={() => setActiveTab('meetings')}
@@ -1543,7 +1552,7 @@ Izara Telehealth Team
               : inactiveTabClass(isDark)
             }`}
         >
-          📅 Today ({allAppointments.filter((a: any) => a.status === 'confirmed' && isAppointmentToday(a)).length})
+          📅 {L('today')} ({allAppointments.filter((a: any) => a.status === 'confirmed' && isAppointmentToday(a)).length})
         </button>
 
         {/* Admin-only: All Appointments tab */}
@@ -1555,7 +1564,7 @@ Izara Telehealth Team
                 : inactiveAdminTabClass(isDark)
               }`}
           >
-            📋 All Appointments ({allAppointments.length})
+            📋 {L('allAppointments')} ({allAppointments.length})
           </button>
         )}
       </div>
@@ -1573,7 +1582,7 @@ Izara Telehealth Team
         <div className={`rounded-xl shadow-lg p-6 mb-6 ${hmDarkCard(isDark)}`}>
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h2 className={`text-xl font-bold ${hmDarkText(isDark)}`}>Patient Queue - Appointments Awaiting Confirmation</h2>
+              <h2 className={`text-xl font-bold ${hmDarkText(isDark)}`}>{L('queueAwaiting')}</h2>
               <p className={`text-sm mt-1 ${hmDarkSubtext(isDark)}`}>
                 Review patient requests and confirm appointment date/time
               </p>
@@ -1780,7 +1789,7 @@ Izara Telehealth Team
             {allAppointments.filter((a: any) => a.status === 'confirmed' && isAppointmentToday(a)).length === 0 ? (
               <div className="text-center py-12 text-gray-500">
                 <div className="text-6xl mb-4"></div>
-                <p>No meetings scheduled for today. Confirm appointments from Patient Queue.</p>
+                <p>{L('noMeetingsToday')}</p>
               </div>
             ) : (
               allAppointments.filter((a: any) => a.status === 'confirmed' && isAppointmentToday(a)).map((apt: any) => (
@@ -1976,7 +1985,7 @@ Izara Telehealth Team
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
             <div>
               <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
-                📋 All Appointments{' '}
+                📋 {L('allAppointments')}{' '}
                 <span className="text-sm font-normal text-gray-500 ml-2">
                   ({allAppointments.length} total)
                 </span>

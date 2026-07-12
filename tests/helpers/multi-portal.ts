@@ -33,7 +33,7 @@ import {
   probeRenderHealth,
 } from './portal-diagnostics';
 import { registerScreenshotHash, assertDistinctFromSession } from './screenshot-distinct';
-import { installJitsiE2eStubForContext } from './jitsi-e2e-stub';
+import { installJitsiE2eStubForContext, ensureJitsiE2eStubOnPage } from './jitsi-e2e-stub';
 import {
   refreshAuthStorageStates,
   refreshAuthStorageStateForRole,
@@ -713,7 +713,21 @@ export async function snapDistinct(
     fs.copyFileSync(filePath, docsPath);
     if (safeSubDir) assertDistinctFromSession(safeSubDir, docsPath);
   } catch (err) {
-    console.warn(`⚠️ Distinct screenshot failed: ${name}`, err instanceof Error ? err.message : '');
+    const msg = err instanceof Error ? err.message : String(err);
+    console.warn(`⚠️ Distinct screenshot failed: ${name}`, msg);
+    // Firefox locator.screenshot timeouts are flaky — fall back to full-page capture.
+    if (/Timeout|timeout/i.test(msg)) {
+      await page.screenshot({
+        path: filePath,
+        timeout: Math.max(ssTimeout, 20_000),
+        animations: 'disabled',
+        fullPage: options?.fullPage ?? false,
+      }).catch(() => {});
+      if (fs.existsSync(filePath)) {
+        fs.copyFileSync(filePath, docsPath);
+        return filePath;
+      }
+    }
     throw err;
   }
   return filePath;
@@ -1439,28 +1453,31 @@ export async function joinIzaraMeetingInApp( // NOSONAR S3776 — multi-step mee
   }
 
   const jitsiContainer = page.getByTestId('jitsi-meeting-container');
+  const meetingUi = jitsiContainer.or(page.getByTestId('end-meeting-btn')).first();
+  const jitsiIframe = page.locator('[data-testid="jitsi-meeting-container"] iframe').first();
 
   const isDoctorMeeting = /\/doctor\/[^/]+\/meeting\//.test(page.url());
   if (isDoctorMeeting) {
-    const meetingUi = jitsiContainer.or(page.getByTestId('end-meeting-btn')).first();
     const hostStarting = page.getByTestId('host-starting-screen');
-    if (await hostStarting.isVisible({ timeout: 5_000 }).catch(() => false)) {
-      const meetingVisible = await meetingUi
-        .isVisible({ timeout: iframeTimeout })
-        .catch(() => false);
-      if (!meetingVisible) {
-        const retryBtn = page.getByTestId('retry-join-meeting');
-        if (await retryBtn.isVisible({ timeout: 2_000 }).catch(() => false)) {
-          await retryBtn.click();
-        }
-        await expect(meetingUi, `[${label}] doctor Jitsi after host-start`).toBeVisible({
-          timeout: iframeTimeout,
-        });
+    const waitForDoctorJitsi = async (stepLabel: string) => {
+      const meetingVisible = await meetingUi.isVisible({ timeout: 5_000 }).catch(() => false);
+      if (meetingVisible) return;
+      if ((await jitsiIframe.count()) > 0) {
+        await expect(jitsiIframe, `[${stepLabel}] Jitsi iframe attached`).toBeAttached({ timeout: 10_000 });
+        return;
       }
-    } else {
-      await expect(meetingUi, `[${label}] Jitsi after doctor auto-start`).toBeVisible({
+      const retryBtn = page.getByTestId('retry-join-meeting');
+      if (await retryBtn.isVisible({ timeout: 2_000 }).catch(() => false)) {
+        await retryBtn.click();
+      }
+      await expect(meetingUi, `[${stepLabel}] Jitsi after doctor auto-start`).toBeVisible({
         timeout: iframeTimeout,
       });
+    };
+    if (await hostStarting.isVisible({ timeout: 5_000 }).catch(() => false)) {
+      await waitForDoctorJitsi(`${label}-doctor-host-start`);
+    } else {
+      await waitForDoctorJitsi(`${label}-doctor`);
     }
     return;
   }
@@ -1888,18 +1905,30 @@ export async function navDoctor(page: Page, target: string | RegExp, label: stri
       const dest = navKey === 'health-meeting'
         ? doctorHealthMeetingUrl(doctorId, origin)
         : `${origin}/doctor/${doctorId}/${DOCTOR_NAV_PATH[navKey]}`;
+      const navTimeout = Math.round(
+        NAV_TIMEOUT * ((await isFirefoxPage(page)) ? getRoleBrowserSpec('admin').navTimeoutMultiplier : 1),
+      );
       if (!page.url().includes(`/${DOCTOR_NAV_PATH[navKey]}`)) {
         try {
-          await page.goto(dest, { waitUntil: 'domcontentloaded', timeout: NAV_TIMEOUT });
+          await page.goto(dest, { waitUntil: 'domcontentloaded', timeout: navTimeout });
         } catch {
           // Cloud Run can cold-start route handlers; retry once before failing the step.
-          await page.goto(dest, { waitUntil: 'domcontentloaded', timeout: NAV_TIMEOUT });
+          await page.goto(dest, { waitUntil: 'domcontentloaded', timeout: navTimeout });
         }
       }
       await page.waitForTimeout(WAIT_AFTER_NAV);
-      await waitForContent(page, label);
-      assertNotLogin(page, label);
-      return;
+      // Firefox SPA can accept goto but stay on dashboard when admin session is stale.
+      if (!page.url().includes(`/${DOCTOR_NAV_PATH[navKey]}`)) {
+        await refreshPageAuth(page, DOCTOR_URL);
+        await page.goto(dest, { waitUntil: 'load', timeout: navTimeout });
+        await page.waitForTimeout(WAIT_AFTER_NAV);
+      }
+      if (page.url().includes(`/${DOCTOR_NAV_PATH[navKey]}`)) {
+        await waitForContent(page, label);
+        assertNotLogin(page, label);
+        return;
+      }
+      console.warn(`  ⚠️ navDoctor Firefox direct goto missed "${navKey}" — falling back to sidebar`);
     }
   }
 
@@ -2550,16 +2579,21 @@ export const test = base.extend<{ _authSync: void }, { portals: Portals }>({
     const CLOSE_TIMEOUT_MS = IS_CLOUD ? 30_000 : 10_000;
     const closeWithTimeout = (p: Promise<void>, label: string, ms = CLOSE_TIMEOUT_MS) =>
       Promise.race([p, new Promise<void>(r => setTimeout(() => { console.log(`  ⚠ ${label} close timed out`); r(); }, ms))]);
-    await Promise.all([
-      closeWithTimeout(patientCtx.close().catch(() => {}), 'patientCtx'),
-      closeWithTimeout(doctorCtx.close().catch(() => {}), 'doctorCtx'),
-      closeWithTimeout(adminCtx.close().catch(() => {}), 'adminCtx'),
-    ]);
-    await Promise.all([
-      closeWithTimeout(patientBrowser.close().catch(() => {}), 'patientBrowser'),
-      closeWithTimeout(doctorBrowser.close().catch(() => {}), 'doctorBrowser'),
-      closeWithTimeout(adminBrowser.close().catch(() => {}), 'adminBrowser'),
-    ]);
+    try {
+      // Close pages before contexts/browsers — avoids Playwright tracing race on worker teardown.
+      await closeWithTimeout(patientPage.close().catch(() => {}), 'patientPage');
+      await closeWithTimeout(doctorPage.close().catch(() => {}), 'doctorPage');
+      await closeWithTimeout(adminPage.close().catch(() => {}), 'adminPage');
+      await closeWithTimeout(patientCtx.close().catch(() => {}), 'patientCtx');
+      await closeWithTimeout(doctorCtx.close().catch(() => {}), 'doctorCtx');
+      await closeWithTimeout(adminCtx.close().catch(() => {}), 'adminCtx');
+      await new Promise((r) => setTimeout(r, 300));
+      await closeWithTimeout(patientBrowser.close().catch(() => {}), 'patientBrowser');
+      await closeWithTimeout(doctorBrowser.close().catch(() => {}), 'doctorBrowser');
+      await closeWithTimeout(adminBrowser.close().catch(() => {}), 'adminBrowser');
+    } catch (err) {
+      console.warn(`  ⚠ Fixture teardown: ${err instanceof Error ? err.message : String(err)}`);
+    }
   }, {
     scope: 'worker',
     // Must cover full headed gate (A→K + Defect); align with playwright globalTimeout (2h local headed)

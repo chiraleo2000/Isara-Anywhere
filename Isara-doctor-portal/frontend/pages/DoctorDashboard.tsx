@@ -30,6 +30,7 @@ import { geminiClinicalService } from '../services/geminiClinicalService';
 import { useRealtimeSync } from '../services/useRealtimeSync';
 import { resolveMeetingServerUrl } from '../utils/resolveMeetingServerUrl';
 import { CalendarDaysIcon, ClockIcon, VideoCameraIcon } from '../assets/NewSvgIcons';
+import { PatientRecordViewer } from '../components/PatientRecordViewer';
 
 const meetingServerBase = () => resolveMeetingServerUrl();
 
@@ -329,6 +330,12 @@ export const DoctorDashboard: React.FC<DoctorDashboardProps> = ({
     reject: { en: 'Reject', th: 'ปฏิเสธ' },
     useInEMR: { en: 'Use in EMR', th: 'ใช้ใน EMR' },
     aiMeetingSummary: { en: 'AI Summary from Health Meeting', th: 'AI สรุปจาก Health Meeting' },
+    diagnosisTitle: { en: 'Diagnosis & Differential', th: 'การวินิจฉัยและวินิจฉัยแยกโรค' },
+    treatmentPlanTitle: { en: 'Treatment Plan / Prescribe', th: 'แผนการรักษา' },
+    medicalRecordTitle: { en: 'Medical Record', th: 'รายงานเวชระเบียน' },
+    radiologyTitle: { en: 'Radiological Imaging', th: 'ภาพวินิจฉัยทางรังสีวิทยา' },
+    laboratoryTitle: { en: 'Laboratory Reports', th: 'รายงานทางห้องปฏิบัติการ' },
+    pathologyTitle: { en: 'Pathology Reports', th: 'รายงานทางพยาธิวิทยา' },
   };
 
   // State
@@ -348,6 +355,7 @@ export const DoctorDashboard: React.FC<DoctorDashboardProps> = ({
   const [selectedPatientLabs, setSelectedPatientLabs] = useState<LabOrder[]>([]);
   const [selectedPatient, setSelectedPatient] = useState<PatientRecord | null>(null);
   const [selectedPatientPrescriptions, setSelectedPatientPrescriptions] = useState<any[]>([]);
+  const [showPatientRecordViewer, setShowPatientRecordViewer] = useState(false);
   const [treatmentTab, setTreatmentTab] = useState<TreatmentTab>('protocols');
 
   // Dashboard stats - start with zeros, load from real data
@@ -1518,27 +1526,27 @@ export const DoctorDashboard: React.FC<DoctorDashboardProps> = ({
 
     const modalContent: Record<string, { title: string; content: React.ReactNode }> = {
       diagnosis: {
-        title: '🔍 การวินิจฉัย / วินิจฉัยแยกโรค (Diagnosis & Differential)',
+        title: `🔍 ${labels.diagnosisTitle[language]}`,
         content: renderDiagnosisModalContent(patientName, latestEMR, allergies, conditions, medications),
       },
       'treatment-plan': {
-        title: '💊 แผนการรักษา (Treatment Plan / Prescribe)',
+        title: `💊 ${labels.treatmentPlanTitle[language]}`,
         content: renderTreatmentPlanModalContent(patientName, allergies, medications),
       },
       'system-report': {
-        title: '📊 รายงานเวชระเบียน (Medical Record)',
+        title: `📊 ${labels.medicalRecordTitle[language]}`,
         content: renderSystemReportModalContent(patientName, latestEMR, selectedPatientEMRs),
       },
       radiology: {
-        title: '🩻 ภาพวินิจฉัยทางรังสีวิทยา (Radiological Imaging)',
+        title: `🩻 ${labels.radiologyTitle[language]}`,
         content: renderRadiologyModalContent(patientName, latestEMR, allergies),
       },
       pathology: {
-        title: '🔬 รายงานทางพยาธิวิทยา (Pathology Reports)',
+        title: `🔬 ${labels.pathologyTitle[language]}`,
         content: renderPathologyModalContent(patientName),
       },
       laboratory: {
-        title: '🧪 รายงานทางห้องปฏิบัติการ (Laboratory Results)',
+        title: `🧪 ${labels.laboratoryTitle[language]}`,
         content: renderLaboratoryModalContent(patientName),
       },
     };
@@ -1949,8 +1957,18 @@ export const DoctorDashboard: React.FC<DoctorDashboardProps> = ({
             <button 
               className="w-full py-2 px-4 bg-emerald-600 text-white rounded-lg text-sm font-medium hover:bg-emerald-700 transition-colors"
               title="ดึงข้อมูลการรักษาเดิมย้อนหลัง นำมาสรุปเพื่อเป็น input ให้แพทย์"
+              data-testid="dashboard-search-treatment-history"
+              onClick={() => {
+                if (selectedPatient) {
+                  setShowPatientRecordViewer(true);
+                } else if (selectedPatientId) {
+                  navigate(`/doctor/${doctor.id}/patients/${selectedPatientId}`);
+                } else {
+                  navigate(`/doctor/${doctor.id}/patients`);
+                }
+              }}
             >
-              <span className="block">🔍 ค้นหาประวัติการรักษา</span>
+              <span className="block">🔍 {language === 'th' ? 'ค้นหาประวัติการรักษา' : 'Search Treatment History'}</span>
               <span className="block text-xs opacity-80">{labels.searchPastRecords[language]}</span>
             </button>
             <button className="w-full py-2 px-4 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors">
@@ -2205,8 +2223,7 @@ export const DoctorDashboard: React.FC<DoctorDashboardProps> = ({
                 <div className="flex items-center space-x-3">
                   <div className="text-2xl">🔍</div>
                   <div className="flex-1">
-                    <p className="text-sm font-bold text-emerald-700">การวินิจฉัย / วินิจฉัยแยกโรค</p>
-                    <p className="text-xs text-gray-600">Diagnosis & Differential</p>
+                    <p className="text-sm font-bold text-emerald-700">{labels.diagnosisTitle[language]}</p>
                   </div>
                 </div>
               </button>
@@ -2219,8 +2236,7 @@ export const DoctorDashboard: React.FC<DoctorDashboardProps> = ({
                 <div className="flex items-center space-x-3">
                   <div className="text-2xl">💊</div>
                   <div className="flex-1">
-                    <p className="text-sm font-bold text-blue-700">แผนการรักษา</p>
-                    <p className="text-xs text-gray-600">Treatment Plan / Prescribe</p>
+                    <p className="text-sm font-bold text-blue-700">{labels.treatmentPlanTitle[language]}</p>
                   </div>
                 </div>
               </button>
@@ -2233,8 +2249,7 @@ export const DoctorDashboard: React.FC<DoctorDashboardProps> = ({
                 <div className="flex items-center space-x-3">
                   <div className="text-2xl">📊</div>
                   <div className="flex-1">
-                    <p className="text-sm font-bold text-purple-700">รายงานเวชระเบียน</p>
-                    <p className="text-xs text-gray-600">Medical Record</p>
+                    <p className="text-sm font-bold text-purple-700">{labels.medicalRecordTitle[language]}</p>
                   </div>
                 </div>
               </button>
@@ -2247,8 +2262,7 @@ export const DoctorDashboard: React.FC<DoctorDashboardProps> = ({
                 <div className="flex items-center space-x-3">
                   <div className="text-2xl">🩻</div>
                   <div className="flex-1">
-                    <p className="text-sm font-bold text-orange-700">ภาพวินิจฉัยทางรังสีวิทยา</p>
-                    <p className="text-xs text-gray-600">Radiological Imaging</p>
+                    <p className="text-sm font-bold text-orange-700">{labels.radiologyTitle[language]}</p>
                   </div>
                 </div>
               </button>
@@ -2261,8 +2275,7 @@ export const DoctorDashboard: React.FC<DoctorDashboardProps> = ({
                 <div className="flex items-center space-x-3">
                   <div className="text-2xl">🧪</div>
                   <div className="flex-1">
-                    <p className="text-sm font-bold text-cyan-700">รายงานทางห้องปฏิบัติการ</p>
-                    <p className="text-xs text-gray-600">Laboratory Reports</p>
+                    <p className="text-sm font-bold text-cyan-700">{labels.laboratoryTitle[language]}</p>
                   </div>
                 </div>
               </button>
@@ -2275,8 +2288,7 @@ export const DoctorDashboard: React.FC<DoctorDashboardProps> = ({
                 <div className="flex items-center space-x-3">
                   <div className="text-2xl">🔬</div>
                   <div className="flex-1">
-                    <p className="text-sm font-bold text-pink-700">รายงานทางพยาธิวิทยา</p>
-                    <p className="text-xs text-gray-600">Pathological Reports</p>
+                    <p className="text-sm font-bold text-pink-700">{labels.pathologyTitle[language]}</p>
                   </div>
                 </div>
               </button>
@@ -2363,6 +2375,15 @@ export const DoctorDashboard: React.FC<DoctorDashboardProps> = ({
 
       {/* Health Studio Modal */}
       {renderStudioModalContent()}
+
+      {showPatientRecordViewer && selectedPatient && (
+        <PatientRecordViewer
+          patient={selectedPatient}
+          currentDoctorId={doctor.id}
+          initialTab="summary"
+          onClose={() => setShowPatientRecordViewer(false)}
+        />
+      )}
     </div>
   );
 };

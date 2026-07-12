@@ -16,7 +16,20 @@ test.describe('Defect — Theme and i18n (G1, G2)', () => {
       await patient.page.waitForTimeout(800);
     }
 
-    await patient.page.goto(`${patient.url}/notifications`, { waitUntil: 'domcontentloaded' });
+    let navigated = false;
+    for (let attempt = 0; attempt < 3 && !navigated; attempt++) {
+      try {
+        await patient.page.goto(`${patient.url}/notifications`, {
+          waitUntil: 'domcontentloaded',
+          timeout: 30_000,
+        });
+        navigated = true;
+      } catch (err) {
+        const msg = String(err);
+        if (!/ERR_EMPTY_RESPONSE|ERR_CONNECTION|Timeout/i.test(msg) || attempt === 2) throw err;
+        await patient.page.waitForTimeout(1500 * (attempt + 1));
+      }
+    }
     await expect(patient.page.getByTestId('notifications-page')).toBeVisible({ timeout: 10_000 });
     await expect(patient.page.getByRole('heading', { name: /notifications/i })).toBeVisible({ timeout: 10_000 });
     await snap(patient.page, 'DT1-notifications-en', 'group-defect');

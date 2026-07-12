@@ -23,9 +23,9 @@ export function isDoctorMeetingRoute(pathname?: string): boolean {
   return /^\/doctor\/[^/]+\/meeting\/[^/]+/.test(path);
 }
 
-/** Meeting routes hold spinner instead of login redirect when demo auto-login is on. */
+/** Meeting URLs are public — identity is scoped by userId in the path + appointment id (no portal login). */
 export function shouldBypassLoginRedirectForMeeting(pathname?: string): boolean {
-  return isDoctorMeetingRoute(pathname) && isDemoAutoLoginEnabled();
+  return isDoctorMeetingRoute(pathname);
 }
 
 export function getDemoDoctorCredentials(): { email: string; password: string } {

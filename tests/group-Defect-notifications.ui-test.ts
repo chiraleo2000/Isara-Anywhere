@@ -136,6 +136,19 @@ test.describe('Defect — Notifications route and navigation', () => {
 
   test('DN5 — mark-all-read via UI button persists after refresh (P5)', async ({ portals }) => {
     const { patient } = portals;
+    const { token, userId } = await requirePatientAuth(patient.page, 'DN5-setup');
+
+    // Baseline unread state: clear via API, then seed one appointment notification for the UI action.
+    const clearResp = await patient.page.request.put(
+      `${patient.url}/api/appointments/notifications/${userId}/read-all`,
+      {
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        data: {},
+      },
+    );
+    expect(clearResp.ok()).toBe(true);
+    await seedPatientAppointmentNotification(patient.page, patient.url, token);
+
     await navPatient(patient.page, '/notifications', 'DN5');
     await assertFullHealth(patient.page, 'DN5');
     await expect(patient.page.getByTestId('notifications-page')).toBeVisible({ timeout: 10_000 });
@@ -156,16 +169,15 @@ test.describe('Defect — Notifications route and navigation', () => {
     await patient.page.reload({ waitUntil: 'domcontentloaded' });
     await expect(patient.page.getByTestId('notifications-page')).toBeVisible({ timeout: 10_000 });
 
-    const { token, userId } = await requirePatientAuth(patient.page, 'DN5');
-
-    const listResp = await patient.page.request.get(
-      `${patient.url}/api/appointments/notifications/${userId}`,
-      { headers: { Authorization: `Bearer ${token}` } },
-    );
-    expect(listResp.ok()).toBe(true);
-    const notifications = (await listResp.json()) as Array<{ isRead?: boolean; read_at?: string | null }>;
-    const unread = notifications.filter((n) => !n.isRead && !n.read_at);
-    expect(unread.length).toBe(0);
+    await expect.poll(async () => {
+      const listResp = await patient.page.request.get(
+        `${patient.url}/api/appointments/notifications/${userId}`,
+        { headers: { Authorization: `Bearer ${token}` } },
+      );
+      if (!listResp.ok()) return -1;
+      const notifications = (await listResp.json()) as Array<{ isRead?: boolean; read_at?: string | null }>;
+      return notifications.filter((n) => !n.isRead && !n.read_at).length;
+    }, { timeout: 20_000, message: 'mark-all-read should clear unread notifications after refresh' }).toBe(0);
 
     await snap(patient.page, 'DN5-mark-all-ui-persist', 'group-defect');
   });

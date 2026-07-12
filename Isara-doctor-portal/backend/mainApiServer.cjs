@@ -211,6 +211,52 @@ async function logDocumentDeliveredAudit({ userId, patientId, resourceId, source
   }).catch(() => {});
 }
 
+/** Notify patient that a clinical document was delivered (bell + Socket.IO via PG NOTIFY). */
+async function notifyDocumentDelivered({
+  patientId,
+  documentId,
+  sourceType,
+  title,
+  doctorId,
+}) {
+  if (!patientId || !DB_AVAILABLE || !PostgresDataService) return;
+  try {
+    await PostgresDataService.NotificationService.createNotification({
+      user_id: patientId,
+      type: 'document_delivered',
+      title: title || 'เอกสารใหม่พร้อมแล้ว',
+      title_thai: title || 'เอกสารใหม่พร้อมแล้ว',
+      message: 'แพทย์ส่งเอกสารทางการแพทย์ให้คุณแล้ว กรุณาตรวจสอบในระเบียนสุขภาพ',
+      message_thai: 'แพทย์ส่งเอกสารทางการแพทย์ให้คุณแล้ว กรุณาตรวจสอบในระเบียนสุขภาพ',
+      data: {
+        document_id: documentId,
+        source_type: sourceType,
+        doctor_id: doctorId,
+        download_url: documentId ? `/api/documents/${documentId}/download` : null,
+      },
+    });
+  } catch (err) {
+    console.warn('[DocumentDelivery] document_delivered notify skipped:', err.message);
+  }
+}
+
+function mapDocumentToExternalRecord(doc) {
+  const downloadUrl = doc.id ? `/api/documents/${doc.id}/download` : null;
+  return {
+    id: doc.id,
+    documentType: doc.title || doc.sourceType || 'document',
+    sourceType: doc.sourceType,
+    sourceId: doc.sourceId,
+    uploadedAt: doc.deliveredAt || doc.createdAt,
+    uploadedBy: doc.doctorName || doc.doctorId || 'system',
+    fileName: doc.fileName,
+    mimeType: doc.mimeType,
+    fileSize: doc.fileSize,
+    viewUrl: downloadUrl,
+    downloadUrl,
+  };
+}
+
 // ============================================================================
 // MIDDLEWARE
 // ============================================================================
@@ -1644,7 +1690,7 @@ app.get('/api/patients/:patientId/emr', authenticateToken, validateDoctorPatient
   }
 });
 
-// GET /api/patients/:patientId/ehr — Lab results + external records
+// GET /api/patients/:patientId/ehr — Lab + imaging results + patient_documents
 app.get('/api/patients/:patientId/ehr', authenticateToken, validateDoctorPatientAccess, async (req, res) => {
   const { patientId } = req.params;
   const doctorId = req.user?.id;
@@ -1655,9 +1701,17 @@ app.get('/api/patients/:patientId/ehr', authenticateToken, validateDoctorPatient
     const labResult = await PostgresDataService.pool.query(
       `SELECT lo.id, lo.appointment_id, lo.tests, lo.results, lo.ai_analysis,
               lo.ordered_at, lo.completed_at, lo.status, lo.priority,
-              u.name as doctor_name, u.name_thai as doctor_name_thai
+              u.name as doctor_name, u.name_thai as doctor_name_thai,
+              pd.id as document_id
        FROM lab_orders lo
        LEFT JOIN users u ON lo.doctor_id = u.id
+       LEFT JOIN LATERAL (
+         SELECT id FROM patient_documents
+         WHERE source_type = 'lab_report' AND source_id = lo.id::text
+           AND patient_id = lo.patient_id AND status = 'delivered'
+         ORDER BY delivered_at DESC NULLS LAST
+         LIMIT 1
+       ) pd ON true
        WHERE lo.patient_id = $1 AND lo.status = 'completed' AND lo.results IS NOT NULL
        ORDER BY lo.completed_at DESC NULLS LAST, lo.ordered_at DESC`,
       [patientId]
@@ -1683,11 +1737,57 @@ app.get('/api/patients/:patientId/ehr', authenticateToken, validateDoctorPatient
         tests: mergedTests,
         aiAnalysis: row.ai_analysis || null,
         priority: row.priority,
+        downloadUrl: row.document_id ? `/api/documents/${row.document_id}/download` : null,
       };
     });
 
-    // External health records — stub (no health_records table yet)
-    const externalRecords = [];
+    // Completed imaging orders
+    let imagingGroups = [];
+    try {
+      const imagingResult = await PostgresDataService.pool.query(
+        `SELECT io.id, io.appointment_id, io.imaging_type, io.body_part, io.result,
+                io.ordered_at, io.completed_at, io.status, io.priority,
+                u.name as doctor_name, u.name_thai as doctor_name_thai,
+                pd.id as document_id
+         FROM imaging_orders io
+         LEFT JOIN users u ON io.doctor_id = u.id
+         LEFT JOIN LATERAL (
+           SELECT id FROM patient_documents
+           WHERE source_type = 'imaging_report' AND source_id = io.id::text
+             AND patient_id = io.patient_id AND status = 'delivered'
+           ORDER BY delivered_at DESC NULLS LAST
+           LIMIT 1
+         ) pd ON true
+         WHERE io.patient_id = $1 AND io.status = 'completed'
+         ORDER BY io.completed_at DESC NULLS LAST, io.ordered_at DESC`,
+        [patientId]
+      );
+      imagingGroups = (imagingResult.rows || []).map((row) => {
+        const result = typeof row.result === 'string' ? JSON.parse(row.result) : (row.result || {});
+        return {
+          id: row.id,
+          orderDate: row.ordered_at,
+          completedDate: row.completed_at,
+          doctorName: row.doctor_name || row.doctor_name_thai || 'Unknown',
+          imagingType: row.imaging_type,
+          bodyPart: row.body_part,
+          findings: result.findings || result.impression || result.notes || '',
+          priority: row.priority,
+          downloadUrl: row.document_id ? `/api/documents/${row.document_id}/download` : null,
+        };
+      });
+    } catch (imgErr) {
+      console.warn('[EHR] Imaging fetch skipped:', imgErr.message);
+    }
+
+    // Delivered clinical documents from patient_documents registry
+    let externalRecords = [];
+    try {
+      const docs = await DocumentDeliveryService.listDocuments(pool, patientId, { limit: 100 });
+      externalRecords = (docs || []).map(mapDocumentToExternalRecord);
+    } catch (docErr) {
+      console.warn('[EHR] Documents fetch skipped:', docErr.message);
+    }
 
     // Audit log
     await logAuditAccessPG({
@@ -1697,6 +1797,8 @@ app.get('/api/patients/:patientId/ehr', authenticateToken, validateDoctorPatient
       entity_type: 'ehr',
       details: {
         labGroupCount: labGroups.length,
+        imagingGroupCount: imagingGroups.length,
+        documentCount: externalRecords.length,
         pdpaSource: req.pdpaSource,
         doctorName: req.user?.name || req.user?.email,
         doctorId,
@@ -1710,11 +1812,77 @@ app.get('/api/patients/:patientId/ehr', authenticateToken, validateDoctorPatient
     res.json({
       success: true,
       labGroups,
+      imagingGroups,
       externalRecords,
+      documents: externalRecords,
       patientId,
     });
   } catch (error) {
     console.error('[EHR] Fetch error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// GET /api/patients/:patientId/meetings — Past consultations + recording download URLs
+app.get('/api/patients/:patientId/meetings', authenticateToken, validateDoctorPatientAccess, async (req, res) => {
+  const { patientId } = req.params;
+  const doctorId = req.user?.id;
+  try {
+    const result = await PostgresDataService.pool.query(
+      `SELECT mr.id, mr.appointment_id, mr.doctor_id, mr.patient_id, mr.status,
+              mr.started_at, mr.ended_at, mr.created_at,
+              mr.recording_url, mr.recording_filename, mr.recording_mimetype,
+              mr.recording_size_bytes, mr.ai_summary,
+              u.name as doctor_name
+       FROM meeting_records mr
+       LEFT JOIN users u ON mr.doctor_id = u.id
+       WHERE mr.patient_id = $1
+         AND mr.status IN ('completed', 'ended')
+       ORDER BY COALESCE(mr.ended_at, mr.started_at, mr.created_at) DESC
+       LIMIT 50`,
+      [patientId]
+    );
+
+    const meetings = (result.rows || []).map((row) => {
+      const hasRecording = Boolean(row.recording_url || row.recording_filename);
+      const recordingUrl = row.recording_url || null;
+      const downloadUrl = recordingUrl
+        ? (recordingUrl.includes('?') ? `${recordingUrl}&download=1` : `${recordingUrl}?download=1`)
+        : null;
+      return {
+        id: row.id,
+        appointmentId: row.appointment_id,
+        doctorId: row.doctor_id,
+        doctorName: row.doctor_name,
+        patientId: row.patient_id,
+        status: row.status,
+        startedAt: row.started_at,
+        endedAt: row.ended_at,
+        createdAt: row.created_at,
+        hasRecording,
+        recordingUrl,
+        downloadUrl,
+        hasSummary: Boolean(row.ai_summary),
+        recordingFilename: row.recording_filename,
+        recordingMimeType: row.recording_mimetype,
+        recordingSizeBytes: row.recording_size_bytes,
+      };
+    });
+
+    await logAuditAccessPG({
+      user_id: doctorId,
+      patient_id: patientId,
+      action: 'DATA_ACCESSED',
+      entity_type: 'meetings',
+      details: { meetingCount: meetings.length, dataAccessed: 'MEETINGS' },
+      ip_address: req.ip,
+      user_agent: req.get('user-agent'),
+      performed_by: doctorId,
+    }).catch(() => {});
+
+    res.json({ success: true, meetings, patientId });
+  } catch (error) {
+    console.error('[MEETINGS] Patient meetings fetch error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -2180,7 +2348,7 @@ function getMeetingServerBase() {
 }
 
 const { registerMeetingProxyRoutes } = require('./routes/meetings.cjs');
-registerMeetingProxyRoutes(app, { authenticateToken });
+registerMeetingProxyRoutes(app, { authenticateToken, optionalAuthenticateToken });
 
 // ============================================================================
 // PATIENT HEALTH LOGS (EMR sent to patient)
@@ -2233,13 +2401,20 @@ app.post('/api/patients/:patientId/health-logs', authenticateToken, async (req, 
 
     // Publish to patient_documents registry
     try {
-      await publishEmrReportDocument(pool, {
+      const emrDoc = await publishEmrReportDocument(pool, {
         patientId,
         emrId: savedEntry?.id || healthLogEntry.emrId,
         doctorId,
         appointmentId: healthLogEntry.appointmentId,
         emrRow: savedEntry,
         healthLogEntry,
+      });
+      await notifyDocumentDelivered({
+        patientId,
+        documentId: emrDoc?.id,
+        sourceType: 'emr_report',
+        title: emrDoc?.title || 'รายงานการรักษา EMR',
+        doctorId,
       });
     } catch (docErr) {
       console.warn('[Health-logs] Document publish skipped:', docErr.message);
@@ -2317,21 +2492,28 @@ app.get('/api/patients/:patientId/health-logs', authenticateToken, async (req, r
 // PATIENT DOCUMENTS (clinical delivery registry)
 // ============================================================================
 
-app.get('/api/patients/:patientId/documents', authenticateToken, async (req, res) => {
+app.get('/api/patients/:patientId/documents', authenticateToken, validateDoctorPatientAccess, async (req, res) => {
   try {
     const { patientId } = req.params;
     const { sourceType } = req.query;
     const documents = await DocumentDeliveryService.listDocuments(pool, patientId, {
       sourceType: sourceType || undefined,
     });
-    res.json({ documents, count: documents.length });
+    const mapped = (documents || []).map((doc) => ({
+      ...mapDocumentToExternalRecord(doc),
+      title: doc.title,
+      description: doc.description,
+      status: doc.status,
+      metadata: doc.metadata,
+    }));
+    res.json({ documents: mapped, count: mapped.length });
   } catch (error) {
     console.error('List patient documents error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
 
-app.post('/api/patients/:patientId/documents', authenticateToken, async (req, res) => {
+app.post('/api/patients/:patientId/documents', authenticateToken, validateDoctorPatientAccess, async (req, res) => {
   try {
     const { patientId } = req.params;
     const {
@@ -2366,7 +2548,27 @@ app.post('/api/patients/:patientId/documents', authenticateToken, async (req, re
       metadata,
     });
 
-    res.status(201).json({ success: true, document: doc });
+    await logDocumentDeliveredAudit({
+      userId: req.user?.id,
+      patientId,
+      resourceId: doc?.id,
+      sourceType,
+    });
+    await notifyDocumentDelivered({
+      patientId,
+      documentId: doc?.id,
+      sourceType,
+      title: doc?.title || title,
+      doctorId: req.user?.id,
+    });
+
+    res.status(201).json({
+      success: true,
+      document: {
+        ...doc,
+        downloadUrl: doc?.id ? `/api/documents/${doc.id}/download` : null,
+      },
+    });
   } catch (error) {
     console.error('Publish patient document error:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -2702,7 +2904,14 @@ app.post('/api/prescriptions', authenticateToken, async (req, res) => {
         title_thai: 'ใบสั่งยาพร้อมแล้ว',
         message: 'แพทย์ส่งใบสั่งยาของคุณแล้ว',
         message_thai: 'แพทย์ส่งใบสั่งยาของคุณแล้ว กรุณาตรวจสอบในหน้าสุขภาพของฉัน',
-        data: { prescription_id: prescription.id },
+        data: { prescription_id: prescription.id, document_id: rxDoc?.id },
+      });
+      await notifyDocumentDelivered({
+        patientId,
+        documentId: rxDoc?.id,
+        sourceType: 'prescription',
+        title: rxDoc?.title || 'ใบสั่งยา',
+        doctorId: prescription.doctor_id || req.user?.id,
       });
     } catch (rxDocErr) {
       console.warn('[RX] Document publish skipped:', rxDocErr.message);
@@ -2758,8 +2967,28 @@ app.get('/api/prescriptions/patient/:patientId', authenticateToken, async (req, 
     if (!DB_AVAILABLE || !PostgresDataService) {
       return res.json({ prescriptions: [] });
     }
-    const prescriptions = await PostgresDataService.PrescriptionService.getPatientPrescriptions(patientId);
-    res.json({ prescriptions: prescriptions || [] });
+    const result = await PostgresDataService.pool.query(
+      `SELECT p.*, d.name as doctor_name,
+              pd.id as document_id
+       FROM prescriptions p
+       LEFT JOIN users d ON p.doctor_id = d.id
+       LEFT JOIN LATERAL (
+         SELECT id FROM patient_documents
+         WHERE source_type = 'prescription' AND source_id = p.id::text
+           AND patient_id = p.patient_id AND status = 'delivered'
+         ORDER BY delivered_at DESC NULLS LAST
+         LIMIT 1
+       ) pd ON true
+       WHERE p.patient_id = $1
+       ORDER BY COALESCE(p.prescribed_date, p.created_at) DESC`,
+      [patientId]
+    );
+    const prescriptions = (result.rows || []).map((row) => ({
+      ...row,
+      download_url: row.document_id ? `/api/documents/${row.document_id}/download` : null,
+      downloadUrl: row.document_id ? `/api/documents/${row.document_id}/download` : null,
+    }));
+    res.json({ prescriptions });
   } catch (error) {
     console.error('Prescription fetch error:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -3004,6 +3233,13 @@ ${resultsSummary}
           message_thai: 'แพทย์ส่งผลการตรวจแล็บของคุณแล้ว กรุณาตรวจสอบในหน้าสุขภาพของฉัน',
           data: { lab_order_id: labOrderId, appointment_id: updated.appointment_id },
         });
+        await notifyDocumentDelivered({
+          patientId,
+          documentId: null,
+          sourceType: 'lab_report',
+          title: 'ผลแล็บพร้อมแล้ว',
+          doctorId: req.user?.id,
+        });
         console.log(`[LAB] Notification sent to patient ${patientId} for lab order ${labOrderId}`);
       }
     } catch (notifError) {
@@ -3208,6 +3444,13 @@ app.put('/api/imaging-orders/:orderId/results', authenticateToken, async (req, r
           message: 'แพทย์ส่งผลการตรวจภาพถ่ายของคุณแล้ว',
           message_thai: 'แพทย์ส่งผลการตรวจภาพถ่ายของคุณแล้ว',
           data: { imaging_order_id: orderId },
+        });
+        await notifyDocumentDelivered({
+          patientId: updated.patient_id,
+          documentId: null,
+          sourceType: 'imaging_report',
+          title: 'ผลภาพถ่ายพร้อมแล้ว',
+          doctorId: req.user?.id,
         });
       }
     } catch (imgDocErr) {

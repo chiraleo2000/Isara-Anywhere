@@ -213,7 +213,7 @@
 | `meeting/:appointmentId` | `07_Virtual_Meeting.md` | doctor HOST |
 | `meeting/:appointmentId/results` | `06` (แท็บผล) | doctor — man-in-the-loop |
 | `virtual-meeting/:appointmentId` | `07` (legacy modal path) | doctor |
-| `appointment-pool` | `20_Appointment_Pool_Management.md` | doctor/admin |
+| `appointment-pool` | Redirect → `06_Health_Meeting_Page.md` (`?tab=queue`) | doctor/admin |
 | `doctor-management` | `18_Admin_Doctor_Management.md` | **admin** |
 | `appointment-management` | `17_Admin_Appointment_Management.md` | **admin** |
 | `doctors` | `19_Doctors_Management_Page.md` | admin/directory |
@@ -225,7 +225,7 @@
 | `consultants`, `ai-studio` | `12` (redirect → dashboard) | stub As-is |
 | `admin/doctors` → `doctor-management` | alias | admin |
 | `admin/appointments` → `appointment-management` | alias | admin |
-| `admin/pool` → `appointment-pool` | alias | admin |
+| `admin/pool` → `health-meeting?tab=queue` | alias redirect | admin |
 
 ### 5.3 Meeting Server — ความสามารถ (`Processes/Pages/Meeting-Server/00_Meeting_Server_Overview.md`)
 

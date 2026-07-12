@@ -780,14 +780,22 @@ test.describe('Group D — Appointment Workflows', () => {
       expect(/Patient Queue|คิวผู้ป่วย|Awaiting Confirmation|รอยืนยัน/i.test(adminText)).toBeTruthy();
       expect(/Patient Queue|คิวผู้ป่วย|Awaiting Confirmation|รอยืนยัน/i.test(doctorText)).toBeTruthy();
 
-      const extractAwaiting = (text: string): number | null => {
-        const enRe = /Awaiting Confirmation[\s\S]{0,30}(\d+)/i;
-        const thRe = /รอยืนยัน[\s\S]{0,30}(\d+)/i;
+      // Prefer stable queue-count KPI (pendingQueue.length) over fragile body-text regex
+      const readQueueCount = async (page: typeof admin.page): Promise<number> => {
+        const el = page.getByTestId('queue-count');
+        if (await el.isVisible({ timeout: 8_000 }).catch(() => false)) {
+          const raw = (await el.innerText()).trim();
+          const n = Number.parseInt(raw.replace(/[^\d]/g, ''), 10);
+          if (Number.isFinite(n)) return n;
+        }
+        const enRe = /Awaiting Confirmation[\s\S]{0,40}?(\d+)/i;
+        const thRe = /รอยืนยัน[\s\S]{0,40}?(\d+)/i;
+        const text = await page.locator('body').innerText();
         const m = enRe.exec(text) ?? thRe.exec(text);
-        return m ? Number.parseInt(m[1], 10) : null;
+        return m ? Number.parseInt(m[1], 10) : 0;
       };
-      const adminAwaiting = extractAwaiting(adminText) ?? 0;
-      const doctorAwaiting = extractAwaiting(doctorText) ?? 0;
+      const adminAwaiting = await readQueueCount(admin.page);
+      const doctorAwaiting = await readQueueCount(doctor.page);
       expect(
         doctorAwaiting <= adminAwaiting,
         `❌ D16d: Doctor awaiting count must not exceed admin (admin=${adminAwaiting}, doctor=${doctorAwaiting})`,

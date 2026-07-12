@@ -1,6 +1,7 @@
 /**
  * Meeting-server proxy routes for doctor portal (same-origin BFF).
- * Uses req.sessionToken from authenticateToken — never stale client-only tokens.
+ * Uses req.sessionToken from authenticateToken when present; meeting-scoped
+ * routes also work without portal login (doctor id in URL / body).
  */
 const { resolveSessionTokenFromRequest } = require('../sessionAuth.cjs');
 
@@ -12,14 +13,14 @@ function resolveUpstreamAuth(req) {
   return req.sessionToken || resolveSessionTokenFromRequest(req);
 }
 
-async function proxyMeetingServerRequest(req, res, method, pathSuffix) {
+async function proxyMeetingServerRequest(req, res, method, pathSuffix, { allowAnonymous = false } = {}) {
   const base = getMeetingServerBase();
   if (!base) {
     return res.status(503).json({ success: false, error: 'Meeting server not configured' });
   }
 
   const token = resolveUpstreamAuth(req);
-  if (!token) {
+  if (!token && !allowAnonymous) {
     return res.status(401).json({ error: 'Authentication required', code: 'SESSION_INVALID' });
   }
 
@@ -27,10 +28,12 @@ async function proxyMeetingServerRequest(req, res, method, pathSuffix) {
     const init = {
       method,
       headers: {
-        Authorization: `Bearer ${token}`,
         'Content-Type': 'application/json',
       },
     };
+    if (token) {
+      init.headers.Authorization = `Bearer ${token}`;
+    }
     if (req.headers.cookie) {
       init.headers.Cookie = String(req.headers.cookie);
     }
@@ -73,19 +76,25 @@ async function proxyMeetingServerBinary(req, res, pathSuffix) {
   }
 }
 
-function registerMeetingProxyRoutes(app, { authenticateToken }) {
+function registerMeetingProxyRoutes(app, { authenticateToken, optionalAuthenticateToken }) {
+  const optionalAuth = optionalAuthenticateToken || authenticateToken;
+  const anon = { allowAnonymous: true };
+
   // Static paths MUST precede /:id — otherwise "recording-stream" is treated as meeting id.
   app.get('/api/meetings/recording-stream', authenticateToken, (req, res) => {
     const relPath = req.query.path;
     if (!relPath || typeof relPath !== 'string' || !relPath.startsWith('/api/recordings/')) {
       return res.status(400).json({ success: false, error: 'Invalid recording path' });
     }
-    proxyMeetingServerBinary(req, res, relPath);
+    const download = req.query.download === '1' || req.query.download === 'true';
+    const sep = relPath.includes('?') ? '&' : '?';
+    const target = download ? `${relPath}${sep}download=1` : relPath;
+    proxyMeetingServerBinary(req, res, target);
   });
 
-  // Read
-  app.get('/api/meetings/:id', authenticateToken, (req, res) => {
-    proxyMeetingServerRequest(req, res, 'GET', `/api/meetings/${req.params.id}`);
+  // Read — no portal login when opening meeting URL directly
+  app.get('/api/meetings/:id', optionalAuth, (req, res) => {
+    proxyMeetingServerRequest(req, res, 'GET', `/api/meetings/${req.params.id}`, anon);
   });
   app.get('/api/meetings/:id/results', authenticateToken, (req, res) => {
     proxyMeetingServerRequest(req, res, 'GET', `/api/meetings/${req.params.id}/results`);
@@ -93,17 +102,20 @@ function registerMeetingProxyRoutes(app, { authenticateToken }) {
   app.get('/api/meetings/:id/pipeline-status', authenticateToken, (req, res) => {
     proxyMeetingServerRequest(req, res, 'GET', `/api/meetings/${req.params.id}/pipeline-status`);
   });
-  app.get('/api/meetings/:id/lobby', authenticateToken, (req, res) => {
-    proxyMeetingServerRequest(req, res, 'GET', `/api/meetings/${req.params.id}/lobby`);
+  app.get('/api/meetings/:id/lobby', optionalAuth, (req, res) => {
+    proxyMeetingServerRequest(req, res, 'GET', `/api/meetings/${req.params.id}/lobby`, anon);
   });
-  app.get('/api/meetings/:id/join-config', authenticateToken, (req, res) => {
+  app.get('/api/meetings/:id/join-config', optionalAuth, (req, res) => {
     const qs = req.url.includes('?') ? req.url.slice(req.url.indexOf('?')) : '';
-    proxyMeetingServerRequest(req, res, 'GET', `/api/meetings/${req.params.id}/join-config${qs}`);
+    proxyMeetingServerRequest(req, res, 'GET', `/api/meetings/${req.params.id}/join-config${qs}`, anon);
+  });
+  app.get('/api/meetings/:id/socket-rooms', optionalAuth, (req, res) => {
+    proxyMeetingServerRequest(req, res, 'GET', `/api/meetings/${req.params.id}/socket-rooms`, anon);
   });
 
   // Write — meeting lifecycle (recording save must not hit :3020 cross-origin with stale token)
-  app.post('/api/meetings/create', authenticateToken, (req, res) => {
-    proxyMeetingServerRequest(req, res, 'POST', '/api/meetings/create');
+  app.post('/api/meetings/create', optionalAuth, (req, res) => {
+    proxyMeetingServerRequest(req, res, 'POST', '/api/meetings/create', anon);
   });
   app.post('/api/meetings/:id/save-recording', authenticateToken, (req, res) => {
     proxyMeetingServerRequest(req, res, 'POST', `/api/meetings/${req.params.id}/save-recording`);
@@ -111,11 +123,11 @@ function registerMeetingProxyRoutes(app, { authenticateToken }) {
   app.post('/api/meetings/:id/end', authenticateToken, (req, res) => {
     proxyMeetingServerRequest(req, res, 'POST', `/api/meetings/${req.params.id}/end`);
   });
-  app.post('/api/meetings/:id/host-present', authenticateToken, (req, res) => {
-    proxyMeetingServerRequest(req, res, 'POST', `/api/meetings/${req.params.id}/host-present`);
+  app.post('/api/meetings/:id/host-present', optionalAuth, (req, res) => {
+    proxyMeetingServerRequest(req, res, 'POST', `/api/meetings/${req.params.id}/host-present`, anon);
   });
-  app.post('/api/meetings/:id/host-absent', authenticateToken, (req, res) => {
-    proxyMeetingServerRequest(req, res, 'POST', `/api/meetings/${req.params.id}/host-absent`);
+  app.post('/api/meetings/:id/host-absent', optionalAuth, (req, res) => {
+    proxyMeetingServerRequest(req, res, 'POST', `/api/meetings/${req.params.id}/host-absent`, anon);
   });
   app.post('/api/meetings/:id/process-embeddings', authenticateToken, (req, res) => {
     proxyMeetingServerRequest(req, res, 'POST', `/api/meetings/${req.params.id}/process-embeddings`);
@@ -153,20 +165,20 @@ function registerMeetingProxyRoutes(app, { authenticateToken }) {
   app.post('/api/meetings/:id/chat', authenticateToken, (req, res) => {
     proxyMeetingServerRequest(req, res, 'POST', `/api/meetings/${req.params.id}/chat`);
   });
-  app.post('/api/meetings/:id/consent', authenticateToken, (req, res) => {
-    proxyMeetingServerRequest(req, res, 'POST', `/api/meetings/${req.params.id}/consent`);
+  app.post('/api/meetings/:id/consent', optionalAuth, (req, res) => {
+    proxyMeetingServerRequest(req, res, 'POST', `/api/meetings/${req.params.id}/consent`, anon);
   });
   app.post('/api/meetings/:id/guest-invite', authenticateToken, (req, res) => {
     proxyMeetingServerRequest(req, res, 'POST', `/api/meetings/${req.params.id}/guest-invite`);
   });
-  app.post('/api/meetings/:id/lobby/admit', authenticateToken, (req, res) => {
-    proxyMeetingServerRequest(req, res, 'POST', `/api/meetings/${req.params.id}/lobby/admit`);
+  app.post('/api/meetings/:id/lobby/admit', optionalAuth, (req, res) => {
+    proxyMeetingServerRequest(req, res, 'POST', `/api/meetings/${req.params.id}/lobby/admit`, anon);
   });
-  app.post('/api/meetings/:id/lobby/reject', authenticateToken, (req, res) => {
-    proxyMeetingServerRequest(req, res, 'POST', `/api/meetings/${req.params.id}/lobby/reject`);
+  app.post('/api/meetings/:id/lobby/reject', optionalAuth, (req, res) => {
+    proxyMeetingServerRequest(req, res, 'POST', `/api/meetings/${req.params.id}/lobby/reject`, anon);
   });
-  app.post('/api/meetings/:id/lobby/admit-all', authenticateToken, (req, res) => {
-    proxyMeetingServerRequest(req, res, 'POST', `/api/meetings/${req.params.id}/lobby/admit-all`);
+  app.post('/api/meetings/:id/lobby/admit-all', optionalAuth, (req, res) => {
+    proxyMeetingServerRequest(req, res, 'POST', `/api/meetings/${req.params.id}/lobby/admit-all`, anon);
   });
 }
 

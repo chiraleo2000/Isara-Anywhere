@@ -1,5 +1,6 @@
 /**
  * Shared Gemini API key resolver — placeholder until real key is injected.
+ * No key-format / prefix checks (AIza, AQ., etc.) — any non-placeholder value is accepted.
  */
 const PLACEHOLDER = 'xxxxx';
 
@@ -12,7 +13,7 @@ function resolveGeminiApiKey(env = process.env) {
 
 function isGeminiConfigured(env = process.env) {
   const key = resolveGeminiApiKey(env);
-  return Boolean(key && key !== PLACEHOLDER && key.length > 4);
+  return Boolean(key && key !== PLACEHOLDER);
 }
 
 function resolveGeminiModel(env = process.env) {

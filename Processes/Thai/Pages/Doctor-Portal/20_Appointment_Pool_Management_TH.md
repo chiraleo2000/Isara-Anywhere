@@ -1,4 +1,4 @@
-# พอร์ทัลแพทย์ — Appointment Pool Management
+# พอร์ทัลแพทย์ — Appointment Pool Management (legacy redirect)
 
 > **เอกสารภาษาไทย** — สร้างอัตโนมัติจาก `Pages/Doctor-Portal/20_Appointment_Pool_Management.md`  
 > **ต้นฉบับภาษาอังกฤษ:** [`Pages/Doctor-Portal/20_Appointment_Pool_Management.md`](../Pages/Doctor-Portal/20_Appointment_Pool_Management.md)  

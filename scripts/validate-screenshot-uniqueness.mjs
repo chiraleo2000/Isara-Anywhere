@@ -162,6 +162,15 @@ const GROUP_MANIFESTS = {
       'W04-doctor-meeting-room.png',
     ],
   },
+  'group-U': {
+    minUnique: 4,
+    required: [
+      'U-A-doctor-login-controls.png',
+      'U-C-health-meeting-queue.png',
+      'U-PHR-phr-tab-overview.png',
+      'U-PHR-phr-tab-prescriptions.png',
+    ],
+  },
 };
 
 const MIN_BYTES = Number.parseInt(process.env.SCREENSHOT_MIN_BYTES || '15000', 10);

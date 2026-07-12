@@ -135,7 +135,7 @@ const EMAIL_TEMPLATES = {
             </div>
 
             <div style="text-align: center;">
-              <a href="${DOCTOR_PORTAL_URL}/appointment-pool" class="button">ดูคำขอนัดหมาย</a>
+              <a href="${DOCTOR_PORTAL_URL}/health-meeting?tab=queue" class="button">ดูคำขอนัดหมาย</a>
             </div>
           </div>
           <div class="footer">
@@ -324,7 +324,7 @@ const EMAIL_TEMPLATES = {
             </div>
 
             <div style="text-align: center;">
-              <a href="${DOCTOR_PORTAL_URL}/appointment-pool" class="button">ยืนยัน/ปฏิเสธนัดหมาย</a>
+              <a href="${DOCTOR_PORTAL_URL}/health-meeting?tab=queue" class="button">ยืนยัน/ปฏิเสธนัดหมาย</a>
             </div>
           </div>
           <div class="footer">

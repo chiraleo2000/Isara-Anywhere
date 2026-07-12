@@ -95,11 +95,16 @@ function NavBadge({ count, itemId }: { count: number; itemId?: string }) {
 // ============================================================================
 
 const MiniCalendar: React.FC = () => {
+  const { language } = useSettings();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(new Date());
 
-  const daysOfWeek = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
-  const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const daysOfWeek = language === 'th'
+    ? ['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส']
+    : ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
+  const monthNames = language === 'th'
+    ? ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.']
+    : ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
   const getDaysInMonth = (date: Date) => {
     const year = date.getFullYear();
@@ -372,7 +377,7 @@ export const MobileNav: React.FC<MobileNavProps> = ({
             className="flex items-center space-x-2 hover:opacity-80 transition-opacity"
           >
             <img src="/IzaraLogo.png" alt="Izara" className="h-8 w-auto" />
-            <span className={`font-bold ${tc.logoText}`}>Doctor</span>
+            <span className={`font-bold ${tc.logoText}`}>{language === 'th' ? 'แพทย์' : 'Doctor'}</span>
           </button>
 
           <div className="flex items-center gap-2">

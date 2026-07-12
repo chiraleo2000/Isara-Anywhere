@@ -20,7 +20,7 @@ import LivingWillPage from './pages/LivingWillPage';
 import TimelinePage from './pages/TimelinePage';
 import MapPage from './pages/MapPage';
 import GCSStatusPage from './pages/GCSStatusPage';
-import { LegacyPatientMeetingRedirect, PatientMeetingRouteGuard } from './pages/PatientMeetingRoute';
+import { LegacyPatientJoinRedirect, LegacyPatientMeetingPage, PatientMeetingRouteGuard } from './pages/PatientMeetingRoute';
 import GuestMeetingJoin from './pages/GuestMeetingJoin';
 import FindDoctorsPage from './pages/FindDoctorsPage';
 import ErrorBoundary from './components/common/ErrorBoundary';
@@ -94,10 +94,10 @@ function AppRoutes() {
       <Route path="/guest-join/:meetingId" element={<GuestMeetingJoin />} />
       <Route path="/guest/join/:token" element={<GuestMeetingJoin />} />
 
-      {/* Full-screen meeting — authenticated patient (mirrors doctor /doctor/:userId/meeting/:id) */}
+      {/* Full-screen meeting — no portal login (mirrors doctor /doctor/:userId/meeting/:id) */}
       <Route path="/patient/:userId/meeting/:appointmentId" element={<PatientMeetingRouteGuard />} />
-      <Route path="/meeting/:appointmentId" element={<LegacyPatientMeetingRedirect />} />
-      <Route path="/join/:appointmentId" element={<LegacyPatientMeetingRedirect />} />
+      <Route path="/meeting/:appointmentId" element={<LegacyPatientMeetingPage />} />
+      <Route path="/join/:appointmentId" element={<LegacyPatientJoinRedirect />} />
       
       <Route path="/" element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>
         <Route index element={<DashboardPage />} />

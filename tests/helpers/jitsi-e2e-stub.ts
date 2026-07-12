@@ -67,3 +67,14 @@ export async function installJitsiE2eStubForContext(ctx: BrowserContext): Promis
   if (!shouldUseJitsiE2eStub()) return;
   await ctx.addInitScript(jitsiE2eStubInstaller);
 }
+
+/** Ensure stub is active on the current page (covers extra browser contexts in group R). */
+export async function ensureJitsiE2eStubOnPage(page: import('@playwright/test').Page): Promise<void> {
+  if (!shouldUseJitsiE2eStub()) return;
+  const installed = await page
+    .evaluate(() => Boolean((globalThis as { __izaraJitsiE2eStubInstalled?: boolean }).__izaraJitsiE2eStubInstalled))
+    .catch(() => false);
+  if (installed) return;
+  await page.addInitScript(jitsiE2eStubInstaller);
+  await page.reload({ waitUntil: 'domcontentloaded' });
+}

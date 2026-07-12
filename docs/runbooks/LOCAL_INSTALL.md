@@ -39,16 +39,20 @@ node scripts/jitsi/setup-local-jitsi.mjs
 
 **Jitsi on Windows:** E2E maps `meet.localhost` via Chromium `--host-resolver-rules`; optional admin hosts entry `127.0.0.1 meet.localhost`.
 
-### Apply v2.3.0 migration (existing Postgres volumes)
+### Apply v2.3.0 / v2.3.1 migrations (existing Postgres volumes)
 
-If `patient_documents` or content workflow columns are missing on a running DB:
+If `patient_documents`, doctor messages, or content workflow columns are missing on a running DB:
 
 ```powershell
 Get-Content scripts\database\migrations\v2.3.0-patient-documents-and-messages.sql -Raw |
-  docker compose exec -T postgres psql -U postgres -d izara_phase1
-docker compose build doctor-portal patient-portal
-docker compose up -d doctor-portal patient-portal
+  docker compose --env-file .env.docker exec -T postgres psql -U postgres -d izara_phase1 -v ON_ERROR_STOP=1
+Get-Content scripts\database\migrations\v2.3.1-content-workflow-columns.sql -Raw |
+  docker compose --env-file .env.docker exec -T postgres psql -U postgres -d izara_phase1 -v ON_ERROR_STOP=1
+docker compose --env-file .env.docker --profile default build doctor-portal patient-portal
+docker compose --env-file .env.docker --profile default up -d doctor-portal patient-portal
 ```
+
+**Canonical appointment queue UI:** `/appointment-pool` and `/admin/pool` redirect to `/health-meeting?tab=queue` (do not document a standalone pool page).
 
 Auto-migration on doctor-portal startup also adds `medical_content` / `clinical_resources` workflow columns.
 
@@ -179,7 +183,7 @@ npm run test:lan:deploy-gate
 ## Visual test evidence (local, headed UI)
 
 > Browsers run **visible** during gates: `$env:PW_HEADED='1'` + `$env:BASELINE_VISUAL='1'`
-> Updated: 2026-07-09
+> Updated: 2026-07-12
 
 **Ledger:** `reports/local-error-ledger/round-9-latest.json` — tests **?**, **P0=0**
 

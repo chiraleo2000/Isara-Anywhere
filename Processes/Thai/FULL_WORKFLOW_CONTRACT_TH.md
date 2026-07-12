@@ -5,7 +5,7 @@
 > **อัปเดต:** 9 กรกฎาคม 2569 · รัน `python scripts/sync-processes-thai.py` เพื่อสร้างใหม่
 
 
-อัปเดตล่าสุด: 2026-05-22  
+อัปเดตล่าสุด: 2026-07-09  
 Source references: `Appointment_Workflows.md`, `VIDEO_MEETING_JITSI_GEMINI.md`, `GATE0_IMPLEMENTATION_STATUS.md`, `System_Architecture_Overview.md`, `Data_Sync_Documentation.md`
 
 ## วัตถุประสงค์

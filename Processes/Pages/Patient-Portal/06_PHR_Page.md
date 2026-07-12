@@ -1,12 +1,39 @@
 # 💊 Patient Portal — PHR Page (Personal Health Records)
 
 **Route:** `/phr`
-**Component:** `frontend/pages/health/PHRPage.tsx`
+**Component:** `frontend/pages/PHRPage.tsx` (routed; not `pages/health/PHRPage.tsx`)
 **Access:** 🔒 Authenticated patients
 **Thai Title:** ระเบียนสุขภาพส่วนบุคคล
 
+See also: [Clinical_Document_Delivery_Workflows.md](../../Clinical_Document_Delivery_Workflows.md)
 
-## มาตรฐานเอกสาร (รายงานภาษาไทย)
+## 1. Purpose
+
+Central health data + shared clinical documents: vitals, **ประวัติการรับยา** (prescription history), current self-reported meds, allergies, lab/imaging with downloads, documents upload/download, near-real-time Socket.IO refresh.
+
+## 2. Page Layout (tabs)
+
+```text
+Tabs: [ภาพรวม] [สัญญาณชีพ] [ประวัติการรับยา] [แพ้ยา] [ผลตรวจ] [เอกสาร] [โปรไฟล์]
+```
+
+| Tab | Content | Upload | Download |
+|-----|---------|--------|----------|
+| ประวัติการรับยา | Prescriptions list + ยาที่ใช้ปัจจุบัน subsection | Add current med | Rx download |
+| ผลตรวจ | Lab + imaging orders | — | Report PDF/text |
+| เอกสาร | All `patient_documents` | `phr-document-upload` | Per-row download |
+
+## 3. Realtime
+
+`useRealtimeSync` on PHRPage refetches on EMR / Rx / lab / PHR / notification / data:changed.
+
+## 4. Expected results
+
+- Tab label **ประวัติการรับยา** (not ยาที่ใช้ประจำ)
+- Rx download uses `/api/documents/:id/download` only
+- Lab detail shows download when document linked
+- Lists refresh without hard reload after doctor delivers documents
+
 
 เอกสารชุดนี้จัดทำให้สอดคล้อง**มาตรฐานการรายงานภาษาไทย**ของหน่วยงานราชการและสาธารณสุข (โครงสร้าง: วัตถุประสงค์ → ขอบเขต → ขั้นตอน → ผลลัพธ์ → ข้อควรระวัง → อ้างอิง)
 

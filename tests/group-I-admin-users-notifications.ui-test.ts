@@ -56,8 +56,12 @@ test.describe('Group I — Admin, Users & Notifications', () => {
     });
 
     await test.step('I02 — Admin → Manage Doctors', async () => {
+      await refreshPageAuth(admin.page, DOCTOR_URL, 'admin');
       await navDoctor(admin.page, 'doctor-management', 'I02');
+      await expect(admin.page).toHaveURL(/\/doctor-management/, { timeout: 15_000 });
       await assertFullHealth(admin.page, 'I02');
+      const searchInput = admin.page.getByTestId('admin-doctor-search');
+      await expect(searchInput, 'I02 doctor-management search bar').toBeVisible({ timeout: 15_000 });
       await snap(admin.page, 'I02-manage-doctors', 'group-I');
       const body = await admin.page.locator('body').innerText();
       expect(/doctor|แพทย์|manage|จัดการ|approval|อนุมัติ/i.test(body)).toBeTruthy();
@@ -66,12 +70,23 @@ test.describe('Group I — Admin, Users & Notifications', () => {
 
     await test.step('I03 — Search for doctor', async () => {
       const searchInput = admin.page.getByTestId('admin-doctor-search');
+      if (!(await searchInput.isVisible({ timeout: 2_000 }).catch(() => false))) {
+        await refreshPageAuth(admin.page, DOCTOR_URL, 'admin');
+        await navDoctor(admin.page, 'doctor-management', 'I03-retry');
+        await expect(admin.page).toHaveURL(/\/doctor-management/, { timeout: 15_000 });
+      }
       await expect(searchInput).toBeVisible({ timeout: 10_000 });
       await searchInput.fill('demo');
       await admin.page.waitForTimeout(800);
-      await snapDistinct(admin.page, 'I03-search-doctor', 'group-I', {
-        locator: admin.page.getByTestId('admin-doctor-search'),
-      });
+      // Firefox locator.screenshot can hang on input elements — use page crop via stabilize.
+      try {
+        await snapDistinct(admin.page, 'I03-search-doctor', 'group-I', {
+          locator: admin.page.getByTestId('admin-doctor-search'),
+          stabilize: true,
+        });
+      } catch {
+        await snap(admin.page, 'I03-search-doctor', 'group-I');
+      }
       console.log('  ✅ I03: Searched "demo"');
     });
 

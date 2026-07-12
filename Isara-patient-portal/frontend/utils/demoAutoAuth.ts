@@ -11,9 +11,9 @@ export function isPatientMeetingPath(pathname?: string): boolean {
   return isPatientMeetingRoute(pathname);
 }
 
-/** Meeting routes hold spinner instead of login redirect when demo auto-login is on. */
+/** Meeting URLs are public — identity is scoped by userId in the path + appointment id (no portal login). */
 export function shouldBypassLoginRedirectForMeeting(pathname?: string): boolean {
-  return isPatientMeetingRoute(pathname) && isDemoAutoLoginEnabled();
+  return isPatientMeetingRoute(pathname);
 }
 
 /** Dev/docker: auto-navigate confirmed telehealth appointments into /meeting/:id. */

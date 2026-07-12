@@ -1,11 +1,52 @@
-# Full workflow hardening ? completion report
+# Full workflow hardening — completion report
 
 > **เอกสารภาษาไทย** — สร้างอัตโนมัติจาก `FULL_WORKFLOW_HARDENING_COMPLETION_REPORT.md`  
 > **ต้นฉบับภาษาอังกฤษ:** [`FULL_WORKFLOW_HARDENING_COMPLETION_REPORT.md`](../FULL_WORKFLOW_HARDENING_COMPLETION_REPORT.md)  
 > **อัปเดต:** 9 กรกฎาคม 2569 · รัน `python scripts/sync-processes-thai.py` เพื่อสร้างใหม่
 
 
-**Updated:** June 30, 2026 (Round 6 — self-hosted Jitsi local PASS, LAN/cloud BLOCKED, cost-opt cloudbuild)
+**Updated:** July 9, 2026 (Unified Production Fix — meeting auth + local gates)
+
+## Round 8 summary (2026-07-09) — Unified Production Fix
+
+| Track | สถานะ | Evidence |
+|-------|--------|----------|
+| Patient consultation-result BFF + Bearer | **PASS** | `PatientMeetingRoom` → `/api/video-meeting/.../consultation-result` |
+| Meeting-server ownership on consultation-result | **PASS** | Patient/doctor/admin check in `Izara-jitsi-server` |
+| Socket room aliases (doctor + patient) | **PASS** | `connectMeetingSocket` + BFF `/socket-rooms` |
+| Lobby admit-before-Jitsi + reject UI | **PASS** | ผู้ป่วย never mounts Jitsi until admitted; DM4 green |
+| Phase 0–8 local ladder | **PASS** | Auth→meeting→นัดหมาย→clinical→defect; P0=0 each round |
+| Phase 9 parallel pre-deploy | **PASS** | `phase:9:parallel` exit 0; ledger round 9 **P0=0** (2026-07-09T19:45Z) |
+| E2E strict (retries=0) | **PASS** | `test:local:e2e-strict` 113 passed (2026-07-09T20:05Z) |
+| Screenshot audits | **PASS** | `test:screenshots:all` + global (280 PNGs) |
+| Docs evidence | **PASS** | `docs:evidence:local` + ledger round-final **P0=0** |
+| Cloud deploy | **DEFERRED** | Local-only hard stop per plan |
+
+```powershell
+# 2026-07-09 — Unified Production Fix (final local sign-off)
+$env:PW_HEADED='1'; $env:BASELINE_VISUAL='1'; $env:PW_SKIP_LIVE_GEMINI='1'; $env:PW_NO_CHROME='1'
+$env:GATE_SKIP_DOCKER_BUILD='1'
+npm run phase:9:parallel                 # PASS P0=0
+npm run test:local:e2e-strict            # PASS 113
+npm run test:screenshots:all             # PASS
+npm run test:screenshots:global          # PASS
+npm run docs:evidence:local
+npm run ledger:local -- --round final    # P0=0
+```
+
+## Round 7 summary (2026-07-09) — UI element coverage
+
+| Track | สถานะ | Evidence |
+|-------|--------|----------|
+| UI_ELEMENT_COVERAGE_MATRIX | **PASS** | 579 controls; P0 missing=0 (`audit-ui-element-coverage.py`) |
+| 42 page docs UI Controls Inventory | **PASS** | `processDocContentContract.test.ts` PDCC-42 |
+| Group U deep UI audit | **ADDED** | `group-U-ui-element-audit.ui-test.ts` + parallel strict gate |
+| Unit groups sequential | **PASS** | 17/17 (`test:unit:groups-sequential`) |
+| Phase 0 lint/tsc/meeting | **PASS** | `npm run phase:0` |
+| PHR tab testids | **PASS** | `phr-tab-*`, `phr-document-upload` |
+| Pool page deprecated | **PASS** | Page 20 DEPRECATED; redirect to health-meeting queue |
+| Local pre-deploy gate | **PASS** | `test:local:e2e-strict-parallel` 119/119; screenshots global 280 PNGs; ledger P0=0 (2026-07-09T15:12Z) |
+| Local phase 9 strict | **PASS** | `GATE_SKIP_DOCKER_BUILD=1`, `JITSI_DOMAIN=meet.jit.si`, commit `1102376` |
 
 ## Round 6 summary (2026-06-30)
 
@@ -15,7 +56,7 @@
 | Meeting roles | **PASS** | แพทย์ moderator JWT; patient/guest not; manual recording only |
 | Unit + screenshots | **PASS** | ut-02..17; ss-04..06; 0 process gaps |
 | LAN + nginx | **BLOCKED** | Ubuntu host unreachable |
-| Cloud deploy | **BLOCKED** | Cost config ready; deploy needs user approval |
+| Cloud release gate | **BLOCKED** | `test:cloud:deploy-gate` D15b ผู้ดูแลระบบ-มอบหมาย flake on Cloud Run (local 119/119 PASS); retry `npm run test:cloud:release-gate` |
 
 ## W10 manual checklist (cannot automate)
 

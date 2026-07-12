@@ -15,17 +15,39 @@ import {
   VitalEntry,
   patientRecordService,
   PDPAPatientSummary,
+  PrescriptionHistoryItem,
+  MeetingHistoryItem,
 } from '../services/patientRecordService';
+import { useRealtimeSync } from '../services/useRealtimeSync';
+import { useSettings } from '../hooks/useSettings';
 
 interface PatientRecordViewerProps {
   patient: PatientRecord;
   onClose: () => void;
   currentDoctorId?: string;
+  initialTab?: RecordTab;
 }
 
-type RecordTab = 'summary' | 'emr' | 'labs' | 'rx' | 'docs' | 'pdpa';
+type RecordTab = 'summary' | 'emr' | 'labs' | 'rx' | 'docs' | 'meetings' | 'pdpa';
 
-const MEDICAL_TABS = new Set<RecordTab>(['summary', 'emr', 'labs', 'rx', 'docs']);
+const MEDICAL_TABS = new Set<RecordTab>(['summary', 'emr', 'labs', 'rx', 'docs', 'meetings']);
+
+async function authDownload(url: string, fallbackName: string) {
+  const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+  const streamUrl = url.startsWith('/api/recordings/')
+    ? `/api/meetings/recording-stream?path=${encodeURIComponent(url.replace(/\?download=1$/, '').replace(/&download=1$/, ''))}&download=1`
+    : url;
+  const resp = await fetch(streamUrl, {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  });
+  if (!resp.ok) throw new Error(`Download failed (${resp.status})`);
+  const blob = await resp.blob();
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = fallbackName;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
 
 async function fetchPdpaSummary(patientId: string) {
   return patientRecordService.getPDPASummary(patientId);
@@ -50,9 +72,12 @@ async function fetchEhrData(patientId: string) {
 export const PatientRecordViewer: React.FC<PatientRecordViewerProps> = ({
   patient,
   onClose,
-  currentDoctorId
+  currentDoctorId,
+  initialTab = 'summary',
 }) => {
-  const [activeTab, setActiveTab] = useState<RecordTab>('summary');
+  const { language } = useSettings();
+  const isTh = language === 'th';
+  const [activeTab, setActiveTab] = useState<RecordTab>(initialTab);
 
   // PDPA consent gate state
   const [consentStatus, setConsentStatus] = useState<'checking' | 'granted' | 'denied' | 'emergency'>('checking');
@@ -64,16 +89,22 @@ export const PatientRecordViewer: React.FC<PatientRecordViewerProps> = ({
   const [livingWillData, setLivingWillData] = useState<LivingWillResponse>(null);
   const [emrRecords, setEmrRecords] = useState<EMRRecord[]>([]);
   const [ehrData, setEhrData] = useState<EHRData | null>(null);
+  const [prescriptions, setPrescriptions] = useState<PrescriptionHistoryItem[]>([]);
+  const [meetings, setMeetings] = useState<MeetingHistoryItem[]>([]);
   const [pdpaData, setPdpaData] = useState<PDPAPatientSummary | null>(null);
 
   // Per-tab loading states
   const [loadingPHR, setLoadingPHR] = useState(false);
   const [loadingEMR, setLoadingEMR] = useState(false);
   const [loadingEHR, setLoadingEHR] = useState(false);
+  const [loadingRx, setLoadingRx] = useState(false);
+  const [loadingMeetings, setLoadingMeetings] = useState(false);
   const [loadingPDPA, setLoadingPDPA] = useState(false);
 
   // Track which tabs have been loaded
   const [loadedTabs, setLoadedTabs] = useState<Set<string>>(new Set());
+  const loadedTabsRef = useRef(loadedTabs);
+  loadedTabsRef.current = loadedTabs;
 
   // Error state
   const [error, setError] = useState<string | null>(null);
@@ -84,8 +115,8 @@ export const PatientRecordViewer: React.FC<PatientRecordViewerProps> = ({
   const hasMedicalAccess = consentStatus === 'granted' || consentStatus === 'emergency';
 
   // Load tab data on first activation
-  const loadTabData = useCallback(async (tab: RecordTab) => {
-    if (loadedTabs.has(tab)) return;
+  const loadTabData = useCallback(async (tab: RecordTab, force = false) => {
+    if (!force && loadedTabsRef.current.has(tab)) return;
     setError(null);
 
     try {
@@ -97,13 +128,24 @@ export const PatientRecordViewer: React.FC<PatientRecordViewerProps> = ({
       }
       if (!hasMedicalAccess) return;
 
-      if (tab === 'summary' || tab === 'rx') {
-        if (loadedTabs.has('summary') || loadedTabs.has('rx')) return;
+      if (tab === 'summary') {
         setLoadingPHR(true);
         const { data, lwData } = await fetchPhrBundle(patient.id);
         setPhrData(data);
         setLivingWillData(lwData);
-        setLoadedTabs(prev => new Set(prev).add('summary').add('rx'));
+        setLoadedTabs(prev => new Set(prev).add('summary'));
+        return;
+      }
+      if (tab === 'rx') {
+        setLoadingRx(true);
+        const [rxList, phrBundle] = await Promise.all([
+          patientRecordService.getPrescriptions(patient.id),
+          fetchPhrBundle(patient.id),
+        ]);
+        setPrescriptions(rxList);
+        setPhrData(phrBundle.data);
+        setLivingWillData(phrBundle.lwData);
+        setLoadedTabs(prev => new Set(prev).add('rx').add('summary'));
         return;
       }
       if (tab === 'emr') {
@@ -113,10 +155,15 @@ export const PatientRecordViewer: React.FC<PatientRecordViewerProps> = ({
         return;
       }
       if (tab === 'labs' || tab === 'docs') {
-        if (loadedTabs.has('labs') || loadedTabs.has('docs')) return;
         setLoadingEHR(true);
         setEhrData(await fetchEhrData(patient.id));
         setLoadedTabs(prev => new Set(prev).add('labs').add('docs'));
+        return;
+      }
+      if (tab === 'meetings') {
+        setLoadingMeetings(true);
+        setMeetings(await patientRecordService.getMeetings(patient.id));
+        setLoadedTabs(prev => new Set(prev).add('meetings'));
       }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Failed to load data';
@@ -125,12 +172,59 @@ export const PatientRecordViewer: React.FC<PatientRecordViewerProps> = ({
       }
       setError(msg);
     } finally {
-      if (tab === 'summary' || tab === 'rx') setLoadingPHR(false);
+      if (tab === 'summary') setLoadingPHR(false);
+      if (tab === 'rx') setLoadingRx(false);
       if (tab === 'emr') setLoadingEMR(false);
       if (tab === 'labs' || tab === 'docs') setLoadingEHR(false);
+      if (tab === 'meetings') setLoadingMeetings(false);
       if (tab === 'pdpa') setLoadingPDPA(false);
     }
-  }, [patient.id, loadedTabs, hasMedicalAccess]);
+  }, [patient.id, hasMedicalAccess]);
+
+  // Near-real-time: invalidate cache and refetch active clinical tabs
+  useRealtimeSync({
+    doctorId: currentDoctorId,
+    onEmrChange: () => {
+      if (!hasMedicalAccess) return;
+      patientRecordService.invalidatePatient(patient.id);
+      setLoadedTabs(prev => {
+        const next = new Set(prev);
+        next.delete('emr');
+        next.delete('docs');
+        next.delete('labs');
+        return next;
+      });
+      void loadTabData(activeTab === 'emr' || activeTab === 'docs' || activeTab === 'labs' ? activeTab : 'emr', true);
+    },
+    onPrescriptionChange: () => {
+      if (!hasMedicalAccess) return;
+      patientRecordService.invalidatePatient(patient.id);
+      setLoadedTabs(prev => {
+        const next = new Set(prev);
+        next.delete('rx');
+        next.delete('docs');
+        return next;
+      });
+      void loadTabData(activeTab === 'rx' || activeTab === 'docs' ? activeTab : 'rx', true);
+    },
+    onLabOrderChange: () => {
+      if (!hasMedicalAccess) return;
+      patientRecordService.invalidatePatient(patient.id);
+      setLoadedTabs(prev => {
+        const next = new Set(prev);
+        next.delete('labs');
+        next.delete('docs');
+        return next;
+      });
+      void loadTabData(activeTab === 'labs' || activeTab === 'docs' ? activeTab : 'labs', true);
+    },
+    onDataChanged: () => {
+      if (!hasMedicalAccess) return;
+      patientRecordService.invalidatePatient(patient.id);
+      setLoadedTabs(new Set());
+      void loadTabData(activeTab, true);
+    },
+  });
 
   // PDPA consent check on mount
   useEffect(() => {
@@ -162,18 +256,18 @@ export const PatientRecordViewer: React.FC<PatientRecordViewerProps> = ({
   useEffect(() => {
     loadTabData('pdpa');
     if (hasMedicalAccess) {
-      loadTabData('summary');
+      loadTabData(initialTab === 'pdpa' ? 'summary' : initialTab);
     }
     return () => { patientRecordService.clearCache(); };
-  }, [patient.id, hasMedicalAccess]);
+  }, [patient.id, hasMedicalAccess, initialTab, loadTabData]);
 
   // Load tab data when switching
   useEffect(() => {
     loadTabData(activeTab);
   }, [activeTab, loadTabData]);
 
-  // Build timeline navigator dates from EMR + EHR
-  const timelineDates = buildTimelineDates(emrRecords, ehrData);
+  // Build timeline navigator dates from EMR + EHR + Rx + meetings
+  const timelineDates = buildTimelineDates(emrRecords, ehrData, prescriptions, meetings);
 
   const scrollToDate = (dateKey: string) => {
     const el = document.getElementById(`record-${dateKey}`);
@@ -181,9 +275,10 @@ export const PatientRecordViewer: React.FC<PatientRecordViewerProps> = ({
   };
 
   const isLoading = (activeTab === 'summary' && loadingPHR) ||
-                    (activeTab === 'rx' && loadingPHR) ||
+                    (activeTab === 'rx' && loadingRx) ||
                     (activeTab === 'emr' && loadingEMR) ||
                     ((activeTab === 'labs' || activeTab === 'docs') && loadingEHR) ||
+                    (activeTab === 'meetings' && loadingMeetings) ||
                     (activeTab === 'pdpa' && loadingPDPA);
 
   const handleTabChange = (tab: RecordTab) => {
@@ -220,9 +315,9 @@ export const PatientRecordViewer: React.FC<PatientRecordViewerProps> = ({
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-gray-200">
           <h2 className="text-2xl font-bold text-gray-900">
-            Patient Record - {patient.demographics?.name || patient.name || 'Unknown'}
+            {isTh ? 'บันทึกผู้ป่วย' : 'Patient Record'} - {patient.demographics?.name || patient.name || (isTh ? 'ไม่ระบุ' : 'Unknown')}
           </h2>
-          <button onClick={onClose} title="ปิด" aria-label="ปิด" className="text-gray-400 hover:text-gray-600 p-2">
+          <button onClick={onClose} title={isTh ? 'ปิด' : 'Close'} aria-label={isTh ? 'ปิด' : 'Close'} className="text-gray-400 hover:text-gray-600 p-2">
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
@@ -266,14 +361,15 @@ export const PatientRecordViewer: React.FC<PatientRecordViewerProps> = ({
           </div>
         )}
 
-        {/* Top Tabs — Summary | EMR | Labs | Rx | Docs | PDPA */}
+        {/* Top Tabs — Summary | EMR | Labs | Rx | Docs | Meetings | PDPA */}
         <div className="flex border-b border-gray-200 bg-gray-50 overflow-x-auto">
           {([
-            { key: 'summary' as const, label: 'Summary' },
+            { key: 'summary' as const, label: isTh ? 'สรุป' : 'Summary' },
             { key: 'emr' as const, label: 'EMR' },
-            { key: 'labs' as const, label: 'Labs' },
-            { key: 'rx' as const, label: 'Rx' },
-            { key: 'docs' as const, label: 'Docs' },
+            { key: 'labs' as const, label: isTh ? 'แล็บและภาพ' : 'Labs & Imaging' },
+            { key: 'rx' as const, label: isTh ? 'ประวัติการจ่ายยา' : 'Prescriptions' },
+            { key: 'docs' as const, label: isTh ? 'เอกสาร' : 'Documents' },
+            { key: 'meetings' as const, label: isTh ? 'การประชุม' : 'Meetings' },
             { key: 'pdpa' as const, label: 'PDPA' },
           ]).map(tab => (
             <button
@@ -300,9 +396,9 @@ export const PatientRecordViewer: React.FC<PatientRecordViewerProps> = ({
 
         {/* Content Area */}
         <div className="flex-1 overflow-hidden flex">
-          {/* Left Sidebar — Timeline Navigator */}
+          {/* Left Sidebar — ประวัติการรักษา Timeline Navigator */}
           <div className="w-56 bg-white border-r border-gray-200 p-3 overflow-y-auto">
-            <p className="text-xs font-semibold text-gray-500 uppercase mb-2">Timeline</p>
+            <p className="text-xs font-semibold text-gray-500 uppercase mb-2">ประวัติการรักษา</p>
             {timelineDates.length > 0 ? (
               timelineDates.map(({ year, months }) => (
                 <div key={year} className="mb-3">
@@ -327,9 +423,10 @@ export const PatientRecordViewer: React.FC<PatientRecordViewerProps> = ({
           <div ref={contentRef} className="flex-1 overflow-y-auto p-6 bg-gray-50">
             {isLoading ? (
               <>
-                {(activeTab === 'summary' || activeTab === 'rx') && <PHRSkeleton />}
+                {(activeTab === 'summary') && <PHRSkeleton />}
+                {activeTab === 'rx' && <PHRSkeleton />}
                 {activeTab === 'emr' && <EMRSkeleton />}
-                {(activeTab === 'labs' || activeTab === 'docs') && <EHRSkeleton />}
+                {(activeTab === 'labs' || activeTab === 'docs' || activeTab === 'meetings') && <EHRSkeleton />}
                 {activeTab === 'pdpa' && <PDPASkeleton />}
               </>
             ) : (
@@ -341,8 +438,26 @@ export const PatientRecordViewer: React.FC<PatientRecordViewerProps> = ({
                 )}
                 {activeTab === 'emr' && hasMedicalAccess && <EMRView emrRecords={emrRecords} currentDoctorId={currentDoctorId} />}
                 {activeTab === 'labs' && hasMedicalAccess && <LabsView ehrData={ehrData} />}
-                {activeTab === 'rx' && hasMedicalAccess && <RxView phrData={phrData} />}
-                {activeTab === 'docs' && hasMedicalAccess && <DocsView ehrData={ehrData} />}
+                {activeTab === 'rx' && hasMedicalAccess && (
+                  <RxView phrData={phrData} prescriptions={prescriptions} />
+                )}
+                {activeTab === 'docs' && hasMedicalAccess && (
+                  <DocsView
+                    ehrData={ehrData}
+                    patientId={patient.id}
+                    onUploaded={() => {
+                      patientRecordService.invalidatePatient(patient.id);
+                      setLoadedTabs(prev => {
+                        const next = new Set(prev);
+                        next.delete('docs');
+                        next.delete('labs');
+                        return next;
+                      });
+                      void loadTabData('docs', true);
+                    }}
+                  />
+                )}
+                {activeTab === 'meetings' && hasMedicalAccess && <MeetingsView meetings={meetings} />}
                 {activeTab === 'pdpa' && (
                   <div data-testid="patient-record-pdpa-tab">
                     <PDPAView
@@ -838,10 +953,16 @@ interface TimelineDateGroup {
   months: { key: string; label: string; count: number }[];
 }
 
-function buildTimelineDates(emrs: EMRRecord[], ehrData: EHRData | null): TimelineDateGroup[] {
+function buildTimelineDates(
+  emrs: EMRRecord[],
+  ehrData: EHRData | null,
+  prescriptions: PrescriptionHistoryItem[] = [],
+  meetings: MeetingHistoryItem[] = [],
+): TimelineDateGroup[] {
   const monthMap = new Map<string, number>();
 
-  const addDate = (dateStr: string) => {
+  const addDate = (dateStr: string | undefined | null) => {
+    if (!dateStr) return;
     const d = new Date(dateStr);
     if (Number.isNaN(d.getTime())) return;
     const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
@@ -850,6 +971,10 @@ function buildTimelineDates(emrs: EMRRecord[], ehrData: EHRData | null): Timelin
 
   emrs.forEach(e => addDate(e.encounterDate));
   ehrData?.labGroups?.forEach(g => addDate(g.completedDate || g.orderDate));
+  ehrData?.imagingGroups?.forEach(g => addDate(g.completedDate || g.orderDate));
+  ehrData?.externalRecords?.forEach(r => addDate(r.uploadedAt));
+  prescriptions.forEach(p => addDate(p.prescribed_date || p.created_at));
+  meetings.forEach(m => addDate(m.endedAt || m.startedAt || m.createdAt));
 
   const sorted = [...monthMap.entries()].sort((a, b) => b[0].localeCompare(a[0]));
   const yearMap = new Map<number, { key: string; label: string; count: number }[]>();
@@ -1209,120 +1334,200 @@ const EMRView: React.FC<{ emrRecords: EMRRecord[]; currentDoctorId?: string }> =
 // ============================================================================
 
 const LabsView: React.FC<{ ehrData: EHRData | null }> = ({ ehrData }) => {
-  if (!ehrData || ehrData.labGroups.length === 0) {
+  const labs = ehrData?.labGroups || [];
+  const imaging = ehrData?.imagingGroups || [];
+  if (labs.length === 0 && imaging.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center h-64 text-gray-500">
-        <p className="text-lg">ยังไม่มีผลตรวจทางห้องปฏิบัติการ</p>
+        <p className="text-lg">ยังไม่มีผลแล็บหรือภาพวินิจฉัย</p>
       </div>
     );
   }
 
   return (
-    <section>
-      <h3 className="text-xl font-bold text-gray-900 mb-4">ผลตรวจทางห้องปฏิบัติการ (Lab Results)</h3>
-      {ehrData.labGroups.map(group => {
-        const dateKey = new Date(group.completedDate || group.orderDate).toISOString().slice(0, 7);
-        return (
-          <div
-            key={group.id}
-            id={`record-${dateKey}`}
-            className="bg-white rounded-lg shadow-sm p-5 mb-4"
-          >
-            <div className="flex items-center justify-between mb-3">
-              <div>
-                <p className="text-sm font-bold text-gray-800">
-                  {new Date(group.completedDate || group.orderDate).toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric' })}
-                </p>
-                <p className="text-xs text-gray-500">{group.doctorName}</p>
+    <div className="space-y-8">
+      <section>
+        <h3 className="text-xl font-bold text-gray-900 mb-4">ผลตรวจทางห้องปฏิบัติการ (Lab Results)</h3>
+        {labs.length === 0 ? (
+          <p className="text-sm text-gray-400">ยังไม่มีผลแล็บ</p>
+        ) : labs.map(group => {
+          const dateKey = new Date(group.completedDate || group.orderDate).toISOString().slice(0, 7);
+          return (
+            <div key={group.id} id={`record-${dateKey}`} className="bg-white rounded-lg shadow-sm p-5 mb-4">
+              <div className="flex items-center justify-between mb-3">
+                <div>
+                  <p className="text-sm font-bold text-gray-800">
+                    {new Date(group.completedDate || group.orderDate).toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric' })}
+                  </p>
+                  <p className="text-xs text-gray-500">{group.doctorName}</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  {group.priority === 'urgent' && (
+                    <span className="px-2 py-0.5 rounded-full text-xs bg-red-100 text-red-700 font-medium">URGENT</span>
+                  )}
+                  {group.downloadUrl && (
+                    <button
+                      type="button"
+                      data-testid="patient-record-lab-download"
+                      onClick={() => void authDownload(group.downloadUrl!, `lab-${group.id}.pdf`)}
+                      className="px-3 py-1 rounded bg-blue-600 text-white text-xs font-medium hover:bg-blue-700"
+                    >
+                      ดาวน์โหลดผล
+                    </button>
+                  )}
+                </div>
               </div>
-              {group.priority === 'urgent' && (
-                <span className="px-2 py-0.5 rounded-full text-xs bg-red-100 text-red-700 font-medium">URGENT</span>
+              <table className="w-full text-sm">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="text-left p-2">Test</th>
+                    <th className="text-left p-2">Value</th>
+                    <th className="text-left p-2">Unit</th>
+                    <th className="text-left p-2">Normal Range</th>
+                    <th className="text-left p-2">Flag</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {group.tests.map((test) => (
+                    <tr key={`${group.id}-${test.name}`} className="border-t">
+                      <td className="p-2">{test.name}</td>
+                      <td className="p-2 font-medium">{test.value}</td>
+                      <td className="p-2 text-gray-500">{test.unit}</td>
+                      <td className="p-2 text-gray-500">{test.normalRange}</td>
+                      <td className="p-2">
+                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${getLabFlagClass(test.flag)}`}>
+                          {test.flag === 'CRITICAL' ? '🔴 ' : ''}{test.flag}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {group.aiAnalysis && (
+                <div className="mt-3 bg-amber-50 rounded p-3 text-sm text-amber-800">
+                  <p className="text-xs font-semibold text-amber-600 mb-1">🤖 AI Analysis</p>
+                  {group.aiAnalysis}
+                </div>
               )}
             </div>
-            <table className="w-full text-sm">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="text-left p-2">Test</th>
-                  <th className="text-left p-2">Value</th>
-                  <th className="text-left p-2">Unit</th>
-                  <th className="text-left p-2">Normal Range</th>
-                  <th className="text-left p-2">Flag</th>
-                </tr>
-              </thead>
-              <tbody>
-                {group.tests.map((test) => (
-                  <tr key={`${group.id}-${test.name}`} className="border-t">
-                    <td className="p-2">{test.name}</td>
-                    <td className="p-2 font-medium">{test.value}</td>
-                    <td className="p-2 text-gray-500">{test.unit}</td>
-                    <td className="p-2 text-gray-500">{test.normalRange}</td>
-                    <td className="p-2">
-                      <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${getLabFlagClass(test.flag)}`}>
-                        {test.flag === 'CRITICAL' ? '🔴 ' : ''}{test.flag}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            {group.aiAnalysis && (
-              <div className="mt-3 bg-amber-50 rounded p-3 text-sm text-amber-800">
-                <p className="text-xs font-semibold text-amber-600 mb-1">🤖 AI Analysis</p>
-                {group.aiAnalysis}
-              </div>
+          );
+        })}
+      </section>
+
+      <section>
+        <h3 className="text-xl font-bold text-gray-900 mb-4">ผลภาพวินิจฉัย (Imaging)</h3>
+        {imaging.length === 0 ? (
+          <p className="text-sm text-gray-400">ยังไม่มีผลภาพวินิจฉัย</p>
+        ) : imaging.map(group => (
+          <div key={group.id} className="bg-white rounded-lg shadow-sm p-5 mb-4 flex items-center justify-between gap-4">
+            <div>
+              <p className="text-sm font-bold text-gray-800">
+                {[group.imagingType, group.bodyPart].filter(Boolean).join(' — ') || 'Imaging'}
+              </p>
+              <p className="text-xs text-gray-500">
+                {new Date(group.completedDate || group.orderDate).toLocaleDateString('th-TH')} — {group.doctorName}
+              </p>
+              {group.findings && <p className="text-sm text-gray-700 mt-2">{group.findings}</p>}
+            </div>
+            {group.downloadUrl && (
+              <button
+                type="button"
+                data-testid="patient-record-lab-download"
+                onClick={() => void authDownload(group.downloadUrl!, `imaging-${group.id}.pdf`)}
+                className="shrink-0 px-3 py-1 rounded bg-blue-600 text-white text-xs font-medium hover:bg-blue-700"
+              >
+                ดาวน์โหลดผล
+              </button>
             )}
           </div>
-        );
-      })}
-    </section>
+        ))}
+      </section>
+    </div>
   );
 };
 
 // ============================================================================
-// RX VIEW
+// RX VIEW — ประวัติการจ่ายยา
 // ============================================================================
 
-const RxView: React.FC<{ phrData: PHRData | null }> = ({ phrData }) => {
-  if (!phrData || phrData.medications.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center h-64 text-gray-500">
-        <p className="text-lg">ไม่มีข้อมูลยา</p>
-      </div>
-    );
-  }
+const RxView: React.FC<{ phrData: PHRData | null; prescriptions: PrescriptionHistoryItem[] }> = ({
+  phrData,
+  prescriptions,
+}) => {
+  const currentMeds = phrData?.medications || [];
 
   return (
-    <section className="bg-white rounded-lg shadow-sm p-6">
-      <h3 className="text-lg font-bold text-gray-900 mb-4 border-b border-emerald-500 pb-2">
-        รายการยา (Medications)
-      </h3>
-      <table className="w-full text-sm">
-        <thead className="bg-gray-50">
-          <tr>
-            <th className="text-left p-2">ชื่อยา</th>
-            <th className="text-left p-2">ขนาด</th>
-            <th className="text-left p-2">ความถี่</th>
-            <th className="text-left p-2">สถานะ</th>
-          </tr>
-        </thead>
-        <tbody>
-          {phrData.medications.map((m) => (
-            <tr key={m.name} className="border-t">
-              <td className="p-2 font-medium">{m.name}</td>
-              <td className="p-2">{m.dosage || '-'}</td>
-              <td className="p-2">{m.frequency || '-'}</td>
-              <td className="p-2">
-                <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                  m.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'
-                }`}>
-                  {m.status === 'active' ? 'ใช้อยู่' : 'หยุดใช้'}
-                </span>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </section>
+    <div className="space-y-6">
+      {currentMeds.length > 0 && (
+        <section className="bg-white rounded-lg shadow-sm p-6">
+          <h3 className="text-lg font-bold text-gray-900 mb-3 border-b border-gray-200 pb-2">
+            ยาที่ใช้ปัจจุบัน (Current Medications)
+          </h3>
+          <ul className="space-y-1 text-sm text-gray-700">
+            {currentMeds.map((m) => (
+              <li key={`${m.name}-${m.dosage}`}>
+                {m.name} {m.dosage ? `— ${m.dosage}` : ''} {m.frequency ? `(${m.frequency})` : ''}
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      <section className="bg-white rounded-lg shadow-sm p-6">
+        <h3 className="text-lg font-bold text-gray-900 mb-4 border-b border-emerald-500 pb-2">
+          ประวัติการจ่ายยา (Prescription History)
+        </h3>
+        {prescriptions.length === 0 ? (
+          <p className="text-gray-500 text-sm">ยังไม่มีประวัติการจ่ายยา</p>
+        ) : (
+          <div className="space-y-4">
+            {prescriptions.map((rx) => {
+              const meds = Array.isArray(rx.medications) ? rx.medications : [];
+              const downloadUrl = rx.downloadUrl || rx.download_url;
+              const dateStr = rx.prescribed_date || rx.created_at;
+              return (
+                <div key={rx.id} className="border border-gray-100 rounded-lg p-4">
+                  <div className="flex items-start justify-between gap-3 mb-2">
+                    <div>
+                      <p className="text-sm font-semibold text-gray-800">
+                        {dateStr ? new Date(dateStr).toLocaleDateString('th-TH') : '—'}
+                        {rx.doctor_name || rx.doctorName ? ` — ${rx.doctor_name || rx.doctorName}` : ''}
+                      </p>
+                      <p className="text-xs text-gray-500">{rx.status || 'active'}</p>
+                    </div>
+                    {downloadUrl && (
+                      <button
+                        type="button"
+                        data-testid="patient-record-rx-download"
+                        onClick={() => void authDownload(downloadUrl, `prescription-${rx.id}.txt`)}
+                        className="px-3 py-1 rounded bg-emerald-600 text-white text-xs font-medium hover:bg-emerald-700"
+                      >
+                        ดาวน์โหลดใบสั่งยา
+                      </button>
+                    )}
+                  </div>
+                  <ul className="text-sm text-gray-700 space-y-1">
+                    {meds.map((m, i) => {
+                      const name = typeof m.drugName === 'string' ? m.drugName
+                        : typeof m.name === 'string' ? m.name
+                        : typeof m.drug_name === 'string' ? m.drug_name
+                        : 'ยา';
+                      const dosage = typeof m.dosage === 'string' || typeof m.dosage === 'number' ? String(m.dosage) : '';
+                      const frequency = typeof m.frequency === 'string' ? m.frequency : '';
+                      return (
+                        <li key={`${rx.id}-${name}-${i}`}>
+                          {name} {dosage} {frequency}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </section>
+    </div>
   );
 };
 
@@ -1330,153 +1535,169 @@ const RxView: React.FC<{ phrData: PHRData | null }> = ({ phrData }) => {
 // DOCS VIEW
 // ============================================================================
 
-const DocsView: React.FC<{ ehrData: EHRData | null }> = ({ ehrData }) => {
-  if (!ehrData || ehrData.externalRecords.length === 0) {
+const DocsView: React.FC<{
+  ehrData: EHRData | null;
+  patientId: string;
+  onUploaded?: () => void;
+}> = ({ ehrData, patientId, onUploaded }) => {
+  const [uploading, setUploading] = useState(false);
+  const docs = ehrData?.documents || ehrData?.externalRecords || [];
+
+  const handleUpload = async (file: File) => {
+    setUploading(true);
+    try {
+      const buffer = await file.arrayBuffer();
+      const bytes = new Uint8Array(buffer);
+      let binary = '';
+      bytes.forEach((b) => { binary += String.fromCodePoint(b); });
+      const base64 = btoa(binary);
+      const result = await patientRecordService.uploadSharedDocument(patientId, {
+        title: file.name,
+        fileName: file.name,
+        mimeType: file.type || 'application/octet-stream',
+        fileData: base64,
+        fileSize: file.size,
+        sourceType: 'patient_upload',
+      });
+      if (result.success) onUploaded?.();
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  return (
+    <section>
+      <div className="flex items-center justify-between mb-4 gap-3">
+        <h3 className="text-xl font-bold text-gray-900">เอกสารทางการแพทย์ (Documents)</h3>
+        <label className="px-3 py-1.5 rounded bg-emerald-600 text-white text-xs font-medium hover:bg-emerald-700 cursor-pointer">
+          {uploading ? 'กำลังอัปโหลด...' : 'อัปโหลดแชร์'}
+          <input
+            type="file"
+            data-testid="patient-record-doc-upload"
+            className="hidden"
+            disabled={uploading}
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              if (f) void handleUpload(f);
+              e.target.value = '';
+            }}
+          />
+        </label>
+      </div>
+      {docs.length === 0 ? (
+        <div className="bg-gray-50 rounded-lg p-8 text-center border border-dashed border-gray-300">
+          <p className="text-gray-400">ยังไม่มีเอกสารที่แชร์</p>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {docs.map(rec => {
+            const url = rec.downloadUrl || rec.viewUrl;
+            return (
+              <div key={rec.id} className="bg-white rounded-lg shadow-sm p-4 flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium">{rec.documentType}</p>
+                  <p className="text-xs text-gray-500">
+                    {rec.uploadedAt ? new Date(rec.uploadedAt).toLocaleDateString('th-TH') : '—'}
+                    {rec.uploadedBy ? ` — ${rec.uploadedBy}` : ''}
+                    {rec.sourceType ? ` · ${rec.sourceType}` : ''}
+                  </p>
+                </div>
+                {url && (
+                  <button
+                    type="button"
+                    data-testid="patient-record-doc-download"
+                    onClick={() => void authDownload(url, rec.fileName || `document-${rec.id}`)}
+                    className="px-3 py-1 rounded bg-blue-600 text-white text-xs font-medium hover:bg-blue-700"
+                  >
+                    ดาวน์โหลด
+                  </button>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </section>
+  );
+};
+
+// ============================================================================
+// MEETINGS VIEW
+// ============================================================================
+
+const MeetingsView: React.FC<{ meetings: MeetingHistoryItem[] }> = ({ meetings }) => {
+  if (meetings.length === 0) {
     return (
-      <div className="bg-gray-50 rounded-lg p-8 text-center border border-dashed border-gray-300">
-        <p className="text-gray-400">ยังไม่มีเอกสารจากภายนอก</p>
+      <div className="flex flex-col items-center justify-center h-64 text-gray-500">
+        <p className="text-lg">ยังไม่มีประวัติการประชุมวิดีโอ</p>
       </div>
     );
   }
 
   return (
     <section>
-      <h3 className="text-xl font-bold text-gray-900 mb-4">เอกสารทางการแพทย์จากภายนอก (External Records)</h3>
-      <div className="space-y-2">
-        {ehrData.externalRecords.map(rec => (
-          <div key={rec.id} className="bg-white rounded-lg shadow-sm p-4 flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium">{rec.documentType}</p>
-              <p className="text-xs text-gray-500">
-                {new Date(rec.uploadedAt).toLocaleDateString('th-TH')} — {rec.uploadedBy}
-              </p>
+      <h3 className="text-xl font-bold text-gray-900 mb-4">ประวัติการประชุมวิดีโอ</h3>
+      <div className="space-y-3">
+        {meetings.map((m) => {
+          const dateStr = m.endedAt || m.startedAt || m.createdAt;
+          return (
+            <div key={m.id} className="bg-white rounded-lg shadow-sm p-4 flex items-center justify-between gap-3">
+              <div>
+                <p className="text-sm font-semibold text-gray-800">
+                  {dateStr ? new Date(dateStr).toLocaleString('th-TH') : '—'}
+                </p>
+                <p className="text-xs text-gray-500">
+                  {m.doctorName || m.doctorId || 'แพทย์'} · {m.status}
+                  {m.hasSummary ? ' · มีสรุป AI' : ''}
+                </p>
+              </div>
+              {m.hasRecording && m.downloadUrl && (
+                <button
+                  type="button"
+                  data-testid="patient-record-video-download"
+                  onClick={() => void authDownload(m.downloadUrl!, `meeting-${m.id}.webm`)}
+                  className="px-3 py-1.5 rounded bg-indigo-600 text-white text-xs font-medium hover:bg-indigo-700"
+                >
+                  ดาวน์โหลดวิดีโอ
+                </button>
+              )}
+              {m.hasRecording && !m.downloadUrl && m.recordingUrl && (
+                <button
+                  type="button"
+                  data-testid="patient-record-video-download"
+                  onClick={() => void authDownload(
+                    m.recordingUrl!.includes('?') ? `${m.recordingUrl}&download=1` : `${m.recordingUrl}?download=1`,
+                    `meeting-${m.id}.webm`,
+                  )}
+                  className="px-3 py-1.5 rounded bg-indigo-600 text-white text-xs font-medium hover:bg-indigo-700"
+                >
+                  ดาวน์โหลดวิดีโอ
+                </button>
+              )}
             </div>
-            <a
-              href={rec.viewUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="px-3 py-1 rounded bg-blue-600 text-white text-xs font-medium hover:bg-blue-700"
-            >
-              View
-            </a>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </section>
   );
 };
 
 // ============================================================================
-// EHR VIEW (legacy combined — kept for timeline helpers)
+// EHR VIEW (legacy combined — kept for compatibility)
 // ============================================================================
 
 const EHRView: React.FC<{ ehrData: EHRData | null }> = ({ ehrData }) => {
   if (!ehrData) {
     return (
       <div className="flex flex-col items-center justify-center h-64 text-gray-500">
-        <svg className="w-16 h-16 text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-        </svg>
         <p className="text-lg">ยังไม่มีข้อมูล Electronic Health Record</p>
       </div>
     );
   }
-
   return (
     <div className="space-y-6">
-      {/* Lab Results Section */}
-      <section>
-        <h3 className="text-xl font-bold text-gray-900 mb-4">ผลตรวจทางห้องปฏิบัติการ (Lab Results)</h3>
-        {ehrData.labGroups.length > 0 ? (
-          ehrData.labGroups.map(group => {
-            const dateKey = new Date(group.completedDate || group.orderDate).toISOString().slice(0, 7);
-            return (
-              <div
-                key={group.id}
-                id={`record-${dateKey}`}
-                className="bg-white rounded-lg shadow-sm p-5 mb-4"
-              >
-                <div className="flex items-center justify-between mb-3">
-                  <div>
-                    <p className="text-sm font-bold text-gray-800">
-                      {new Date(group.completedDate || group.orderDate).toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric' })}
-                    </p>
-                    <p className="text-xs text-gray-500">{group.doctorName}</p>
-                  </div>
-                  {group.priority === 'urgent' && (
-                    <span className="px-2 py-0.5 rounded-full text-xs bg-red-100 text-red-700 font-medium">URGENT</span>
-                  )}
-                </div>
-                <table className="w-full text-sm">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="text-left p-2">Test</th>
-                      <th className="text-left p-2">Value</th>
-                      <th className="text-left p-2">Unit</th>
-                      <th className="text-left p-2">Normal Range</th>
-                      <th className="text-left p-2">Flag</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {group.tests.map((test) => (
-                      <tr key={`${group.id}-${test.name}`} className="border-t">
-                        <td className="p-2">{test.name}</td>
-                        <td className="p-2 font-medium">{test.value}</td>
-                        <td className="p-2 text-gray-500">{test.unit}</td>
-                        <td className="p-2 text-gray-500">{test.normalRange}</td>
-                        <td className="p-2">
-                          <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${getLabFlagClass(test.flag)}`}>
-                            {test.flag === 'CRITICAL' ? '🔴 ' : ''}{test.flag}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-                {group.aiAnalysis && (
-                  <div className="mt-3 bg-amber-50 rounded p-3 text-sm text-amber-800">
-                    <p className="text-xs font-semibold text-amber-600 mb-1">🤖 AI Analysis</p>
-                    {group.aiAnalysis}
-                  </div>
-                )}
-              </div>
-            );
-          })
-        ) : (
-          <p className="text-gray-400 text-sm">ยังไม่มีผลตรวจทางห้องปฏิบัติการ</p>
-        )}
-      </section>
-
-      {/* External Health Records Section */}
-      <section>
-        <h3 className="text-xl font-bold text-gray-900 mb-4">เอกสารทางการแพทย์จากภายนอก (External Records)</h3>
-        {ehrData.externalRecords.length > 0 ? (
-          <div className="space-y-2">
-            {ehrData.externalRecords.map(rec => (
-              <div key={rec.id} className="bg-white rounded-lg shadow-sm p-4 flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium">{rec.documentType}</p>
-                  <p className="text-xs text-gray-500">
-                    {new Date(rec.uploadedAt).toLocaleDateString('th-TH')} — {rec.uploadedBy}
-                  </p>
-                </div>
-                <a
-                  href={rec.viewUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="px-3 py-1 rounded bg-blue-600 text-white text-xs font-medium hover:bg-blue-700"
-                >
-                  View
-                </a>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="bg-gray-50 rounded-lg p-8 text-center border border-dashed border-gray-300">
-            <p className="text-gray-400">ยังไม่มีเอกสารจากภายนอก</p>
-          </div>
-        )}
-      </section>
+      <LabsView ehrData={ehrData} />
+      <DocsView ehrData={ehrData} patientId={ehrData.patientId} />
     </div>
   );
 };

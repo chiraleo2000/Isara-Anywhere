@@ -8,6 +8,8 @@
 
 Review AI-generated SOAP summary, degraded-mode badge when `PW_SKIP_LIVE_GEMINI=1`, validate summary, and navigate to EMR editor.
 
+Recording playback remains on this page (inline). The same `meeting_records.recording_url` is also listed for **download** in doctor PatientRecordViewer → **การประชุม** and patient Timeline → meeting events (`?download=1` / patient recording proxy). See [Clinical_Document_Delivery_Workflows.md](../../Clinical_Document_Delivery_Workflows.md) §7.
+
 ## Key testids
 
 | Element | testid |

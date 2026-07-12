@@ -148,6 +148,24 @@ test.describe('Group J — AI Doctor, Timeline, Map & Find Doctors', () => {
         await patient.page.waitForTimeout(1_000);
       }
 
+      // Clinical event type filters (shared chart: imaging / meeting / document)
+      const clinicalFilters = [
+        /Imaging|ภาพวินิจฉัย/i,
+        /Meeting|การประชุม/i,
+        /Document|เอกสาร/i,
+        /Lab|แล็บ|ผลตรวจ/i,
+        /All|ทั้งหมด/i,
+      ];
+      let clinicalClicks = 0;
+      for (const pattern of clinicalFilters) {
+        const btn = patient.page.locator('button, [role="tab"]').filter({ hasText: pattern }).first();
+        if (await btn.isVisible({ timeout: 2_000 }).catch(() => false)) {
+          await btn.click();
+          await patient.page.waitForTimeout(500);
+          clinicalClicks++;
+        }
+      }
+
       // Try filter buttons
       const filterBtns = patient.page.locator('button, [role="tab"]').filter({
         hasText: /All|ทั้งหมด|Week|สัปดาห์|Month|เดือน|Year|ปี|Filter|กรอง/i,
@@ -158,7 +176,7 @@ test.describe('Group J — AI Doctor, Timeline, Map & Find Doctors', () => {
         await patient.page.waitForTimeout(1_000);
       }
       await snap(patient.page, 'J06-timeline-filtered', 'group-J');
-      console.log(`  ✅ J06: Timeline filters — ${filterCount} filter buttons`);
+      console.log(`  ✅ J06: Timeline filters — ${filterCount} filter buttons, ${clinicalClicks} clinical`);
     });
 
     await test.step('J07 — Scroll timeline content', async () => {

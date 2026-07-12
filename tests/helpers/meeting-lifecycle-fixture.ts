@@ -897,9 +897,19 @@ export async function holdWithMediaChecks(
   let samples = 0;
   while (Date.now() - holdStart < holdMs) {
     for (const { page, label } of pages) {
-      await expect(page.getByTestId('jitsi-meeting-container').or(page.getByTestId('jitsi-guest-container')).first())
-        .toBeVisible({ timeout: 5_000 })
-        .catch(() => expect(page.getByTestId('jitsi-meeting-container')).toBeVisible());
+      const meetingShell = page
+        .getByTestId('jitsi-meeting-container')
+        .or(page.getByTestId('jitsi-guest-container'))
+        .or(page.getByTestId('end-meeting-btn'))
+        .or(page.getByTestId('doctor-meeting-room'))
+        .or(page.getByTestId('patient-meeting-room'))
+        .first();
+      // Brief host-waiting is OK while patient retries Jitsi after lobbyJoined; wait for shell
+      const hostWaiting = page.getByTestId('host-waiting-screen');
+      if (await hostWaiting.isVisible({ timeout: 500 }).catch(() => false)) {
+        await expect(hostWaiting, `${label}: leave host-waiting during hold`).toBeHidden({ timeout: 45_000 });
+      }
+      await expect(meetingShell).toBeVisible({ timeout: 15_000 });
       await assertJitsiMediaActive(page, label);
     }
     samples += 1;

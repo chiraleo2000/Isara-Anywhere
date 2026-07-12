@@ -317,10 +317,12 @@ export async function fetchMeetingJoinConfig(
   role: JitsiMeetingRole,
   displayName?: string,
   token?: string | null,
+  participantId?: string | null,
 ): Promise<MeetingJoinConfig | null> {
   try {
     const q = new URLSearchParams({ role });
     if (displayName?.trim()) q.set('name', displayName.trim());
+    if (participantId?.trim()) q.set('participantId', participantId.trim());
     const headers: Record<string, string> = {};
     if (token) headers.Authorization = `Bearer ${token}`;
     const res = await fetch(`${meetingApiBase(meetingServerUrl)}/api/meetings/${meetingId}/join-config?${q}`, {
@@ -418,11 +420,8 @@ export function loadJitsiExternalApiScript(domain = resolveJitsiDomain()): Promi
   }
   return new Promise((resolve, reject) => {
     if ((globalThis as any).JitsiMeetExternalAPI) {
-      const loaded = document.querySelector(`script[src="${expectedSrc}"]`);
-      if (loaded) {
-        resolve();
-        return;
-      }
+      resolve();
+      return;
     }
     const stale = document.querySelectorAll('script[src*="external_api"]');
     stale.forEach((node) => {
@@ -522,16 +521,25 @@ export async function connectMeetingSocket(
     onHostReady?: () => void;
     onLobbyUpdate?: (data: { action?: string; participant?: { participantId?: string }; hostReady?: boolean }) => void;
   },
-  meta?: { userName?: string; role?: string },
+  meta?: {
+    userName?: string;
+    role?: string;
+    authToken?: string;
+    /** Same-origin BFF base (e.g. /api/meetings) or absolute meeting API base */
+    roomsApiBase?: string;
+  },
 ): Promise<import('socket.io-client').Socket> {
   const { io } = await import('socket.io-client');
   const socket = io(meetingServerUrl, { transports: ['websocket', 'polling'] });
   socket.on('connect', async () => {
     let rooms = [meetingId];
     try {
-      const res = await fetch(`${meetingServerUrl}/api/meetings/${meetingId}/socket-rooms`, {
-        credentials: 'include',
-      });
+      const roomsUrl = meta?.roomsApiBase
+        ? `${meta.roomsApiBase.replace(/\/$/, '')}/${encodeURIComponent(meetingId)}/socket-rooms`
+        : `${meetingServerUrl.replace(/\/$/, '')}/api/meetings/${encodeURIComponent(meetingId)}/socket-rooms`;
+      const headers: Record<string, string> = {};
+      if (meta?.authToken) headers.Authorization = `Bearer ${meta.authToken}`;
+      const res = await fetch(roomsUrl, { credentials: 'include', headers });
       if (res.ok) {
         const data = await res.json();
         if (Array.isArray(data.rooms) && data.rooms.length) rooms = data.rooms;

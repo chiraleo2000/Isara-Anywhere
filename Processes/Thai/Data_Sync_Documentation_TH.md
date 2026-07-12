@@ -708,6 +708,17 @@ New test spec: `tests/e2e/specs/32-cross-portal-sync.spec.ts` — validates all 
 
 \* ผู้ป่วย + แพทย์ portals deploy with **`--min-instances=1`** so Socket.IO rooms stay warm during Gate validation. For horizontal scale, set **`REDIS_URL`** and use `socketRedisAdapter.cjs` on both portals (main API port 3009).
 
+### Clinical chart / document surfaces (July 2026)
+
+| Surface | File | Subscribes via `useRealtimeSync` | Refetch |
+|---------|------|----------------------------------|---------|
+| แพทย์ PatientRecordViewer | `PatientRecordViewer.tsx` | emr, ใบสั่งยา, lab-order, data:changed | Invalidate tab cache + reload active tab |
+| ผู้ป่วย PHR | `pages/PHRPage.tsx` | emr, Rx, lab, phr/vitals, notification, data:changed | `loadData()` |
+| ผู้ป่วย Timeline | `pages/TimelinePage.tsx` | same as PHR | `loadTimeline()` |
+| Notification | `document_delivered` | Via การแจ้งเตือน NOTIFY | Bell badge |
+
+See [Clinical_Document_Delivery_Workflows.md](Clinical_Document_Delivery_Workflows.md) §9.
+
 | Channel | Implementation |
 |---------|----------------|
 | DB change | `pg_notify` on channel `data_changes` via `scripts/database/v2.2.0-notify-triggers.sql` |

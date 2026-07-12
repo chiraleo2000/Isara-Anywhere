@@ -7,6 +7,7 @@ import {
   refreshPatientSession, waitForContent, PATIENT_URL, DOCTOR_URL,
 } from './helpers/multi-portal';
 
+/** Visible PHR tabs — includes dedicated prescriptions history tab. */
 const PHR_TABS = [
   'phr-tab-overview',
   'phr-tab-vitals',

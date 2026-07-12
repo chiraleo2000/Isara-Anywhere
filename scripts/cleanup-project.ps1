@@ -1,7 +1,9 @@
 #!/usr/bin/env pwsh
 # Remove regenerable caches and stale artifacts. Keeps docs/ and latest testing evidence.
 param(
-    [switch]$DryRun
+    [switch]$DryRun,
+    # Test results, Playwright reports, root *.log, auth cache — does NOT remove node_modules or Postgres data.
+    [switch]$ArtifactsOnly
 )
 
 $ErrorActionPreference = "Stop"
@@ -47,19 +49,37 @@ if ($DryRun) { Write-Host "(dry-run: no files deleted)" -ForegroundColor Yellow 
 $cacheDirs = @(
     "test-results",
     "playwright-report",
+    "blob-report",
     "test-logs",
     "coverage",
     ".cache",
     "tests\e2e\test-results",
     "tests\e2e\playwright-report",
-    "tests\e2e\cloud-test-snapshots"
+    "tests\e2e\cloud-test-snapshots",
+    "tests\unit\coverage",
+    "tests\unit\node_modules\.vite",
+    "tests\unit\node_modules\.cache"
 )
 foreach ($d in $cacheDirs) {
     Remove-PathSafe -Path (Join-Path $root $d) -Label $d
 }
+# Ephemeral Playwright screenshot dumps (canonical PNGs live under docs/screenshots)
+$outSs = Join-Path $root "tests\output\screenshots"
+if (Test-Path $outSs) {
+    Get-ChildItem $outSs -Directory -ErrorAction SilentlyContinue | ForEach-Object {
+        Remove-PathSafe -Path $_.FullName -Label "tests\output\screenshots\$($_.Name)"
+    }
+    Get-ChildItem $outSs -Filter "*.png" -File -Recurse -ErrorAction SilentlyContinue | ForEach-Object {
+        Remove-FilesSafe @($_.FullName)
+    }
+}
 Remove-FilesSafe @(
     (Join-Path $root "tests\e2e\.auth-cache.json")
 )
+# Root Tee-Object / gate run logs from full-coverage sessions
+Get-ChildItem $root -Filter "*.log" -File -ErrorAction SilentlyContinue | ForEach-Object {
+    Remove-FilesSafe @($_.FullName)
+}
 
 $authStates = Join-Path $root "tests\e2e\.auth-states"
 if (Test-Path $authStates) {
@@ -212,7 +232,12 @@ Remove-PathSafe -Path (Join-Path $root "deploy\jitsi\docker-jitsi-meet") -Label 
 
 Write-Host "--- Gate / E2E run logs & stale ledgers ---" -ForegroundColor Cyan
 Remove-PathSafe -Path (Join-Path $root "reports\local-failures") -Label "reports\local-failures"
-Get-ChildItem (Join-Path $root "reports") -Filter "*.log" -File -ErrorAction SilentlyContinue | ForEach-Object {
+# All regenerable gate/unit run logs under reports/ (incl. reports/unit/*.log)
+Get-ChildItem (Join-Path $root "reports") -Filter "*.log" -File -Recurse -ErrorAction SilentlyContinue | ForEach-Object {
+    Remove-FilesSafe @($_.FullName)
+}
+# Dated one-off gate text dumps (keep *-latest.json)
+Get-ChildItem (Join-Path $root "reports") -Filter "*-20*.txt" -File -ErrorAction SilentlyContinue | ForEach-Object {
     Remove-FilesSafe @($_.FullName)
 }
 Get-ChildItem (Join-Path $root "reports") -Filter "local-unit-gate-*.log" -File -ErrorAction SilentlyContinue | ForEach-Object {
@@ -237,37 +262,43 @@ Remove-FilesSafe @(
     (Join-Path $root "reports\eslint-deep-jitsi.txt")
 )
 
-# --- node_modules (gitignored — safe to delete; reinstall with npm install) ---
-Write-Host "--- node_modules ---" -ForegroundColor Cyan
-Get-ChildItem -Path $root -Recurse -Directory -Filter "node_modules" -Force -ErrorAction SilentlyContinue |
-    Sort-Object { $_.FullName.Length } -Descending |
-    ForEach-Object {
-        $label = $_.FullName.Substring($root.Length).TrimStart('\')
-        Remove-PathSafe -Path $_.FullName -Label $label
-    }
-
-# --- Live Postgres bind-mount data (gitignored; keeps data/postgres/.gitkeep) ---
-Write-Host "--- data/postgres (platform + standalone) ---" -ForegroundColor Cyan
-$pgDataRoots = @(
-    "data\postgres",
-    "data\postgres-patient",
-    "data\postgres-doctor",
-    "data\postgres-meeting",
-    "Isara-patient-portal\data\postgres-patient",
-    "Isara-doctor-portal\data\postgres-doctor",
-    "Izara-jitsi-server\data\postgres-meeting"
-)
-foreach ($pgRel in $pgDataRoots) {
-    $pgData = Join-Path $root $pgRel
-    if (-not (Test-Path $pgData)) { continue }
-    Get-ChildItem -LiteralPath $pgData -Force -ErrorAction SilentlyContinue |
-        Where-Object { $_.Name -ne '.gitkeep' } |
+if (-not $ArtifactsOnly) {
+    # --- node_modules (gitignored — safe to delete; reinstall with npm install) ---
+    Write-Host "--- node_modules ---" -ForegroundColor Cyan
+    Get-ChildItem -Path $root -Recurse -Directory -Filter "node_modules" -Force -ErrorAction SilentlyContinue |
+        Sort-Object { $_.FullName.Length } -Descending |
         ForEach-Object {
-            Remove-PathSafe -Path $_.FullName -Label "$pgRel\$($_.Name)"
+            $label = $_.FullName.Substring($root.Length).TrimStart('\')
+            Remove-PathSafe -Path $_.FullName -Label $label
         }
+
+    # --- Live Postgres bind-mount data (gitignored; keeps data/postgres/.gitkeep) ---
+    Write-Host "--- data/postgres (platform + standalone) ---" -ForegroundColor Cyan
+    $pgDataRoots = @(
+        "data\postgres",
+        "data\postgres-patient",
+        "data\postgres-doctor",
+        "data\postgres-meeting",
+        "Isara-patient-portal\data\postgres-patient",
+        "Isara-doctor-portal\data\postgres-doctor",
+        "Izara-jitsi-server\data\postgres-meeting"
+    )
+    foreach ($pgRel in $pgDataRoots) {
+        $pgData = Join-Path $root $pgRel
+        if (-not (Test-Path $pgData)) { continue }
+        Get-ChildItem -LiteralPath $pgData -Force -ErrorAction SilentlyContinue |
+            Where-Object { $_.Name -ne '.gitkeep' } |
+            ForEach-Object {
+                Remove-PathSafe -Path $_.FullName -Label "$pgRel\$($_.Name)"
+            }
+    }
+} else {
+    Write-Host "--- ArtifactsOnly: skipped node_modules + data/postgres ---" -ForegroundColor DarkCyan
 }
 
 Write-Host ""
 Write-Host "Kept: Documents/docs/, Processes/, docs/screenshots/, reports/defect-fix/, *-latest.json ledgers, scripts/output/startup-data, scripts/output/local-db-export" -ForegroundColor Green
-Write-Host "Reinstall deps: npm install (root + each portal + tests/unit)" -ForegroundColor DarkGray
+if (-not $ArtifactsOnly) {
+    Write-Host "Reinstall deps: npm install (root + each portal + tests/unit)" -ForegroundColor DarkGray
+}
 if (-not $DryRun) { Write-Host "Done." -ForegroundColor Green }

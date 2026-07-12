@@ -160,7 +160,7 @@ const GuestMeetingJoin: React.FC = () => {
     try {
       const ready = hostReady || (await isHostReady(meetingServerBase(), meetingId));
       if (!ready) {
-        setVideoError('รอแพทย์เริ่มการประชุมก่อน (Waiting for doctor host…)');
+        setVideoError('รอแพทย์เริ่มการประชุมก่อน');
         return;
       }
       setHostReady(true);
@@ -286,8 +286,8 @@ const GuestMeetingJoin: React.FC = () => {
               <div className="animate-spin w-12 h-12 border-4 border-emerald-500 border-t-transparent rounded-full mb-4" />
               <p className="text-gray-200 text-center px-4">
                 {waitingHost
-                  ? 'รอแพทย์เริ่มการประชุม… / Waiting for doctor to start'
-                  : 'กำลังเชื่อมต่อวิดีโอ… / Connecting video'}
+                  ? 'รอแพทย์เริ่มการประชุม…'
+                  : 'กำลังเชื่อมต่อวิดีโอ…'}
               </p>
             </div>
           )}
@@ -302,7 +302,7 @@ const GuestMeetingJoin: React.FC = () => {
                   void mountJitsi();
                 }}
               >
-                ลองใหม่ / Retry
+                ลองใหม่
               </button>
             </div>
           )}

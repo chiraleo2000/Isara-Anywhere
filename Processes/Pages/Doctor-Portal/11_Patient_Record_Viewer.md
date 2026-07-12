@@ -44,33 +44,63 @@
 
 ## 1. Purpose
 
-Comprehensive patient record viewer with 3 tabs (PHR, EMR, EHR) including Living Will display, self-entered health data, treatment history, and lab results.
+Comprehensive patient record viewer with **7 tabs** (สรุป, EMR, แล็บและภาพ, ประวัติการจ่ายยา, เอกสาร, การประชุม, PDPA) including Living Will, shared clinical documents, prescription history, meeting video downloads, and near-real-time Socket.IO refresh.
+
+**Component:** `frontend/components/PatientRecordViewer.tsx`  
+**Opened from:** DoctorPortal patient detail + Dashboard “ค้นหาประวัติการรักษา”
+
+See also: [Clinical_Document_Delivery_Workflows.md](../../Clinical_Document_Delivery_Workflows.md)
 
 ---
 
+## UI Controls Inventory (shared clinical)
+
+| # | Control | testid | Action | Expected |
+|---|---------|--------|--------|----------|
+| 1 | Summary tab | `patient-record-tab-summary` | click | PHR summary |
+| 2 | EMR tab | `patient-record-tab-emr` | click | SOAP list |
+| 3 | Labs tab | `patient-record-tab-labs` | click | Labs + imaging + download |
+| 4 | Rx tab | `patient-record-tab-rx` | click | ประวัติการจ่ายยา |
+| 5 | Docs tab | `patient-record-tab-docs` | click | patient_documents list |
+| 6 | Meetings tab | `patient-record-tab-meetings` | click | Video download links |
+| 7 | PDPA tab | `patient-record-tab-pdpa` | click | Consent |
+| 8 | Lab download | `patient-record-lab-download` | click | Auth file download |
+| 9 | Rx download | `patient-record-rx-download` | click | Auth Rx download |
+| 10 | Doc download | `patient-record-doc-download` | click | Auth doc download |
+| 11 | Doc upload | `patient-record-doc-upload` | change | Share file to patient |
+| 12 | Video download | `patient-record-video-download` | click | Recording attachment |
+| 13 | Search history (Dashboard) | `dashboard-search-treatment-history` | click | Opens this viewer |
 
 ## 2. Layout
 
 ```text
-┌─────────────────────────────────────────────────────────────────────┐
-│  📁 ประวัติผู้ป่วย — นายสมชาย มั่นคง (65, Male)                      │
-│                                                                     │
-│  Tabs: [PHR] [EMR] [EHR]                                           │
-│                                                                     │
-│  ┌──── Left Nav ──────┬── Main Content ────────────────────────┐   │
-│  │  Timeline          │                                        │   │
-│  │  ├── 2569          │  (Selected tab/record content)         │   │
-│  │  │  ├── ม.ค.       │                                        │   │
-│  │  │  └── ก.พ.       │                                        │   │
-│  │  └── 2568          │                                        │   │
-│  └────────────────────┴────────────────────────────────────────┘   │
-└─────────────────────────────────────────────────────────────────────┘
+Tabs: [สรุป] [EMR] [แล็บและภาพ] [ประวัติการจ่ายยา] [เอกสาร] [การประชุม] [PDPA]
+Left: ประวัติการรักษา (month navigator)
 ```
 
----
+## 3. Tab data sources
 
+| Tab | API | Notes |
+|-----|-----|-------|
+| Summary | `GET /api/patients/:id/phr` | Current meds = PHR self-reported |
+| EMR | `GET /api/patients/:id/emr` | All statuses for doctor |
+| Labs | `GET /api/patients/:id/ehr` | labGroups + imagingGroups + downloadUrl |
+| ประวัติการจ่ายยา | `GET /api/prescriptions/patient/:id` | Not PHR chronic meds |
+| เอกสาร | EHR `externalRecords` / documents | From `patient_documents` |
+| การประชุม | `GET /api/patients/:id/meetings` | recording downloadUrl |
+| PDPA | `GET /api/pdpa/patient/:id/summary` | Consent gate |
 
-## 3. PHR Tab (Personal Health Record)
+## 4. Realtime
+
+`useRealtimeSync` invalidates cache and refetches active tab on emr / prescription / lab-order / data:changed.
+
+## 5. Expected results
+
+- Docs tab is **not** empty when patient_documents exist
+- Rx tab shows prescription history with download when linked doc exists
+- Meetings tab shows download when `recording_url` set
+- Lists refresh without full page reload after clinical writes
+
 
 
 ### Living Will Card (Prominent at top)

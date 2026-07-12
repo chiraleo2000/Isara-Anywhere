@@ -149,29 +149,36 @@ describe('Meeting UX contract (MEET-UX)', () => {
     expect(doctorGuest).toMatch(/PATIENT_PORTAL_URL/);
   });
 
-  it('MEET-UX-19 — patient AuthContext demo auto-login on meeting route', () => {
+  it('MEET-UX-19 — patient meeting route skips portal login and demo auto-login', () => {
     const auth = fs.readFileSync(path.join(root, 'Isara-patient-portal/frontend/utils/demoAutoAuth.ts'), 'utf8');
     expect(auth).toMatch(/shouldBypassLoginRedirectForMeeting/);
     expect(auth).toMatch(/isPatientMeetingRoute/);
-    const guard = fs.readFileSync(path.join(root, 'Isara-patient-portal/frontend/pages/PatientMeetingRoute.tsx'), 'utf8');
-    expect(guard).toMatch(/meeting-auth-starting/);
+    const ctx = fs.readFileSync(path.join(root, 'Isara-patient-portal/frontend/contexts/AuthContext.tsx'), 'utf8');
+    expect(ctx).toMatch(/isPatientMeetingPath/);
+    const room = fs.readFileSync(path.join(root, 'Isara-patient-portal/frontend/pages/PatientMeetingRoom.tsx'), 'utf8');
+    expect(room).toMatch(/meeting-auth-starting/);
   });
 
-  it('MEET-UX-19b — doctor AuthProvider never navigates to /login on meeting route when DEMO_AUTO_LOGIN', () => {
+  it('MEET-UX-19b — doctor never navigates to /login on meeting route', () => {
     const auth = fs.readFileSync(path.join(root, 'Isara-doctor-portal/frontend/components/common/AuthProvider.tsx'), 'utf8');
     expect(auth).toMatch(/shouldBypassLoginRedirectForMeeting/);
     expect(auth).toMatch(/isDoctorMeetingRoute/);
-    expect(auth).toMatch(/meeting-auth-starting/);
+    const portal = fs.readFileSync(path.join(root, 'Isara-doctor-portal/frontend/pages/DoctorPortal.tsx'), 'utf8');
+    expect(portal).toMatch(/shouldBypassLoginRedirectForMeeting/);
+    expect(portal).toMatch(/no portal login required/i);
     expect(auth).toMatch(/!shouldBypassLoginRedirectForMeeting\(location\.pathname\)[\s\S]*navigate\('\/login'/);
   });
 
-  it('MEET-UX-20 — patient meeting route requires auth (user-scoped like doctor)', () => {
+  it('MEET-UX-20 — patient meeting route works without portal login (scoped URL)', () => {
     const app = fs.readFileSync(path.join(root, 'Isara-patient-portal/frontend/App.tsx'), 'utf8');
     expect(app).toMatch(/path="\/patient\/:userId\/meeting\/:appointmentId"/);
     expect(app).toMatch(/PatientMeetingRouteGuard/);
-    expect(app).toMatch(/LegacyPatientMeetingRedirect/);
+    expect(app).toMatch(/LegacyPatientMeetingPage/);
     const room = fs.readFileSync(path.join(root, 'Isara-patient-portal/frontend/pages/PatientMeetingRoom.tsx'), 'utf8');
-    expect(room).not.toMatch(/guestParticipantId/);
+    expect(room).toMatch(/routeUserId/);
+    expect(room).toMatch(/scopedUserId/);
+    const demo = fs.readFileSync(path.join(root, 'Isara-patient-portal/frontend/utils/demoAutoAuth.ts'), 'utf8');
+    expect(demo).toMatch(/Meeting URLs are public/);
   });
 
   it('MEET-UX-21 — docker env: DEMO_AUTO_LOGIN=1 and VITE_AUTO_ADMIT_LOBBY=0', () => {

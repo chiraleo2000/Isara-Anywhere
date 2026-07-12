@@ -20,8 +20,11 @@ describe('Book → meet → PHR combined chain (BMP)', () => {
     expect(read('Isara-patient-portal/frontend/pages/appointments/AppointmentPages.tsx')).toMatch(/book|wizard/i);
   });
 
-  it('BMP-02 — pool enrollment and doctor confirm', () => {
-    expect(read('Isara-doctor-portal/frontend/pages/AppointmentPoolManagement.tsx')).toMatch(/pool|in_pool/i);
+  it('BMP-02 — pool enrollment and doctor confirm (Health Meeting queue)', () => {
+    expect(read('Isara-doctor-portal/frontend/pages/meetings/HealthMeeting.tsx')).toMatch(/queue|in_pool|tab=queue/i);
+    expect(read('Isara-doctor-portal/frontend/pages/DoctorPortal.tsx')).toMatch(
+      /appointment-pool[\s\S]*health-meeting\?tab=queue/,
+    );
     expect(read('tests/unit/cross-portal/appointmentWorkflowContract.test.ts')).toMatch(/confirmed|in_pool/);
   });
 

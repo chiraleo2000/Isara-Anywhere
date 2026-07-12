@@ -290,6 +290,10 @@ export default defineConfig({
       name: 'K-accessibility',
       testMatch: 'group-K-accessibility.ui-test.ts',
       dependencies: ['A-auth'],
+      use: {
+        browserName: 'chromium' as const,
+        channel: isChromeChannelBanned() ? ('msedge' as const) : ('chrome' as const),
+      },
     },
 
     /* ── HARDENING + SSO (no data dependencies — API + UI smoke) ── */

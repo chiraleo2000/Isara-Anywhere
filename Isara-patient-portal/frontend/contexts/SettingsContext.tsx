@@ -33,6 +33,8 @@ const translations: Translations = {
   'settings.language': { en: 'Language', th: 'ภาษา' },
   'settings.lightMode': { en: 'Light Mode', th: 'โหมดสว่าง' },
   'settings.darkMode': { en: 'Dark Mode', th: 'โหมดมืด' },
+  'settings.thai': { en: 'Thai', th: 'ไทย' },
+  'settings.english': { en: 'English', th: 'อังกฤษ' },
 
   // Common
   'common.loading': { en: 'Loading...', th: 'กำลังโหลด...' },
@@ -183,7 +185,7 @@ const translations: Translations = {
   'phr.title': { en: 'Personal Health Records', th: 'ประวัติสุขภาพส่วนตัว' },
   'phr.overview': { en: 'Overview', th: 'ภาพรวม' },
   'phr.vitalSigns': { en: 'Vital Signs', th: 'สัญญาณชีพ' },
-  'phr.medications': { en: 'Medications', th: 'ยาที่ใช้ประจำ' },
+  'phr.medications': { en: 'Medication History', th: 'ประวัติการรับยา' },
   'phr.allergies': { en: 'Allergies', th: 'การแพ้' },
   'phr.conditions': { en: 'Chronic Conditions', th: 'โรคประจำตัว' },
   'phr.personalInfo': { en: 'Personal Information', th: 'ข้อมูลส่วนตัว' },

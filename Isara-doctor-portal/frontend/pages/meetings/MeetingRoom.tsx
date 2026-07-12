@@ -22,6 +22,7 @@ import { getToken, authFetch, ensureMeetingSessionFresh } from '../../services/a
 import { getIzaraDisplayName } from '../../utils/jitsiDisplayName';
 import {
   buildDoctorJitsiMountOptions,
+  connectMeetingSocket,
   fetchMeetingJoinConfig,
   loadJitsiExternalApiScript,
   notifyHostPresent,
@@ -257,11 +258,16 @@ async function resolveRoomFromAppointment(appointmentId: string | undefined, fal
 }
 
 /** Create meeting record on meeting server so patient can resolve the same room */
-async function createMeetingRecord(appointmentId: string | undefined, user: any, roomName: string): Promise<Record<string, unknown> | null> {
+async function createMeetingRecord(
+  appointmentId: string | undefined,
+  doctorId: string | undefined,
+  doctorName: string,
+  roomName: string,
+): Promise<Record<string, unknown> | null> {
   try {
     const res = await fetchWithTimeout('/api/meetings/create', {
       method: 'POST',
-      ...meetingFetchInit({ appointmentId, doctorId: user?.id, doctorName: getIzaraDisplayName(user, 'Doctor'), roomName }),
+      ...meetingFetchInit({ appointmentId, doctorId, doctorName, roomName }),
     });
     if (res.ok) {
       const data = await res.json();
@@ -447,9 +453,10 @@ function handleRecognitionError(
 
 // NOSONAR - Large React component with multiple render sections; further decomposition would split tightly-coupled state
 const MeetingRoom: React.FC = () => { // NOSONAR
-  const { appointmentId } = useParams<{ appointmentId: string }>();
+  const { appointmentId, userId: routeDoctorId } = useParams<{ appointmentId: string; userId?: string }>();
   const { user } = useAuth();
   const navigate = useNavigate();
+  const doctorId = user?.id || routeDoctorId || '';
   const doctorDisplayName = getIzaraDisplayName(user, 'Doctor');
 
   // Playwright / automation runs can fail to acquire real camera devices on Windows (NotReadableError),
@@ -628,7 +635,7 @@ const MeetingRoom: React.FC = () => { // NOSONAR
       fetch(`/api/meetings/${appointmentId}/lobby/admit-all`, {
         method: 'POST',
         headers: getAuthHeaders(),
-        body: JSON.stringify({ admittedBy: user?.id }),
+        body: JSON.stringify({ admittedBy: doctorId }),
       }).catch(() => { /* UI admit-all remains available */ });
     }
     void notifyHostPresent('', appointmentId || '', getToken());
@@ -679,36 +686,32 @@ const MeetingRoom: React.FC = () => { // NOSONAR
     }
   }, []);
 
-  // Socket connection (extracted to reduce cognitive complexity — S3776)
+  // Socket connection — join all room aliases (appointment id + meeting record id)
   const connectSocket = useCallback(async () => {
     try {
-      const { io } = await import('socket.io-client');
-      const socket = io(meetingServerUrl(), {
-        transports: ['websocket', 'polling'],
-        autoConnect: true,
-      });
-
-      socket.on('connect', () => {
-        console.log('[Socket] Connected to meeting server');
-        socket.emit('join-meeting', {
-          meetingId: appointmentId,
+      const socket = await connectMeetingSocket(
+        meetingServerUrl(),
+        appointmentId || '',
+        {
+          onLobbyUpdate: handleLobbyUpdate,
+        },
+        {
           userName: doctorDisplayName,
           role: 'doctor',
-        });
-      });
-
+          authToken: getToken() || undefined,
+          roomsApiBase: '/api/meetings',
+        },
+      );
       socket.on('transcript-update', handleTranscriptUpdate);
       socket.on('chat-message', handleChatMessage);
-      socket.on('lobby-update', handleLobbyUpdate);
       socket.on('meeting-status', (data: any) => {
         console.log('[Socket] Meeting status:', data.status);
       });
-
       socketRef.current = socket;
     } catch {
       console.warn('[MeetingRoom] Socket.IO connection skipped (meeting server may be unavailable)');
     }
-  }, [appointmentId, user, handleTranscriptUpdate, handleChatMessage, handleLobbyUpdate]);
+  }, [appointmentId, doctorDisplayName, handleTranscriptUpdate, handleChatMessage, handleLobbyUpdate]);
 
   // Meeting initializer (extracted to reduce cognitive complexity — S3776)
   const initMeeting = useCallback(async () => {
@@ -748,7 +751,7 @@ const MeetingRoom: React.FC = () => { // NOSONAR
       }
 
       if (!meetingFound) {
-        const created = await createMeetingRecord(appointmentId, user, roomName);
+        const created = await createMeetingRecord(appointmentId, doctorId, doctorDisplayName, roomName);
         if (created) meetingInfoRef.current = created;
       }
 
@@ -758,6 +761,7 @@ const MeetingRoom: React.FC = () => { // NOSONAR
         'doctor',
         doctorDisplayName,
         getToken(),
+        doctorId || undefined,
       );
       joinCfgRef.current = joinCfg;
       if (joinCfg?.roomName) roomName = joinCfg.roomName;
@@ -779,7 +783,7 @@ const MeetingRoom: React.FC = () => { // NOSONAR
       shouldAutoStartHostRef.current = true;
       setMeetingState(prev => ({ ...prev, status: 'host_starting' }));
     }
-  }, [appointmentId, user, doctorDisplayName, checkMediaDevices, connectSocket, isAutomation]);
+  }, [appointmentId, doctorId, doctorDisplayName, checkMediaDevices, connectSocket, isAutomation]);
 
   useEffect(() => {
     if (appointmentId) {
@@ -911,7 +915,7 @@ const MeetingRoom: React.FC = () => { // NOSONAR
           method: 'POST',
           headers: getAuthHeaders(),
           body: JSON.stringify({
-            participantId: user?.id || 'unknown',
+            participantId: doctorId || 'unknown',
             participantName: doctorDisplayName,
             role: 'doctor',
             consentRecording: true,
@@ -959,7 +963,7 @@ const MeetingRoom: React.FC = () => { // NOSONAR
         if (segment) {
           setTranscripts(prev => [...prev, segment]);
           sendTranscriptSegment(segment, event.results[i][0].confidence, {
-            socketRef, appointmentId: appointmentId || '', userId: user?.id || '', speakerName,
+            socketRef, appointmentId: appointmentId || '', userId: doctorId || '', speakerName,
           });
         }
       }
@@ -1047,7 +1051,7 @@ const MeetingRoom: React.FC = () => { // NOSONAR
 
     const msg: ChatMessage = {
       id: `chat-${Date.now()}`,
-      senderId: user?.id || 'unknown',
+      senderId: doctorId || 'unknown',
       senderName: doctorDisplayName,
       senderRole: 'doctor',
       message: chatInput.trim(),
@@ -1108,7 +1112,7 @@ const MeetingRoom: React.FC = () => { // NOSONAR
       fetch(`/api/meetings/${appointmentId}/auto-record`, {
         method: 'POST',
         headers: getAuthHeaders(),
-        body: JSON.stringify({ recording: true, recordedBy: user?.id, doctorName: doctorDisplayName }),
+        body: JSON.stringify({ recording: true, recordedBy: doctorId, doctorName: doctorDisplayName }),
       }).catch(() => { /* silent */ });
 
       // Auto-start transcript when recording starts
@@ -1213,7 +1217,7 @@ const MeetingRoom: React.FC = () => { // NOSONAR
         headers: getAuthHeaders(),
         body: JSON.stringify({
           action: 'approve',
-          doctorId: user?.id || 'doctor',
+          doctorId: doctorId || 'doctor',
         }),
       });
       if (res.ok) {
@@ -1234,7 +1238,7 @@ const MeetingRoom: React.FC = () => { // NOSONAR
         headers: getAuthHeaders(),
         body: JSON.stringify({
           action: 'reject',
-          doctorId: user?.id || 'doctor',
+          doctorId: doctorId || 'doctor',
         }),
       });
       if (res.ok) {
@@ -1288,7 +1292,7 @@ const MeetingRoom: React.FC = () => { // NOSONAR
 
     setMeetingState((prev) => ({ ...prev, status: 'ended' }));
 
-    await finalizeEndedMeeting(appointmentId, user?.id, navigate, setAiSummary, setShowPanel);
+    await finalizeEndedMeeting(appointmentId, doctorId, navigate, setAiSummary, setShowPanel);
 
     fetch(`/api/meetings/${appointmentId}/process-embeddings`, {
       method: 'POST',
@@ -1314,13 +1318,13 @@ const MeetingRoom: React.FC = () => { // NOSONAR
       await fetch(`/api/meetings/${appointmentId}/lobby/admit`, {
         method: 'POST',
         headers: getAuthHeaders(),
-        body: JSON.stringify({ participantId, admittedBy: user?.id }),
+        body: JSON.stringify({ participantId, admittedBy: doctorId }),
       });
     } catch { /* silent */ }
 
     if (socketRef.current?.connected) {
       socketRef.current.emit('lobby-admit', {
-        meetingId: appointmentId, participantId, admittedBy: user?.id,
+        meetingId: appointmentId, participantId, admittedBy: doctorId,
       });
     }
 
@@ -1332,13 +1336,13 @@ const MeetingRoom: React.FC = () => { // NOSONAR
       await fetch(`/api/meetings/${appointmentId}/lobby/reject`, {
         method: 'POST',
         headers: getAuthHeaders(),
-        body: JSON.stringify({ participantId, rejectedBy: user?.id }),
+        body: JSON.stringify({ participantId, rejectedBy: doctorId }),
       });
     } catch { /* silent */ }
 
     if (socketRef.current?.connected) {
       socketRef.current.emit('lobby-reject', {
-        meetingId: appointmentId, participantId, rejectedBy: user?.id,
+        meetingId: appointmentId, participantId, rejectedBy: doctorId,
       });
     }
 
@@ -1350,7 +1354,7 @@ const MeetingRoom: React.FC = () => { // NOSONAR
       await fetch(`/api/meetings/${appointmentId}/lobby/admit-all`, {
         method: 'POST',
         headers: getAuthHeaders(),
-        body: JSON.stringify({ admittedBy: user?.id }),
+        body: JSON.stringify({ admittedBy: doctorId }),
       });
     } catch {
       // Fallback: admit individually if batch endpoint fails
@@ -1364,7 +1368,7 @@ const MeetingRoom: React.FC = () => { // NOSONAR
     if (socketRef.current?.connected) {
       for (const p of lobbyParticipants) {
         socketRef.current.emit('lobby-admit', {
-          meetingId: appointmentId, participantId: p.participantId, admittedBy: user?.id,
+          meetingId: appointmentId, participantId: p.participantId, admittedBy: doctorId,
         });
       }
     }
@@ -1400,7 +1404,7 @@ const MeetingRoom: React.FC = () => { // NOSONAR
   }, [appointmentId, meetingState.status]);
 
   const goBack = useCallback(() => {
-    const userId = user?.id;
+    const userId = doctorId;
     navigate(`/doctor/${userId}/health-meeting`);
   }, [navigate, user]);
 
@@ -1714,7 +1718,7 @@ const MeetingRoom: React.FC = () => { // NOSONAR
                   <div className="max-w-3xl mx-auto">
                     <h3 className="text-lg font-bold mb-6">ขั้นตอนถัดไป — Post-Consultation Actions</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <button onClick={() => navigate(`/doctor/${user?.id}/emr`)}
+                      <button onClick={() => navigate(`/doctor/${doctorId}/emr`)}
                         className="flex items-start gap-4 p-5 bg-gray-800 border border-gray-700 rounded-xl hover:border-blue-500/50 hover:bg-gray-800/80 transition text-left group">
                         <span className="text-3xl"></span>
                         <div>
@@ -1722,7 +1726,7 @@ const MeetingRoom: React.FC = () => { // NOSONAR
                           <p className="text-xs text-gray-400 mt-1">บันทึก SOAP, diagnosis, assessment จากสรุป AI</p>
                         </div>
                       </button>
-                      <button onClick={() => navigate(`/doctor/${user?.id}/prescriptions`)}
+                      <button onClick={() => navigate(`/doctor/${doctorId}/prescriptions`)}
                         className="flex items-start gap-4 p-5 bg-gray-800 border border-gray-700 rounded-xl hover:border-green-500/50 hover:bg-gray-800/80 transition text-left group">
                         <span className="text-3xl"></span>
                         <div>
@@ -1730,7 +1734,7 @@ const MeetingRoom: React.FC = () => { // NOSONAR
                           <p className="text-xs text-gray-400 mt-1">สั่งยาจากข้อมูลการปรึกษา + CDS alerts</p>
                         </div>
                       </button>
-                      <button onClick={() => navigate(`/doctor/${user?.id}/lab-orders`)}
+                      <button onClick={() => navigate(`/doctor/${doctorId}/lab-orders`)}
                         className="flex items-start gap-4 p-5 bg-gray-800 border border-gray-700 rounded-xl hover:border-purple-500/50 hover:bg-gray-800/80 transition text-left group">
                         <span className="text-3xl"></span>
                         <div>
@@ -1738,7 +1742,7 @@ const MeetingRoom: React.FC = () => { // NOSONAR
                           <p className="text-xs text-gray-400 mt-1">สั่งตรวจเลือด, X-ray, MRI ตามผลวินิจฉัย</p>
                         </div>
                       </button>
-                      <button onClick={() => navigate(`/doctor/${user?.id}/health-meeting`)}
+                      <button onClick={() => navigate(`/doctor/${doctorId}/health-meeting`)}
                         className="flex items-start gap-4 p-5 bg-gray-800 border border-gray-700 rounded-xl hover:border-orange-500/50 hover:bg-gray-800/80 transition text-left group">
                         <span className="text-3xl"></span>
                         <div>

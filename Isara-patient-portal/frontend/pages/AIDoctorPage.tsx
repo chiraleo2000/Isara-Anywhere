@@ -319,7 +319,7 @@ export default function AIDoctorPage() {
 
     try {
       const history = messages.map((m) => ({ role: m.role, content: m.content }));
-      const response = await aiService.chat(userMessage.content, history, sessionId || undefined);
+      const response = await aiService.chat(userMessage.content, history, sessionId || undefined, language);
 
       // Store session ID from response
       if (response.sessionId && !sessionId) {

@@ -1,6 +1,6 @@
 # Process Documentation → Test Coverage Matrix
 
-**Last updated:** 2026-07-09 (580 controls, P0 missing=0; local gate 119/119 PASS)
+**Last updated:** 2026-07-10 (580 controls, P0 missing=0; process gaps=0; phase:9 PASS P0=0; +documentDelivery/Jitsi/pool-redirect unit packs)
 
 ## UI element coverage (Group U)
 
@@ -46,6 +46,16 @@
 | 3-party lobby | `meeting-server/threePartyLobby.integration.test.ts` | TPL-01–05 |
 | Auth login | `authLoginResponse`, `doctorLogin`, `adminLogin`, `patientLogin` | AUTH-* |
 | Calendar confirm | `cross-portal/calendarConfirmNotification.test.ts` | CAL-03–05 |
+
+## Clinical delivery + queue consolidation (2026-07-10)
+
+| Pack | File | IDs |
+|------|------|-----|
+| Document mapping | `patient-portal/documentDeliveryMapping.test.ts` | DOC-01–05 |
+| Pool → Health Meeting redirect | `doctor-portal/appointmentPoolRedirect.test.ts` | APR-01–04 |
+| Doctor message notify | `doctor-portal/doctorMessageNotification.test.ts` | DMN-01–04 |
+| Patient Jitsi loader | `patient-portal/loadJitsiExternalApiScript.test.ts` | JIT-P01–04 |
+| Doctor Jitsi stub-safe loader | `doctor-portal/loadJitsiExternalApiScript.stubs.test.ts` | JIT-D01–03 |
 
 ## Session auth + unified queue (v1.7.52)
 

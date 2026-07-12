@@ -49,7 +49,11 @@
 
 ## 1. Purpose
 
-Chronological timeline of all medical events — appointments, medications, lab results, procedures, and diagnoses — providing a complete treatment history at a glance.
+Chronological **ประวัติการรักษาทั้งหมด** — appointments, medications (Rx), lab, imaging, meetings/video, documents, procedures, and diagnoses — with authenticated download links (`timeline-download`) and Socket.IO refresh via `useRealtimeSync`.
+
+**Component:** `frontend/pages/TimelinePage.tsx`  
+**API:** `GET /api/phr/:patientId/timeline`  
+See: [Clinical_Document_Delivery_Workflows.md](../../Clinical_Document_Delivery_Workflows.md)
 
 ---
 
@@ -61,7 +65,7 @@ Chronological timeline of all medical events — appointments, medications, lab 
 │  📋 ประวัติการรักษา (Complete Treatment History)                      │
 │                                                                     │
 │  Filter: [ทั้งหมด] [📅 นัดหมาย] [💊 ยา] [🔬 ผลแล็บ]                │
-│          [🏥 หัตถการ] [📄 การวินิจฉัย]                                │
+│          [🖼️ ภาพ] [🎥 ประชุม] [📄 เอกสาร] [🏥 หัตถการ] [วินิจฉัย]   │
 │                                                                     │
 │  ─── มกราคม 2569 ──────────────────────────────────────────────    │
 │                                                                     │

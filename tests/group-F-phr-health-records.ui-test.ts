@@ -52,23 +52,25 @@ test.describe('Group F — PHR & Health Records', () => {
     });
 
     await test.step('F02 — Click through PHR tabs (stay on page)', async () => {
-      const tabPatterns = [
-        { pattern: /Vital Signs|สัญญาณชีพ/i, name: 'Vitals' },
-        { pattern: /Medications|ยาที่ใช้/i, name: 'Medications' },
-        { pattern: /Allergies|การแพ้/i, name: 'Allergies' },
-        { pattern: /Lab|ผลตรวจ/i, name: 'Lab' },
-        { pattern: /Overview|ภาพรวม/i, name: 'Overview' },
+      const tabTestIds = [
+        'phr-tab-vitals',
+        'phr-tab-medications',
+        'phr-tab-allergies',
+        'phr-tab-lab-imaging',
+        'phr-tab-documents',
+        'phr-tab-overview',
       ];
       let clickedTabs = 0;
-      for (const { pattern, name } of tabPatterns) {
-        const tab = patient.page.locator('button').filter({ hasText: pattern }).first();
+      for (const testId of tabTestIds) {
+        const tab = patient.page.getByTestId(testId);
         if (await tab.isVisible({ timeout: 3_000 }).catch(() => false)) {
           await tab.click({ force: true });
           await patient.page.waitForTimeout(800);
           clickedTabs++;
-          console.log(`    → Tab: ${name}`);
+          console.log(`    → Tab: ${testId}`);
         }
       }
+      expect(clickedTabs, 'F02: at least vitals+medications+docs tabs').toBeGreaterThanOrEqual(3);
       await snap(patient.page, 'F02-phr-tabs-explored', 'group-F');
       console.log(`  ✅ F02: Clicked through ${clickedTabs} PHR tabs`);
     });
@@ -77,9 +79,7 @@ test.describe('Group F — PHR & Health Records', () => {
       // Force hard-navigate to PHR — React app may have crashed after tab switching
       await patient.page.goto(`${PATIENT_URL}/phr`, { waitUntil: 'domcontentloaded', timeout: 15_000 });
       await patient.page.waitForTimeout(1_000);
-      const vitalTab = patient.page.locator('button').filter({
-        hasText: /Vital Signs|สัญญาณชีพ/i,
-      }).first();
+      const vitalTab = patient.page.getByTestId('phr-tab-vitals');
       await expect(vitalTab, 'Vital Signs tab').toBeVisible({ timeout: 8_000 });
       await vitalTab.click({ force: true });
       await patient.page.waitForTimeout(500);
@@ -144,15 +144,15 @@ test.describe('Group F — PHR & Health Records', () => {
       await snap(patient.page, 'F06-vitals-saved', 'group-F');
     });
 
-    await test.step('F07 — Switch to Medications tab (stay on page)', async () => {
-      const medTab = patient.page.locator('button').filter({ hasText: /Medication|ยา/i }).first();
-      if (await medTab.isVisible({ timeout: 5_000 }).catch(() => false)) {
-        await medTab.click();
-        await patient.page.waitForTimeout(500);
-      }
+    await test.step('F07 — Switch to Medication History tab (ประวัติการรับยา)', async () => {
+      const medTab = patient.page.getByTestId('phr-tab-medications');
+      await expect(medTab, 'phr-tab-medications').toBeVisible({ timeout: 8_000 });
+      await medTab.click();
+      await patient.page.waitForTimeout(500);
       const body = await patient.page.locator('body').innerText();
-      const hasMedContent = /medication|ยา|dosage|ขนาดยา|add|เพิ่ม|no medication|ไม่มียา/i.test(body);
-      console.log(`  ✅ F07: Medications tab — content: ${hasMedContent}`);
+      const hasMedHistoryLabel = /Medication History|ประวัติการรับยา|medication|ยา|dosage|ขนาดยา|prescription|ใบสั่งยา/i.test(body);
+      expect(hasMedHistoryLabel, 'F07: Medication History / ประวัติการรับยา visible').toBeTruthy();
+      console.log(`  ✅ F07: Medication History tab — content: ${hasMedHistoryLabel}`);
       await snap(patient.page, 'F07-medications-tab', 'group-F');
     });
 
@@ -170,13 +170,19 @@ test.describe('Group F — PHR & Health Records', () => {
 
     await test.step('F09 — Switch to Lab Results tab (stay on page)', async () => {
       const workflow = loadWorkflowState();
-      const labTab = patient.page.locator('button').filter({ hasText: /Lab|ผลตรวจ|แล็บ/i }).first();
+      const labTab = patient.page.getByTestId('phr-tab-lab-imaging');
       if (await labTab.isVisible({ timeout: 5_000 }).catch(() => false)) {
         await labTab.click();
         await patient.page.waitForTimeout(500);
+      } else {
+        const fallback = patient.page.locator('button').filter({ hasText: /Lab|ผลตรวจ|แล็บ|ภาพ/i }).first();
+        if (await fallback.isVisible({ timeout: 3_000 }).catch(() => false)) {
+          await fallback.click();
+          await patient.page.waitForTimeout(500);
+        }
       }
       const body = await patient.page.locator('body').innerText();
-      const hasLabContent = /lab|ผลตรวจ|test|result|no lab|ไม่มีผล/i.test(body);
+      const hasLabContent = /lab|ผลตรวจ|test|result|no lab|ไม่มีผล|imaging|ภาพ/i.test(body);
       if (workflow.labOrderId) {
         expect(
           body.includes(workflow.labOrderId) || hasLabContent,
@@ -189,6 +195,20 @@ test.describe('Group F — PHR & Health Records', () => {
       }
       console.log(`  ✅ F09: Lab Results tab — content: ${hasLabContent}`);
       await snap(patient.page, 'F09-lab-results-tab', 'group-F');
+    });
+
+    await test.step('F09b — Documents hub tab', async () => {
+      const docsTab = patient.page.getByTestId('phr-tab-documents');
+      await expect(docsTab, 'phr-tab-documents').toBeVisible({ timeout: 8_000 });
+      await docsTab.click();
+      await patient.page.waitForTimeout(600);
+      const body = await patient.page.locator('body').innerText();
+      expect(/document|เอกสาร|upload|อัปโหลด|download|ดาวน์โหลด|file|ไฟล์/i.test(body), 'F09b: documents hub content').toBeTruthy();
+      const upload = patient.page.getByTestId('phr-document-upload');
+      if (await upload.isVisible({ timeout: 3_000 }).catch(() => false)) {
+        console.log('  ✅ F09b: phr-document-upload visible');
+      }
+      await snap(patient.page, 'F09b-documents-hub', 'group-F');
     });
 
     console.log('\n  🎉 F1 COMPLETE — Patient PHR with vital signs entry\n');
@@ -317,5 +337,130 @@ test.describe('Group F — PHR & Health Records', () => {
     });
 
     console.log('\n  🎉 F3 COMPLETE — Cross-portal PHR verification\n');
+  });
+
+  /* ═════════════════════════════════════════════════════════════════
+     F4 — Doctor PatientRecordViewer: all clinical tabs + distinct snaps
+     ═════════════════════════════════════════════════════════════════ */
+  test('F4 — Doctor PatientRecordViewer clinical tabs', async ({ portals }) => {
+    const { doctor } = portals;
+
+    await test.step('F17 — Open treatment history from dashboard', async () => {
+      await navDoctor(doctor.page, 'dashboard', 'F17');
+      await assertFullHealth(doctor.page, 'F17');
+      await snap(doctor.page, 'F17-doctor-dashboard-before-record', 'group-F');
+
+      // Stay on dashboard — do not click queue/sidebar cards (they navigate away).
+      const searchBtn = doctor.page.getByTestId('dashboard-search-treatment-history');
+      await searchBtn.scrollIntoViewIfNeeded().catch(() => undefined);
+      await expect(searchBtn, 'dashboard-search-treatment-history').toBeVisible({ timeout: 15_000 });
+      await searchBtn.click();
+      await doctor.page.waitForTimeout(800);
+
+      // Viewer may open as modal; if not, fall back to patients detail
+      const summaryTab = doctor.page.getByTestId('patient-record-tab-summary');
+      if (!(await summaryTab.isVisible({ timeout: 5_000 }).catch(() => false))) {
+        await navDoctor(doctor.page, 'patients', 'F17-fallback');
+        const searchInput = doctor.page.locator(
+          'input[type="search"], input[type="text"], input[placeholder*="search" i], input[placeholder*="ค้นหา"]',
+        ).first();
+        if (await searchInput.isVisible({ timeout: 5_000 }).catch(() => false)) {
+          await searchInput.fill('demo');
+          await doctor.page.waitForTimeout(400);
+        }
+        const card = doctor.page.locator('[class*="card"], tr, [class*="patient"], [class*="row"]')
+          .filter({ hasText: /demo|patient|ผู้ป่วย/i }).first();
+        if (await card.isVisible({ timeout: 5_000 }).catch(() => false)) {
+          await card.click();
+          await doctor.page.waitForTimeout(600);
+        }
+        const openRecord = doctor.page.locator('button').filter({
+          hasText: /ประวัติการรักษา|Patient Record|View Record|ดูประวัติ|PHR|EMR/i,
+        }).first();
+        if (await openRecord.isVisible({ timeout: 4_000 }).catch(() => false)) {
+          await openRecord.click();
+          await doctor.page.waitForTimeout(800);
+        }
+      }
+
+      await expect(
+        doctor.page.getByTestId('patient-record-tab-summary').first(),
+        'F17: PatientRecordViewer opened',
+      ).toBeVisible({ timeout: 12_000 });
+      await snap(doctor.page, 'F17-patient-record-opened', 'group-F');
+      console.log('  ✅ F17: PatientRecordViewer opened');
+    });
+
+    await test.step('F18 — Click through PatientRecordViewer tabs', async () => {
+      const tabs = [
+        { id: 'summary', snap: 'F18a-record-summary' },
+        { id: 'emr', snap: 'F18b-record-emr' },
+        { id: 'labs', snap: 'F18c-record-labs' },
+        { id: 'rx', snap: 'F18d-record-rx' },
+        { id: 'docs', snap: 'F18e-record-docs' },
+        { id: 'meetings', snap: 'F18f-record-meetings' },
+        { id: 'pdpa', snap: 'F18g-record-pdpa' },
+      ];
+      let clicked = 0;
+      for (const tab of tabs) {
+        const el = doctor.page.getByTestId(`patient-record-tab-${tab.id}`);
+        if (await el.isVisible({ timeout: 3_000 }).catch(() => false)) {
+          await el.click();
+          await doctor.page.waitForTimeout(700);
+          clicked++;
+          const body = await doctor.page.locator('body').innerText();
+          if (tab.id === 'rx') {
+            expect(/ประวัติการจ่ายยา|Prescription|ยา|Rx|medication/i.test(body), 'F18 rx label').toBeTruthy();
+          }
+          if (tab.id === 'meetings') {
+            expect(/การประชุม|Meeting|video|วิดีโอ|recording|บันทึก/i.test(body), 'F18 meetings tab').toBeTruthy();
+          }
+          await snap(doctor.page, tab.snap, 'group-F');
+          console.log(`    → patient-record-tab-${tab.id}`);
+        }
+      }
+      expect(clicked, 'F18: clicked clinical record tabs').toBeGreaterThanOrEqual(4);
+      console.log(`  ✅ F18: Clicked ${clicked} PatientRecordViewer tabs`);
+    });
+
+    console.log('\n  🎉 F4 COMPLETE — Doctor PatientRecordViewer tabs\n');
+  });
+
+  /* ═════════════════════════════════════════════════════════════════
+     F5 — Patient timeline filters (imaging / meeting / document)
+     ═════════════════════════════════════════════════════════════════ */
+  test('F5 — Patient timeline clinical event filters', async ({ portals }) => {
+    const { patient } = portals;
+
+    await test.step('F19 — Timeline page + clinical filters', async () => {
+      await navPatient(patient.page, '/timeline', 'F19');
+      await assertFullHealth(patient.page, 'F19');
+      await snap(patient.page, 'F19-timeline-all', 'group-F');
+
+      const filters = [
+        { pattern: /Imaging|ภาพวินิจฉัย|ภาพ/i, snap: 'F19a-timeline-imaging' },
+        { pattern: /Meeting|การประชุม|วิดีโอ/i, snap: 'F19b-timeline-meeting' },
+        { pattern: /Document|เอกสาร/i, snap: 'F19c-timeline-document' },
+        { pattern: /Lab|แล็บ|ผลตรวจ/i, snap: 'F19d-timeline-lab' },
+      ];
+      for (const f of filters) {
+        const btn = patient.page.locator('button').filter({ hasText: f.pattern }).first();
+        if (await btn.isVisible({ timeout: 3_000 }).catch(() => false)) {
+          await btn.click();
+          await patient.page.waitForTimeout(600);
+          await snap(patient.page, f.snap, 'group-F');
+          console.log(`    → Timeline filter: ${f.snap}`);
+        }
+      }
+
+      const download = patient.page.getByTestId('timeline-download').first();
+      if (await download.isVisible({ timeout: 2_000 }).catch(() => false)) {
+        await snap(patient.page, 'F19e-timeline-download-visible', 'group-F');
+        console.log('  ✅ F19: timeline-download control visible');
+      }
+      console.log('  ✅ F19: Timeline clinical filters exercised');
+    });
+
+    console.log('\n  🎉 F5 COMPLETE — Timeline clinical filters\n');
   });
 });

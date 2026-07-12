@@ -198,6 +198,9 @@ function mapLabOrderRow(row: Record<string, unknown>) {
     order_date: row.ordered_at || row.ordered_date || row.created_at,
     results: structuredResults,
     documents,
+    document_id: row.document_id || null,
+    download_url: row.document_id ? `/api/documents/${row.document_id}/download` : null,
+    downloadUrl: row.document_id ? `/api/documents/${row.document_id}/download` : null,
     ai_analysis: resultsPayload.aiAnalysis || row.ai_analysis,
     notes: resultsPayload.notes || row.notes,
   };
@@ -218,18 +221,16 @@ router.get('/lab-orders', authMiddleware, async (req: Request, res: Response) =>
 
     console.log(`[PHR] Getting lab orders for patient: ${patientId}`);
 
-    if (LabOrderService) {
-      const labOrders = await LabOrderService.getPatientLabOrders(patientId);
-      return res.json({
-        labOrders: (labOrders || []).map((o: Record<string, unknown>) => mapLabOrderRow(o)),
-        count: (labOrders || []).length,
-      });
-    }
-
-    // Fallback: direct query
     const result = await pool.query(
-      `SELECT lo.*, u.name as doctor_name, u.name_thai as doctor_name_thai
+      `SELECT lo.*, u.name as doctor_name, u.name_thai as doctor_name_thai,
+              pd.id as document_id
        FROM lab_orders lo LEFT JOIN users u ON lo.doctor_id = u.id
+       LEFT JOIN LATERAL (
+         SELECT id FROM patient_documents
+         WHERE source_type = 'lab_report' AND source_id = lo.id::text
+           AND patient_id = lo.patient_id AND status = 'delivered'
+         ORDER BY delivered_at DESC NULLS LAST LIMIT 1
+       ) pd ON true
        WHERE lo.patient_id = $1 ORDER BY COALESCE(lo.ordered_at, lo.ordered_date, lo.created_at) DESC`,
       [patientId]
     );
@@ -275,6 +276,113 @@ router.get('/lab-orders/:orderId', authMiddleware, async (req: Request, res: Res
   } catch (error: unknown) {
     console.error('[PHR] Get lab order detail error:', error);
     return res.status(500).json({ error: 'Failed to get lab order' });
+  }
+});
+
+// GET /api/phr/meetings — Patient meeting history with recording download links
+router.get('/meetings', authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const patientId =
+      (req as AuthenticatedRequest).patientId ||
+      (req as AuthenticatedRequest).userId ||
+      (req as AuthenticatedRequest).user?.patientId ||
+      (req as AuthenticatedRequest).user?.id;
+    if (!patientId) {
+      return res.status(401).json({ error: 'User not authenticated' });
+    }
+
+    const result = await pool.query(
+      `SELECT mr.id, mr.appointment_id, mr.doctor_id, mr.status,
+              mr.started_at, mr.ended_at, mr.created_at,
+              mr.recording_url, mr.recording_filename, mr.ai_summary,
+              u.name as doctor_name, u.name_thai as doctor_name_thai
+       FROM meeting_records mr
+       LEFT JOIN users u ON mr.doctor_id = u.id
+       WHERE mr.patient_id = $1 AND mr.status IN ('completed', 'ended')
+       ORDER BY COALESCE(mr.ended_at, mr.started_at, mr.created_at) DESC
+       LIMIT 50`,
+      [patientId],
+    );
+
+    const meetings = (result.rows || []).map((row: any) => {
+      const recordingUrl = row.recording_url || null;
+      const hasRecording = Boolean(recordingUrl);
+      return {
+        id: row.id,
+        appointmentId: row.appointment_id,
+        doctorId: row.doctor_id,
+        doctorName: row.doctor_name_thai || row.doctor_name,
+        status: row.status,
+        startedAt: row.started_at,
+        endedAt: row.ended_at,
+        createdAt: row.created_at,
+        hasRecording,
+        recordingUrl,
+        downloadUrl: hasRecording
+          ? `/api/meetings/recording-download?path=${encodeURIComponent(recordingUrl)}`
+          : null,
+        hasSummary: Boolean(row.ai_summary),
+      };
+    });
+
+    res.json({ success: true, meetings, count: meetings.length });
+  } catch (error: unknown) {
+    console.error('[PHR] Get meetings error:', error);
+    res.json({ success: true, meetings: [], count: 0 });
+  }
+});
+
+// GET /api/phr/:patientId/meetings — same, scoped to path patientId (own only)
+router.get('/:patientId/meetings', authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const { patientId } = req.params;
+    const requesterId =
+      (req as AuthenticatedRequest).patientId ||
+      (req as AuthenticatedRequest).userId ||
+      (req as AuthenticatedRequest).user?.patientId ||
+      (req as AuthenticatedRequest).user?.id;
+    if (!requesterId || requesterId !== patientId) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    const result = await pool.query(
+      `SELECT mr.id, mr.appointment_id, mr.doctor_id, mr.status,
+              mr.started_at, mr.ended_at, mr.created_at,
+              mr.recording_url, mr.recording_filename, mr.ai_summary,
+              u.name as doctor_name, u.name_thai as doctor_name_thai
+       FROM meeting_records mr
+       LEFT JOIN users u ON mr.doctor_id = u.id
+       WHERE mr.patient_id = $1 AND mr.status IN ('completed', 'ended')
+       ORDER BY COALESCE(mr.ended_at, mr.started_at, mr.created_at) DESC
+       LIMIT 50`,
+      [patientId],
+    );
+
+    const meetings = (result.rows || []).map((row: any) => {
+      const recordingUrl = row.recording_url || null;
+      const hasRecording = Boolean(recordingUrl);
+      return {
+        id: row.id,
+        appointmentId: row.appointment_id,
+        doctorId: row.doctor_id,
+        doctorName: row.doctor_name_thai || row.doctor_name,
+        status: row.status,
+        startedAt: row.started_at,
+        endedAt: row.ended_at,
+        createdAt: row.created_at,
+        hasRecording,
+        recordingUrl,
+        downloadUrl: hasRecording
+          ? `/api/meetings/recording-download?path=${encodeURIComponent(recordingUrl)}`
+          : null,
+        hasSummary: Boolean(row.ai_summary),
+      };
+    });
+
+    res.json({ success: true, meetings, count: meetings.length });
+  } catch (error: unknown) {
+    console.error('[PHR] Get patient meetings error:', error);
+    res.status(500).json({ error: 'Failed to fetch meetings' });
   }
 });
 
@@ -782,9 +890,16 @@ router.get('/:patientId/timeline', authMiddleware, async (req: Request, res: Res
         'emr',
         () =>
           pool.query(
-            `SELECT e.*, u.name as doctor_name, u.name_thai as doctor_name_thai
+            `SELECT e.*, u.name as doctor_name, u.name_thai as doctor_name_thai,
+                    pd.id as document_id
          FROM emr e
          LEFT JOIN users u ON e.doctor_id = u.id
+         LEFT JOIN LATERAL (
+           SELECT id FROM patient_documents
+           WHERE source_type = 'emr_report' AND source_id = e.id::text
+             AND patient_id = e.patient_id AND status = 'delivered'
+           ORDER BY delivered_at DESC NULLS LAST LIMIT 1
+         ) pd ON true
          WHERE e.patient_id = $1 AND e.status = 'signed'
          ORDER BY e.created_at DESC
          LIMIT 50`,
@@ -802,6 +917,7 @@ router.get('/:patientId/timeline', authMiddleware, async (req: Request, res: Res
           titleThai: 'ผลการวินิจฉัย',
           description: diagnoses.map((d: any) => d.name || d.description).join(', ') || 'ผลตรวจ',
           doctorName: emr.doctor_name_thai || emr.doctor_name,
+          downloadUrl: emr.document_id ? `/api/documents/${emr.document_id}/download` : null,
           data: emr,
         });
       });
@@ -814,9 +930,16 @@ router.get('/:patientId/timeline', authMiddleware, async (req: Request, res: Res
         'prescriptions',
         () =>
           pool.query(
-            `SELECT p.*, u.name as doctor_name, u.name_thai as doctor_name_thai
+            `SELECT p.*, u.name as doctor_name, u.name_thai as doctor_name_thai,
+                    pd.id as document_id
          FROM prescriptions p
          LEFT JOIN users u ON p.doctor_id = u.id
+         LEFT JOIN LATERAL (
+           SELECT id FROM patient_documents
+           WHERE source_type = 'prescription' AND source_id = p.id::text
+             AND patient_id = p.patient_id AND status = 'delivered'
+           ORDER BY delivered_at DESC NULLS LAST LIMIT 1
+         ) pd ON true
          WHERE p.patient_id = $1
          ORDER BY p.created_at DESC
          LIMIT 50`,
@@ -832,8 +955,9 @@ router.get('/:patientId/timeline', authMiddleware, async (req: Request, res: Res
           date: rx.created_at,
           title: 'ใบสั่งยา',
           titleThai: 'ใบสั่งยา',
-          description: meds.map((m: any) => m.name || m.drug_name).join(', ') || 'ยาที่สั่ง',
+          description: meds.map((m: any) => m.name || m.drug_name || m.drugName).join(', ') || 'ยาที่สั่ง',
           doctorName: rx.doctor_name_thai || rx.doctor_name,
+          downloadUrl: rx.document_id ? `/api/documents/${rx.document_id}/download` : null,
           data: rx,
         });
       });
@@ -846,9 +970,16 @@ router.get('/:patientId/timeline', authMiddleware, async (req: Request, res: Res
         'lab_orders',
         () =>
           pool.query(
-            `SELECT l.*, u.name as doctor_name, u.name_thai as doctor_name_thai
+            `SELECT l.*, u.name as doctor_name, u.name_thai as doctor_name_thai,
+                    pd.id as document_id
          FROM lab_orders l
          LEFT JOIN users u ON l.doctor_id = u.id
+         LEFT JOIN LATERAL (
+           SELECT id FROM patient_documents
+           WHERE source_type = 'lab_report' AND source_id = l.id::text
+             AND patient_id = l.patient_id AND status = 'delivered'
+           ORDER BY delivered_at DESC NULLS LAST LIMIT 1
+         ) pd ON true
          WHERE l.patient_id = $1
          ORDER BY l.ordered_at DESC
          LIMIT 50`,
@@ -867,7 +998,124 @@ router.get('/:patientId/timeline', authMiddleware, async (req: Request, res: Res
           description: tests.map((t: any) => t.name || t.test_name).join(', ') || 'การตรวจทางห้องปฏิบัติการ',
           doctorName: lab.doctor_name_thai || lab.doctor_name,
           status: lab.status,
+          downloadUrl: lab.document_id ? `/api/documents/${lab.document_id}/download` : null,
           data: lab,
+        });
+      });
+    }
+
+    // Imaging orders
+    if (!type || type === 'imaging' || type === 'lab' || type === 'all') {
+      const imagingOrders = await safeTimelineQuery(
+        patientId,
+        'imaging_orders',
+        () =>
+          pool.query(
+            `SELECT io.*, u.name as doctor_name, u.name_thai as doctor_name_thai,
+                    pd.id as document_id
+         FROM imaging_orders io
+         LEFT JOIN users u ON io.doctor_id = u.id
+         LEFT JOIN LATERAL (
+           SELECT id FROM patient_documents
+           WHERE source_type = 'imaging_report' AND source_id = io.id::text
+             AND patient_id = io.patient_id AND status = 'delivered'
+           ORDER BY delivered_at DESC NULLS LAST LIMIT 1
+         ) pd ON true
+         WHERE io.patient_id = $1
+         ORDER BY COALESCE(io.completed_at, io.ordered_at) DESC
+         LIMIT 50`,
+            [patientId],
+          ),
+        { rows: [] as any[] },
+      );
+      imagingOrders.rows.forEach((img: any) => {
+        timeline.push({
+          id: img.id,
+          type: 'imaging',
+          date: img.completed_at || img.ordered_at,
+          title: img.status === 'completed' ? 'ผลภาพวินิจฉัย' : 'รอผลภาพวินิจฉัย',
+          titleThai: img.status === 'completed' ? 'ผลภาพวินิจฉัย' : 'รอผลภาพวินิจฉัย',
+          description: [img.imaging_type, img.body_part].filter(Boolean).join(' — ') || 'การตรวจภาพ',
+          doctorName: img.doctor_name_thai || img.doctor_name,
+          status: img.status,
+          downloadUrl: img.document_id ? `/api/documents/${img.document_id}/download` : null,
+          data: img,
+        });
+      });
+    }
+
+    // Meeting recordings / consultations
+    if (!type || type === 'meeting' || type === 'all') {
+      const meetings = await safeTimelineQuery(
+        patientId,
+        'meetings',
+        () =>
+          pool.query(
+            `SELECT mr.*, u.name as doctor_name, u.name_thai as doctor_name_thai
+         FROM meeting_records mr
+         LEFT JOIN users u ON mr.doctor_id = u.id
+         WHERE mr.patient_id = $1 AND mr.status IN ('completed', 'ended')
+         ORDER BY COALESCE(mr.ended_at, mr.started_at, mr.created_at) DESC
+         LIMIT 50`,
+            [patientId],
+          ),
+        { rows: [] as any[] },
+      );
+      meetings.rows.forEach((m: any) => {
+        const recordingUrl = m.recording_url || null;
+        const downloadUrl = recordingUrl
+          ? (recordingUrl.includes('?') ? `${recordingUrl}&download=1` : `${recordingUrl}?download=1`)
+          : null;
+        timeline.push({
+          id: m.id,
+          type: 'meeting',
+          date: m.ended_at || m.started_at || m.created_at,
+          title: 'การประชุมวิดีโอ',
+          titleThai: 'การประชุมวิดีโอ',
+          description: m.ai_summary
+            ? String(m.ai_summary).slice(0, 120)
+            : (recordingUrl ? 'มีวิดีโอบันทึกการประชุม' : 'การปรึกษาทางวิดีโอ'),
+          doctorName: m.doctor_name_thai || m.doctor_name,
+          status: m.status,
+          hasRecording: Boolean(recordingUrl),
+          downloadUrl: downloadUrl
+            ? `/api/meetings/recording-download?path=${encodeURIComponent(recordingUrl)}`
+            : null,
+          recordingUrl,
+          data: m,
+        });
+      });
+    }
+
+    // Delivered documents not already covered (patient uploads, instruction sheets, etc.)
+    if (!type || type === 'document' || type === 'all') {
+      const docs = await safeTimelineQuery(
+        patientId,
+        'patient_documents',
+        () =>
+          pool.query(
+            `SELECT d.*, u.name as doctor_name, u.name_thai as doctor_name_thai
+         FROM patient_documents d
+         LEFT JOIN users u ON d.doctor_id = u.id
+         WHERE d.patient_id = $1 AND d.status = 'delivered'
+           AND d.source_type IN ('emr_report', 'instruction_sheet', 'patient_upload', 'living_will_export')
+         ORDER BY d.delivered_at DESC
+         LIMIT 50`,
+            [patientId],
+          ),
+        { rows: [] as any[] },
+      );
+      docs.rows.forEach((doc: any) => {
+        timeline.push({
+          id: doc.id,
+          type: 'document',
+          date: doc.delivered_at || doc.created_at,
+          title: doc.title || 'เอกสารทางการแพทย์',
+          titleThai: doc.title || 'เอกสารทางการแพทย์',
+          description: doc.description || doc.file_name || doc.source_type,
+          doctorName: doc.doctor_name_thai || doc.doctor_name,
+          downloadUrl: `/api/documents/${doc.id}/download`,
+          data: doc,
         });
       });
     }

@@ -7,7 +7,7 @@ const GEMINI_PLACEHOLDER = 'xxxxx';
 
 function isClientGeminiConfigured(key: string | undefined): boolean {
   if (!key || key === 'xxx' || key === GEMINI_PLACEHOLDER) return false;
-  return key.startsWith('AIza');
+  return true;
 }
 
 /** Prefer same-origin relative /api paths so Vite/nginx proxy always works. */

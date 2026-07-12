@@ -31,4 +31,4 @@ Ensure every signed clinical output reaches the patient **เอกสารท�
 
 ## Notification Types
 
-- `emr_ready`, `lab_results`, `imaging_results`, `prescription_ready`, `doctor_message`
+- `emr_signed`, `lab_results`, `imaging_results`, `prescription_ready`, `doctor_message`, `document_delivered`

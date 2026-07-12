@@ -316,11 +316,10 @@ function initializeAI(): boolean {
   
   initialized = true;
   
-  // Use our parsed API key from module-level parsing
-  if (!GEMINI_API_KEY?.startsWith('AIza')) {
-    console.error('[AI] ❌ Invalid or missing Gemini API key');
-    console.error('[AI] Please check your .env file has: GEMINI_API_KEY=AIzaSy...');
-    console.error('[AI] Current value:', GEMINI_API_KEY ? `${GEMINI_API_KEY.substring(0, 10)}...` : 'null');
+  // No key-format checks — use whatever GEMINI_API_KEY is configured (except placeholder)
+  if (!GEMINI_API_KEY || !isGeminiConfigured()) {
+    console.error('[AI] ❌ Missing Gemini API key');
+    console.error('[AI] Please set GEMINI_API_KEY in your environment');
     return false;
   }
   
@@ -854,7 +853,7 @@ router.get('/status', async (_req: Request, res: Response) => {
     status: isReady ? 'ready' : 'not_configured',
     model: GEMINI_MODEL,
     hasApiKey: !!GEMINI_API_KEY,
-    apiKeyValid: GEMINI_API_KEY?.startsWith('AIza') || false,
+    apiKeyValid: isGeminiConfigured(),
     timestamp: new Date().toISOString()
   });
 });

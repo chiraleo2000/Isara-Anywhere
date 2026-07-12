@@ -1,8 +1,8 @@
 # Clinical Document Delivery Workflows
 
-**Version:** 2.4.0  
-**Last Updated:** July 9, 2026  
-**Status:** Canonical (PostgreSQL + `patient_documents` registry)
+**Version:** 2.5.0  
+**Last Updated:** July 10, 2026  
+**Status:** Canonical (PostgreSQL + `patient_documents` registry + meeting recordings)
 
 ---
 
@@ -14,26 +14,29 @@
 4. [EMR delivery chain](#4-emr-delivery-chain)
 5. [Lab / imaging delivery](#5-lab--imaging-delivery)
 6. [Prescription delivery](#6-prescription-delivery)
-7. [Patient upload](#7-patient-upload)
-8. [Security](#8-security)
-9. [APIs](#9-apis)
-10. [Database](#10-database)
-11. [Cross-references](#11-cross-references)
+7. [Meeting video delivery](#7-meeting-video-delivery)
+8. [Patient upload](#8-patient-upload)
+9. [Near-real-time sync](#9-near-real-time-sync)
+10. [Security](#10-security)
+11. [APIs](#11-apis)
+12. [Database](#12-database)
+13. [Cross-references](#13-cross-references)
 
 ---
 
 ## 1. Overview
 
-All clinical artifacts delivered to patients flow through a single registry table **`patient_documents`** and **`DocumentDeliveryService`** on doctor and patient backends.
-
-Patients view files in **PHR → เอกสารทางการแพทย์** (Documents tab) and type-specific tabs (Lab, Prescriptions, Treatment Results).
+All clinical file artifacts delivered to patients flow through **`patient_documents`** and **`DocumentDeliveryService`**. Meeting videos stay on **`meeting_records.recording_url`** but use the same authenticated download UX.
 
 | Layer | Component | Role |
 | ----- | --------- | ---- |
-| Doctor Portal | `documentDeliveryService.cjs` | Publish signed EMR, Rx, lab/imaging PDFs |
-| Patient Portal | `documentDeliveryService.ts` | List, download, upload patient documents |
-| Database | `patient_documents` | Canonical registry with `source_type`, `file_path`, metadata |
-| Notifications | `notifications` + NOTIFY | Real-time bell + email on new documents |
+| Doctor Portal | `documentDeliveryService.cjs` + PatientRecordViewer | Publish + list/download parity |
+| Patient Portal | `documentDeliveryService.ts` + PHR + Timeline | List, download, upload |
+| Meeting server | recording serve `?download=1` | Attachment download for videos |
+| Notifications | `document_delivered` + type-specific | Bell + Socket.IO refresh |
+
+**Patient labels:** ประวัติการรับยา (Rx history), ยาที่ใช้ปัจจุบัน (self-reported).  
+**Doctor labels:** ประวัติการจ่ายยา (Rx history), เอกสาร, การประชุม.
 
 ---
 
@@ -41,137 +44,153 @@ Patients view files in **PHR → เอกสารทางการแพท�
 
 ```mermaid
 sequenceDiagram
-  participant Doc as Doctor Portal
+  participant Doc as DoctorPortal
   participant DDS as DocumentDeliveryService
-  participant PG as patient_documents
-  participant N as notifications
-  participant Pat as Patient Portal
+  participant PG as PostgreSQL
+  participant Sock as SocketIO
+  participant Pat as PatientPortal
 
-  Doc->>Doc: Sign EMR / save Rx / upload lab PDF
-  Doc->>DDS: publishDocument(sourceType, payload)
+  Doc->>PG: Sign EMR / Rx / Lab PDF / Imaging / Save recording
+  Doc->>DDS: publishDocument when file artifact
   DDS->>PG: INSERT patient_documents
-  DDS->>N: INSERT notification (emr_signed / prescription_ready / lab_results)
-  N-->>Pat: NOTIFY → Socket.IO → bell badge
-  Pat->>Pat: PHR Documents tab + type-specific tab
-  Pat->>DDS: GET /api/documents/:id/download
+  DDS->>PG: INSERT notifications document_delivered
+  PG-->>Sock: NOTIFY
+  Sock-->>Doc: emr/lab/rx/data:changed
+  Sock-->>Pat: same events
+  Pat->>Pat: Timeline + PHR list refresh
+  Doc->>Doc: PatientRecordViewer tab refresh
 ```
 
-### Working order (clinical visit → patient receipt)
+### Working order (clinical visit → both portals)
 
-| Step | Actor | Action | Artifact | Next doc |
-| ---- | ----- | ------ | -------- | -------- |
-| 1 | Doctor | End meeting + man-in-the-loop approve AI | `meeting_records.ai_summary` | [POST_MEETING_WORKFLOW.md](POST_MEETING_WORKFLOW.md) |
-| 2 | Doctor | Sign EMR in CompleteEMREditor | `emr.status = signed` | §4 below |
-| 3 | Backend | Publish `emr_report` + `instruction_sheet` | `patient_documents` rows | This doc |
-| 4 | Doctor | Save prescriptions (optional) | `prescriptions` + `prescription` doc | §6 |
-| 5 | Doctor | Enter lab/imaging results + PDF (optional) | `lab_orders` / `imaging_orders` | §5 |
-| 6 | System | Notify patient | `notifications` | [Notification_Workflows.md](Notification_Workflows.md) |
-| 7 | Patient | View PHR → Documents / Treatment Results | Download via API | [Pages/Patient-Portal/06_PHR_Page.md](Pages/Patient-Portal/06_PHR_Page.md) |
-
-```text
-┌─────────────────────────────────────────────────────────────────────────┐
-│              CLINICAL DOCUMENT DELIVERY (patient-facing)                 │
-├─────────────────────────────────────────────────────────────────────────┤
-│                                                                          │
-│  DOCTOR PORTAL                          PATIENT PORTAL                   │
-│  ┌──────────────────┐                  ┌──────────────────┐              │
-│  │ CompleteEMREditor │──sign EMR──────►│ PHR → ผลการรักษา  │              │
-│  │ CompletePrescribing│──save Rx──────►│ PHR → ใบสั่งยา    │              │
-│  │ CompleteLabOrders  │──results+PDF──►│ PHR → แล็บ/ภาพ    │              │
-│  └────────┬─────────┘                  │ PHR → เอกสาร      │              │
-│           │                             └────────▲─────────┘              │
-│           ▼                                      │                        │
-│  ┌──────────────────┐     NOTIFY + Socket.IO     │                        │
-│  │ patient_documents │────────────────────────────┘                        │
-│  │ (single registry) │                                                   │
-│  └──────────────────┘                                                    │
-└─────────────────────────────────────────────────────────────────────────┘
-```
+| Step | Actor | Action | Artifact | Patient sees | Doctor sees |
+| ---- | ----- | ------ | -------- | ------------ | ----------- |
+| 1 | Doctor | Record + end meeting | `meeting_records.recording_url` | Timeline meeting + Download | Meetings tab + Download |
+| 2 | Doctor | Sign EMR | `emr_report` + `instruction_sheet` | Timeline + Documents | EMR + Docs |
+| 3 | Doctor | Prescribe | `prescriptions` + `prescription` doc | **ประวัติการรับยา** + Documents | **ประวัติการจ่ายยา** + Docs |
+| 4 | Doctor | Lab/imaging results + PDF | `lab_report` / `imaging_report` | Lab & Imaging + Documents | Labs & Imaging + Docs |
+| 5 | Patient | Upload file | `patient_upload` | Documents | Docs (PDPA) |
+| 6 | System | Notify + socket | `document_delivered` | Auto-refresh | Auto-refresh |
+| 7 | Either | Download | Auth stream | File saved | File saved |
 
 ---
 
 ## 3. Document types
 
-| source_type | Doctor action | Patient view |
-|-------------|---------------|--------------|
-| `emr_report` | Sign EMR in CompleteEMREditor | Treatment Results + Documents |
-| `instruction_sheet` | EMR sign / meeting validate | Documents + meeting instructions API |
-| `lab_report` | Upload results/PDF in Lab Orders | Lab tab + Documents |
-| `imaging_report` | Imaging tab result upload | Lab & Imaging + Documents |
-| `prescription` | Save prescription | Prescriptions tab + Documents |
-| `patient_upload` | N/A (patient) | Documents upload |
+| source_type | Doctor action | Patient view | Doctor view |
+|-------------|---------------|--------------|-------------|
+| `emr_report` | Sign EMR | Timeline + Documents | EMR + Docs |
+| `instruction_sheet` | EMR sign | Documents | Docs |
+| `lab_report` | Lab results + PDF | Lab & Imaging + Documents | Labs + Docs |
+| `imaging_report` | Imaging results | Lab & Imaging + Timeline + Documents | Labs & Imaging + Docs |
+| `prescription` | Save Rx | **ประวัติการรับยา** + Documents | **ประวัติการจ่ายยา** + Docs |
+| `patient_upload` | Doctor share or patient upload | Documents | Docs |
+| *(recording)* | Meeting save | Timeline meeting download | Meetings download |
 
 ---
 
 ## 4. EMR delivery chain
 
-1. Doctor signs EMR → `PUT /api/emr/:id` + `POST /api/patients/:id/health-logs` (authenticated)
-2. Backend sets `emr.status = signed`, publishes `emr_report` + `instruction_sheet` to `patient_documents`
-3. `POST /api/notifications/emr-signed` notifies patient
-4. Patient reads mapped `HealthLogEntry` via `GET /api/phr/:id/health-logs` (signed-only)
+1. Doctor signs EMR → `POST /api/patients/:id/health-logs`
+2. Backend signs `emr`, publishes `emr_report` + `instruction_sheet`
+3. Emits `document_delivered` (+ optional `emr-signed`)
+4. Patient Timeline / Documents; doctor EMR / Docs tabs refresh via Socket.IO
 
 ---
 
 ## 5. Lab / imaging delivery
 
-1. Doctor submits `PUT /api/lab-orders/:id/results` or `PUT /api/imaging-orders/:id/results` with optional PDF base64 in `documents[]`
-2. Each attachment → `publishDocument({ sourceType: 'lab_report' | 'imaging_report' })`
-3. Notification `lab_results` / `imaging_results`
+1. `PUT /api/lab-orders/:id/results` or `PUT /api/imaging-orders/:id/results`
+2. `publishDocument` for each PDF + structured text fallback
+3. Notifications `lab_results` / `imaging_results` + `document_delivered`
+4. Doctor `GET /api/patients/:id/ehr` returns `labGroups`, `imagingGroups`, `externalRecords` with `downloadUrl`
 
 ---
 
 ## 6. Prescription delivery
 
-1. `POST /api/prescriptions` creates Rx + publishes text/PDF artifact
-2. Notification `prescription_ready`
-3. Patient `GET /api/prescriptions` + Documents tab
+1. `POST /api/prescriptions` → DB + `prescription` document
+2. Notifications `prescription_ready` + `document_delivered`
+3. Patient **ประวัติการรับยา** via `GET /api/prescriptions` (`download_url`)
+4. Doctor **ประวัติการจ่ายยา** via `GET /api/prescriptions/patient/:id`
 
 ---
 
-## 7. Patient upload
+## 7. Meeting video delivery
 
-1. `POST /api/patients/documents` (JSON base64)
-2. `GET /api/documents/:id/download`
+1. Doctor records in MeetingRoom → `POST .../save-recording`
+2. Pipeline sets `meeting_records.recording_url` (e.g. `/api/recordings/meetings/.../video.webm`)
+3. Doctor: `GET /api/patients/:id/meetings` → Meetings tab download (`?download=1` / BFF stream)
+4. Patient: Timeline `meeting` events + `/api/meetings/recording-download?path=...`
 
 ---
 
-## 8. Security
+## 8. Patient upload
 
+1. PHR Documents `phr-document-upload` → `POST /api/patients/documents`
+2. Doctor may share via `POST /api/patients/:id/documents` (PDPA-gated)
+3. Both Docs lists show download via `GET /api/documents/:id/download`
+
+---
+
+## 9. Near-real-time sync
+
+| Surface | Hook | Refetch on |
+|---------|------|------------|
+| PatientRecordViewer | doctor `useRealtimeSync` | emr, prescription, lab-order, data:changed |
+| PHRPage | patient `useRealtimeSync` | emr, Rx, lab, phr, notification, data:changed |
+| TimelinePage | patient `useRealtimeSync` | same |
+
+Primary path: PG NOTIFY → Socket.IO. Fallback: notification bell 30s poll.
+
+---
+
+## 10. Security
+
+- Auth-only downloads (JWT); no public file URLs
 - Patients see **signed EMR only**
-- Allergy **BLOCK** on conflicting prescriptions
+- Doctor medical tabs PDPA-gated
+- Recording access role-checked on meeting-server
 - Clinical GCS paths disabled (`DISABLE_GCS_CLINICAL` default)
 
 ---
 
-## 9. APIs
+## 11. APIs
 
 | Method | Path | Role |
 |--------|------|------|
-| GET | `/api/patients/documents` | Patient list |
-| POST | `/api/patients/documents` | Patient upload |
-| GET | `/api/documents/:id/download` | Patient download |
-| GET | `/api/patients/:patientId/documents` | Doctor list/publish |
-| POST | `/api/patients/:patientId/messages` | Doctor → patient message |
+| GET | `/api/documents/:id/download` | Patient/doctor download |
+| GET | `/api/patients/:patientId/documents` | Doctor list (PDPA) |
+| POST | `/api/patients/:patientId/documents` | Doctor share upload |
+| GET | `/api/patients/:patientId/ehr` | Labs + imaging + documents |
+| GET | `/api/patients/:patientId/meetings` | Meeting history + video URLs |
+| GET | `/api/prescriptions/patient/:patientId` | Doctor Rx history + download_url |
+| GET | `/api/phr/:patientId/timeline` | Patient ประวัติการรักษา (+ imaging/meeting/docs) |
+| GET | `/api/phr/meetings` | Patient meeting list |
+| GET | `/api/meetings/recording-download?path=` | Patient recording proxy |
+| GET | `/api/recordings/.../?download=1` | Attachment disposition |
 
 ---
 
-## 10. Database
-
-See migration `scripts/database/migrations/v2.3.0-patient-documents-and-messages.sql`.
+## 12. Database
 
 | Table | Purpose |
 | ----- | ------- |
-| `patient_documents` | Registry of all deliverable clinical files |
-| `patient_messages` | Doctor-to-patient messages linked to visits |
+| `patient_documents` | Registry of deliverable clinical files |
+| `prescriptions` | E-prescription history |
+| `lab_orders` / `imaging_orders` | Orders + results |
+| `meeting_records` | Sessions + `recording_url` / BYTEA |
+| `notifications` | Includes `document_delivered` |
 
 ---
 
-## 11. Cross-references
+## 13. Cross-references
 
 | Topic | Document |
 | ----- | -------- |
-| Platform pipeline | [WORKFLOW_CONNECTIONS.md](WORKFLOW_CONNECTIONS.md) §3 |
-| EMR signing | [Health_Records_Processes.md](Health_Records_Processes.md) |
-| Post-meeting AI → EMR | [POST_MEETING_WORKFLOW.md](POST_MEETING_WORKFLOW.md) |
+| Doctor viewer | [Pages/Doctor-Portal/11_Patient_Record_Viewer.md](Pages/Doctor-Portal/11_Patient_Record_Viewer.md) |
+| Patient PHR | [Pages/Patient-Portal/06_PHR_Page.md](Pages/Patient-Portal/06_PHR_Page.md) |
+| Timeline | [Pages/Patient-Portal/14_Timeline_Page.md](Pages/Patient-Portal/14_Timeline_Page.md) |
+| Health records | [Health_Records_Processes.md](Health_Records_Processes.md) |
+| Data sync | [Data_Sync_Documentation.md](Data_Sync_Documentation.md) |
 | Notifications | [Notification_Workflows.md](Notification_Workflows.md) |
-| PHR UI | [Pages/Patient-Portal/06_PHR_Page.md](Pages/Patient-Portal/06_PHR_Page.md) |

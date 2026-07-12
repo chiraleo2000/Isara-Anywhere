@@ -64,13 +64,14 @@ describe('pageElementContract — P0 UI controls in code', () => {
       'phr-tab-medications',
       'phr-tab-allergies',
       'phr-tab-lab-imaging',
-      'phr-tab-prescriptions',
       'phr-tab-documents',
       'phr-tab-profile',
       'phr-document-upload',
     ]) {
       expect(sources).toContain(tab);
     }
+    // Prescription history is embedded in medications tab (no separate tab button)
+    expect(sources).toMatch(/Medication History|ประวัติการรับยา/);
   });
 
   it('PEC-QUEUE — queue action buttons in AppointmentQueueCard', () => {

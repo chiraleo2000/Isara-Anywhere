@@ -693,6 +693,40 @@ app.use('/api/ai', aiRoutes);
 app.use('/api/google', googleServicesRoutes);
 app.use('/api/content', contentRoutes);
 app.use('/api/video-meeting', videoMeetingRoutes);
+
+// Proxy authenticated recording downloads to meeting-server (patient JWT stays on :3005)
+app.get('/api/meetings/recording-download', authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const relPath = typeof req.query.path === 'string' ? req.query.path : '';
+    if (!relPath.startsWith('/api/recordings/')) {
+      return res.status(400).json({ error: 'Invalid recording path' });
+    }
+    const meetingServerUrl = (
+      process.env.MEETING_SERVER_URL || process.env.VITE_MEETING_SERVER_URL || 'http://localhost:3020'
+    ).replace(/\/$/, '');
+    const sep = relPath.includes('?') ? '&' : '?';
+    const target = `${meetingServerUrl}${relPath}${sep}download=1`;
+    const authHeader = req.headers.authorization || '';
+    const upstream = await fetch(target, {
+      method: 'GET',
+      headers: authHeader ? { Authorization: authHeader } : {},
+    });
+    if (!upstream.ok) {
+      const text = await upstream.text();
+      return res.status(upstream.status).type(upstream.headers.get('content-type') || 'application/json').send(text);
+    }
+    const contentType = upstream.headers.get('content-type') || 'application/octet-stream';
+    const disposition = upstream.headers.get('content-disposition') || 'attachment';
+    res.setHeader('Content-Type', contentType);
+    res.setHeader('Content-Disposition', disposition);
+    const buf = Buffer.from(await upstream.arrayBuffer());
+    res.send(buf);
+  } catch (error: unknown) {
+    console.error('[Recordings] Patient download proxy error:', error);
+    res.status(502).json({ error: 'Recording download unavailable' });
+  }
+});
+
 app.use('/api/notifications', notificationRoutes);
 
 app.use('/api/sync', syncRoutes);

@@ -43,3 +43,22 @@ export async function authMiddleware(req: Request, res: Response, next: NextFunc
     res.status(500).json({ error: 'Authentication service error' });
   }
 }
+
+/** Attach session user when token present; never block (meeting-scoped join). */
+export async function optionalAuthMiddleware(req: Request, res: Response, next: NextFunction) {
+  const token = req.headers.authorization?.replace('Bearer ', '');
+  if (!token) return next();
+  try {
+    const result = await AuthService.validateSession(token);
+    if (result) {
+      const authReq = req as AuthenticatedRequest;
+      authReq.userId = result.user.id;
+      authReq.user = result.user;
+      authReq.patientId = result.user.patient_id || result.user.id;
+      authReq.sessionToken = token;
+    }
+  } catch {
+    /* optional */
+  }
+  next();
+}

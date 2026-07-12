@@ -61,6 +61,24 @@ async function createDefectMeeting(
   });
 
   const appointmentId = `APT-DEFECT-${suffix}-${Date.now()}`;
+  const apptResp = await doctorPage.request.post(`${DOCTOR_URL}/api/appointments`, {
+    headers: {
+      Authorization: `Bearer ${doctorCtx.token}`,
+      'Content-Type': 'application/json',
+    },
+    data: {
+      id: appointmentId,
+      patientId: 'PATIENT-DEMO',
+      doctorId: doctorCtx.doctorId,
+      appointmentType: 'Telehealth',
+      requestedDate: new Date().toISOString().split('T')[0],
+      requestedTime: '10:00',
+      status: 'confirmed',
+      reason: 'Defect meeting E2E',
+    },
+  });
+  expect(apptResp.ok(), `defect appointment seed ${appointmentId}`).toBeTruthy();
+
   const createResp = await doctorPage.request.post(`${MEETING_URL}/api/meetings/create`, {
     headers: {
       Authorization: `Bearer ${doctorCtx.token}`,

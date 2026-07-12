@@ -34,7 +34,9 @@ describe('envSchema — boot validation', () => {
     expect(isGeminiConfigured({ GEMINI_API_KEY: 'xxxxx' })).toBe(false);
   });
 
-  it('ES05 — real-looking key passes isGeminiConfigured', () => {
+  it('ES05 — any non-placeholder key passes isGeminiConfigured', () => {
     expect(isGeminiConfigured({ GEMINI_API_KEY: 'AIzaSyExampleKey123' })).toBe(true);
+    expect(isGeminiConfigured({ GEMINI_API_KEY: 'AQ.Ab8ExampleAuthKey123' })).toBe(true);
+    expect(isGeminiConfigured({ GEMINI_API_KEY: 'any-real-key-value' })).toBe(true);
   });
 });

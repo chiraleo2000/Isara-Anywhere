@@ -165,7 +165,7 @@ Izara Telemedicine is a **three-portal telemedicine platform** built for Thai he
 | `/admin/appointments` | AdminAppointmentMgmt | Admin only | All appointment management |
 | `/admin/doctors` | AdminDoctorMgmt | Admin only | Doctor registration approval |
 | `/doctors` | DoctorsManagement | Doctor/Admin | Doctor directory |
-| `/appointment-pool` | AppointmentPoolMgmt | Doctor/Admin | Claim unassigned appointments |
+| `/appointment-pool` | → `/health-meeting?tab=queue` | Doctor/Admin | Redirect — claim unassigned appointments in Health Meeting queue |
 | (embed) | QueueManagement | Doctor/Admin | Real-time patient queue |
 
 

@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Send, Bot, User, Sparkles, Minimize2, Maximize2, Trash2 } from 'lucide-react';
 import { aiService } from '../../lib/services';
+import { useSettings } from '../../contexts/SettingsContext';
 
 interface Message {
   id: string;
@@ -16,6 +17,7 @@ interface AIHealthChatProps {
 }
 
 export const AIHealthChat: React.FC<AIHealthChatProps> = ({ className = '', compact = true, userId }) => {
+  const { language } = useSettings();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -92,7 +94,7 @@ export const AIHealthChat: React.FC<AIHealthChatProps> = ({ className = '', comp
 
     try {
       const history = messages.map((m) => ({ role: m.role, content: m.content }));
-      const response = await aiService.chat(userMessage.content, history, sessionId || undefined);
+      const response = await aiService.chat(userMessage.content, history, sessionId || undefined, language);
 
       // Store session ID from response for persistence
       if (response.sessionId && !sessionId) {

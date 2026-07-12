@@ -5,7 +5,18 @@
 > **อัปเดต:** 9 กรกฎาคม 2569 · รัน `python scripts/sync-processes-thai.py` เพื่อสร้างใหม่
 
 
-Last verified: 2026-06-30 (v1.7.54 — self-hosted Jitsi local, cost-opt Cloud Run min=0)
+Last verified: 2026-07-09 (v2.3.0 — clinical ส่งมอบเอกสาร + Health Meeting queue)
+
+## v2.3.0 production readiness (clinical delivery)
+
+| Check | สถานะ | Notes |
+| --- | --- | --- |
+| `patient_documents` + `patient_doctor_messages` tables | Required | Migration `v2.3.0-patient-documents-and-messages.sql` |
+| GCS clinical paths disabled | Required | `DocumentDeliveryService` uses BYTEA in Postgres |
+| Stub `/api/health-records*` removed | Done | Real EMR/meeting_records data |
+| `/appointment-pool` redirect | Done | `/health-meeting?tab=queue` |
+| Content workflow columns | Required | `medical_content` + `clinical_resources` extended columns on startup |
+| Local gate ladder | See `docs/runbooks/LOCAL_INSTALL.md` §2b | phase:0 → phase:9 |
 
 ## Scope
 

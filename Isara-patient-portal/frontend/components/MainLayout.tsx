@@ -209,7 +209,7 @@ export default function MainLayout() {
     { icon: Activity, label: t(language, 'เส้นทางสุขภาพ', 'Health Timeline'), path: '/timeline' },
     { icon: MapPin, label: t(language, 'แผนที่สถานพยาบาล', 'Nearby Healthcare'), path: '/map' },
     { icon: Users, label: t(language, 'ค้นหาแพทย์', 'Find Doctors'), path: '/find-doctors' },
-    { icon: Shield, label: t(language, 'PDPA & หนังสือแสดงเจตนา', 'PDPA & Living Will'), path: '/pdpa' },
+    { icon: Shield, label: t(language, 'ความเป็นส่วนตัว (PDPA)', 'Privacy (PDPA)'), path: '/pdpa' },
     { icon: Settings, label: t(language, 'ตั้งค่า', 'Settings'), path: '/settings' },
   ];
 

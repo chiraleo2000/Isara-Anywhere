@@ -76,7 +76,7 @@ export const SettingsDropdown: React.FC = () => {
           {/* Theme Section */}
           <div className="p-3 border-b border-gray-100 dark:border-gray-700">
             <p className="px-2 py-1.5 text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wide">
-              {t('settings.theme')} / ธีม
+              {t('settings.theme')}
             </p>
             <button
               onClick={() => setTheme('light')}
@@ -89,7 +89,7 @@ export const SettingsDropdown: React.FC = () => {
             >
               <div className="flex items-center gap-3">
                 <SunIcon className="w-5 h-5" />
-                <span className="text-sm font-medium">Light / สว่าง</span>
+                <span className="text-sm font-medium">{t('settings.lightMode')}</span>
               </div>
               {theme === 'light' && <CheckIcon className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />}
             </button>
@@ -104,7 +104,7 @@ export const SettingsDropdown: React.FC = () => {
             >
               <div className="flex items-center gap-3">
                 <MoonIcon className="w-5 h-5" />
-                <span className="text-sm font-medium">Dark / มืด</span>
+                <span className="text-sm font-medium">{t('settings.darkMode')}</span>
               </div>
               {theme === 'dark' && <CheckIcon className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />}
             </button>
@@ -113,7 +113,7 @@ export const SettingsDropdown: React.FC = () => {
           {/* Language Section */}
           <div className="p-3">
             <p className="px-2 py-1.5 text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wide">
-              {t('settings.language')} / ภาษา
+              {t('settings.language')}
             </p>
             <button
               onClick={() => setLanguage('th')}
@@ -126,7 +126,7 @@ export const SettingsDropdown: React.FC = () => {
             >
               <div className="flex items-center gap-3">
                 <span className="text-xl">🇹🇭</span>
-                <span className="text-sm font-medium">ไทย (Thai)</span>
+                <span className="text-sm font-medium">{t('settings.thai')}</span>
               </div>
               {language === 'th' && <CheckIcon className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />}
             </button>
@@ -141,7 +141,7 @@ export const SettingsDropdown: React.FC = () => {
             >
               <div className="flex items-center gap-3">
                 <span className="text-xl">🇺🇸</span>
-                <span className="text-sm font-medium">English</span>
+                <span className="text-sm font-medium">{t('settings.english')}</span>
               </div>
               {language === 'en' && <CheckIcon className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />}
             </button>

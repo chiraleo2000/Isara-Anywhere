@@ -11,7 +11,9 @@ import { resolveMeetingServerUrl } from '../utils/resolveMeetingServerUrl';
 const GEMINI_API_KEY = resolveEnv('GEMINI_API_KEY');
 const GEMINI_MODEL = resolveEnv('GEMINI_MODEL', 'gemini-3.1-flash-lite');
 const meetingServerBase = () => resolveMeetingServerUrl();
-const genAI = GEMINI_API_KEY?.startsWith('AIza') ? new GoogleGenerativeAI(GEMINI_API_KEY) : null;
+const genAI = (GEMINI_API_KEY && GEMINI_API_KEY !== 'xxx' && GEMINI_API_KEY !== 'xxxxx')
+  ? new GoogleGenerativeAI(GEMINI_API_KEY)
+  : null;
 
 // Log initialization status
 if (genAI) {

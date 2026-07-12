@@ -31,7 +31,15 @@ test.describe('Defect — AI new chat and language', () => {
     await expect(newChatBtn, 'New Chat control must be available on AI doctor page').toBeVisible({ timeout: 15_000 });
     await newChatBtn.click();
     await patient.page.waitForTimeout(2000);
-    await patient.page.reload({ waitUntil: 'domcontentloaded' });
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        await patient.page.reload({ waitUntil: 'domcontentloaded', timeout: 30_000 });
+        break;
+      } catch {
+        await patient.page.goto(`${patient.url}/ai-doctor`, { waitUntil: 'domcontentloaded', timeout: 30_000 });
+        if (attempt === 2) throw new Error('DA1: patient AI page reload failed after new chat');
+      }
+    }
     await patient.page.waitForTimeout(2000);
 
     const bodyAfter = await patient.page.locator('body').innerText();

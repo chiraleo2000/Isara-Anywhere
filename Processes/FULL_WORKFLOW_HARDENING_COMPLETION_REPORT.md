@@ -1,6 +1,33 @@
-# Full workflow hardening ? completion report
+# Full workflow hardening — completion report
 
-**Updated:** July 9, 2026 (UI element coverage + Group U + P0 matrix)
+**Updated:** July 9, 2026 (Unified Production Fix — meeting auth + local gates)
+
+## Round 8 summary (2026-07-09) — Unified Production Fix
+
+| Track | Status | Evidence |
+|-------|--------|----------|
+| Patient consultation-result BFF + Bearer | **PASS** | `PatientMeetingRoom` → `/api/video-meeting/.../consultation-result` |
+| Meeting-server ownership on consultation-result | **PASS** | Patient/doctor/admin check in `Izara-jitsi-server` |
+| Socket room aliases (doctor + patient) | **PASS** | `connectMeetingSocket` + BFF `/socket-rooms` |
+| Lobby admit-before-Jitsi + reject UI | **PASS** | Patient never mounts Jitsi until admitted; DM4 green |
+| Phase 0–8 local ladder | **PASS** | Auth→meeting→appointments→clinical→defect; P0=0 each round |
+| Phase 9 parallel pre-deploy | **PASS** | `phase:9:parallel` exit 0; ledger round 9 **P0=0** (2026-07-09T19:45Z) |
+| E2E strict (retries=0) | **PASS** | `test:local:e2e-strict` 113 passed (2026-07-09T20:05Z) |
+| Screenshot audits | **PASS** | `test:screenshots:all` + global (280 PNGs) |
+| Docs evidence | **PASS** | `docs:evidence:local` + ledger round-final **P0=0** |
+| Cloud deploy | **DEFERRED** | Local-only hard stop per plan |
+
+```powershell
+# 2026-07-09 — Unified Production Fix (final local sign-off)
+$env:PW_HEADED='1'; $env:BASELINE_VISUAL='1'; $env:PW_SKIP_LIVE_GEMINI='1'; $env:PW_NO_CHROME='1'
+$env:GATE_SKIP_DOCKER_BUILD='1'
+npm run phase:9:parallel                 # PASS P0=0
+npm run test:local:e2e-strict            # PASS 113
+npm run test:screenshots:all             # PASS
+npm run test:screenshots:global          # PASS
+npm run docs:evidence:local
+npm run ledger:local -- --round final    # P0=0
+```
 
 ## Round 7 summary (2026-07-09) — UI element coverage
 

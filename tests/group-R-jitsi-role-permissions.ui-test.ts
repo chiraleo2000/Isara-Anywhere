@@ -225,11 +225,26 @@ async function runJitsiRoleParityFlow(
   });
 
   await test.step(`${label}b — Patient joins after host ready (participant)`, async () => {
+    await refreshPageAuth(patientPage, PATIENT_URL, 'patient1');
     const { userId: patientUserId } = await requirePatientAuth(patientPage, `${label}b`);
-    await patientPage.goto(`${PATIENT_URL}/patient/${patientUserId}/meeting/${appointmentId}`, {
-      waitUntil: 'domcontentloaded',
-      timeout: IS_CLOUD ? 90_000 : 45_000,
-    });
+    const patientMeetingUrl = `${PATIENT_URL}/patient/${patientUserId}/meeting/${appointmentId}`;
+    const patientGotoTimeout = IS_CLOUD
+      ? 90_000
+      : browserName === 'firefox'
+        ? 90_000
+        : 60_000;
+    try {
+      await patientPage.goto(patientMeetingUrl, {
+        waitUntil: 'domcontentloaded',
+        timeout: patientGotoTimeout,
+      });
+    } catch {
+      await refreshPageAuth(patientPage, PATIENT_URL, 'patient1');
+      await patientPage.goto(patientMeetingUrl, {
+        waitUntil: 'load',
+        timeout: patientGotoTimeout,
+      });
+    }
     await joinMeetingToLobby(patientPage, `${label}-patient-lobby`, browserName);
     await lobbyAdmitAll(doctorPage, meetingKey, DOCTOR_ID);
 

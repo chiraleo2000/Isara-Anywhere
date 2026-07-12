@@ -74,7 +74,11 @@ const translations: Translations = {
   'nav.settings': { en: 'Settings', th: 'ตั้งค่า' },
 
   // Health Studio / สตูดิโอสุขภาพ
-  'healthStudio.diagnosis': { en: 'Diagnosis & Differential Diagnosis', th: 'การวินิจฉัย / วินิจฉัยแยกโรค' },
+  'healthStudio.diagnosis': { en: 'Diagnosis & Differential Diagnosis', th: 'การวินิจฉัยและวินิจฉัยแยกโรค' },
+  'healthStudio.treatmentPlan': { en: 'Treatment Plan / Prescribe', th: 'แผนการรักษา' },
+  'healthStudio.radiology': { en: 'Radiological Imaging', th: 'ภาพวินิจฉัยทางรังสีวิทยา' },
+  'healthStudio.pathology': { en: 'Pathology Reports', th: 'รายงานทางพยาธิวิทยา' },
+  'healthStudio.laboratory': { en: 'Laboratory Reports', th: 'รายงานทางห้องปฏิบัติการ' },
   'healthStudio.medicalRecord': { en: 'Medical Record', th: 'รายงานเวชระเบียน' },
   'healthStudio.labReports': { en: 'Laboratory Reports', th: 'รายงานทางห้องปฏิบัติการ' },
   'healthStudio.pathologyReports': { en: 'Pathological Reports', th: 'รายงานทางพยาธิวิทยา' },
@@ -100,7 +104,7 @@ const translations: Translations = {
   'patient.medicalHistory': { en: 'Medical History', th: 'ประวัติการรักษา' },
   'patient.allergies': { en: 'Allergies', th: 'ประวัติแพ้ยา' },
   'patient.chronicConditions': { en: 'Chronic Conditions', th: 'โรคประจำตัว' },
-  'patient.currentMedications': { en: 'Current Medications', th: 'ยาที่ใช้ประจำ' },
+  'patient.currentMedications': { en: 'Current Medications', th: 'ยาที่ใช้ปัจจุบัน' },
   'patient.name': { en: 'Patient Name', th: 'ชื่อผู้ป่วย' },
   'patient.age': { en: 'Age', th: 'อายุ' },
   'patient.gender': { en: 'Gender', th: 'เพศ' },

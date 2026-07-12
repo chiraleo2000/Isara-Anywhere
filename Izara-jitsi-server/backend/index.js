@@ -52,7 +52,7 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 import { createLobbyKeyResolver } from './lobbyKey.js';
 import { applyLobbyJoin, applyLobbyLeave } from './lobbySession.js';
 import { decryptRecordingBuffer } from './recordingCrypto.js';
-import { resolveActorUserId, resolveDevTestingPatientLobbyUser } from './meetingAuth.js';
+import { resolveActorUserId, resolveMeetingScopedLobbyUser } from './meetingAuth.js';
 import {
   assertCanAccessMeetingRecording,
   filterRecordingsForUser,
@@ -1086,11 +1086,28 @@ app.get('/api/meetings/active', async (req, res) => {
   }
 });
 
-// Create new meeting room (primary endpoint — requires auth)
-app.post('/api/meetings/create', authenticateToken, async (req, res) => { // NOSONAR S3776 — meeting creation with DB persistence, alias registration, guest invites
+// Create new meeting room — portal session OR meeting-scoped doctorId in body
+app.post('/api/meetings/create', optionalAuth, async (req, res) => { // NOSONAR S3776 — meeting creation with DB persistence, alias registration, guest invites
   const requestId = newRequestId();
   try {
     const { appointmentId, patientId, doctorId, patientName, doctorName, scheduledTime, guestInvites, roomName: providedRoomName } = req.body;
+
+    if (!req.user && doctorId && appointmentId) {
+      const scoped = await resolveMeetingScopedLobbyUser(
+        { activeMeetings, resolveLobbyKey, pool, dbAvailable },
+        appointmentId,
+        String(doctorId),
+        'doctor',
+      );
+      if (scoped) req.user = scoped;
+    }
+    if (!req.user) {
+      return res.status(401).json({
+        success: false,
+        error: 'Doctor authorization required to create meeting',
+        code: 'MEETING_AUTH_REQUIRED',
+      });
+    }
 
     const refCheck = await validateMeetingRefs({ appointmentId, doctorId, patientId });
     // NON-BLOCKING: Log missing refs but continue with NULL FKs so the meeting
@@ -1687,22 +1704,18 @@ app.post('/api/meetings/:id/lobby/join', optionalAuth, async (req, res) => { // 
   }
   const requestedRole = String(req.body.role || 'guest').toLowerCase();
 
-  if (!req.user && requestedRole === 'patient') {
-    const devPatient = await resolveDevTestingPatientLobbyUser(
-      {
-        isDevTesting: IS_DEV_TESTING,
-        activeMeetings,
-        resolveLobbyKey,
-        pool,
-        dbAvailable,
-      },
+  // Meeting-scoped join: URL participantId must match appointment patient_id / doctor_id (no portal login).
+  if (!req.user && ['patient', 'doctor', 'admin', 'host'].includes(requestedRole)) {
+    const scoped = await resolveMeetingScopedLobbyUser(
+      { activeMeetings, resolveLobbyKey, pool, dbAvailable },
       id,
       participantId,
+      requestedRole,
     );
-    if (devPatient) req.user = devPatient;
+    if (scoped) req.user = scoped;
   }
 
-  // Secured telehealth: patient/doctor roles require auth; anonymous guests need invite token
+  // Guests need invite token; patient/doctor without matching scope are rejected
   if (!req.user) {
     if (
       requestedRole === 'doctor'
@@ -1712,7 +1725,7 @@ app.post('/api/meetings/:id/lobby/join', optionalAuth, async (req, res) => { // 
     ) {
       return res.status(401).json({
         success: false,
-        error: 'Authentication required for secured meeting rooms',
+        error: 'Invalid meeting participant — check your meeting link',
         code: 'MEETING_AUTH_REQUIRED',
       });
     }
@@ -1860,8 +1873,32 @@ app.get('/api/meetings/:id/runtime', async (req, res) => {
   }
 });
 
-// Doctor admits participant from lobby
-app.post('/api/meetings/:id/lobby/admit', authenticateToken, async (req, res) => {
+// Doctor admits participant from lobby (portal session OR meeting-scoped doctor id in body)
+async function ensureMeetingHostAuth(req, meetingRouteId) {
+  if (req.user && (req.user.role === 'doctor' || req.user.role === 'admin')) return true;
+  const doctorId = req.body?.admittedBy || req.body?.rejectedBy || req.body?.doctorId;
+  if (!doctorId) return false;
+  const scoped = await resolveMeetingScopedLobbyUser(
+    { activeMeetings, resolveLobbyKey, pool, dbAvailable },
+    meetingRouteId,
+    String(doctorId),
+    'doctor',
+  );
+  if (scoped) {
+    req.user = scoped;
+    return true;
+  }
+  return false;
+}
+
+app.post('/api/meetings/:id/lobby/admit', optionalAuth, async (req, res) => {
+  if (!(await ensureMeetingHostAuth(req, req.params.id))) {
+    return res.status(401).json({
+      success: false,
+      error: 'Doctor authorization required for lobby admit',
+      code: 'MEETING_AUTH_REQUIRED',
+    });
+  }
   const { id } = req.params;
   const lobbyKey = await resolveLobbyKey(id);
   const { participantId, admittedBy } = req.body;
@@ -1890,7 +1927,14 @@ app.post('/api/meetings/:id/lobby/admit', authenticateToken, async (req, res) =>
 });
 
 // Doctor rejects participant from lobby
-app.post('/api/meetings/:id/lobby/reject', authenticateToken, async (req, res) => {
+app.post('/api/meetings/:id/lobby/reject', optionalAuth, async (req, res) => {
+  if (!(await ensureMeetingHostAuth(req, req.params.id))) {
+    return res.status(401).json({
+      success: false,
+      error: 'Doctor authorization required for lobby reject',
+      code: 'MEETING_AUTH_REQUIRED',
+    });
+  }
   const { id } = req.params;
   const lobbyKey = await resolveLobbyKey(id);
   const { participantId, rejectedBy, reason } = req.body;
@@ -2063,6 +2107,19 @@ app.get('/api/meetings/:id/join-config', optionalAuth, async (req, res) => {
     await ensureMeetingRecordForAppointment(id);
     const requestedRole = String(req.query.role || 'guest').toLowerCase();
 
+    if (!req.user && ['patient', 'doctor', 'admin', 'host'].includes(requestedRole)) {
+      const scopedId = String(req.query.participantId || req.query.userId || '').trim();
+      if (scopedId) {
+        const scoped = await resolveMeetingScopedLobbyUser(
+          { activeMeetings, resolveLobbyKey, pool, dbAvailable },
+          id,
+          scopedId,
+          requestedRole,
+        );
+        if (scoped) req.user = scoped;
+      }
+    }
+
     if (joinConfigAuthRequired(requestedRole, Boolean(req.user))) {
       return res.status(401).json({
         success: false,
@@ -2097,7 +2154,14 @@ app.get('/api/meetings/:id/join-config', optionalAuth, async (req, res) => {
 });
 
 // Doctor admits ALL waiting participants from lobby
-app.post('/api/meetings/:id/lobby/admit-all', authenticateToken, async (req, res) => {
+app.post('/api/meetings/:id/lobby/admit-all', optionalAuth, async (req, res) => {
+  if (!(await ensureMeetingHostAuth(req, req.params.id))) {
+    return res.status(401).json({
+      success: false,
+      error: 'Doctor authorization required for lobby admit-all',
+      code: 'MEETING_AUTH_REQUIRED',
+    });
+  }
   const { id } = req.params;
   const lobbyKey = await resolveLobbyKey(id);
   const { admittedBy } = req.body;
@@ -4136,7 +4200,7 @@ app.post('/api/meetings/:id/validate', authenticateToken, async (req, res) => { 
                   ]
                 );
               } catch (docErr) {
-                console.warn('[Meeting Validate] Instruction document publish skipped:', docErr.message);
+                console.error('[Meeting Validate] Instruction document publish failed:', docErr.message || docErr);
               }
               console.log(`[Meeting Validate] Patient instructions auto-generated for ${id}`);
             } catch (instrErr) {
@@ -4311,12 +4375,16 @@ ${aiSummary}
 app.get('/api/meetings/:id/consultation-result', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
+    const actorId = resolveActorUserId(req.user);
+    const role = String(req.user?.role || '').toLowerCase();
+    const isAdmin = Boolean(req.user?.isAdmin) || role === 'admin';
 
     let meeting = null;
     try {
       const result = await safeQuery(
         `SELECT mr.ai_summary, mr.patient_instructions, mr.doctor_validation_status,
                 mr.validated_at, mr.ready_for_patient, mr.appointment_id,
+                mr.patient_id, mr.doctor_id,
                 u_doc.name_thai as doctor_name, u_pat.name_thai as patient_name
          FROM meeting_records mr
          LEFT JOIN users u_doc ON mr.doctor_id = u_doc.id
@@ -4333,6 +4401,20 @@ app.get('/api/meetings/:id/consultation-result', authenticateToken, async (req, 
       return res.json({
         success: true, available: false,
         message: 'ผลการปรึกษายังไม่พร้อม — รอแพทย์ตรวจสอบ'
+      });
+    }
+
+    // Ownership: patient of record, assigned doctor, or admin only
+    const patientActorIds = [actorId, req.user?.patientId].filter(Boolean).map(String);
+    const doctorActorIds = [actorId, req.user?.doctorId].filter(Boolean).map(String);
+    const isPatient = meeting.patient_id && patientActorIds.includes(String(meeting.patient_id));
+    const isDoctor = meeting.doctor_id && doctorActorIds.includes(String(meeting.doctor_id))
+      && (role === 'doctor' || role === 'admin' || Boolean(req.user?.doctorId));
+    if (!isAdmin && !isPatient && !isDoctor) {
+      return res.status(403).json({
+        success: false,
+        error: 'Access denied — not a participant of this consultation',
+        code: 'CONSULTATION_RESULT_FORBIDDEN',
       });
     }
 
@@ -5065,7 +5147,8 @@ app.get('/api/recordings/meetings/:doctorId/:meetingId/:filename', authenticateT
     const stat = { size: plain.length };
     res.setHeader('Content-Type', contentType);
     res.setHeader('Content-Length', stat.size);
-    res.setHeader('Content-Disposition', `inline; filename="${safeFilename}"`);
+    const asDownload = String(req.query.download || '') === '1' || String(req.query.download || '').toLowerCase() === 'true';
+    res.setHeader('Content-Disposition', `${asDownload ? 'attachment' : 'inline'}; filename="${safeFilename}"`);
     res.setHeader('Accept-Ranges', 'bytes');
     const range = req.headers.range;
     if (range) {
@@ -5261,9 +5344,10 @@ app.get('/api/recordings/:meetingId/:filename', authenticateToken, async (req, r
   }
   if (fs.existsSync(filepath) && (filepath.includes(meetingId) || safeFilename.startsWith(meetingId))) {
     const stat = fs.statSync(filepath);
+    const asDownload = String(req.query.download || '') === '1' || String(req.query.download || '').toLowerCase() === 'true';
     res.setHeader('Content-Type', contentType);
     res.setHeader('Content-Length', stat.size);
-    res.setHeader('Content-Disposition', `inline; filename="${safeFilename}"`);
+    res.setHeader('Content-Disposition', `${asDownload ? 'attachment' : 'inline'}; filename="${safeFilename}"`);
     res.setHeader('Accept-Ranges', 'bytes');
     const range = req.headers.range;
     if (range) {

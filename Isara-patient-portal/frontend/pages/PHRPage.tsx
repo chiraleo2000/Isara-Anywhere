@@ -1,4 +1,4 @@
-import { useEffect, useState, type Dispatch, type SetStateAction } from 'react';
+import { useEffect, useState, type Dispatch, type SetStateAction, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useSettings } from '../contexts/SettingsContext';
 import { phrService, labOrderService, imagingOrderService } from '../lib/services';
@@ -6,6 +6,7 @@ import { uploadDocument } from '../lib/postgresService';
 import { PersonalHealthRecord, VitalSigns, Medication, User, LifestyleData, MedicalDocument } from '../types';
 import { Heart, Activity, Pill, AlertTriangle, Plus, Edit3, Save, X, TrendingUp, TrendingDown, Minus, Scale, Thermometer, Droplet, User as UserIcon, FileText, FlaskConical, Image as ImageIcon, Download, FileImage, FileVideo, Paperclip } from 'lucide-react';
 import { normalizeAllergiesList } from '../utils/healthListNormalize';
+import { useRealtimeSync } from '../lib/useRealtimeSync';
 
 type TabId = 'overview' | 'vitals' | 'medications' | 'allergies' | 'lab-imaging' | 'prescriptions' | 'documents' | 'profile';
 
@@ -58,43 +59,44 @@ type LifestyleState = {
   otherTreatments: string;
 };
 
-const DIET_LABELS: Record<string, string> = {
-  Unknown: 'ไม่ระบุ',
-  regular: 'ปกติ / ทั่วไป',
-  vegetarian: 'มังสวิรัติ',
-  vegan: 'วีแกน',
-  'low-carb': 'ลดคาร์โบไฮเดรต',
-  'low-fat': 'ลดไขมัน',
-  'low-sodium': 'ลดเกลือ',
-  diabetic: 'สำหรับผู้เป็นเบาหวาน',
-  halal: 'ฮาลาล',
-  other: 'อื่นๆ'
+const DIET_LABELS: Record<string, { en: string; th: string }> = {
+  Unknown: { en: 'Not specified', th: 'ไม่ระบุ' },
+  regular: { en: 'Regular / General', th: 'ปกติ / ทั่วไป' },
+  vegetarian: { en: 'Vegetarian', th: 'มังสวิรัติ' },
+  vegan: { en: 'Vegan', th: 'วีแกน' },
+  'low-carb': { en: 'Low carb', th: 'ลดคาร์โบไฮเดรต' },
+  'low-fat': { en: 'Low fat', th: 'ลดไขมัน' },
+  'low-sodium': { en: 'Low sodium', th: 'ลดเกลือ' },
+  diabetic: { en: 'Diabetic diet', th: 'สำหรับผู้เป็นเบาหวาน' },
+  halal: { en: 'Halal', th: 'ฮาลาล' },
+  other: { en: 'Other', th: 'อื่นๆ' }
 };
 
-const EXERCISE_LABELS: Record<string, string> = {
-  none: 'ไม่ออกกำลังกาย',
-  light: 'เบา (1-2 วัน/สัปดาห์)',
-  moderate: 'ปานกลาง (3-4 วัน/สัปดาห์)',
-  active: 'บ่อย (5-6 วัน/สัปดาห์)',
-  'very-active': 'มาก (ทุกวัน)'
+const EXERCISE_LABELS: Record<string, { en: string; th: string }> = {
+  none: { en: 'None', th: 'ไม่ออกกำลังกาย' },
+  light: { en: 'Light (1-2 days/week)', th: 'เบา (1-2 วัน/สัปดาห์)' },
+  moderate: { en: 'Moderate (3-4 days/week)', th: 'ปานกลาง (3-4 วัน/สัปดาห์)' },
+  active: { en: 'Active (5-6 days/week)', th: 'บ่อย (5-6 วัน/สัปดาห์)' },
+  'very-active': { en: 'Very active (daily)', th: 'มาก (ทุกวัน)' }
 };
 
-const SMOKING_LABELS: Record<string, string> = {
-  never: 'ไม่เคยสูบ',
-  former: 'เคยสูบ (เลิกแล้ว)',
-  current: 'สูบอยู่',
-  occasional: 'สูบเป็นครั้งคราว'
+const SMOKING_LABELS: Record<string, { en: string; th: string }> = {
+  never: { en: 'Never', th: 'ไม่เคยสูบ' },
+  former: { en: 'Former smoker', th: 'เคยสูบ (เลิกแล้ว)' },
+  current: { en: 'Current smoker', th: 'สูบอยู่' },
+  occasional: { en: 'Occasional', th: 'สูบเป็นครั้งคราว' }
 };
 
-const ALCOHOL_LABELS: Record<string, string> = {
-  never: 'ไม่ดื่ม',
-  occasional: 'ดื่มเป็นครั้งคราว',
-  moderate: 'ดื่มปานกลาง',
-  frequent: 'ดื่มบ่อย',
-  former: 'เคยดื่ม (เลิกแล้ว)'
+const ALCOHOL_LABELS: Record<string, { en: string; th: string }> = {
+  never: { en: 'Never', th: 'ไม่ดื่ม' },
+  occasional: { en: 'Occasional', th: 'ดื่มเป็นครั้งคราว' },
+  moderate: { en: 'Moderate', th: 'ดื่มปานกลาง' },
+  frequent: { en: 'Frequent', th: 'ดื่มบ่อย' },
+  former: { en: 'Former drinker', th: 'เคยดื่ม (เลิกแล้ว)' }
 };
 
-const getLabel = (value: string, map: Record<string, string>) => map[value] ?? value;
+const getLabel = (value: string, map: Record<string, { en: string; th: string }>, lang: 'en' | 'th') =>
+  map[value]?.[lang] ?? value;
 
 /** Build VitalSigns object from form state — extracted to reduce handleAddVitals complexity */
 function buildVitalsData(newVitals: NewVitalsState): VitalSigns {
@@ -237,12 +239,18 @@ const calculateBMI = (heightCm?: number, weightKg?: number) => {
   return null;
 };
 
-const getBPStatus = (systolic?: number, diastolic?: number) => {
+const getBPStatus = (systolic?: number, diastolic?: number, lang: 'en' | 'th' = 'th') => {
   if (!systolic || !diastolic) return { label: '-', color: 'gray' };
-  if (systolic < 120 && diastolic < 80) return { label: 'ปกติ', color: 'green' };
-  if (systolic < 130 && diastolic < 80) return { label: 'สูงเล็กน้อย', color: 'yellow' };
-  if (systolic < 140 || diastolic < 90) return { label: 'ความดันสูงระยะ 1', color: 'orange' };
-  return { label: 'ความดันสูงระยะ 2', color: 'red' };
+  if (systolic < 120 && diastolic < 80) {
+    return { label: lang === 'th' ? 'ปกติ' : 'Normal', color: 'green' };
+  }
+  if (systolic < 130 && diastolic < 80) {
+    return { label: lang === 'th' ? 'สูงเล็กน้อย' : 'Elevated', color: 'yellow' };
+  }
+  if (systolic < 140 || diastolic < 90) {
+    return { label: lang === 'th' ? 'ความดันสูงระยะ 1' : 'Hypertension Stage 1', color: 'orange' };
+  }
+  return { label: lang === 'th' ? 'ความดันสูงระยะ 2' : 'Hypertension Stage 2', color: 'red' };
 };
 
 type TrendIconProps = Readonly<{ current?: number; previous?: number }>;
@@ -301,7 +309,7 @@ function OverviewTab({
   // Use weight from PHR demographics or latest vital
   const currentWeight = phr?.demographics?.weight || latestVital?.weight?.value;
   const bmi = calculateBMI(phr?.demographics?.height, currentWeight);
-  const bpStatus = getBPStatus(latestVital?.bloodPressure?.systolic, latestVital?.bloodPressure?.diastolic);
+  const bpStatus = getBPStatus(latestVital?.bloodPressure?.systolic, latestVital?.bloodPressure?.diastolic, language);
 
   return (
     <div className="space-y-6">
@@ -685,7 +693,7 @@ function MedicationsTab({
   const tc = getMedsThemeClasses(isDark);
   
   const labels = {
-    title: { en: 'Current Medications', th: 'ยาที่ใช้ประจำ' },
+    title: { en: 'Current Medications', th: 'ยาที่ใช้ปัจจุบัน' },
     add: { en: 'Add Medication', th: 'เพิ่มยา' },
     addTitle: { en: 'Add Medication', th: 'เพิ่มยาที่ใช้' },
     name: { en: 'Medication Name *', th: 'ชื่อยา *' },
@@ -696,7 +704,7 @@ function MedicationsTab({
     cancel: { en: 'Cancel', th: 'ยกเลิก' },
     active: { en: 'Active', th: 'ใช้อยู่' },
     stopped: { en: 'Stopped', th: 'หยุดใช้' },
-    noMeds: { en: 'No current medications', th: 'ไม่มียาที่ใช้ประจำ' },
+    noMeds: { en: 'No current medications', th: 'ไม่มียาที่ใช้ปัจจุบัน' },
     addMeds: { en: '+ Add medication', th: '+ เพิ่มยาที่ใช้' },
     namePlaceholder: { en: 'e.g. Paracetamol', th: 'เช่น Paracetamol' },
     dosagePlaceholder: { en: 'e.g. 500mg', th: 'เช่น 500mg' },
@@ -1010,7 +1018,9 @@ type LifestyleFieldProps = Readonly<{
   onChange: (value: string) => void;
   options?: Array<{ value: string; label: string }>;
   placeholder?: string;
-  labelMap?: Record<string, string>;
+  labelMap?: Record<string, { en: string; th: string }>;
+  language?: 'en' | 'th';
+  emptyLabel?: string;
 }>;
 
 function LifestyleField({
@@ -1022,7 +1032,9 @@ function LifestyleField({
   onChange,
   options,
   placeholder,
-  labelMap
+  labelMap,
+  language = 'th',
+  emptyLabel = 'ไม่มี',
 }: LifestyleFieldProps) {
   // Extracted to avoid nested ternary
   const renderEditingInput = () => {
@@ -1052,7 +1064,7 @@ function LifestyleField({
     );
   };
 
-  const displayValue = type === 'select' && labelMap ? getLabel(value, labelMap) : value || 'ไม่มี';
+  const displayValue = type === 'select' && labelMap ? getLabel(value, labelMap, language) : value || emptyLabel;
 
   return (
     <div>
@@ -1099,6 +1111,22 @@ function ProfileTab({
   setEditingLifestyle,
   onSaveLifestyle
 }: ProfileTabProps) {
+  const { language } = useSettings();
+  const isTh = language === 'th';
+  const emptyLabel = isTh ? 'ไม่มี' : 'None';
+  const lifestyleLabels = {
+    diet: isTh ? 'การกินอาหาร' : 'Diet',
+    exercise: isTh ? 'การออกกำลังกาย' : 'Exercise',
+    sleep: isTh ? 'การนอน (ชั่วโมงต่อวัน)' : 'Sleep (hours/day)',
+    smoking: isTh ? 'สูบบุหรี่' : 'Smoking',
+    alcohol: isTh ? 'ดื่มแอลกอฮอล์' : 'Alcohol',
+    note: isTh
+      ? 'ข้อมูลเหล่านี้จะถูกส่งไปยังแพทย์เพื่อช่วยในการวินิจฉัยและวางแผนการรักษา'
+      : 'This information is shared with your doctor to support diagnosis and treatment planning',
+    edit: isTh ? 'แก้ไข' : 'Edit',
+    save: isTh ? 'บันทึก' : 'Save',
+    cancel: isTh ? 'ยกเลิก' : 'Cancel',
+  };
   return (
     <>
       <div className="bg-white rounded-xl p-5 border border-gray-100">
@@ -1137,60 +1165,65 @@ function ProfileTab({
       <div className="bg-white rounded-xl p-5 border border-gray-100 mt-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold flex items-center gap-2">
-            <Heart className="w-5 h-5 text-emerald-500" /> ข้อมูลสุขภาพส่วนตัว (Self-entered Data)
+            <Heart className="w-5 h-5 text-emerald-500" />
+            {isTh ? 'ข้อมูลสุขภาพส่วนตัว' : 'Self-entered Health Data'}
           </h2>
           <div className="flex gap-2">
             {editingLifestyle ? (
               <>
                 <button onClick={onSaveLifestyle} disabled={saving} className="bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700 disabled:opacity-50 flex items-center gap-2">
                   {saving ? <div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full" /> : <Save className="w-4 h-4" />}
-                  บันทึก
+                  {lifestyleLabels.save}
                 </button>
                 <button onClick={() => setEditingLifestyle(false)} className="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 flex items-center gap-2">
-                  <X className="w-4 h-4" /> ยกเลิก
+                  <X className="w-4 h-4" /> {lifestyleLabels.cancel}
                 </button>
               </>
             ) : (
               <button onClick={() => setEditingLifestyle(true)} className="flex items-center gap-2 bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700">
-                <Edit3 className="w-4 h-4" /> แก้ไข
+                <Edit3 className="w-4 h-4" /> {lifestyleLabels.edit}
               </button>
             )}
           </div>
         </div>
 
-        <p className="text-sm text-gray-500 mb-4">ข้อมูลเหล่านี้จะถูกส่งไปยังแพทย์เพื่อช่วยในการวินิจฉัยและวางแผนการรักษา</p>
+        <p className="text-sm text-gray-500 mb-4">{lifestyleLabels.note}</p>
 
         <div className="space-y-4">
           <LifestyleField
-            label="การกินอาหาร"
+            label={lifestyleLabels.diet}
             htmlFor="lifestyle-diet"
             editing={editingLifestyle}
             type="select"
             value={lifestyleData.diet}
             onChange={(val) => setLifestyleData({ ...lifestyleData, diet: val })}
-            options={Object.entries(DIET_LABELS).map(([k, v]) => ({ value: k, label: v }))}
+            options={Object.entries(DIET_LABELS).map(([k, v]) => ({ value: k, label: v[language] }))}
             labelMap={DIET_LABELS}
+            language={language}
+            emptyLabel={emptyLabel}
           />
 
           <LifestyleField
-            label="การออกกำลังกาย"
+            label={lifestyleLabels.exercise}
             htmlFor="lifestyle-exercise"
             editing={editingLifestyle}
             type="select"
             value={lifestyleData.exercise}
             onChange={(val) => setLifestyleData({ ...lifestyleData, exercise: val })}
-            options={Object.entries(EXERCISE_LABELS).map(([k, v]) => ({ value: k, label: v }))}
+            options={Object.entries(EXERCISE_LABELS).map(([k, v]) => ({ value: k, label: v[language] }))}
             labelMap={EXERCISE_LABELS}
+            language={language}
+            emptyLabel={emptyLabel}
           />
 
           <LifestyleField
-            label="การนอน (ชั่วโมงต่อวัน)"
+            label={lifestyleLabels.sleep}
             htmlFor="lifestyle-sleep"
             editing={editingLifestyle}
             type="select"
             value={lifestyleData.sleep}
             onChange={(val) => setLifestyleData({ ...lifestyleData, sleep: val })}
-            options={[
+            options={isTh ? [
               { value: 'Unknown', label: 'ไม่ระบุ' },
               { value: '4', label: 'น้อยกว่า 4 ชั่วโมง' },
               { value: '5', label: '4-5 ชั่วโมง' },
@@ -1198,45 +1231,61 @@ function ProfileTab({
               { value: '7', label: '6-7 ชั่วโมง' },
               { value: '8', label: '7-8 ชั่วโมง' },
               { value: '9', label: 'มากกว่า 8 ชั่วโมง' }
+            ] : [
+              { value: 'Unknown', label: 'Not specified' },
+              { value: '4', label: 'Less than 4 hours' },
+              { value: '5', label: '4-5 hours' },
+              { value: '6', label: '5-6 hours' },
+              { value: '7', label: '6-7 hours' },
+              { value: '8', label: '7-8 hours' },
+              { value: '9', label: 'More than 8 hours' }
             ]}
+            language={language}
+            emptyLabel={emptyLabel}
           />
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <LifestyleField
-              label="การสูบบุหรี่"
+              label={lifestyleLabels.smoking}
               htmlFor="lifestyle-smoking"
               editing={editingLifestyle}
               type="select"
               value={lifestyleData.smokingStatus}
               onChange={(val) => setLifestyleData({ ...lifestyleData, smokingStatus: val })}
-              options={Object.entries(SMOKING_LABELS).map(([k, v]) => ({ value: k, label: v }))}
+              options={Object.entries(SMOKING_LABELS).map(([k, v]) => ({ value: k, label: v[language] }))}
               labelMap={SMOKING_LABELS}
+              language={language}
+              emptyLabel={emptyLabel}
             />
 
             <LifestyleField
-              label="การดื่มแอลกอฮอล์"
+              label={lifestyleLabels.alcohol}
               htmlFor="lifestyle-alcohol"
               editing={editingLifestyle}
               type="select"
               value={lifestyleData.alcoholConsumption}
               onChange={(val) => setLifestyleData({ ...lifestyleData, alcoholConsumption: val })}
-              options={Object.entries(ALCOHOL_LABELS).map(([k, v]) => ({ value: k, label: v }))}
+              options={Object.entries(ALCOHOL_LABELS).map(([k, v]) => ({ value: k, label: v[language] }))}
               labelMap={ALCOHOL_LABELS}
+              language={language}
+              emptyLabel={emptyLabel}
             />
           </div>
 
           <LifestyleField
-            label="การใช้อาหารเสริม / วิตามิน"
+            label={isTh ? 'การใช้อาหารเสริม / วิตามิน' : 'Supplements / Vitamins'}
             htmlFor="lifestyle-supplements"
             editing={editingLifestyle}
             type="textarea"
             value={lifestyleData.supplements}
             onChange={(val) => setLifestyleData({ ...lifestyleData, supplements: val })}
-            placeholder="เช่น วิตามินซี 500mg วันละ 1 เม็ด, น้ำมันปลา 1000mg วันละ 1 เม็ด"
+            placeholder={isTh ? 'เช่น วิตามินซี 500mg วันละ 1 เม็ด, น้ำมันปลา 1000mg วันละ 1 เม็ด' : 'e.g. Vitamin C 500mg once daily, Fish oil 1000mg once daily'}
+            language={language}
+            emptyLabel={emptyLabel}
           />
 
           <LifestyleField
-            label="การรักษาอื่น (แพทย์ทางเลือก / แพทย์แผนไทย)"
+            label={isTh ? 'การรักษาอื่น (แพทย์ทางเลือก / แพทย์แผนไทย)' : 'Other treatments (alternative / traditional medicine)'}
             htmlFor="lifestyle-other-treatments"
             editing={editingLifestyle}
             type="textarea"
@@ -1425,7 +1474,7 @@ function PrescriptionsTab({ language, isDark }: Readonly<{ language: string; isD
   useEffect(() => {
     void (async () => {
       try {
-        const token = localStorage.getItem('authToken');
+        const token = localStorage.getItem('auth_token') || localStorage.getItem('authToken');
         const resp = await fetch('/api/prescriptions', {
           headers: token ? { Authorization: `Bearer ${token}` } : {},
         });
@@ -1437,24 +1486,22 @@ function PrescriptionsTab({ language, isDark }: Readonly<{ language: string; isD
     })();
   }, []);
 
-  const downloadPrescription = async (rx: { id: string; download_url?: string | null }) => {
-    const token = localStorage.getItem('authToken');
-    const url = rx.download_url || `/api/documents?source=prescription&sourceId=${rx.id}`;
-    if (rx.download_url) {
-      const resp = await fetch(rx.download_url, {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-      });
-      if (!resp.ok) return;
-      const blob = await resp.blob();
-      const objectUrl = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = objectUrl;
-      a.download = `prescription-${rx.id}.txt`;
-      a.click();
-      URL.revokeObjectURL(objectUrl);
-      return;
-    }
-    window.open(url, '_blank');
+  const downloadPrescription = async (rx: { id: string; download_url?: string | null; document_id?: string }) => {
+    const token = localStorage.getItem('auth_token') || localStorage.getItem('authToken');
+    const url = rx.download_url
+      || (rx.document_id ? `/api/documents/${rx.document_id}/download` : null);
+    if (!url) return;
+    const resp = await fetch(url, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+    if (!resp.ok) return;
+    const blob = await resp.blob();
+    const objectUrl = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = objectUrl;
+    a.download = `prescription-${rx.id}.txt`;
+    a.click();
+    URL.revokeObjectURL(objectUrl);
   };
 
   if (loading) return <div className="p-8 text-center">Loading...</div>;
@@ -1474,7 +1521,7 @@ function PrescriptionsTab({ language, isDark }: Readonly<{ language: string; isD
           <div className="flex justify-between items-start gap-2">
             <div>
               <h4 className={`font-semibold ${textClass}`}>
-                {language === 'th' ? 'ใบสั่งยา' : 'Prescription'} — {rx.doctor_name || 'แพทย์'}
+                {language === 'th' ? 'ใบสั่งยา' : 'Prescription'} — {rx.doctor_name || (language === 'th' ? 'แพทย์' : 'Doctor')}
               </h4>
               <p className="text-sm opacity-70">{new Date(rx.created_at).toLocaleDateString()}</p>
             </div>
@@ -1508,6 +1555,25 @@ function OrderDetailView({ order, onBack, isDark, language }: Readonly<{
   const textClass = isDark ? 'text-gray-200' : 'text-gray-800';
   const subTextClass = isDark ? 'text-gray-400' : 'text-gray-500';
   const isLab = !!order.test_name;
+  const docs = Array.isArray(order.documents) ? order.documents : [];
+  const downloadUrl = order.download_url || order.downloadUrl
+    || (order.document_id ? `/api/documents/${order.document_id}/download` : null)
+    || (docs[0]?.documentId ? `/api/documents/${docs[0].documentId}/download` : null)
+    || (docs[0]?.id && String(docs[0].id).length > 20 ? `/api/documents/${docs[0].id}/download` : null);
+
+  const handleDownload = async () => {
+    if (!downloadUrl) return;
+    const token = localStorage.getItem('auth_token') || localStorage.getItem('authToken');
+    const resp = await fetch(downloadUrl, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+    if (!resp.ok) return;
+    const blob = await resp.blob();
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `report-${order.id || 'result'}.pdf`;
+    a.click();
+  };
 
   return (
     <div>
@@ -1515,10 +1581,22 @@ function OrderDetailView({ order, onBack, isDark, language }: Readonly<{
         <X className="w-4 h-4" /> {language === 'th' ? 'กลับ' : 'Back'}
       </button>
       <div className={`p-6 rounded-xl border ${cardClass}`}>
-        <h3 className={`text-xl font-bold mb-2 ${textClass}`}>
-          {isLab ? (order.test_name || 'Lab Test') : (order.imaging_type?.toUpperCase() + ' - ' + order.body_part)}
-          <LabPriorityBadge priority={order.priority} />
-        </h3>
+        <div className="flex items-start justify-between gap-3">
+          <h3 className={`text-xl font-bold mb-2 ${textClass}`}>
+            {isLab ? (order.test_name || 'Lab Test') : (order.imaging_type?.toUpperCase() + ' - ' + order.body_part)}
+            <LabPriorityBadge priority={order.priority} />
+          </h3>
+          {downloadUrl && (
+            <button
+              type="button"
+              onClick={() => void handleDownload()}
+              className="flex items-center gap-1 px-3 py-1.5 bg-emerald-600 text-white text-sm rounded-lg"
+            >
+              <Download className="w-4 h-4" />
+              {language === 'th' ? 'ดาวน์โหลดรายงาน' : 'Download report'}
+            </button>
+          )}
+        </div>
         <div className={`grid grid-cols-2 gap-4 mt-4 ${subTextClass}`}>
           <div><span className="font-medium">{language === 'th' ? 'แพทย์' : 'Doctor'}:</span> {order.doctor_name || '-'}</div>
           <div><span className="font-medium">{language === 'th' ? 'วันที่สั่ง' : 'Order Date'}:</span> {formatLabDate(order.order_date, language)}</div>
@@ -1772,9 +1850,33 @@ function PHRPage() {
   });
   const [editingLifestyle, setEditingLifestyle] = useState(false);
 
-  useEffect(() => {
-    if (user) loadData();
+  const loadData = useCallback(async () => {
+    if (!user) return;
+    try {
+      const [phrData, vitalsData] = await Promise.all([
+        phrService.get(user.id).catch((err: unknown) => { console.error('[PHRPage] PHR fetch failed:', err); return null; }),
+        phrService.getVitals(user.id).catch((err: unknown) => { console.error('[PHRPage] Vitals fetch failed:', err); return []; }),
+      ]);
+      setPhr(phrData);
+      // Sort vitals by date, newest first
+      const sortedVitals = Array.isArray(vitalsData)
+        ? vitalsData.sort((a: VitalSigns, b: VitalSigns) => {
+            const dateA = new Date(a.measuredAt || 0).getTime();
+            const dateB = new Date(b.measuredAt || 0).getTime();
+            return dateB - dateA;
+          })
+        : [];
+      setVitals(sortedVitals);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
   }, [user]);
+
+  useEffect(() => {
+    if (user) void loadData();
+  }, [user, loadData]);
 
   useEffect(() => {
     if (phr || user) {
@@ -1798,29 +1900,16 @@ function PHRPage() {
     }
   }, [phr, user, vitals]);
 
-  const loadData = async () => {
-    if (!user) return;
-    try {
-      const [phrData, vitalsData] = await Promise.all([
-        phrService.get(user.id).catch((err: unknown) => { console.error('[PHRPage] PHR fetch failed:', err); return null; }),
-        phrService.getVitals(user.id).catch((err: unknown) => { console.error('[PHRPage] Vitals fetch failed:', err); return []; }),
-      ]);
-      setPhr(phrData);
-      // Sort vitals by date, newest first
-      const sortedVitals = Array.isArray(vitalsData)
-        ? vitalsData.sort((a: VitalSigns, b: VitalSigns) => {
-            const dateA = new Date(a.measuredAt || 0).getTime();
-            const dateB = new Date(b.measuredAt || 0).getTime();
-            return dateB - dateA;
-          })
-        : [];
-      setVitals(sortedVitals);
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setLoading(false);
-    }
-  };
+  useRealtimeSync({
+    patientId: user?.id,
+    onEmrChange: () => { void loadData(); },
+    onPrescriptionChange: () => { void loadData(); },
+    onLabOrderChange: () => { void loadData(); },
+    onHealthRecordChange: () => { void loadData(); },
+    onNotification: () => { void loadData(); },
+    onDataChanged: () => { void loadData(); },
+  });
+
   const handleDocumentUpload = async (
     file: File,
     documentType: 'lab_result' | 'prescription' | 'imaging' | 'other'
@@ -1863,7 +1952,7 @@ function PHRPage() {
     if (!user || !newMedication.name || !newMedication.dosage) return;
     setSaving(true);
     try {
-      const currentMedications = phr?.currentMedications || [];
+      const currentMedications = phr?.medications || phr?.currentMedications || [];
       const newMed: Medication = {
         id: `med_${Date.now()}`,
         name: newMedication.name,
@@ -1875,11 +1964,23 @@ function PHRPage() {
         status: 'active'
       };
 
-      await phrService.update(user.id, {
-        ...phr,
-        currentMedications: [...currentMedications, newMed],
-        updatedAt: new Date()
+      const token = localStorage.getItem('auth_token') || localStorage.getItem('authToken');
+      const resp = await fetch(`/api/phr/${encodeURIComponent(user.id)}/medications`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify(newMed),
       });
+      if (!resp.ok) {
+        // Fallback: persist via medications field (not currentMedications)
+        await phrService.update(user.id, {
+          ...phr,
+          medications: [...currentMedications, newMed],
+          updatedAt: new Date(),
+        } as Partial<PersonalHealthRecord>);
+      }
 
       setShowAddMedication(false);
       setNewMedication({ name: '', dosage: '', frequency: '', purpose: '' });
@@ -2012,15 +2113,15 @@ function PHRPage() {
   if (loading) return <div className="flex items-center justify-center h-64"><div className="animate-spin w-8 h-8 border-4 border-emerald-600 border-t-transparent rounded-full" /></div>;
 
   const tabs = [
-    { id: 'overview', label: t('phr.overview') || (language === 'th' ? 'ภาพรวม' : 'Overview'), icon: FileText },
-    { id: 'vitals', label: t('phr.vitalSigns'), icon: Activity },
-    { id: 'medications', label: t('phr.medications'), icon: Pill },
-    { id: 'allergies', label: t('phr.allergies'), icon: AlertTriangle },
-    { id: 'lab-imaging', label: language === 'th' ? 'ผลตรวจ' : 'Lab & Imaging', icon: FlaskConical },
-    { id: 'prescriptions', label: language === 'th' ? 'ใบสั่งยา' : 'Prescriptions', icon: Pill },
-    { id: 'documents', label: t('health.documents') || (language === 'th' ? 'เอกสาร' : 'Documents'), icon: Paperclip },
-    { id: 'profile', label: t('phr.personalInfo'), icon: UserIcon },
-  ] as const;
+    { id: 'overview' as const, label: t('phr.overview') || (language === 'th' ? 'ภาพรวม' : 'Overview'), icon: FileText },
+    { id: 'vitals' as const, label: t('phr.vitalSigns'), icon: Activity },
+    { id: 'medications' as const, label: t('phr.medications'), icon: Pill },
+    { id: 'allergies' as const, label: t('phr.allergies'), icon: AlertTriangle },
+    { id: 'lab-imaging' as const, label: language === 'th' ? 'ผลตรวจ' : 'Lab & Imaging', icon: FlaskConical },
+    { id: 'prescriptions' as const, label: language === 'th' ? 'ใบสั่งยา' : 'Prescriptions', icon: FileText },
+    { id: 'documents' as const, label: t('health.documents') || (language === 'th' ? 'เอกสาร' : 'Documents'), icon: Paperclip },
+    { id: 'profile' as const, label: t('phr.personalInfo'), icon: UserIcon },
+  ];
 
   const getTabClass = (isActive: boolean) => {
     if (isActive) return 'bg-emerald-600 text-white';
@@ -2054,15 +2155,23 @@ function PHRPage() {
       />
     ),
     medications: (
-      <MedicationsTab
-        medications={phr?.medications || phr?.currentMedications}
-        showAddMedication={showAddMedication}
-        setShowAddMedication={setShowAddMedication}
-        newMedication={newMedication}
-        setNewMedication={setNewMedication}
-        saving={saving}
-        onAddMedication={handleAddMedication}
-      />
+      <div className="space-y-6">
+        <div>
+          <h2 className={`text-lg font-semibold mb-3 ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>
+            {language === 'th' ? 'ประวัติการรับยา' : 'Medication History'}
+          </h2>
+          <PrescriptionsTab language={language} isDark={isDark} />
+        </div>
+        <MedicationsTab
+          medications={phr?.medications || phr?.currentMedications}
+          showAddMedication={showAddMedication}
+          setShowAddMedication={setShowAddMedication}
+          newMedication={newMedication}
+          setNewMedication={setNewMedication}
+          saving={saving}
+          onAddMedication={handleAddMedication}
+        />
+      </div>
     ),
     allergies: (
       <AllergiesTab
@@ -2079,7 +2188,9 @@ function PHRPage() {
       <LabImagingTab />
     ),
     prescriptions: (
-      <PrescriptionsTab language={language} isDark={isDark} />
+      <div className="space-y-6">
+        <PrescriptionsTab language={language} isDark={isDark} />
+      </div>
     ),
     documents: (
       <DocumentsTab

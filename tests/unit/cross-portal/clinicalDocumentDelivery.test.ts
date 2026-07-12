@@ -25,6 +25,7 @@ describe('Clinical document delivery contract', () => {
     const index = fs.readFileSync(path.join(root, 'Isara-patient-portal/backend/index.ts'), 'utf8');
     expect(index).toContain('/api/patients/documents');
     expect(index).toContain('/api/documents/:id/download');
+    expect(index).toContain('/api/meetings/recording-download');
   });
 
   it('doctor portal publishes EMR to health-logs with auth in CompleteEMREditor', () => {
@@ -38,6 +39,8 @@ describe('Clinical document delivery contract', () => {
     expect(api).toContain("app.put('/api/emr/:id'");
     expect(api).toContain('DocumentDeliveryService');
     expect(api).toContain('patient_doctor_messages');
+    expect(api).toContain('notifyDocumentDelivered');
+    expect(api).toContain("type: 'document_delivered'");
   });
 
   it('phr health-logs map to HealthLogEntry and signed-only filter', () => {
@@ -45,5 +48,19 @@ describe('Clinical document delivery contract', () => {
     expect(phr).toContain('mapEmrRowToHealthLogEntry');
     expect(phr).toContain("e.status = 'signed'");
     expect(phr).toContain('listDocuments');
+  });
+
+  it('doctor EHR exposes documents + imaging for PatientRecordViewer Docs/Labs tabs', () => {
+    const api = fs.readFileSync(path.join(root, 'Isara-doctor-portal/backend/mainApiServer.cjs'), 'utf8');
+    expect(api).toContain('imagingGroups');
+    expect(api).toContain('mapDocumentToExternalRecord');
+    expect(api).toContain("/api/patients/:patientId/meetings");
+  });
+
+  it('workflow doc documents meeting video + realtime surfaces', () => {
+    const doc = fs.readFileSync(path.join(root, 'Processes/Clinical_Document_Delivery_Workflows.md'), 'utf8');
+    expect(doc).toContain('document_delivered');
+    expect(doc).toContain('Meeting video');
+    expect(doc).toContain('useRealtimeSync');
   });
 });

@@ -3,7 +3,7 @@
  * Canonical meeting API: meeting-server /api/meetings/*
  */
 import { Router, type Request, type Response } from 'express';
-import { authMiddleware, type AuthenticatedRequest } from '../middleware/auth';
+import { authMiddleware, optionalAuthMiddleware, type AuthenticatedRequest } from '../middleware/auth';
 
 const router = Router();
 const MEETING_SERVER_URL = (
@@ -78,7 +78,7 @@ router.get('/config', (req, res) => proxy(req, res, '/api/config'));
 router.post('/create', authMiddleware, (req, res) => proxy(req, res, '/api/meetings/create', 'POST'));
 router.get('/:appointmentId', authMiddleware, (req, res) =>
   proxy(req, res, `/api/meetings/${req.params.appointmentId}`, 'GET'));
-router.post('/:appointmentId/join', authMiddleware, (req, res) =>
+router.post('/:appointmentId/join', optionalAuthMiddleware, (req, res) =>
   proxy(req, res, `/api/meetings/${req.params.appointmentId}/lobby/join`, 'POST'));
 router.post('/:appointmentId/end', authMiddleware, (req, res) =>
   proxy(req, res, `/api/meetings/${req.params.appointmentId}/end`, 'POST'));
@@ -89,7 +89,10 @@ router.post('/:appointmentId/summarize', authMiddleware, (req, res) =>
 router.get('/:appointmentId/consultation-result', authMiddleware, (req, res) =>
   proxy(req, res, `/api/meetings/${req.params.appointmentId}/consultation-result`, 'GET'));
 
-router.get('/:appointmentId/join-config', authMiddleware, (req, res) => {
+router.get('/:appointmentId/socket-rooms', optionalAuthMiddleware, (req, res) =>
+  proxy(req, res, `/api/meetings/${req.params.appointmentId}/socket-rooms`, 'GET'));
+
+router.get('/:appointmentId/join-config', optionalAuthMiddleware, (req, res) => {
   const qs = new URLSearchParams(req.query as Record<string, string>).toString();
   const path = `/api/meetings/${req.params.appointmentId}/join-config${qs ? `?${qs}` : ''}`;
   proxy(req, res, path, 'GET');
@@ -98,7 +101,7 @@ router.get('/:appointmentId/join-config', authMiddleware, (req, res) => {
 router.get('/:appointmentId/host-ready', (req, res) =>
   proxy(req, res, `/api/meetings/${req.params.appointmentId}/host-ready`, 'GET'));
 
-router.post('/:appointmentId/consent', authMiddleware, (req, res) =>
+router.post('/:appointmentId/consent', optionalAuthMiddleware, (req, res) =>
   proxy(req, res, `/api/meetings/${req.params.appointmentId}/consent`, 'POST'));
 
 router.get('/:appointmentId/lobby/status/:participantId', (req, res) =>
