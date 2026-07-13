@@ -1,6 +1,6 @@
 # Izara Telemedicine Platform (อิสระ เทเลเมดิซิน)
 
-![Version](https://img.shields.io/badge/release-v1.7.54-blue.svg)
+![Version](https://img.shields.io/badge/release-v1.7.60-blue.svg)
 ![Tests](https://img.shields.io/badge/unit%20tests-3200%2B%20passing-brightgreen.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 ![Node](https://img.shields.io/badge/node-%3E%3D22.0.0-brightgreen.svg)
@@ -26,7 +26,7 @@ Full-stack telemedicine for Thailand: video consultations (Jitsi), PHR/EMR, e-pr
 
 ## Access URLs
 
-### Cloud (dev-testing) — source **v1.7.33** · deployed image **v1.7.12** (2026-05-27)
+### Cloud (dev-testing) — source **v1.7.60** · deployed image **v1.7.60** (2026-07-13)
 
 | Service | URL | Login |
 | ------- | --- | ----- |
@@ -36,9 +36,9 @@ Full-stack telemedicine for Thailand: video consultations (Jitsi), PHR/EMR, e-pr
 
 | Service | Cloud Run revision | Image tag | DB |
 | ------- | ------------------ | --------- | -- |
-| Patient | `00107-nmv` | `v1.7.12` | GCE VM `35.240.157.230:5432` |
-| Doctor | `00132-ts6` | `v1.7.12` | GCE VM · port **8080** (nginx unified) |
-| Meeting | latest | `v1.7.12` | GCE VM (same host) |
+| Patient | `00130-9qx` | `v1.7.60` | GCE VM `35.240.157.230:5432` |
+| Doctor | `00162-kkt` | `v1.7.60` | GCE VM · port **8080** (nginx unified) |
+| Meeting | `00236-zfs` | `v1.7.60` | GCE VM (same host) |
 
 Region: `asia-southeast1` · Project: `izara-telemedicine`. Health: `npm run cloud:smoke`. Details: [Documents/docs/markdown/operations/CLOUD_ACCESS_TH.md](Documents/docs/markdown/operations/CLOUD_ACCESS_TH.md).
 
@@ -410,13 +410,16 @@ Error ledgers: `reports/local-error-ledger/*-latest.json` — index: [reports/RE
 
 ## Changelog (recent)
 
-### v1.7.60 (July 6, 2026)
+### v1.7.60 (July 13, 2026)
 
-- **Local strict gate:** `phase:9:strict` — 110 headed E2E, 0 skip/fail; screenshot audits + Thai guides rebuilt; ledger P0=0
+- **Local strict gate:** `phase:9:strict` — headed E2E green; screenshot audits + Thai guides rebuilt; ledger P0=0
+- **UX/UI showup:** `test:gate:ui-showup` (cloud headed A-auth + S-responsive) **69/69** pass
+- **Doc screenshots:** `test:cloud:doc-screenshots` (P/W/D/S headed) + `docs:evidence:cloud` → canonical `docs/screenshots/`
 - **Zero-skip parallel gate:** removed `PW_SKIP_DEFECT_DM5/DM6` and `PW_SKIP_FIREFOX_JROLE`; DM5/DM6/JROLE02 run in `phase:9:parallel` and `test:local:e2e-*`
 - **GCP deploy:** Cloud Run v1.7.60 (patient/doctor/meeting); `test:cloud:deploy-gate` 21/21 pass; cloud ledger P0=0
 - **E2E hardening:** JROLE02 Edge+Firefox hybrid; JPRE01 host-waiting display name; Q02 token refresh; cloud D/I/K nav fixes; `GATE_STRICT` serial workers
 - **Patient meeting:** `patient-display-name` test id on host-waiting screen
+- **Coverage packs:** Group U UI element audit + 24 Vitest process-contract packs; requirements matrix sync
 
 ### v1.7.59 (July 3, 2026)
 

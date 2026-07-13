@@ -65,6 +65,17 @@ function parseGroups() {
 
 function copyFile(src, dest) {
   fs.mkdirSync(path.dirname(dest), { recursive: true });
+  // Never replace a larger (likely valid) PNG with a smaller blank/error capture.
+  if (fs.existsSync(dest)) {
+    const srcSize = fs.statSync(src).size;
+    const destSize = fs.statSync(dest).size;
+    if (destSize > srcSize && srcSize < 15_000) {
+      console.warn(
+        `[docs:sync-screenshots] skip overwrite ${path.relative(repoRoot, dest)} (keep ${destSize}B > src ${srcSize}B)`,
+      );
+      return;
+    }
+  }
   fs.copyFileSync(src, dest);
 }
 

@@ -1,7 +1,7 @@
 # การเข้าถึงระบบ (Cloud — dev-testing)
 
-> อัปเดต: 2 กรกฎาคม 2569 | Environment: Google Cloud Run (asia-southeast1) | Project: izara-telemedicine  
-> **Release track:** v1.7.60 · deploy `npm run cloud:deploy -- -Tag v1.7.60` · cloud gate `npm run test:cloud:release-gate`
+> อัปเดต: 13 กรกฎาคม 2569 | Environment: Google Cloud Run (asia-southeast1) | Project: izara-telemedicine  
+> **Release track:** v1.7.60 · deploy `npm run cloud:deploy -- -Tag v1.7.60` · UX showup `npm run test:gate:ui-showup` · screenshots `npm run test:cloud:doc-screenshots` · evidence `npm run docs:evidence:cloud`
 
 ## บริการที่ให้บริการ (URL ที่ใช้งานจริง)
 

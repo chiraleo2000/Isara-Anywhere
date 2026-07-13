@@ -10,7 +10,7 @@ Maps each Processes document to Vitest contracts, Playwright groups, and gate st
 npm run test:local:pre-deploy-gate
 ```
 
-**Latest:** 2026-07-13 — Requirements-driven unit depth (SECURITY/TWO_ROUND/WORKFLOW_CONNECTIONS registry + auth/GATE0/MITL/delivery/PDPA/content packs); Group U deep audit P0 covered=28; `phase:9:strict` includes Group U.
+**Latest:** 2026-07-13 — UX showup `test:gate:ui-showup` **69/69**; cloud doc screenshots `test:cloud:doc-screenshots` **62/62** (P/W/D/S); `docs:evidence:cloud` + guides rebuilt; requirements-driven unit depth + Group U; `phase:9:strict` includes Group U.
 
 | Step | Command | Process docs covered |
 |------|---------|-------------------|

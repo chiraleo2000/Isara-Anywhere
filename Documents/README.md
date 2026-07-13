@@ -1,7 +1,7 @@
 # Documents — Izara Anywhere documentation hub
 
-> **Layout version:** June 2026 · **App release:** v1.7.54  
-> **Gates:** `npm run phase:0` … `phase:9` · LAN: [deploy/nginx/DEPLOYMENT.md](../deploy/nginx/DEPLOYMENT.md) · Video (TH): [docs/markdown/operations/LAN_VIDEO_CLIENT_TH.md](docs/markdown/operations/LAN_VIDEO_CLIENT_TH.md)
+> **Layout version:** July 2026 · **App release:** v1.7.60  
+> **Gates:** `npm run phase:0` … `phase:9` · UX showup: `npm run test:gate:ui-showup` · LAN: [deploy/nginx/DEPLOYMENT.md](../deploy/nginx/DEPLOYMENT.md) · Video (TH): [docs/markdown/operations/LAN_VIDEO_CLIENT_TH.md](docs/markdown/operations/LAN_VIDEO_CLIENT_TH.md)
 
 รวมเอกสารทั้งหมดของโปรเจกต์ภายใต้โฟลเดอร์เดียว `Documents/`
 
@@ -92,11 +92,14 @@ python scripts/build-appendix-process-steps.py
 
 ---
 
-## การทดสอบ (v1.7.54)
+## การทดสอบ (v1.7.60)
 
 | คำสั่ง | ความหมาย |
 |--------|----------|
 | `npm run phase:0` … `phase:9` | Phase gates — smoke, unit, headed E2E, screenshots, ledger |
+| `npm run test:gate:ui-showup` | Headed cloud UX (A-auth + S-responsive) — **69/69** (2026-07-13) |
+| `npm run test:cloud:doc-screenshots` | Headed P/W/D/S screenshots for guides — **62/62** |
+| `npm run docs:evidence:cloud` | Sync PNGs + refresh LOCAL_INSTALL evidence + rebuild user guides |
 | `npm run test:local:pre-deploy-gate` | Phase 9 full gate (alias `phase:9`) |
 | `npm run test:unit:docker` | **~3200** Vitest tests ใน `node:20-alpine` |
 | `npm run test:unit:groups-sequential` | 17 unit groups แบบ sequential + fail-fast |

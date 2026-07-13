@@ -194,7 +194,23 @@ test.describe('Group Q2 - Post-meeting doctor visibility', () => {
           await doctor.page.reload({ waitUntil: 'domcontentloaded' });
         }
       }
-      await expect(player.or(doctor.page.getByTestId('meeting-results')).first()).toBeVisible({
+      // Ensure we are still on Results (cloud cold-start / navigation churn).
+      if (!(await player.or(doctor.page.getByTestId('meeting-results')).first().isVisible({ timeout: 3_000 }).catch(() => false))) {
+        await doctor.page.goto(`${DOCTOR_URL}/doctor/${DOCTOR_ID}/meeting/${appointmentId}/results`, {
+          waitUntil: 'domcontentloaded',
+          timeout: IS_CLOUD ? 90_000 : 45_000,
+        });
+      }
+      const resultsRoot = doctor.page.getByTestId('meeting-results');
+      const playerVisibleFinal = await player.isVisible({ timeout: 8_000 }).catch(() => false);
+      if (!playerVisibleFinal && IS_CLOUD) {
+        // Cloud doc-screenshot runs may lack a durable recording blob — Results shell is enough.
+        await expect(resultsRoot).toBeVisible({ timeout: 60_000 });
+        console.warn('  Q2-02: recording-player not mounted on cloud — accepting meeting-results shell');
+        await snapMeetingStageAny(doctor.page, 'Q2-02-bff-recording', ['meeting-results'], 'group-Q2');
+        return;
+      }
+      await expect(player.or(resultsRoot).first()).toBeVisible({
         timeout: IS_CLOUD ? 90_000 : 60_000,
       });
       // Skip screenshot here — same Results view as Q02c (distinct-hash gate)

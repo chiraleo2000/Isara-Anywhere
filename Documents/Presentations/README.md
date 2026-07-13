@@ -1,7 +1,7 @@
 # IZARA Telemedicine — Presentation Materials
 
-> **Version:** 1.7.48 · **Updated:** 2 June 2026  
-> **Status:** Defect PDF — 23/23 verified · **2938** unit tests · Docker gate green  
+> **Version:** 1.7.60 · **Updated:** 13 July 2026  
+> **Status:** UX showup 69/69 · cloud doc screenshots green · deploy-gate 21/21 · P0=0  
 > **Documents hub:** [../README.md](../README.md) · **Thai As-is:** [../Technical_Documents/](../Technical_Documents/)
 
 ---
