@@ -182,12 +182,12 @@ npm run test:lan:deploy-gate
 - [docs/SPLIT_REPOS.md](../SPLIT_REPOS.md)
 
 <!-- EVIDENCE_START -->
-## Visual test evidence (cloud, headed UI)
+## Visual test evidence (local, headed UI)
 
 > Browsers run **visible** during gates: `$env:PW_HEADED='1'` + `$env:BASELINE_VISUAL='1'`
 > Updated: 2026-07-13
 
-**Ledger:** `reports/cloud-error-ledger/round-final-latest.json` — tests **?**, **P0=0**
+**Ledger:** `reports/local-error-ledger/round-9-latest.json` — tests **?**, **P0=0**
 
 ### Headed local gate
 
@@ -207,9 +207,10 @@ node scripts/docs/update-runbook-test-evidence.mjs --env local
 $env:PW_HEADED='1'
 $env:BASELINE_VISUAL='1'
 $env:TEST_ENV='cloud'
-npm run test:gate:ui-showup
-npm run test:cloud:doc-screenshots
-npm run docs:evidence:cloud
+npm run test:cloud:release-gate
+npm run docs:sync-screenshots
+node scripts/docs/update-runbook-test-evidence.mjs --env cloud
+npm run guides:build
 ```
 
 ### Passing UI screenshots (canonical `docs/screenshots/`)

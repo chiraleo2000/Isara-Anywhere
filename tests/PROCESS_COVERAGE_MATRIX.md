@@ -1,13 +1,14 @@
 # Process Documentation → Test Coverage Matrix
 
-**Last updated:** 2026-07-13 (599 controls, P0 covered=28 / partial=2 / missing=0; process gaps=0; +requirements-driven unit packs v1.7.60)
+**Last updated:** 2026-07-13 (v1.7.60 full-pass) — 602 controls, P0 covered=30 / partial=0 / missing=0; process gaps=0; Group U **31/31**; UI showup **69/69**; unit groups **17/17**; `phase:9:strict` ledger **P0=0**; `test:cloud:deploy-gate` **21/21** (smoke+GATE0+meeting-ai+A/D/Q)
 
 ## UI element coverage (Group U)
 
 | Artifact | Role |
 |----------|------|
-| [`UI_ELEMENT_COVERAGE_MATRIX.md`](UI_ELEMENT_COVERAGE_MATRIX.md) | Per-control testid registry (599 controls; P0 missing=0; 28 P0 covered via Group U deep audit) |
-| `group-U-ui-element-audit.ui-test.ts` | Headed click/type + screenshot — login, PHR tabs, queue, schedule, EMR/Rx/lab, PDPA, meeting, notifications |
+| [`UI_ELEMENT_COVERAGE_MATRIX.md`](UI_ELEMENT_COVERAGE_MATRIX.md) | Per-control testid registry (602 controls; P0 missing=0; 30 P0 covered; 164 covered after promote) |
+| [`_coverage_gap_backlog.md`](_coverage_gap_backlog.md) | Real vs inventory-noise classification for remaining P1 missing |
+| `group-U-ui-element-audit.ui-test.ts` | Headed click/type + screenshot — auth, dashboards, PHR, schedule/queue, EMR/Rx/lab, PDPA/LW, meeting results, admin/content |
 | `pageElementContract.test.ts` | Vitest: P0 testids exist in frontend |
 | `processDocContentContract.test.ts` | Vitest: all 42 pages have UI Controls Inventory |
 

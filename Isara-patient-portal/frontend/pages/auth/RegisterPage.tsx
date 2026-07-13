@@ -419,6 +419,7 @@ export default function RegisterPage() {
         </button>
         <button
           type="submit"
+          data-testid="register-submit"
           disabled={loading}
           className="flex-1 bg-emerald-600 text-white py-3 rounded-xl font-medium hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >

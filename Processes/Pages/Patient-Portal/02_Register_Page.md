@@ -367,11 +367,11 @@ Step 9: Failure → Error message (e.g., "Email already registered")
 
 | Field | Value |
 |-------|-------|
-| **Status** | partial |
+| **Status** | covered |
 | **Unit tests** | `registerRoute` |
 | **UI (Playwright)** | Group B |
 | **data-testid** | See [tests/SELECTORS.md](../../tests/SELECTORS.md) |
-| **Last verified** | 2026-05-22 |
+P26-07-13 |
 
 **Run locally**
 

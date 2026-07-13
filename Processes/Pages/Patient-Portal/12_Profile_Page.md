@@ -386,11 +386,11 @@ Step 6: Avatar updates in header and sidebar
 
 | Field | Value |
 |-------|-------|
-| **Status** | partial |
+| **Status** | covered |
 | **Unit tests** | `userManagementWorkflow` |
 | **UI (Playwright)** | Group B |
 | **data-testid** | See [tests/SELECTORS.md](../../tests/SELECTORS.md) |
-| **Last verified** | 2026-05-22 |
+P26-07-13 |
 
 **Run locally**
 

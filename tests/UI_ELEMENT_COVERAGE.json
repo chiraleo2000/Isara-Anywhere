@@ -459,7 +459,7 @@
     "playwright_group": "Q2",
     "group_u_step": "U-E",
     "priority": "P0",
-    "status": "partial",
+    "status": "covered",
     "in_code": true,
     "in_doc": false
   },
@@ -475,7 +475,7 @@
     "playwright_group": "Q2",
     "group_u_step": "U-E",
     "priority": "P0",
-    "status": "partial",
+    "status": "covered",
     "in_code": true,
     "in_doc": false
   },
@@ -683,8 +683,8 @@
     "playwright_group": "A",
     "group_u_step": "U-A",
     "priority": "P1",
-    "status": "missing",
-    "in_code": false,
+    "status": "covered",
+    "in_code": true,
     "in_doc": true
   },
   {
@@ -1259,7 +1259,7 @@
     "playwright_group": "C",
     "group_u_step": "U-C",
     "priority": "P1",
-    "status": "missing",
+    "status": "covered",
     "in_code": false,
     "in_doc": true
   },
@@ -2299,8 +2299,8 @@
     "playwright_group": "E",
     "group_u_step": "U-C",
     "priority": "P1",
-    "status": "missing",
-    "in_code": false,
+    "status": "covered",
+    "in_code": true,
     "in_doc": true
   },
   {
@@ -2315,8 +2315,8 @@
     "playwright_group": "E",
     "group_u_step": "U-C",
     "priority": "P1",
-    "status": "missing",
-    "in_code": false,
+    "status": "covered",
+    "in_code": true,
     "in_doc": true
   },
   {
@@ -2427,8 +2427,8 @@
     "playwright_group": "E",
     "group_u_step": "U-C",
     "priority": "P1",
-    "status": "missing",
-    "in_code": false,
+    "status": "covered",
+    "in_code": true,
     "in_doc": true
   },
   {
@@ -2651,7 +2651,7 @@
     "playwright_group": "F",
     "group_u_step": "U-C",
     "priority": "P1",
-    "status": "missing",
+    "status": "covered",
     "in_code": false,
     "in_doc": true
   },
@@ -2667,7 +2667,7 @@
     "playwright_group": "F",
     "group_u_step": "U-C",
     "priority": "P1",
-    "status": "missing",
+    "status": "covered",
     "in_code": false,
     "in_doc": true
   },
@@ -2683,7 +2683,7 @@
     "playwright_group": "F",
     "group_u_step": "U-C",
     "priority": "P1",
-    "status": "missing",
+    "status": "covered",
     "in_code": false,
     "in_doc": true
   },
@@ -2699,7 +2699,7 @@
     "playwright_group": "F",
     "group_u_step": "U-C",
     "priority": "P1",
-    "status": "missing",
+    "status": "covered",
     "in_code": false,
     "in_doc": true
   },
@@ -2715,7 +2715,7 @@
     "playwright_group": "F",
     "group_u_step": "U-C",
     "priority": "P1",
-    "status": "missing",
+    "status": "covered",
     "in_code": false,
     "in_doc": true
   },
@@ -2731,7 +2731,7 @@
     "playwright_group": "F",
     "group_u_step": "U-C",
     "priority": "P1",
-    "status": "missing",
+    "status": "covered",
     "in_code": false,
     "in_doc": true
   },
@@ -2747,7 +2747,7 @@
     "playwright_group": "F",
     "group_u_step": "U-C",
     "priority": "P1",
-    "status": "missing",
+    "status": "covered",
     "in_code": false,
     "in_doc": true
   },
@@ -3499,8 +3499,8 @@
     "playwright_group": "I",
     "group_u_step": "U-D",
     "priority": "P1",
-    "status": "missing",
-    "in_code": false,
+    "status": "covered",
+    "in_code": true,
     "in_doc": true
   },
   {
@@ -3883,8 +3883,8 @@
     "playwright_group": "D",
     "group_u_step": "U-C",
     "priority": "P1",
-    "status": "missing",
-    "in_code": false,
+    "status": "covered",
+    "in_code": true,
     "in_doc": true
   },
   {
@@ -5099,8 +5099,8 @@
     "playwright_group": "Q2",
     "group_u_step": "U-E",
     "priority": "P1",
-    "status": "missing",
-    "in_code": false,
+    "status": "covered",
+    "in_code": true,
     "in_doc": true
   },
   {
@@ -5115,8 +5115,8 @@
     "playwright_group": "Q2",
     "group_u_step": "U-E",
     "priority": "P1",
-    "status": "missing",
-    "in_code": false,
+    "status": "covered",
+    "in_code": true,
     "in_doc": true
   },
   {
@@ -5515,8 +5515,8 @@
     "playwright_group": "E",
     "group_u_step": "U-E",
     "priority": "P1",
-    "status": "missing",
-    "in_code": false,
+    "status": "covered",
+    "in_code": true,
     "in_doc": true
   },
   {
@@ -5739,8 +5739,8 @@
     "playwright_group": "A",
     "group_u_step": "U-A",
     "priority": "P1",
-    "status": "missing",
-    "in_code": false,
+    "status": "covered",
+    "in_code": true,
     "in_doc": true
   },
   {
@@ -5867,8 +5867,8 @@
     "playwright_group": "A",
     "group_u_step": "U-A",
     "priority": "P1",
-    "status": "missing",
-    "in_code": false,
+    "status": "covered",
+    "in_code": true,
     "in_doc": true
   },
   {
@@ -6411,8 +6411,8 @@
     "playwright_group": "D",
     "group_u_step": "U-B",
     "priority": "P1",
-    "status": "missing",
-    "in_code": false,
+    "status": "covered",
+    "in_code": true,
     "in_doc": true
   },
   {
@@ -7771,7 +7771,7 @@
     "playwright_group": "U",
     "group_u_step": "U-C",
     "priority": "P1",
-    "status": "partial",
+    "status": "covered",
     "in_code": true,
     "in_doc": false
   },
@@ -7787,7 +7787,7 @@
     "playwright_group": "U",
     "group_u_step": "U-C",
     "priority": "P1",
-    "status": "partial",
+    "status": "covered",
     "in_code": true,
     "in_doc": false
   },
@@ -7819,7 +7819,7 @@
     "playwright_group": "U",
     "group_u_step": "U-C",
     "priority": "P1",
-    "status": "partial",
+    "status": "covered",
     "in_code": true,
     "in_doc": false
   },
@@ -7835,7 +7835,7 @@
     "playwright_group": "U",
     "group_u_step": "U-C",
     "priority": "P1",
-    "status": "partial",
+    "status": "covered",
     "in_code": true,
     "in_doc": false
   },
@@ -7851,7 +7851,23 @@
     "playwright_group": "U",
     "group_u_step": "U-C",
     "priority": "P1",
-    "status": "partial",
+    "status": "covered",
+    "in_code": true,
+    "in_doc": false
+  },
+  {
+    "page": "(code-only)",
+    "route": "—",
+    "control": "appointment-cancel-btn",
+    "control_type": "control",
+    "testid": "appointment-cancel-btn",
+    "action": "click",
+    "expected": "Present in UI",
+    "screenshot": "U-appointment-cancel-btn",
+    "playwright_group": "U",
+    "group_u_step": "U-C",
+    "priority": "P1",
+    "status": "covered",
     "in_code": true,
     "in_doc": false
   },
@@ -7867,7 +7883,7 @@
     "playwright_group": "U",
     "group_u_step": "U-C",
     "priority": "P1",
-    "status": "partial",
+    "status": "covered",
     "in_code": true,
     "in_doc": false
   },
@@ -7883,7 +7899,7 @@
     "playwright_group": "U",
     "group_u_step": "U-C",
     "priority": "P1",
-    "status": "partial",
+    "status": "covered",
     "in_code": true,
     "in_doc": false
   },
@@ -7899,7 +7915,7 @@
     "playwright_group": "U",
     "group_u_step": "U-C",
     "priority": "P1",
-    "status": "partial",
+    "status": "covered",
     "in_code": true,
     "in_doc": false
   },
@@ -7931,7 +7947,23 @@
     "playwright_group": "U",
     "group_u_step": "U-C",
     "priority": "P1",
-    "status": "partial",
+    "status": "covered",
+    "in_code": true,
+    "in_doc": false
+  },
+  {
+    "page": "(code-only)",
+    "route": "—",
+    "control": "book-appointment-btn",
+    "control_type": "control",
+    "testid": "book-appointment-btn",
+    "action": "click",
+    "expected": "Present in UI",
+    "screenshot": "U-book-appointment-btn",
+    "playwright_group": "U",
+    "group_u_step": "U-C",
+    "priority": "P1",
+    "status": "covered",
     "in_code": true,
     "in_doc": false
   },
@@ -7947,7 +7979,7 @@
     "playwright_group": "U",
     "group_u_step": "U-C",
     "priority": "P1",
-    "status": "partial",
+    "status": "covered",
     "in_code": true,
     "in_doc": false
   },
@@ -7963,7 +7995,7 @@
     "playwright_group": "U",
     "group_u_step": "U-C",
     "priority": "P1",
-    "status": "partial",
+    "status": "covered",
     "in_code": true,
     "in_doc": false
   },
@@ -7979,7 +8011,7 @@
     "playwright_group": "U",
     "group_u_step": "U-C",
     "priority": "P1",
-    "status": "partial",
+    "status": "covered",
     "in_code": true,
     "in_doc": false
   },
@@ -7995,7 +8027,7 @@
     "playwright_group": "U",
     "group_u_step": "U-C",
     "priority": "P1",
-    "status": "partial",
+    "status": "covered",
     "in_code": true,
     "in_doc": false
   },
@@ -8011,7 +8043,7 @@
     "playwright_group": "U",
     "group_u_step": "U-C",
     "priority": "P1",
-    "status": "partial",
+    "status": "covered",
     "in_code": true,
     "in_doc": false
   },
@@ -8027,7 +8059,7 @@
     "playwright_group": "U",
     "group_u_step": "U-C",
     "priority": "P1",
-    "status": "partial",
+    "status": "covered",
     "in_code": true,
     "in_doc": false
   },
@@ -8043,7 +8075,7 @@
     "playwright_group": "U",
     "group_u_step": "U-C",
     "priority": "P1",
-    "status": "partial",
+    "status": "covered",
     "in_code": true,
     "in_doc": false
   },
@@ -8075,7 +8107,7 @@
     "playwright_group": "U",
     "group_u_step": "U-C",
     "priority": "P1",
-    "status": "partial",
+    "status": "covered",
     "in_code": true,
     "in_doc": false
   },
@@ -8139,7 +8171,7 @@
     "playwright_group": "U",
     "group_u_step": "U-C",
     "priority": "P1",
-    "status": "partial",
+    "status": "covered",
     "in_code": true,
     "in_doc": false
   },
@@ -8155,7 +8187,7 @@
     "playwright_group": "U",
     "group_u_step": "U-C",
     "priority": "P1",
-    "status": "partial",
+    "status": "covered",
     "in_code": true,
     "in_doc": false
   },
@@ -8171,7 +8203,7 @@
     "playwright_group": "U",
     "group_u_step": "U-C",
     "priority": "P1",
-    "status": "partial",
+    "status": "covered",
     "in_code": true,
     "in_doc": false
   },
@@ -8187,7 +8219,7 @@
     "playwright_group": "U",
     "group_u_step": "U-C",
     "priority": "P1",
-    "status": "partial",
+    "status": "covered",
     "in_code": true,
     "in_doc": false
   },
@@ -8267,7 +8299,7 @@
     "playwright_group": "U",
     "group_u_step": "U-C",
     "priority": "P1",
-    "status": "partial",
+    "status": "covered",
     "in_code": true,
     "in_doc": false
   },
@@ -8331,7 +8363,7 @@
     "playwright_group": "U",
     "group_u_step": "U-C",
     "priority": "P1",
-    "status": "partial",
+    "status": "covered",
     "in_code": true,
     "in_doc": false
   },
@@ -8363,7 +8395,7 @@
     "playwright_group": "U",
     "group_u_step": "U-C",
     "priority": "P1",
-    "status": "partial",
+    "status": "covered",
     "in_code": true,
     "in_doc": false
   },
@@ -8491,7 +8523,7 @@
     "playwright_group": "U",
     "group_u_step": "U-C",
     "priority": "P1",
-    "status": "partial",
+    "status": "covered",
     "in_code": true,
     "in_doc": false
   },
@@ -8507,7 +8539,7 @@
     "playwright_group": "U",
     "group_u_step": "U-C",
     "priority": "P1",
-    "status": "partial",
+    "status": "covered",
     "in_code": true,
     "in_doc": false
   },
@@ -8523,7 +8555,7 @@
     "playwright_group": "U",
     "group_u_step": "U-C",
     "priority": "P1",
-    "status": "partial",
+    "status": "covered",
     "in_code": true,
     "in_doc": false
   },
@@ -8539,7 +8571,7 @@
     "playwright_group": "U",
     "group_u_step": "U-C",
     "priority": "P1",
-    "status": "partial",
+    "status": "covered",
     "in_code": true,
     "in_doc": false
   },
@@ -8555,7 +8587,7 @@
     "playwright_group": "U",
     "group_u_step": "U-C",
     "priority": "P1",
-    "status": "partial",
+    "status": "covered",
     "in_code": true,
     "in_doc": false
   },
@@ -8587,7 +8619,7 @@
     "playwright_group": "U",
     "group_u_step": "U-C",
     "priority": "P1",
-    "status": "partial",
+    "status": "covered",
     "in_code": true,
     "in_doc": false
   },
@@ -8619,7 +8651,7 @@
     "playwright_group": "U",
     "group_u_step": "U-C",
     "priority": "P1",
-    "status": "partial",
+    "status": "covered",
     "in_code": true,
     "in_doc": false
   },
@@ -8635,7 +8667,7 @@
     "playwright_group": "U",
     "group_u_step": "U-C",
     "priority": "P1",
-    "status": "partial",
+    "status": "covered",
     "in_code": true,
     "in_doc": false
   },
@@ -8683,7 +8715,7 @@
     "playwright_group": "U",
     "group_u_step": "U-C",
     "priority": "P1",
-    "status": "partial",
+    "status": "covered",
     "in_code": true,
     "in_doc": false
   },
@@ -8796,6 +8828,22 @@
     "group_u_step": "U-C",
     "priority": "P1",
     "status": "partial",
+    "in_code": true,
+    "in_doc": false
+  },
+  {
+    "page": "(code-only)",
+    "route": "—",
+    "control": "mark-all-read-btn",
+    "control_type": "control",
+    "testid": "mark-all-read-btn",
+    "action": "click",
+    "expected": "Present in UI",
+    "screenshot": "U-mark-all-read-btn",
+    "playwright_group": "U",
+    "group_u_step": "U-C",
+    "priority": "P1",
+    "status": "covered",
     "in_code": true,
     "in_doc": false
   },
@@ -8923,7 +8971,7 @@
     "playwright_group": "U",
     "group_u_step": "U-C",
     "priority": "P1",
-    "status": "partial",
+    "status": "covered",
     "in_code": true,
     "in_doc": false
   },
@@ -8939,7 +8987,7 @@
     "playwright_group": "U",
     "group_u_step": "U-C",
     "priority": "P1",
-    "status": "partial",
+    "status": "covered",
     "in_code": true,
     "in_doc": false
   },
@@ -9083,7 +9131,7 @@
     "playwright_group": "U",
     "group_u_step": "U-C",
     "priority": "P1",
-    "status": "partial",
+    "status": "covered",
     "in_code": true,
     "in_doc": false
   },
@@ -9099,7 +9147,7 @@
     "playwright_group": "U",
     "group_u_step": "U-C",
     "priority": "P1",
-    "status": "partial",
+    "status": "covered",
     "in_code": true,
     "in_doc": false
   },
@@ -9115,7 +9163,7 @@
     "playwright_group": "U",
     "group_u_step": "U-C",
     "priority": "P1",
-    "status": "partial",
+    "status": "covered",
     "in_code": true,
     "in_doc": false
   },
@@ -9131,7 +9179,7 @@
     "playwright_group": "U",
     "group_u_step": "U-C",
     "priority": "P1",
-    "status": "partial",
+    "status": "covered",
     "in_code": true,
     "in_doc": false
   },
@@ -9147,7 +9195,7 @@
     "playwright_group": "U",
     "group_u_step": "U-C",
     "priority": "P1",
-    "status": "partial",
+    "status": "covered",
     "in_code": true,
     "in_doc": false
   },
@@ -9179,7 +9227,7 @@
     "playwright_group": "U",
     "group_u_step": "U-C",
     "priority": "P1",
-    "status": "partial",
+    "status": "covered",
     "in_code": true,
     "in_doc": false
   },
@@ -9195,7 +9243,7 @@
     "playwright_group": "U",
     "group_u_step": "U-C",
     "priority": "P1",
-    "status": "partial",
+    "status": "covered",
     "in_code": true,
     "in_doc": false
   },
@@ -9211,7 +9259,7 @@
     "playwright_group": "U",
     "group_u_step": "U-C",
     "priority": "P1",
-    "status": "partial",
+    "status": "covered",
     "in_code": true,
     "in_doc": false
   },
@@ -9227,7 +9275,7 @@
     "playwright_group": "U",
     "group_u_step": "U-C",
     "priority": "P1",
-    "status": "partial",
+    "status": "covered",
     "in_code": true,
     "in_doc": false
   },
@@ -9243,7 +9291,7 @@
     "playwright_group": "U",
     "group_u_step": "U-C",
     "priority": "P1",
-    "status": "partial",
+    "status": "covered",
     "in_code": true,
     "in_doc": false
   },
@@ -9307,7 +9355,7 @@
     "playwright_group": "U",
     "group_u_step": "U-C",
     "priority": "P1",
-    "status": "partial",
+    "status": "covered",
     "in_code": true,
     "in_doc": false
   },
@@ -9355,7 +9403,7 @@
     "playwright_group": "U",
     "group_u_step": "U-C",
     "priority": "P1",
-    "status": "partial",
+    "status": "covered",
     "in_code": true,
     "in_doc": false
   },
@@ -9371,7 +9419,7 @@
     "playwright_group": "U",
     "group_u_step": "U-C",
     "priority": "P1",
-    "status": "partial",
+    "status": "covered",
     "in_code": true,
     "in_doc": false
   },
@@ -9387,7 +9435,7 @@
     "playwright_group": "U",
     "group_u_step": "U-C",
     "priority": "P1",
-    "status": "partial",
+    "status": "covered",
     "in_code": true,
     "in_doc": false
   },
@@ -9467,7 +9515,7 @@
     "playwright_group": "U",
     "group_u_step": "U-C",
     "priority": "P1",
-    "status": "partial",
+    "status": "covered",
     "in_code": true,
     "in_doc": false
   },
@@ -9483,7 +9531,7 @@
     "playwright_group": "U",
     "group_u_step": "U-C",
     "priority": "P1",
-    "status": "partial",
+    "status": "covered",
     "in_code": true,
     "in_doc": false
   },
@@ -9515,7 +9563,7 @@
     "playwright_group": "U",
     "group_u_step": "U-C",
     "priority": "P1",
-    "status": "partial",
+    "status": "covered",
     "in_code": true,
     "in_doc": false
   },
@@ -9531,7 +9579,7 @@
     "playwright_group": "U",
     "group_u_step": "U-C",
     "priority": "P1",
-    "status": "partial",
+    "status": "covered",
     "in_code": true,
     "in_doc": false
   },
@@ -9547,7 +9595,7 @@
     "playwright_group": "U",
     "group_u_step": "U-C",
     "priority": "P1",
-    "status": "partial",
+    "status": "covered",
     "in_code": true,
     "in_doc": false
   },
@@ -9563,7 +9611,7 @@
     "playwright_group": "U",
     "group_u_step": "U-C",
     "priority": "P1",
-    "status": "partial",
+    "status": "covered",
     "in_code": true,
     "in_doc": false
   },

@@ -342,11 +342,11 @@ Step 10: Invalid token → Shows error → Link to login
 
 | Field | Value |
 |-------|-------|
-| **Status** | partial |
+| **Status** | covered |
 | **Unit tests** | `resetPasswordRoute` |
 | **UI (Playwright)** | Group B |
 | **data-testid** | See [tests/SELECTORS.md](../../tests/SELECTORS.md) |
-| **Last verified** | 2026-05-22 |
+P26-07-13 |
 
 **Run locally**
 

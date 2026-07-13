@@ -467,7 +467,10 @@ export const CompleteEMREditor: React.FC<CompletEMREditorProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4 overflow-y-auto">
+    <div
+      className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4 overflow-y-auto"
+      data-testid="emr-editor-modal"
+    >
       <div className="bg-white rounded-t-2xl sm:rounded-xl shadow-2xl w-full max-w-6xl max-h-[95dvh] sm:max-h-[90vh] overflow-hidden flex flex-col">
         <EmrEditorChrome
           patientName={patient.demographics.name}
@@ -997,6 +1000,8 @@ export const CompleteEMREditor: React.FC<CompletEMREditorProps> = ({
                   บันทึกร่าง
                 </button>
                 <button
+                  type="button"
+                  data-testid="emr-sign-btn"
                   onClick={handleFinalize}
                   className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
                   disabled={isGeneratingAI || isSendingToPatient}

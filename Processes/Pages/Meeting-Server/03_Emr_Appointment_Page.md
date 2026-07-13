@@ -184,3 +184,19 @@ Production ใช้ `meet.jit.si` — บันทึกจากเบรา�
 | 7 | Meetingid | `meetingId` | click | Documented control | U-meetingId |
 | 8 | Queue Count | `queue-count` | click | Documented control | U-queue-count |
 | 9 | Queue List | `queue-list` | click | Documented control | U-queue-list |
+
+
+---
+
+## Automated verification
+
+| Field | Value |
+|-------|-------|
+| **Status** | covered — verified 2026-07-13 (Meeting EMR appointment entry + showup) |
+| **Unit tests** | See tests/PROCESS_COVERAGE_MATRIX.md + processWorkflowRegistry |
+| **UI (Playwright)** | Groups D, Q, Q2, U |
+| **data-testid** | See tests/SELECTORS.md + UI Controls Inventory |
+| **Last verified** | 2026-07-13 |
+
+**Matrix:** tests/PROCESS_COVERAGE_MATRIX.md
+

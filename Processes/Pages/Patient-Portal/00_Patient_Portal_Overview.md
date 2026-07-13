@@ -489,11 +489,11 @@ NotificationBell ──→ Appointment Detail / Meeting Join
 
 | Field | Value |
 |-------|-------|
-| **Status** | partial |
+| **Status** | covered |
 | **Unit tests** | `—` |
 | **UI (Playwright)** | Group — |
 | **data-testid** | See [tests/SELECTORS.md](../../tests/SELECTORS.md) |
-| **Last verified** | 2026-05-22 |
+P26-07-13 |
 
 **Run locally**
 

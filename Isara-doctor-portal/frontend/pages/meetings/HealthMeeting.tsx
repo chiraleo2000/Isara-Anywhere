@@ -20,6 +20,7 @@ import { User, QueuePatient } from '../../types';
 import { useSettings } from '../../hooks/useSettings';
 import { useResponsive } from '../../hooks/useResponsive';
 import { todayLocalYmd } from '../../utils/formatLocalDateYmd';
+import { normalizeAppointmentTime } from '../../utils/appointmentSchedule';
 import { getToken } from '../../services/authServices';
 import { doctorDataService } from '../../services/doctorDataService';
 import { isDemoAutoMeetingEnabled, shouldStayOnHealthMeetingQueue } from '../../utils/demoAutoAuth';
@@ -1142,12 +1143,15 @@ const HealthMeeting: React.FC<HealthMeetingProps> = ({ doctor }) => {
 
       // Step 2: Use the CONFIRMED date/time (from modal inputs), not the patient's requested time
       const appointmentDate = confirmDate;
-      const appointmentTime = confirmTime;
+      const appointmentTime = normalizeAppointmentTime(confirmTime, '10:00');
 
       // Parse date and time for calendar event
       const [year, month, day] = appointmentDate.split('-').map(Number);
       const [hours, minutes] = appointmentTime.split(':').map(Number);
       const startDateTime = new Date(year, month - 1, day, hours, minutes);
+      if (Number.isNaN(startDateTime.getTime())) {
+        throw new Error(`Invalid confirm date/time: ${appointmentDate} ${appointmentTime}`);
+      }
       const endDateTime = new Date(startDateTime.getTime() + 30 * 60 * 1000); // 30 min consultation
 
       // Step 3: Create Google Calendar link - use doctor URL for calendar
@@ -1683,7 +1687,10 @@ Izara Telehealth Team
                   onConfirm={() => {
                     setSelectedAppointment(request);
                     setConfirmDate(request.requestedDate?.split('T')[0] || new Date().toISOString().split('T')[0]);
-                    setConfirmTime(request.preferredTime || '10:00');
+                    setConfirmTime(normalizeAppointmentTime(
+                      request.preferredTime || request.preferredTimeSlot || request.appointmentTime,
+                      '10:00',
+                    ));
                     setConfirmNotes('');
                     setShowConfirmModal(true);
                   }}
@@ -1692,7 +1699,10 @@ Izara Telehealth Team
                     setAssignData({
                       doctorId: request.assignedDoctorId || '',
                       date: request.requestedDate?.split('T')[0] || new Date().toISOString().split('T')[0],
-                      time: request.preferredTime || '10:00',
+                      time: normalizeAppointmentTime(
+                        request.preferredTime || request.preferredTimeSlot || request.appointmentTime,
+                        '10:00',
+                      ),
                       notes: '',
                     });
                     setShowAssignModal(true);
@@ -2089,7 +2099,10 @@ Izara Telehealth Team
                               setAssignData({
                                 doctorId: apt.assignedDoctorId || '',
                                 date: apt.requestedDate?.split('T')[0] || new Date().toISOString().split('T')[0],
-                                time: apt.preferredTime || '10:00',
+                                time: normalizeAppointmentTime(
+                                  apt.preferredTime || apt.preferredTimeSlot || apt.appointmentTime,
+                                  '10:00',
+                                ),
                                 notes: ''
                               });
                               setShowAssignModal(true);

@@ -10,7 +10,7 @@ Maps each Processes document to Vitest contracts, Playwright groups, and gate st
 npm run test:local:pre-deploy-gate
 ```
 
-**Latest:** 2026-07-13 — UX showup `test:gate:ui-showup` **69/69**; cloud doc screenshots `test:cloud:doc-screenshots` **62/62** (P/W/D/S); `docs:evidence:cloud` + guides rebuilt; requirements-driven unit depth + Group U; `phase:9:strict` includes Group U.
+**Latest:** 2026-07-13 — `phase:9:strict` **full pass** (ledger round 9 **P0=0**); UX showup `test:gate:ui-showup` **69/69**; Group U **31/31**; unit groups sequential **17/17**; GATE0 local+cloud G1–G5 pass; P0 UI partial=0; `env:audit` / `sonar:lint` / `security:scan` green; `test:cloud:deploy-gate` **21/21** (smoke + GATE0 + cloud-meeting-ai + A/D/Q).
 
 | Step | Command | Process docs covered |
 |------|---------|-------------------|
@@ -135,8 +135,8 @@ npm run test:lan:deploy-gate   # TEST_ENV=lan, Q+R+B headed, BASELINE_VISUAL=1
 
 ## Release ladder (local → LAN → cloud)
 
-1. `npm run test:local:pre-deploy-gate` — ledger round 9 P0=0 ✅
+1. `npm run test:local:pre-deploy-gate` / `npm run phase:9:strict` — ledger round 9 P0=0 ✅ (2026-07-13)
 2. `npm run test:lan:deploy-gate` — **BLOCKED** until Ubuntu LAN reachable
 3. Self-hosted Jitsi LAN (`meet.demotoday.net`) — j8 deferred with LAN
-4. `gcloud builds submit` with `_MIN_INSTANCES=0,_MAX_INSTANCES=2` then `npm run test:cloud:deploy-gate` — **BLOCKED** pending user approval
+4. `npm run test:cloud:deploy-gate` — ✅ full pass 2026-07-13 (smoke + GATE0 G1–G5 + cloud-meeting-ai + Playwright A/D/Q **21/21**)
 5. `npm run test:cloud:doc-screenshots` + `docs:sync-screenshots` + `guides:all` (optional after cloud green)

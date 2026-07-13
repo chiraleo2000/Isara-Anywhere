@@ -1,7 +1,7 @@
 # UI Element Coverage Matrix
 
 **Generated:** auto (`scripts/audit-ui-element-coverage.py`)
-**Controls:** 599 | **covered:** 84 | **partial:** 119 | **missing:** 396
+**Controls:** 602 | **covered:** 164 | **partial:** 62 | **missing:** 376
 **P0 missing:** 0
 
 | Page | Control | testid | Type | Group | Group U | Priority | Status | Screenshot |
@@ -34,8 +34,8 @@
 | Doctor-Portal/08_EMR_Editor.md | EMR autosave | `emr-autosave-status` | display | E | U-C | P0 | covered | U-emr-autosave-status |
 | Meeting-Server/01_Meeting_Room.md | End meeting | `end-meeting-btn` | button | Q | U-E | P0 | covered | U-end-meeting-btn |
 | Meeting-Server/01_Meeting_Room.md | Admit all lobby | `admit-all-btn` | button | Q | U-E | P0 | covered | U-admit-all-btn |
-| Meeting-Server/02_Meeting_Results.md | Generate summary | `generate-summary-btn` | button | Q2 | U-E | P0 | partial | U-generate-summary-btn |
-| Meeting-Server/02_Meeting_Results.md | Results modal | `meeting-results` | modal | Q2 | U-E | P0 | partial | U-meeting-results |
+| Meeting-Server/02_Meeting_Results.md | Generate summary | `generate-summary-btn` | button | Q2 | U-E | P0 | covered | U-generate-summary-btn |
+| Meeting-Server/02_Meeting_Results.md | Results modal | `meeting-results` | modal | Q2 | U-E | P0 | covered | U-meeting-results |
 | Doctor-Portal/00_Doctor_Portal_Overview.md | Data Testid | `data-testid` | control | B | U-B | P1 | missing | U-data-testid |
 | Doctor-Portal/00_Doctor_Portal_Overview.md | Host Present | `host-present` | control | B | U-B | P1 | missing | U-host-present |
 | Doctor-Portal/00_Doctor_Portal_Overview.md | Jitsimeetingshell | `JitsiMeetingShell` | control | B | U-B | P1 | missing | U-JitsiMeetingShell |
@@ -48,7 +48,7 @@
 | Doctor-Portal/00_Doctor_Portal_Overview.md | Code | `code` | control | B | U-B | P1 | missing | U-code |
 | Doctor-Portal/01_Login_Page.md | Data Testid | `data-testid` | control | A | U-A | P1 | missing | U-data-testid |
 | Doctor-Portal/01_Login_Page.md | Confirmed | `confirmed` | control | A | U-A | P1 | missing | U-confirmed |
-| Doctor-Portal/01_Login_Page.md | Google Sign In Btn | `google-sign-in-btn` | control | A | U-A | P1 | missing | U-google-sign-in-btn |
+| Doctor-Portal/01_Login_Page.md | Google Sign In Btn | `google-sign-in-btn` | control | A | U-A | P1 | covered | U-google-sign-in-btn |
 | Doctor-Portal/01_Login_Page.md | Appointmentid | `appointmentId` | control | A | U-A | P1 | missing | U-appointmentId |
 | Doctor-Portal/01_Login_Page.md | Meetingid | `meetingId` | control | A | U-A | P1 | missing | U-meetingId |
 | Doctor-Portal/01_Login_Page.md | Pending | `pending` | control | A | U-A | P1 | missing | U-pending |
@@ -84,7 +84,7 @@
 | Doctor-Portal/04_Schedule_Page.md | Buildtelehealthcalendarurl | `buildTelehealthCalendarUrl` | control | C | U-C | P1 | missing | U-buildTelehealthCalendarUrl |
 | Doctor-Portal/04_Schedule_Page.md | Buildgooglecalendarurl | `buildGoogleCalendarUrl` | control | C | U-C | P1 | missing | U-buildGoogleCalendarUrl |
 | Doctor-Portal/04_Schedule_Page.md | Calendareventurl | `calendarEventUrl` | control | C | U-C | P1 | missing | U-calendarEventUrl |
-| Doctor-Portal/04_Schedule_Page.md | Mini Calendar Appointment Day | `mini-calendar-appointment-day` | control | C | U-C | P1 | missing | U-mini-calendar-appointment-day |
+| Doctor-Portal/04_Schedule_Page.md | Mini Calendar Appointment Day | `mini-calendar-appointment-day` | control | C | U-C | P1 | covered | U-mini-calendar-appointment-day |
 | Doctor-Portal/04_Schedule_Page.md | Doctor Portal | `doctor-portal` | control | C | U-C | P1 | missing | U-doctor-portal |
 | Doctor-Portal/04_Schedule_Page.md | Appointmentid | `appointmentId` | control | C | U-C | P1 | missing | U-appointmentId |
 | Doctor-Portal/04_Schedule_Page.md | Meetingid | `meetingId` | control | C | U-C | P1 | missing | U-meetingId |
@@ -149,15 +149,15 @@
 | Doctor-Portal/07_Virtual_Meeting.md | Meeting Summary Ready | `meeting-summary-ready` | control | B | U-B | P1 | missing | U-meeting-summary-ready |
 | Doctor-Portal/08_EMR_Editor.md | Data Testid | `data-testid` | control | E | U-C | P1 | missing | U-data-testid |
 | Doctor-Portal/08_EMR_Editor.md | Confirmed | `confirmed` | control | E | U-C | P1 | missing | U-confirmed |
-| Doctor-Portal/08_EMR_Editor.md | Emr Editor Modal | `emr-editor-modal` | control | E | U-C | P1 | missing | U-emr-editor-modal |
-| Doctor-Portal/08_EMR_Editor.md | Emr Sign Btn | `emr-sign-btn` | control | E | U-C | P1 | missing | U-emr-sign-btn |
+| Doctor-Portal/08_EMR_Editor.md | Emr Editor Modal | `emr-editor-modal` | control | E | U-C | P1 | covered | U-emr-editor-modal |
+| Doctor-Portal/08_EMR_Editor.md | Emr Sign Btn | `emr-sign-btn` | control | E | U-C | P1 | covered | U-emr-sign-btn |
 | Doctor-Portal/08_EMR_Editor.md | Appointmentid | `appointmentId` | control | E | U-C | P1 | missing | U-appointmentId |
 | Doctor-Portal/08_EMR_Editor.md | Meetingid | `meetingId` | control | E | U-C | P1 | missing | U-meetingId |
 | Doctor-Portal/09_Prescribing.md | Data Testid | `data-testid` | control | E | U-C | P1 | missing | U-data-testid |
 | Doctor-Portal/09_Prescribing.md | Confirmed | `confirmed` | control | E | U-C | P1 | missing | U-confirmed |
 | Doctor-Portal/09_Prescribing.md | Appointmentid | `appointmentId` | control | E | U-C | P1 | missing | U-appointmentId |
 | Doctor-Portal/09_Prescribing.md | Meetingid | `meetingId` | control | E | U-C | P1 | missing | U-meetingId |
-| Doctor-Portal/09_Prescribing.md | Allergy Block Banner | `allergy-block-banner` | control | E | U-C | P1 | missing | U-allergy-block-banner |
+| Doctor-Portal/09_Prescribing.md | Allergy Block Banner | `allergy-block-banner` | control | E | U-C | P1 | covered | U-allergy-block-banner |
 | Doctor-Portal/10_Lab_Orders.md | Data Testid | `data-testid` | control | L | U-C | P1 | missing | U-data-testid |
 | Doctor-Portal/10_Lab_Orders.md | Confirmed | `confirmed` | control | L | U-C | P1 | missing | U-confirmed |
 | Doctor-Portal/10_Lab_Orders.md | Appointmentid | `appointmentId` | control | L | U-C | P1 | missing | U-appointmentId |
@@ -171,13 +171,13 @@
 | Doctor-Portal/11_Patient_Record_Viewer.md | Appointmentid | `appointmentId` | control | F | U-C | P1 | missing | U-appointmentId |
 | Doctor-Portal/11_Patient_Record_Viewer.md | Meetingid | `meetingId` | control | F | U-C | P1 | missing | U-meetingId |
 | Doctor-Portal/11_Patient_Record_Viewer.md | Healthrecordsemrworkflow | `healthRecordsEmrWorkflow` | control | F | U-C | P1 | missing | U-healthRecordsEmrWorkflow |
-| Doctor-Portal/11_Patient_Record_Viewer.md | Patient Record Tab Summary | `patient-record-tab-summary` | control | F | U-C | P1 | missing | U-patient-record-tab-summary |
-| Doctor-Portal/11_Patient_Record_Viewer.md | Patient Record Tab Emr | `patient-record-tab-emr` | control | F | U-C | P1 | missing | U-patient-record-tab-emr |
-| Doctor-Portal/11_Patient_Record_Viewer.md | Patient Record Tab Labs | `patient-record-tab-labs` | control | F | U-C | P1 | missing | U-patient-record-tab-labs |
-| Doctor-Portal/11_Patient_Record_Viewer.md | Patient Record Tab Rx | `patient-record-tab-rx` | control | F | U-C | P1 | missing | U-patient-record-tab-rx |
-| Doctor-Portal/11_Patient_Record_Viewer.md | Patient Record Tab Docs | `patient-record-tab-docs` | control | F | U-C | P1 | missing | U-patient-record-tab-docs |
-| Doctor-Portal/11_Patient_Record_Viewer.md | Patient Record Tab Meetings | `patient-record-tab-meetings` | control | F | U-C | P1 | missing | U-patient-record-tab-meetings |
-| Doctor-Portal/11_Patient_Record_Viewer.md | Patient Record Tab Pdpa | `patient-record-tab-pdpa` | control | F | U-C | P1 | missing | U-patient-record-tab-pdpa |
+| Doctor-Portal/11_Patient_Record_Viewer.md | Patient Record Tab Summary | `patient-record-tab-summary` | control | F | U-C | P1 | covered | U-patient-record-tab-summary |
+| Doctor-Portal/11_Patient_Record_Viewer.md | Patient Record Tab Emr | `patient-record-tab-emr` | control | F | U-C | P1 | covered | U-patient-record-tab-emr |
+| Doctor-Portal/11_Patient_Record_Viewer.md | Patient Record Tab Labs | `patient-record-tab-labs` | control | F | U-C | P1 | covered | U-patient-record-tab-labs |
+| Doctor-Portal/11_Patient_Record_Viewer.md | Patient Record Tab Rx | `patient-record-tab-rx` | control | F | U-C | P1 | covered | U-patient-record-tab-rx |
+| Doctor-Portal/11_Patient_Record_Viewer.md | Patient Record Tab Docs | `patient-record-tab-docs` | control | F | U-C | P1 | covered | U-patient-record-tab-docs |
+| Doctor-Portal/11_Patient_Record_Viewer.md | Patient Record Tab Meetings | `patient-record-tab-meetings` | control | F | U-C | P1 | covered | U-patient-record-tab-meetings |
+| Doctor-Portal/11_Patient_Record_Viewer.md | Patient Record Tab Pdpa | `patient-record-tab-pdpa` | control | F | U-C | P1 | covered | U-patient-record-tab-pdpa |
 | Doctor-Portal/11_Patient_Record_Viewer.md | Patient Record Lab Download | `patient-record-lab-download` | control | F | U-C | P1 | covered | U-patient-record-lab-download |
 | Doctor-Portal/11_Patient_Record_Viewer.md | Patient Record Rx Download | `patient-record-rx-download` | control | F | U-C | P1 | covered | U-patient-record-rx-download |
 | Doctor-Portal/11_Patient_Record_Viewer.md | Patient Record Doc Download | `patient-record-doc-download` | control | F | U-C | P1 | covered | U-patient-record-doc-download |
@@ -224,7 +224,7 @@
 | Doctor-Portal/16_Doctor_Profile_Page.md | Code | `code` | control | C | U-C | P1 | missing | U-code |
 | Doctor-Portal/17_Admin_Appointment_Management.md | Data Testid | `data-testid` | control | I | U-D | P1 | missing | U-data-testid |
 | Doctor-Portal/17_Admin_Appointment_Management.md | Confirmed | `confirmed` | control | I | U-D | P1 | missing | U-confirmed |
-| Doctor-Portal/17_Admin_Appointment_Management.md | Appointment Join Meeting Btn | `appointment-join-meeting-btn` | control | I | U-D | P1 | missing | U-appointment-join-meeting-btn |
+| Doctor-Portal/17_Admin_Appointment_Management.md | Appointment Join Meeting Btn | `appointment-join-meeting-btn` | control | I | U-D | P1 | covered | U-appointment-join-meeting-btn |
 | Doctor-Portal/17_Admin_Appointment_Management.md | Appointmentid | `appointmentId` | control | I | U-D | P1 | missing | U-appointmentId |
 | Doctor-Portal/17_Admin_Appointment_Management.md | Meetingid | `meetingId` | control | I | U-D | P1 | missing | U-meetingId |
 | Doctor-Portal/17_Admin_Appointment_Management.md | Queue Count | `queue-count` | control | I | U-D | P1 | covered | U-queue-count |
@@ -248,7 +248,7 @@
 | Doctor-Portal/19_Doctors_Management_Page.md | Admindoctormanagement | `adminDoctorManagement` | control | I | U-D | P1 | missing | U-adminDoctorManagement |
 | Doctor-Portal/20_Appointment_Pool_Management.md | Data Testid | `data-testid` | control | D | U-C | P1 | missing | U-data-testid |
 | Doctor-Portal/20_Appointment_Pool_Management.md | Confirmed | `confirmed` | control | D | U-C | P1 | missing | U-confirmed |
-| Doctor-Portal/20_Appointment_Pool_Management.md | Appointment Join Meeting Btn | `appointment-join-meeting-btn` | control | D | U-C | P1 | missing | U-appointment-join-meeting-btn |
+| Doctor-Portal/20_Appointment_Pool_Management.md | Appointment Join Meeting Btn | `appointment-join-meeting-btn` | control | D | U-C | P1 | covered | U-appointment-join-meeting-btn |
 | Doctor-Portal/20_Appointment_Pool_Management.md | Appointmentid | `appointmentId` | control | D | U-C | P1 | missing | U-appointmentId |
 | Doctor-Portal/20_Appointment_Pool_Management.md | Meetingid | `meetingId` | control | D | U-C | P1 | missing | U-meetingId |
 | Doctor-Portal/20_Appointment_Pool_Management.md | Queue Count | `queue-count` | control | D | U-C | P1 | covered | U-queue-count |
@@ -324,8 +324,8 @@
 | Meeting-Server/01_Meeting_Room.md | Recordingurl | `recordingUrl` | control | Q | U-E | P1 | missing | U-recordingUrl |
 | Meeting-Server/01_Meeting_Room.md | Meeting Summary Ready | `meeting-summary-ready` | control | Q | U-E | P1 | missing | U-meeting-summary-ready |
 | Meeting-Server/02_Meeting_Results.md | Meeting Summary Degraded | `meeting-summary-degraded` | control | Q2 | U-E | P1 | missing | U-meeting-summary-degraded |
-| Meeting-Server/02_Meeting_Results.md | Validate Summary Btn | `validate-summary-btn` | control | Q2 | U-E | P1 | missing | U-validate-summary-btn |
-| Meeting-Server/02_Meeting_Results.md | Apply Summary Emr Btn | `apply-summary-emr-btn` | control | Q2 | U-E | P1 | missing | U-apply-summary-emr-btn |
+| Meeting-Server/02_Meeting_Results.md | Validate Summary Btn | `validate-summary-btn` | control | Q2 | U-E | P1 | covered | U-validate-summary-btn |
+| Meeting-Server/02_Meeting_Results.md | Apply Summary Emr Btn | `apply-summary-emr-btn` | control | Q2 | U-E | P1 | covered | U-apply-summary-emr-btn |
 | Meeting-Server/02_Meeting_Results.md | Data Testid | `data-testid` | control | Q2 | U-E | P1 | missing | U-data-testid |
 | Meeting-Server/02_Meeting_Results.md | Confirmed | `confirmed` | control | Q2 | U-E | P1 | missing | U-confirmed |
 | Meeting-Server/02_Meeting_Results.md | Lobby Waiting Screen | `lobby-waiting-screen` | control | Q2 | U-E | P1 | covered | U-lobby-waiting-screen |
@@ -350,7 +350,7 @@
 | Meeting-Server/03_Emr_Appointment_Page.md | Emr Ai Draft | `emr-ai-draft` | control | E | U-E | P1 | missing | U-emr-ai-draft |
 | Meeting-Server/03_Emr_Appointment_Page.md | Data Testid | `data-testid` | control | E | U-E | P1 | missing | U-data-testid |
 | Meeting-Server/03_Emr_Appointment_Page.md | Confirmed | `confirmed` | control | E | U-E | P1 | missing | U-confirmed |
-| Meeting-Server/03_Emr_Appointment_Page.md | Appointment Join Meeting Btn | `appointment-join-meeting-btn` | control | E | U-E | P1 | missing | U-appointment-join-meeting-btn |
+| Meeting-Server/03_Emr_Appointment_Page.md | Appointment Join Meeting Btn | `appointment-join-meeting-btn` | control | E | U-E | P1 | covered | U-appointment-join-meeting-btn |
 | Meeting-Server/03_Emr_Appointment_Page.md | Appointmentid | `appointmentId` | control | E | U-E | P1 | missing | U-appointmentId |
 | Meeting-Server/03_Emr_Appointment_Page.md | Meetingid | `meetingId` | control | E | U-E | P1 | missing | U-meetingId |
 | Meeting-Server/03_Emr_Appointment_Page.md | Queue Count | `queue-count` | control | E | U-E | P1 | covered | U-queue-count |
@@ -364,7 +364,7 @@
 | Patient-Portal/00_Patient_Portal_Overview.md | Code | `code` | control | B | U-B | P1 | missing | U-code |
 | Patient-Portal/01_Login_Page.md | Data Testid | `data-testid` | control | A | U-A | P1 | missing | U-data-testid |
 | Patient-Portal/01_Login_Page.md | Confirmed | `confirmed` | control | A | U-A | P1 | missing | U-confirmed |
-| Patient-Portal/01_Login_Page.md | Google Sign In Btn | `google-sign-in-btn` | control | A | U-A | P1 | missing | U-google-sign-in-btn |
+| Patient-Portal/01_Login_Page.md | Google Sign In Btn | `google-sign-in-btn` | control | A | U-A | P1 | covered | U-google-sign-in-btn |
 | Patient-Portal/01_Login_Page.md | Appointmentid | `appointmentId` | control | A | U-A | P1 | missing | U-appointmentId |
 | Patient-Portal/01_Login_Page.md | Meetingid | `meetingId` | control | A | U-A | P1 | missing | U-meetingId |
 | Patient-Portal/01_Login_Page.md | Pending | `pending` | control | A | U-A | P1 | missing | U-pending |
@@ -372,7 +372,7 @@
 | Patient-Portal/01_Login_Page.md | Authroute | `authRoute` | control | A | U-A | P1 | missing | U-authRoute |
 | Patient-Portal/02_Register_Page.md | Data Testid | `data-testid` | control | A | U-A | P1 | missing | U-data-testid |
 | Patient-Portal/02_Register_Page.md | Confirmed | `confirmed` | control | A | U-A | P1 | missing | U-confirmed |
-| Patient-Portal/02_Register_Page.md | Register Submit | `register-submit` | control | A | U-A | P1 | missing | U-register-submit |
+| Patient-Portal/02_Register_Page.md | Register Submit | `register-submit` | control | A | U-A | P1 | covered | U-register-submit |
 | Patient-Portal/02_Register_Page.md | Appointmentid | `appointmentId` | control | A | U-A | P1 | missing | U-appointmentId |
 | Patient-Portal/02_Register_Page.md | Meetingid | `meetingId` | control | A | U-A | P1 | missing | U-meetingId |
 | Patient-Portal/02_Register_Page.md | Registerroute | `registerRoute` | control | A | U-A | P1 | missing | U-registerRoute |
@@ -406,7 +406,7 @@
 | Patient-Portal/05_Appointments_Page.md | Calendareventurl | `calendarEventUrl` | control | D | U-B | P1 | missing | U-calendarEventUrl |
 | Patient-Portal/05_Appointments_Page.md | Buildtelehealthcalendarurl | `buildTelehealthCalendarUrl` | control | D | U-B | P1 | missing | U-buildTelehealthCalendarUrl |
 | Patient-Portal/05_Appointments_Page.md | Appointmentdate | `appointmentDate` | control | D | U-B | P1 | missing | U-appointmentDate |
-| Patient-Portal/05_Appointments_Page.md | Appointment Join Meeting Btn | `appointment-join-meeting-btn` | control | D | U-B | P1 | missing | U-appointment-join-meeting-btn |
+| Patient-Portal/05_Appointments_Page.md | Appointment Join Meeting Btn | `appointment-join-meeting-btn` | control | D | U-B | P1 | covered | U-appointment-join-meeting-btn |
 | Patient-Portal/05_Appointments_Page.md | Appointmentid | `appointmentId` | control | D | U-B | P1 | missing | U-appointmentId |
 | Patient-Portal/05_Appointments_Page.md | Meetingid | `meetingId` | control | D | U-B | P1 | missing | U-meetingId |
 | Patient-Portal/05_Appointments_Page.md | Queue Count | `queue-count` | control | D | U-B | P1 | covered | U-queue-count |

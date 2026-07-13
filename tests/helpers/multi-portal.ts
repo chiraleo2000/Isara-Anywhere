@@ -347,21 +347,48 @@ export async function ensureDoctorPortalAuthenticated(
 
 /** Recover patient portal session after long cloud runs or cross-portal fixture reuse. */
 export async function ensurePatientPortalAuthenticated(page: Page, label: string): Promise<void> {
-  await refreshAuthStorageStateForRole('patient1');
-  await reinjectAuthFromStorageFile(page, 'patient1');
-  await refreshPatientSession(page);
   const home = `${PATIENT_URL}/`;
-  if (IS_CLOUD) {
-    await gotoCloudWithRetry(page, home, label, 90_000);
-  } else {
-    await page.goto(home, { waitUntil: 'domcontentloaded', timeout: 45_000 });
+  const contentTimeout = IS_CLOUD ? 20_000 : 8_000;
+
+  for (let attempt = 0; attempt < 2; attempt++) {
+    if (attempt > 0) {
+      // Cloud Run 429s under bursty reinject/goto — back off before retry.
+      await page.waitForTimeout(IS_CLOUD ? 3_000 * attempt : 500);
+    }
+
+    await refreshAuthStorageStateForRole('patient1');
+
+    // Prefer reinject on the current patient origin; only navigate once per attempt.
+    const onPatientOrigin = /patient-portal|localhost:3005|:3005\b/i.test(page.url());
+    if (!onPatientOrigin) {
+      if (IS_CLOUD) {
+        await gotoCloudWithRetry(page, home, `${label}-origin-${attempt}`, 90_000);
+      } else {
+        await page.goto(home, { waitUntil: 'domcontentloaded', timeout: 45_000 });
+      }
+    }
+
+    await reinjectAuthFromStorageFile(page, 'patient1');
+    await refreshPatientSession(page);
+
+    if (IS_CLOUD) {
+      await gotoCloudWithRetry(page, home, `${label}-auth-${attempt}`, 90_000);
+    } else {
+      await page.goto(home, { waitUntil: 'domcontentloaded', timeout: 45_000 });
+    }
+    await waitForContent(page, `${label}-auth-${attempt}`, contentTimeout);
+
+    const url = page.url();
+    if (url.includes('doctor-portal') || /:3010\b/.test(url)) {
+      throw new Error(`[${label}] expected patient portal, got ${url}`);
+    }
+    if (!/\/login|\/register/i.test(url)) {
+      assertNotLogin(page, label);
+      return;
+    }
   }
-  await waitForContent(page, label, IS_CLOUD ? 20_000 : 8_000);
-  const url = page.url();
-  if (url.includes('doctor-portal') || /:3010\b/.test(url)) {
-    throw new Error(`[${label}] expected patient portal, got ${url}`);
-  }
-  assertNotLogin(page, label);
+
+  throw new Error(`[${label}] AUTH FAILED — still on ${page.url()} after patient auth reinject`);
 }
 
 /** GET with bearer auth + single refresh retry (cloud session invalidation). */
@@ -1685,6 +1712,40 @@ export async function waitForContent(
 // PATIENT PORTAL SIDEBAR NAVIGATION (uses <a href="/path">)
 // ═══════════════════════════════════════════════════════════════════════
 
+async function gotoPatientPath(page: Page, pathOnly: string, label: string): Promise<void> {
+  await page.goto(`${PATIENT_URL}${pathOnly}`, {
+    waitUntil: 'domcontentloaded',
+    timeout: IS_CLOUD ? 90_000 : 30_000,
+  });
+  await waitForContent(page, label);
+  let landed = page.url();
+  if (
+    /\/login|\/register/i.test(landed) ||
+    landed.includes('doctor-portal') ||
+    /:3010\b/.test(landed)
+  ) {
+    console.warn(`  ⚠️ navPatient "${pathOnly}" landed on ${landed} — recovering patient session`);
+    await ensurePatientPortalAuthenticated(page, `${label}-recover`);
+    await page.goto(`${PATIENT_URL}${pathOnly}`, {
+      waitUntil: 'domcontentloaded',
+      timeout: IS_CLOUD ? 90_000 : 30_000,
+    });
+    await waitForContent(page, `${label}-recover`);
+    landed = page.url();
+  }
+  if (/\/login|\/register/i.test(landed)) {
+    throw new Error(`[${label}] AUTH FAILED — still on ${landed} after navPatient recover`);
+  }
+}
+
+/** Sidebar/drawer links are often off-canvas on phone/tablet — prefer direct route. */
+function preferDirectPatientNav(page: Page): boolean {
+  const vp = page.viewportSize();
+  // Unknown viewport (or before layout): never attempt off-canvas sidebar clicks.
+  if (!vp) return true;
+  return vp.width < 1024;
+}
+
 export async function navPatient(page: Page, href: string, label: string): Promise<void> { // NOSONAR S3776 — sidebar nav with auth retry and health checks
   // Keep patient session alive (prevent 15-min inactivity timeout)
   await refreshPatientSession(page);
@@ -1713,6 +1774,15 @@ export async function navPatient(page: Page, href: string, label: string): Promi
     await waitForContent(page, `${label}-exit-meeting`);
   }
 
+  // Narrow viewports: drawer/aside links are outside the viewport — skip click path
+  if (preferDirectPatientNav(page)) {
+    if (IS_CLOUD) {
+      console.warn(`  ⚠️ navPatient "${pathOnly}" — direct route (narrow viewport)`);
+    }
+    await gotoPatientPath(page, pathOnly, label);
+    return;
+  }
+
   // Try sidebar first, then fall back to any link on the page (e.g. footer /profile)
   let link = page.locator(`nav a[href="${pathOnly}"], aside a[href="${pathOnly}"]`).first();
   if (!await link.isVisible({ timeout: IS_CLOUD ? 15_000 : 5_000 }).catch(() => false)) {
@@ -1722,39 +1792,46 @@ export async function navPatient(page: Page, href: string, label: string): Promi
     if (IS_CLOUD) {
       console.warn(`  ⚠️ navPatient "${pathOnly}" — direct route (cloud)`);
     }
-    await page.goto(`${PATIENT_URL}${pathOnly}`, {
-      waitUntil: 'domcontentloaded',
-      timeout: IS_CLOUD ? 90_000 : 30_000,
-    });
-    await waitForContent(page, label);
-    assertNotLogin(page, label);
-    const landed = page.url();
-    if (landed.includes('doctor-portal') || /:3010\b/.test(landed)) {
-      await ensurePatientPortalAuthenticated(page, `${label}-recover`);
-      await page.goto(`${PATIENT_URL}${pathOnly}`, {
-        waitUntil: 'domcontentloaded',
-        timeout: IS_CLOUD ? 90_000 : 30_000,
-      });
-      await waitForContent(page, `${label}-recover`);
-      assertNotLogin(page, label);
-    }
+    await gotoPatientPath(page, pathOnly, label);
     return;
   }
+
+  const box = await link.boundingBox().catch(() => null);
+  const vp = page.viewportSize();
+  const outsideViewport =
+    !box ||
+    !vp ||
+    box.x + box.width <= 0 ||
+    box.y + box.height <= 0 ||
+    box.x >= vp.width ||
+    box.y >= vp.height;
+  if (outsideViewport) {
+    console.warn(`  ⚠️ navPatient "${pathOnly}" — direct route (link outside viewport)`);
+    await gotoPatientPath(page, pathOnly, label);
+    return;
+  }
+
   await expect(link, `Patient link "${pathOnly}" not found`).toBeVisible({ timeout: navTimeout });
-  await link.click({ force: true, timeout: IS_CLOUD ? 20_000 : 12_000 });
+  try {
+    await link.click({ force: true, timeout: IS_CLOUD ? 20_000 : 12_000 });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    if (/outside of the viewport|not visible|intercepts pointer/i.test(msg)) {
+      console.warn(`  ⚠️ navPatient "${pathOnly}" — direct route after click fail`);
+      await gotoPatientPath(page, pathOnly, label);
+      return;
+    }
+    throw err;
+  }
   await page.waitForTimeout(WAIT_AFTER_NAV);
   await waitForContent(page, label);
-  assertNotLogin(page, label);
   const landed = page.url();
-  if (landed.includes('doctor-portal') || /:3010\b/.test(landed)) {
-    console.warn(`  ⚠️ navPatient "${pathOnly}" landed on doctor portal — recovering via patient home`);
-    await ensurePatientPortalAuthenticated(page, `${label}-recover`);
-    await page.goto(`${PATIENT_URL}${pathOnly}`, {
-      waitUntil: 'domcontentloaded',
-      timeout: IS_CLOUD ? 90_000 : 30_000,
-    });
-    await waitForContent(page, `${label}-recover`);
-    assertNotLogin(page, label);
+  if (
+    /\/login|\/register/i.test(landed) ||
+    landed.includes('doctor-portal') ||
+    /:3010\b/.test(landed)
+  ) {
+    await gotoPatientPath(page, pathOnly, `${label}-recover`);
   }
 }
 
@@ -2445,7 +2522,13 @@ export const test = base.extend<{ _authSync: void }, { portals: Portals }>({
     }
 
     clearPortalIssues();
-    const ctxOpts = { viewport: { width: 1440, height: 900 }, ignoreHTTPSErrors: true };
+    // Omit viewport so Playwright project `use.viewport` applies (critical for Group S).
+    const ctxOpts: { ignoreHTTPSErrors: true; viewport?: { width: number; height: number } } = {
+      ignoreHTTPSErrors: true,
+    };
+    if (process.env.PW_FORCE_DESKTOP_VIEWPORT === '1') {
+      ctxOpts.viewport = { width: 1440, height: 900 };
+    }
 
     const coreEngine = resolveCoreBrowserEngine();
     const browserLabel = coreEngine

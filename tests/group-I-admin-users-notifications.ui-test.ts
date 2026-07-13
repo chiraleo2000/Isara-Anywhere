@@ -225,9 +225,26 @@ test.describe('Group I — Admin, Users & Notifications', () => {
     await test.step('I13 — All 3 portals authenticated', async () => {
       await refreshPatientSession(patient.page);
       await gotoCloudWithRetry(patient.page, PATIENT_URL, 'I13/patient-root', 90_000);
+      await patient.page.waitForLoadState('domcontentloaded').catch(() => undefined);
 
-      const readToken = async (page: typeof patient.page, keys: string[]) =>
-        page.evaluate((k) => k.map((key) => localStorage.getItem(key)).find(Boolean) || null, keys);
+      const readToken = async (page: typeof patient.page, keys: string[]) => {
+        for (let attempt = 0; attempt < 3; attempt++) {
+          try {
+            await page.waitForLoadState('domcontentloaded').catch(() => undefined);
+            return await page.evaluate(
+              (k) => k.map((key) => localStorage.getItem(key)).find(Boolean) || null,
+              keys,
+            );
+          } catch (err) {
+            const msg = err instanceof Error ? err.message : String(err);
+            if (!/Execution context was destroyed|Target closed|navigation/i.test(msg) || attempt === 2) {
+              throw err;
+            }
+            await page.waitForTimeout(500);
+          }
+        }
+        return null;
+      };
 
       let pToken = await readToken(patient.page, ['auth_token', 'izara_auth_token', 'token']);
       let dToken = await readToken(doctor.page, ['token', 'izara_auth_token']);

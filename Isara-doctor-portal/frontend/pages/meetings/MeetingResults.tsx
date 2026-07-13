@@ -471,10 +471,19 @@ const SummaryValidationActions: React.FC<{
   onRegenerate: () => void;
   onSubmitValidation: (action: ValidationAction) => void;
 }> = ({ validationStatus, isEditing, actionLoading, onToggleEditing, onRegenerate, onSubmitValidation }) => {
-  if (validationStatus) return null;
+  // Hide only after MITL finalize; pending_review / null must still expose approve/reject/regenerate.
+  const finalized =
+    validationStatus === 'approved' ||
+    validationStatus === 'edited' ||
+    validationStatus === 'rejected';
+  if (finalized) return null;
   return (
     <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t">
-      <button onClick={() => onSubmitValidation('approve')} disabled={!!actionLoading}
+      <button
+        type="button"
+        data-testid="validate-summary-btn"
+        onClick={() => onSubmitValidation('approve')}
+        disabled={!!actionLoading}
         className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 flex items-center gap-1 text-sm">
         {actionLoading === 'approve' ? '...' : '✅'} อนุมัติ
       </button>
@@ -870,14 +879,16 @@ const MeetingResults: React.FC<MeetingResultsProps> = ({ meetingId, appointmentI
             {onNavigateToEMR && meeting.appointmentId && summary.text && (
               <button
                 type="button"
-                data-testid="apply-ai-summary-emr-btn"
+                data-testid="apply-summary-emr-btn"
                 onClick={handleApplyToEmr}
                 className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors text-sm"
               >
+                <span data-testid="apply-ai-summary-emr-btn" className="contents">
                 Apply AI summary to EMR
                 {summary.degraded && (
                   <span className="ml-1 bg-amber-300 text-amber-900 text-xs px-1.5 py-0.5 rounded-full">degraded</span>
                 )}
+                </span>
               </button>
             )}
             {onNavigateToEMR && meeting.appointmentId && (

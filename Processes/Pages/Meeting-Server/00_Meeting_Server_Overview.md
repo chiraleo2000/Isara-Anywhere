@@ -1117,11 +1117,11 @@ Production ใช้ `meet.jit.si` — บันทึกจากเบรา�
 
 | Field | Value |
 |-------|-------|
-| **Status** | partial |
-| **Unit tests** | `—` |
-| **UI (Playwright)** | Group — |
+| **Status** | covered |
+| **Unit tests** | `test:unit:meeting`, meeting-server:contract, meetingUxContract |
+| **UI (Playwright)** | Groups Q, Q2, R, U |
 | **data-testid** | `end-meeting-btn`, `recording-indicator`, `meeting-results`, `recording-player`, `generate-summary-btn` — [tests/SELECTORS.md](../../tests/SELECTORS.md) |
-| **Last verified** | 2026-05-22 |
+| **Last verified** | 2026-07-13 |
 
 **Run locally**
 

@@ -21,6 +21,7 @@ export default function NotificationsPage() {
         <h1 className={`text-2xl font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>{labels.title}</h1>
         <button
           type="button"
+          data-testid="mark-all-read-btn"
           onClick={() => void markAllAsRead()}
           className="inline-flex items-center gap-2 px-3 py-2 text-sm rounded-lg bg-emerald-600 text-white hover:bg-emerald-700"
         >

@@ -37,11 +37,12 @@ export const PrescribingModalChrome: React.FC<PrescribingModalChromeProps> = ({
     </div>
 
     {warnings.length > 0 && (
-      <div
-        className="p-4 bg-red-50 border-b-2 border-red-400"
-        data-testid="cds-allergy-conflict-banner"
-        role="alert"
-      >
+      <div data-testid="allergy-block-banner">
+        <div
+          className="p-4 bg-red-50 border-b-2 border-red-400"
+          data-testid="cds-allergy-conflict-banner"
+          role="alert"
+        >
         <div className="flex items-start space-x-2">
           <svg className="w-5 h-5 text-red-600 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
             <path
@@ -62,6 +63,7 @@ export const PrescribingModalChrome: React.FC<PrescribingModalChromeProps> = ({
               ))}
             </ul>
           </div>
+        </div>
         </div>
       </div>
     )}

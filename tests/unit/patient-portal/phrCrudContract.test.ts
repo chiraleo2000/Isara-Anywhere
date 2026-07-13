@@ -24,6 +24,11 @@ function validateAllergy(input: { substance?: unknown }): boolean {
   return typeof input.substance === 'string' && input.substance.trim().length > 0;
 }
 
+/** Unsigned clinical docs must not appear in patient PHR document list. */
+function phrVisibleClinicalDocs(docs: { id: string; signed: boolean; type: string }[]) {
+  return docs.filter((d) => d.signed === true);
+}
+
 describe('phrCrudContract — pure validators', () => {
   it('PHR-CRUD-01 — vital signs require numeric bp and hr', () => {
     expect(validateVitalSigns({ bp: 120, hr: 72 })).toBe(true);
@@ -43,6 +48,15 @@ describe('phrCrudContract — pure validators', () => {
     expect(validateAllergy({ substance: 'Penicillin' })).toBe(true);
     expect(validateAllergy({ substance: '' })).toBe(false);
     expect(validateAllergy({})).toBe(false);
+  });
+
+  it('PHR-CRUD-04 — unsigned clinical docs hidden from PHR list', () => {
+    const docs = [
+      { id: '1', signed: false, type: 'emr_report' },
+      { id: '2', signed: true, type: 'emr_report' },
+      { id: '3', signed: true, type: 'lab_report' },
+    ];
+    expect(phrVisibleClinicalDocs(docs).map((d) => d.id)).toEqual(['2', '3']);
   });
 });
 

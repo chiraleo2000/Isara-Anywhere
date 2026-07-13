@@ -55,7 +55,8 @@ export default function GoogleSignInButton({ onSuccess, onError, onPendingApprov
   // exists in the tree (e.g. older deployed bundles without the root provider).
   return (
     <GoogleOAuthProvider clientId={clientId}>
-      <div className="w-full flex flex-col items-center" data-testid="google-sso-container">
+      <div className="w-full flex flex-col items-center" data-testid="google-sign-in-btn">
+        <div className="w-full flex flex-col items-center" data-testid="google-sso-container">
         <div className={busy ? 'opacity-50 pointer-events-none' : ''}>
           <GoogleLogin
             onSuccess={handleCredential}
@@ -71,6 +72,7 @@ export default function GoogleSignInButton({ onSuccess, onError, onPendingApprov
         {busy && (
           <p className="mt-2 text-sm text-gray-500">Signing in…</p>
         )}
+        </div>
       </div>
     </GoogleOAuthProvider>
   );

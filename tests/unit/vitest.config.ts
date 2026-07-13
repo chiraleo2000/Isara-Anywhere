@@ -156,6 +156,9 @@ const GROUP_NOTIFICATIONS = [
   'patient-portal/notificationMarkAllRead.behavior.test.ts',
   'cross-portal/notificationDedupContract.test.ts',
   'cross-portal/confirmTripleNotifyContract.test.ts',
+  'cross-portal/notifySocketRoomMapContract.test.ts',
+  'cross-portal/notificationWorkflowContract.test.ts',
+  'cross-portal/offlineEmrSync.test.ts',
 ];
 const GROUP_SECURITY = [
   'doctor-portal/owaspMiddleware.test.ts',

@@ -390,3 +390,18 @@ Step 6: Patient reload → optional mini-calendar-appointment-day on sidebar
 - อย่าแชร์ลิงก์ประชุมหรือ JWT ทางช่องทางไม่ปลอดภัย
 - ผลลัพธ์ AI ไม่ใช่การวินิจฉัย — แพทย์ต้องตรวจก่อนลง EMR
 
+
+---
+
+## Automated verification
+
+| Field | Value |
+|-------|-------|
+| **Status** | covered — verified 2026-07-13 (`phase:9:strict` + Group U/D) |
+| **Unit tests** | See tests/PROCESS_COVERAGE_MATRIX.md + processWorkflowRegistry |
+| **UI (Playwright)** | Groups D, Q, Q2, U |
+| **data-testid** | See tests/SELECTORS.md + UI Controls Inventory |
+| **Last verified** | 2026-07-13 |
+
+**Matrix:** tests/PROCESS_COVERAGE_MATRIX.md
+

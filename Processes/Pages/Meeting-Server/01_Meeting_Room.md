@@ -269,3 +269,19 @@ Production ใช้ `meet.jit.si` — บันทึกจากเบรา�
 | 25 | Guest Transcript Segment | `guest-transcript-segment` | click | Documented control | U-guest-transcript-segment |
 | 26 | Recordingurl | `recordingUrl` | click | Documented control | U-recordingUrl |
 | 27 | Meeting Summary Ready | `meeting-summary-ready` | click | Documented control | U-meeting-summary-ready |
+
+
+---
+
+## Automated verification
+
+| Field | Value |
+|-------|-------|
+| **Status** | covered — verified 2026-07-13 (Group Q + U meeting controls) |
+| **Unit tests** | See tests/PROCESS_COVERAGE_MATRIX.md + processWorkflowRegistry |
+| **UI (Playwright)** | Groups D, Q, Q2, U |
+| **data-testid** | See tests/SELECTORS.md + UI Controls Inventory |
+| **Last verified** | 2026-07-13 |
+
+**Matrix:** tests/PROCESS_COVERAGE_MATRIX.md
+

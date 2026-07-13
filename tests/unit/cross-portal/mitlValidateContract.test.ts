@@ -33,6 +33,15 @@ describe('mitlValidateContract — patient visibility', () => {
       patientCanSeeSummary({ requiresValidation: false, validated: true, rejected: false }),
     ).toBe(true);
   });
+
+  it('MITL-01b — reject clears patient unlock even after prior validate', () => {
+    expect(
+      patientCanSeeSummary({ requiresValidation: true, validated: true, rejected: false }),
+    ).toBe(true);
+    expect(
+      patientCanSeeSummary({ requiresValidation: true, validated: true, rejected: true }),
+    ).toBe(false);
+  });
 });
 
 describe('mitlValidateContract — summary badge', () => {

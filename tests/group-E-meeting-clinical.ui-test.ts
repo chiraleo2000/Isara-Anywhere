@@ -682,7 +682,14 @@ test.describe('Group E - Meeting Server & Clinical Workflow', () => {
 
     await test.step('E19 - Generate JWT guest invite token', async () => {
       expect(sharedMeetingId, 'Meeting from E2').toBeTruthy();
-      const token = await doctor.page.evaluate(() => localStorage.getItem('token'));
+      await refreshPageAuth(doctor.page, DOCTOR_URL);
+      let token = await readPageBearerToken(doctor.page);
+      if (!token) {
+        token = await doctor.page.evaluate(() =>
+          localStorage.getItem('token') || localStorage.getItem('izara_auth_token'),
+        );
+      }
+      expect(token, 'Doctor bearer token for guest-invite').toBeTruthy();
       // Re-open meeting session if Q group ended the same appointment earlier
       const createResp = await doctor.page.request.post(MEETING_URL + '/api/meetings/create', {
         headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' },
@@ -700,7 +707,7 @@ test.describe('Group E - Meeting Server & Clinical Workflow', () => {
         if (created.meetingId) sharedMeetingId = created.meetingId;
       }
       const inviteKey = lobbyKey || sharedAppointmentId || sharedMeetingId;
-      const resp = await doctor.page.request.post(
+      let resp = await doctor.page.request.post(
         MEETING_URL + '/api/meetings/' + inviteKey + '/guest-invite',
         {
           headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' },
@@ -708,6 +715,18 @@ test.describe('Group E - Meeting Server & Clinical Workflow', () => {
           timeout: API_TIMEOUT,
         },
       );
+      if (resp.status() === 401 || resp.status() === 403) {
+        await refreshPageAuth(doctor.page, DOCTOR_URL);
+        token = await readPageBearerToken(doctor.page);
+        resp = await doctor.page.request.post(
+          MEETING_URL + '/api/meetings/' + inviteKey + '/guest-invite',
+          {
+            headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' },
+            data: { guestName: 'Somchai Family', guestEmail: 'guest@test.com', guestType: 'family' },
+            timeout: API_TIMEOUT,
+          },
+        );
+      }
       expect(resp.status(), 'Guest invite API status').toBe(200);
       const data = await resp.json();
       expect(data.success, 'Guest invite created').toBe(true);
@@ -755,7 +774,10 @@ test.describe('Group E - Meeting Server & Clinical Workflow', () => {
     });
 
     await test.step('E21b — Second guest joins lobby (multi-guest waiting)', async () => {
-      const token = await doctor.page.evaluate(() => localStorage.getItem('token'));
+      await refreshPageAuth(doctor.page, DOCTOR_URL);
+      const token =
+        (await readPageBearerToken(doctor.page)) ||
+        (await doctor.page.evaluate(() => localStorage.getItem('token') || localStorage.getItem('izara_auth_token')));
       const invite2Resp = await doctor.page.request.post(
         `${MEETING_URL}/api/meetings/${lobbyKey}/guest-invite`,
         {

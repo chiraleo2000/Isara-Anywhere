@@ -21,6 +21,23 @@ function allergyBlocksPrescribe(allergies: string[], drugName: string): boolean 
   });
 }
 
+/** Imaging download ACL — only owning patient (or null patientId for doctor) may fetch. */
+function canDownloadImaging(opts: {
+  docPatientId: string;
+  requesterPatientId?: string | null;
+}): boolean {
+  if (opts.requesterPatientId == null || opts.requesterPatientId === '') return true;
+  return opts.docPatientId === opts.requesterPatientId;
+}
+
+/** Lab report published into patient_documents becomes PHR-visible. */
+function labReportVisibleInPhr(opts: {
+  publishedToPatientDocuments: boolean;
+  sourceType: string;
+}): boolean {
+  return opts.publishedToPatientDocuments && opts.sourceType === 'lab_report';
+}
+
 describe('imagingRxLabDeliveryContract — pure', () => {
   it('IRL-01 — delivery types include imaging_report, lab_report, prescription', () => {
     expect(CLINICAL_DELIVERY_TYPES).toContain('imaging_report');
@@ -33,6 +50,39 @@ describe('imagingRxLabDeliveryContract — pure', () => {
     expect(allergyBlocksPrescribe(['Penicillin'], 'Penicillin VK')).toBe(true);
     expect(allergyBlocksPrescribe(['ibuprofen'], 'Ibuprofen 400mg')).toBe(true);
     expect(allergyBlocksPrescribe(['Penicillin'], 'Paracetamol')).toBe(false);
+  });
+
+  it('IRL-03 — imaging ACL denies cross-patient download', () => {
+    expect(
+      canDownloadImaging({ docPatientId: 'PT-1', requesterPatientId: 'PT-1' }),
+    ).toBe(true);
+    expect(
+      canDownloadImaging({ docPatientId: 'PT-1', requesterPatientId: 'PT-2' }),
+    ).toBe(false);
+    expect(
+      canDownloadImaging({ docPatientId: 'PT-1', requesterPatientId: null }),
+    ).toBe(true);
+  });
+
+  it('IRL-04 — lab_report in patient_documents is PHR-visible', () => {
+    expect(
+      labReportVisibleInPhr({
+        publishedToPatientDocuments: true,
+        sourceType: 'lab_report',
+      }),
+    ).toBe(true);
+    expect(
+      labReportVisibleInPhr({
+        publishedToPatientDocuments: false,
+        sourceType: 'lab_report',
+      }),
+    ).toBe(false);
+    expect(
+      labReportVisibleInPhr({
+        publishedToPatientDocuments: true,
+        sourceType: 'draft_note',
+      }),
+    ).toBe(false);
   });
 });
 
@@ -63,5 +113,13 @@ describe('imagingRxLabDeliveryContract — source', () => {
     expect(delivery).toMatch(/imaging_report/);
     expect(delivery).toMatch(/lab_report/);
     expect(delivery).toMatch(/prescription/);
+    expect(delivery).toMatch(/patient_id = \$2|AND patient_id/);
+
+    const patientDelivery = fs.readFileSync(
+      path.join(root, 'Isara-patient-portal/backend/services/documentDeliveryService.ts'),
+      'utf8',
+    );
+    expect(patientDelivery).toMatch(/patientId/);
+    expect(patientDelivery).toMatch(/imaging_report|lab_report/);
   });
 });

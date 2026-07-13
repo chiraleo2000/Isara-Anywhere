@@ -167,7 +167,11 @@ export function AppointmentListPage() {
           <h1 className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>{labels.myAppointments[language]}</h1>
           <p className={`text-sm mt-1 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{labels.trackAppointments[language]}</p>
         </div>
-        <Link to="/appointments/book" className="flex items-center gap-2 bg-emerald-600 text-white px-4 py-2.5 rounded-xl hover:bg-emerald-700 shadow-sm">
+        <Link
+          to="/appointments/book"
+          data-testid="book-appointment-btn"
+          className="flex items-center gap-2 bg-emerald-600 text-white px-4 py-2.5 rounded-xl hover:bg-emerald-700 shadow-sm"
+        >
           <Plus className="w-5 h-5" /> {labels.bookNew[language]}
         </Link>
       </div>
@@ -311,7 +315,7 @@ export function AppointmentListPage() {
 
                   {/* Quick Join Button — in-app real Jitsi meeting only (Izara lobby + doctor host) */}
                   {apt.type === 'telehealth' && (apt.meetingLink || apt.patientMeetingUrl) && (
-                    <div className="mt-3 flex flex-col gap-2">
+                    <div className="mt-3 flex flex-col gap-2" data-testid="appointment-join-meeting-btn">
                       <Link
                         to={buildPatientMeetingPath(user!.patientId || user!.id, apt.id)}
                         data-testid="appointment-join-meeting"
@@ -1734,7 +1738,12 @@ export function AppointmentDetailPage() {
         )}
 
         {(appointment.status === 'pending' || appointment.status === 'confirmed') && (
-          <button onClick={handleCancel} className="w-full border border-red-300 text-red-600 py-3 rounded-xl hover:bg-red-50">
+          <button
+            type="button"
+            data-testid="appointment-cancel-btn"
+            onClick={handleCancel}
+            className="w-full border border-red-300 text-red-600 py-3 rounded-xl hover:bg-red-50"
+          >
             ยกเลิกนัดหมาย
           </button>
         )}

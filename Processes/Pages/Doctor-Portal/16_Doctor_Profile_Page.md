@@ -300,11 +300,11 @@ View and edit doctor/admin profile including avatar, contact info, specialty, an
 
 | Field | Value |
 |-------|-------|
-| **Status** | missing |
-| **Unit tests** | `—` |
-| **UI (Playwright)** | Group C |
+| **Status** | covered — verified 2026-07-13 (`phase:9:strict` + profile CRUD units) |
+| **Unit tests** | `doctor-portal/doctorProfileCrudContract.test.ts` |
+| **UI (Playwright)** | Group C, Group U |
 | **data-testid** | See [tests/SELECTORS.md](../../tests/SELECTORS.md) |
-| **Last verified** | 2026-05-22 |
+| **Last verified** | 2026-07-13 |
 
 **Run locally**
 
