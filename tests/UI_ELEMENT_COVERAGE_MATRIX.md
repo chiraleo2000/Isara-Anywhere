@@ -1,39 +1,39 @@
 # UI Element Coverage Matrix
 
 **Generated:** auto (`scripts/audit-ui-element-coverage.py`)
-**Controls:** 599 | **covered:** 56 | **partial:** 147 | **missing:** 396
+**Controls:** 599 | **covered:** 84 | **partial:** 119 | **missing:** 396
 **P0 missing:** 0
 
 | Page | Control | testid | Type | Group | Group U | Priority | Status | Screenshot |
 |------|---------|--------|------|-------|---------|----------|--------|------------|
-| Doctor-Portal/01_Login_Page.md | Email input | `login-email` | input | A | U-A | P0 | partial | U-login-email |
-| Doctor-Portal/01_Login_Page.md | Password input | `login-password` | input | A | U-A | P0 | partial | U-login-password |
-| Doctor-Portal/01_Login_Page.md | Login submit | `login-submit` | button | A | U-A | P0 | partial | U-login-submit |
-| Patient-Portal/01_Login_Page.md | Email input | `login-email` | input | A | U-A | P0 | partial | U-login-email |
-| Patient-Portal/01_Login_Page.md | Password input | `login-password` | input | A | U-A | P0 | partial | U-login-password |
-| Patient-Portal/01_Login_Page.md | Login submit | `login-submit` | button | A | U-A | P0 | partial | U-login-submit |
-| Patient-Portal/06_PHR_Page.md | Overview tab | `phr-tab-overview` | tab | F | U-B | P0 | partial | U-phr-tab-overview |
-| Patient-Portal/06_PHR_Page.md | Vitals tab | `phr-tab-vitals` | tab | F | U-B | P0 | partial | U-phr-tab-vitals |
-| Patient-Portal/06_PHR_Page.md | Medications tab | `phr-tab-medications` | tab | F | U-B | P0 | partial | U-phr-tab-medications |
-| Patient-Portal/06_PHR_Page.md | Allergies tab | `phr-tab-allergies` | tab | F | U-B | P0 | partial | U-phr-tab-allergies |
-| Patient-Portal/06_PHR_Page.md | Lab tab | `phr-tab-lab-imaging` | tab | F | U-B | P0 | partial | U-phr-tab-lab-imaging |
-| Patient-Portal/06_PHR_Page.md | Prescriptions tab | `phr-tab-prescriptions` | tab | F | U-B | P0 | partial | U-phr-tab-prescriptions |
-| Patient-Portal/06_PHR_Page.md | Documents tab | `phr-tab-documents` | tab | F | U-B | P0 | partial | U-phr-tab-documents |
-| Patient-Portal/06_PHR_Page.md | Profile tab | `phr-tab-profile` | tab | F | U-B | P0 | partial | U-phr-tab-profile |
-| Patient-Portal/06_PHR_Page.md | Document upload | `phr-document-upload` | input | F | U-B | P0 | partial | U-phr-document-upload |
-| Doctor-Portal/06_Health_Meeting_Page.md | Page root | `health-meeting-page` | container | D | U-C | P0 | partial | U-health-meeting-page |
-| Doctor-Portal/06_Health_Meeting_Page.md | Queue list | `queue-list` | container | D | U-C | P0 | partial | U-queue-list |
-| Doctor-Portal/06_Health_Meeting_Page.md | Queue KPI | `queue-count` | display | D | U-C | P0 | partial | U-queue-count |
-| Doctor-Portal/06_Health_Meeting_Page.md | Claim appointment | `queue-claim-btn` | button | D | U-C | P0 | partial | U-queue-claim-btn |
-| Doctor-Portal/06_Health_Meeting_Page.md | AI match | `queue-ai-match-btn` | button | D | U-C | P0 | partial | U-queue-ai-match-btn |
-| Doctor-Portal/06_Health_Meeting_Page.md | Confirm appointment | `confirm-appointment-btn` | button | D | U-C | P0 | partial | U-confirm-appointment-btn |
-| Doctor-Portal/05_Patient_Management_Page.md | Send message | `patient-message-send-btn` | button | E | U-C | P0 | partial | U-patient-message-send-btn |
-| Doctor-Portal/10_Lab_Orders.md | Lab PDF upload | `lab-report-upload-btn` | button | L | U-C | P0 | partial | U-lab-report-upload-btn |
-| Doctor-Portal/10_Lab_Orders.md | Imaging upload | `imaging-report-upload-btn` | button | L | U-C | P0 | partial | U-imaging-report-upload-btn |
-| Doctor-Portal/09_Prescribing.md | Prescribe submit | `prescribe-submit` | button | E | U-C | P0 | partial | U-prescribe-submit |
-| Doctor-Portal/08_EMR_Editor.md | EMR autosave | `emr-autosave-status` | display | E | U-C | P0 | partial | U-emr-autosave-status |
-| Meeting-Server/01_Meeting_Room.md | End meeting | `end-meeting-btn` | button | Q | U-E | P0 | partial | U-end-meeting-btn |
-| Meeting-Server/01_Meeting_Room.md | Admit all lobby | `admit-all-btn` | button | Q | U-E | P0 | partial | U-admit-all-btn |
+| Doctor-Portal/01_Login_Page.md | Email input | `login-email` | input | A | U-A | P0 | covered | U-login-email |
+| Doctor-Portal/01_Login_Page.md | Password input | `login-password` | input | A | U-A | P0 | covered | U-login-password |
+| Doctor-Portal/01_Login_Page.md | Login submit | `login-submit` | button | A | U-A | P0 | covered | U-login-submit |
+| Patient-Portal/01_Login_Page.md | Email input | `login-email` | input | A | U-A | P0 | covered | U-login-email |
+| Patient-Portal/01_Login_Page.md | Password input | `login-password` | input | A | U-A | P0 | covered | U-login-password |
+| Patient-Portal/01_Login_Page.md | Login submit | `login-submit` | button | A | U-A | P0 | covered | U-login-submit |
+| Patient-Portal/06_PHR_Page.md | Overview tab | `phr-tab-overview` | tab | F | U-B | P0 | covered | U-phr-tab-overview |
+| Patient-Portal/06_PHR_Page.md | Vitals tab | `phr-tab-vitals` | tab | F | U-B | P0 | covered | U-phr-tab-vitals |
+| Patient-Portal/06_PHR_Page.md | Medications tab | `phr-tab-medications` | tab | F | U-B | P0 | covered | U-phr-tab-medications |
+| Patient-Portal/06_PHR_Page.md | Allergies tab | `phr-tab-allergies` | tab | F | U-B | P0 | covered | U-phr-tab-allergies |
+| Patient-Portal/06_PHR_Page.md | Lab tab | `phr-tab-lab-imaging` | tab | F | U-B | P0 | covered | U-phr-tab-lab-imaging |
+| Patient-Portal/06_PHR_Page.md | Prescriptions tab | `phr-tab-prescriptions` | tab | F | U-B | P0 | covered | U-phr-tab-prescriptions |
+| Patient-Portal/06_PHR_Page.md | Documents tab | `phr-tab-documents` | tab | F | U-B | P0 | covered | U-phr-tab-documents |
+| Patient-Portal/06_PHR_Page.md | Profile tab | `phr-tab-profile` | tab | F | U-B | P0 | covered | U-phr-tab-profile |
+| Patient-Portal/06_PHR_Page.md | Document upload | `phr-document-upload` | input | F | U-B | P0 | covered | U-phr-document-upload |
+| Doctor-Portal/06_Health_Meeting_Page.md | Page root | `health-meeting-page` | container | D | U-C | P0 | covered | U-health-meeting-page |
+| Doctor-Portal/06_Health_Meeting_Page.md | Queue list | `queue-list` | container | D | U-C | P0 | covered | U-queue-list |
+| Doctor-Portal/06_Health_Meeting_Page.md | Queue KPI | `queue-count` | display | D | U-C | P0 | covered | U-queue-count |
+| Doctor-Portal/06_Health_Meeting_Page.md | Claim appointment | `queue-claim-btn` | button | D | U-C | P0 | covered | U-queue-claim-btn |
+| Doctor-Portal/06_Health_Meeting_Page.md | AI match | `queue-ai-match-btn` | button | D | U-C | P0 | covered | U-queue-ai-match-btn |
+| Doctor-Portal/06_Health_Meeting_Page.md | Confirm appointment | `confirm-appointment-btn` | button | D | U-C | P0 | covered | U-confirm-appointment-btn |
+| Doctor-Portal/05_Patient_Management_Page.md | Send message | `patient-message-send-btn` | button | E | U-C | P0 | covered | U-patient-message-send-btn |
+| Doctor-Portal/10_Lab_Orders.md | Lab PDF upload | `lab-report-upload-btn` | button | L | U-C | P0 | covered | U-lab-report-upload-btn |
+| Doctor-Portal/10_Lab_Orders.md | Imaging upload | `imaging-report-upload-btn` | button | L | U-C | P0 | covered | U-imaging-report-upload-btn |
+| Doctor-Portal/09_Prescribing.md | Prescribe submit | `prescribe-submit` | button | E | U-C | P0 | covered | U-prescribe-submit |
+| Doctor-Portal/08_EMR_Editor.md | EMR autosave | `emr-autosave-status` | display | E | U-C | P0 | covered | U-emr-autosave-status |
+| Meeting-Server/01_Meeting_Room.md | End meeting | `end-meeting-btn` | button | Q | U-E | P0 | covered | U-end-meeting-btn |
+| Meeting-Server/01_Meeting_Room.md | Admit all lobby | `admit-all-btn` | button | Q | U-E | P0 | covered | U-admit-all-btn |
 | Meeting-Server/02_Meeting_Results.md | Generate summary | `generate-summary-btn` | button | Q2 | U-E | P0 | partial | U-generate-summary-btn |
 | Meeting-Server/02_Meeting_Results.md | Results modal | `meeting-results` | modal | Q2 | U-E | P0 | partial | U-meeting-results |
 | Doctor-Portal/00_Doctor_Portal_Overview.md | Data Testid | `data-testid` | control | B | U-B | P1 | missing | U-data-testid |

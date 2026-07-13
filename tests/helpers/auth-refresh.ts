@@ -262,7 +262,9 @@ export async function reinjectAuthFromStorageFile(
   let lastErr: unknown;
   for (let attempt = 0; attempt < 4; attempt++) {
     try {
+      if (page.isClosed()) return;
       await page.waitForLoadState('domcontentloaded', { timeout: 8_000 }).catch(() => {});
+      if (page.isClosed()) return;
       await page.evaluate((entries: Array<{ name: string; value: string }>) => {
         for (const e of entries) localStorage.setItem(e.name, e.value);
         localStorage.setItem('izara_patient_last_activity', Date.now().toString());
@@ -272,9 +274,16 @@ export async function reinjectAuthFromStorageFile(
     } catch (err) {
       lastErr = err;
       const msg = err instanceof Error ? err.message : String(err);
-      const transient = /Execution context was destroyed|Target page, context or browser has been closed|navigation/i.test(msg);
+      const closed = /Target page, context or browser has been closed/i.test(msg);
+      // Teardown / viewport churn can close the page mid-reinject — treat as no-op.
+      if (closed || page.isClosed()) return;
+      const transient = /Execution context was destroyed|navigation/i.test(msg);
       if (!transient || attempt === 3) throw err;
-      await page.waitForTimeout(400 * (attempt + 1));
+      try {
+        await page.waitForTimeout(400 * (attempt + 1));
+      } catch {
+        return;
+      }
     }
   }
   throw lastErr;

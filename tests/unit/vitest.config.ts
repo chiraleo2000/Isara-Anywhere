@@ -39,6 +39,9 @@ const GROUP_AUTH = [
   'patient-portal/auth-context.test.ts',
   'patient-portal/registerRoute.test.ts',
   'patient-portal/resetPasswordRoute.test.ts',
+  'cross-portal/authLockoutContract.test.ts',
+  'cross-portal/crossRoleApiDenialContract.test.ts',
+  'cross-portal/googleSsoContract.test.ts',
 ];
 const GROUP_APPOINTMENTS = [
   'doctor-portal/appointmentService.test.ts',
@@ -57,6 +60,9 @@ const GROUP_APPOINTMENTS = [
   'patient-portal/guestMeetingJoin.test.ts',
   'patient-portal/processPagesContract.test.ts',
   'doctor-portal/appointmentPoolManagement.test.ts',
+  'cross-portal/adminCannotConfirmContract.test.ts',
+  'cross-portal/declineToPoolContract.test.ts',
+  'cross-portal/confirmTripleNotifyContract.test.ts',
 ];
 const GROUP_CLINICAL = [
   'doctor-portal/meetingResultsValidation.test.ts',
@@ -76,6 +82,11 @@ const GROUP_CLINICAL = [
   'patient-portal/pdpaRoute.test.ts',
   'patient-portal/pdpaWorkflow.test.ts',
   'patient-portal/pdpaAudit.integration.test.ts',
+  'patient-portal/phrCrudContract.test.ts',
+  'cross-portal/emrSignDeliveryContract.test.ts',
+  'cross-portal/imagingRxLabDeliveryContract.test.ts',
+  'cross-portal/pdpaG15G16Contract.test.ts',
+  'cross-portal/livingWillShareContract.test.ts',
 ];
 const GROUP_CONTENT = [
   'doctor-portal/medicalContentWorkflow.test.ts',
@@ -87,6 +98,7 @@ const GROUP_CONTENT = [
   'patient-portal/contentImageRenderer.test.ts',
   'cross-portal/contentVisibilityContract.test.ts',
   'cross-portal/contentWorkflowContract.test.ts',
+  'cross-portal/contentApprovalStateMachine.test.ts',
   'cross-portal/adminNavBadges.test.ts',
 ];
 const GROUP_MEETING = [
@@ -102,6 +114,8 @@ const GROUP_MEETING = [
   'meeting-server/lobbyFlow.test.ts',
   'meeting-server/lobbyKeyResolve.test.ts',
   'meeting-server/transcriptionFlow.test.ts',
+  'meeting-server/transcriptHostControlsContract.test.ts',
+  'meeting-server/guestAnonymousDenyContract.test.ts',
   'meeting-server/joinConfigAcceptance.test.ts',
   'meeting-server/meetingCreateAcceptance.test.ts',
   'meeting-server/hostReadyGate.test.ts',
@@ -114,6 +128,8 @@ const GROUP_MEETING = [
   'patient-portal/videoMeetingRoute.test.ts',
   'cross-portal/jitsiMeetingConfig.test.ts',
   'cross-portal/defectIsaraPdfMeetingQueue.test.ts',
+  'cross-portal/mitlValidateContract.test.ts',
+  'cross-portal/adminLobbyModeratorDenyContract.test.ts',
   'patient-portal/jitsiDisplayName.behavior.test.ts',
 ];
 const GROUP_AI = [
@@ -138,6 +154,8 @@ const GROUP_NOTIFICATIONS = [
   'patient-portal/notificationWorkflow.test.ts',
   'patient-portal/notificationRowNormalize.test.ts',
   'patient-portal/notificationMarkAllRead.behavior.test.ts',
+  'cross-portal/notificationDedupContract.test.ts',
+  'cross-portal/confirmTripleNotifyContract.test.ts',
 ];
 const GROUP_SECURITY = [
   'doctor-portal/owaspMiddleware.test.ts',
@@ -147,6 +165,8 @@ const GROUP_SECURITY = [
   'patient-portal/owasp-middleware.test.ts',
   'security/corsAndRateLimiting.test.ts',
   'security/security-validation.test.ts',
+  'cross-portal/securityScanningContract.test.ts',
+  'config/envForbiddenKeys.test.ts',
 ];
 const GROUP_PATIENT_WORKFLOWS = [
   'patient-portal/dashboardWorkflow.test.ts',
@@ -159,6 +179,7 @@ const GROUP_PATIENT_WORKFLOWS = [
 const GROUP_DATABASE = [
   'database/appointmentTx.integration.test.ts',
   'config/envSchema.test.ts',
+  'config/envForbiddenKeys.test.ts',
   'database/data-validation.test.ts',
   'database/embeddedPg.test.ts',
   'database/schema-validation.test.ts',
@@ -166,10 +187,12 @@ const GROUP_DATABASE = [
 ];
 const GROUP_ADMIN = [
   'doctor-portal/scheduleManagement.test.ts',
+  'doctor-portal/scheduleCalendarMapperContract.test.ts',
   'doctor-portal/patientDetailView.test.ts',
   'doctor-portal/clinicalResources.test.ts',
   'doctor-portal/adminDoctorManagement.test.ts',
   'doctor-portal/adminAppointmentManagement.test.ts',
+  'doctor-portal/doctorProfileCrudContract.test.ts',
 ];
 const GROUP_CROSS_PORTAL = [
   'cross-portal/postMeetingWorkflow.integration.test.ts',
@@ -202,6 +225,24 @@ const GROUP_CROSS_PORTAL = [
   'cross-portal/appointmentUxContract.test.ts',
   'cross-portal/meetingUxContract.test.ts',
   'cross-portal/phrEmrUxContract.test.ts',
+  'cross-portal/workflowConnectionsContract.test.ts',
+  'cross-portal/securityScanningContract.test.ts',
+  'cross-portal/twoRoundCloudTestingContract.test.ts',
+  'cross-portal/authLockoutContract.test.ts',
+  'cross-portal/crossRoleApiDenialContract.test.ts',
+  'cross-portal/googleSsoContract.test.ts',
+  'cross-portal/adminCannotConfirmContract.test.ts',
+  'cross-portal/declineToPoolContract.test.ts',
+  'cross-portal/confirmTripleNotifyContract.test.ts',
+  'cross-portal/mitlValidateContract.test.ts',
+  'cross-portal/emrSignDeliveryContract.test.ts',
+  'cross-portal/imagingRxLabDeliveryContract.test.ts',
+  'cross-portal/notifySocketRoomMapContract.test.ts',
+  'cross-portal/pdpaG15G16Contract.test.ts',
+  'cross-portal/livingWillShareContract.test.ts',
+  'cross-portal/contentApprovalStateMachine.test.ts',
+  'cross-portal/notificationDedupContract.test.ts',
+  'cross-portal/adminLobbyModeratorDenyContract.test.ts',
   'doctor-portal/emrAiDraft.test.ts',
   'doctor-portal/meetingRoomRoutes.test.ts',
   'doctor-portal/telemedDashboard.test.ts',

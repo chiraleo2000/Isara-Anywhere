@@ -10,7 +10,7 @@ Maps each Processes document to Vitest contracts, Playwright groups, and gate st
 npm run test:local:pre-deploy-gate
 ```
 
-**Latest:** 2026-07-09 — Group U UI element audit; `UI_ELEMENT_COVERAGE_MATRIX.md`; page 20 DEPRECATED → health-meeting queue.
+**Latest:** 2026-07-13 — Requirements-driven unit depth (SECURITY/TWO_ROUND/WORKFLOW_CONNECTIONS registry + auth/GATE0/MITL/delivery/PDPA/content packs); Group U deep audit P0 covered=28; `phase:9:strict` includes Group U.
 
 | Step | Command | Process docs covered |
 |------|---------|-------------------|

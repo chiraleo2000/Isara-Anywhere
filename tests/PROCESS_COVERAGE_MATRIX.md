@@ -1,17 +1,29 @@
 # Process Documentation → Test Coverage Matrix
 
-**Last updated:** 2026-07-10 (580 controls, P0 missing=0; process gaps=0; phase:9 PASS P0=0; +documentDelivery/Jitsi/pool-redirect unit packs)
+**Last updated:** 2026-07-13 (599 controls, P0 covered=28 / partial=2 / missing=0; process gaps=0; +requirements-driven unit packs v1.7.60)
 
 ## UI element coverage (Group U)
 
 | Artifact | Role |
 |----------|------|
-| [`UI_ELEMENT_COVERAGE_MATRIX.md`](UI_ELEMENT_COVERAGE_MATRIX.md) | Per-control testid registry (580 controls; P0 missing=0) |
-| `group-U-ui-element-audit.ui-test.ts` | Parallel headed click/type + screenshot per P0 control |
+| [`UI_ELEMENT_COVERAGE_MATRIX.md`](UI_ELEMENT_COVERAGE_MATRIX.md) | Per-control testid registry (599 controls; P0 missing=0; 28 P0 covered via Group U deep audit) |
+| `group-U-ui-element-audit.ui-test.ts` | Headed click/type + screenshot — login, PHR tabs, queue, schedule, EMR/Rx/lab, PDPA, meeting, notifications |
 | `pageElementContract.test.ts` | Vitest: P0 testids exist in frontend |
 | `processDocContentContract.test.ts` | Vitest: all 42 pages have UI Controls Inventory |
 
-**Regenerate:** `python scripts/audit-ui-element-coverage.py`
+**Regenerate:** `python scripts/audit-ui-element-coverage.py` then `python scripts/promote-group-u-p0-covered.py`
+
+## Requirements-driven unit packs (v1.7.60)
+
+| Pack | File |
+|------|------|
+| Workflow connections / Security / Two-round | `workflowConnectionsContract`, `securityScanningContract`, `twoRoundCloudTestingContract`, `envForbiddenKeys` |
+| Auth | `authLockoutContract`, `crossRoleApiDenialContract`, `googleSsoContract` |
+| Appointments / GATE0 | `adminCannotConfirmContract`, `declineToPoolContract`, `confirmTripleNotifyContract` |
+| Meeting / MITL | `transcriptHostControlsContract`, `guestAnonymousDenyContract`, `mitlValidateContract`, `adminLobbyModeratorDenyContract` |
+| Clinical delivery | `emrSignDeliveryContract`, `imagingRxLabDeliveryContract`, `phrCrudContract`, `notifySocketRoomMapContract` |
+| PDPA / Content / Notify | `pdpaG15G16Contract`, `livingWillShareContract`, `contentApprovalStateMachine`, `notificationDedupContract` |
+| Profile / Schedule | `doctorProfileCrudContract`, `scheduleCalendarMapperContract` |
 
 ## v5.2 contract packs
 
