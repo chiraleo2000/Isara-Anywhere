@@ -128,6 +128,11 @@ tests/output/screenshots/**/*.png
 # Full-deck exports (regenerate locally; committed guides live under docs/)
 Presentations/IZARA_User_Guide.pdf
 Presentations/IZARA_User_Guide.docx
+Presentations/media/
+
+# Stale screenshot mirrors (canonical: docs/screenshots/)
+Documents/docs/screenshots/
+/screenshots/
 
 # User guide build intermediates (source of truth: Documents/docs/guides/**)
 Documents/docs/guides/**/USER_GUIDE_PATIENT_WORD_TH.md
@@ -143,4 +148,15 @@ Documents/docs/guides/**/USER_GUIDE_WORD_REPORT_TH.*
 Documents/docs/guides/**/*Portal_*Sample*
 Documents/docs/guides/**/USER_GUIDE_PATIENT_TH.md
 Documents/docs/guides/**/USER_GUIDE_DOCTOR_TH.md
-# PDF exports: committed under Documents/docs/guides/** and Documents/docs/technical/pdf/
+# PDF exports — regenerable via npm run guides:pdf / guides:technical
+Documents/docs/guides/**/*.pdf
+Documents/docs/technical/**/*.pdf
+Documents/docs/technical/pdf/
+# Per-browser screenshot twins (flat PNGs under docs/screenshots/group-* are enough)
+docs/screenshots/**/browsers/
+
+# DB dump artifacts (keep scripts/output/startup-data + local-db-export)
+scripts/output/backup_*
+scripts/output/izara-*.zip
+scripts/output/izara-*.sql
+scripts/output/prod-data-export.*

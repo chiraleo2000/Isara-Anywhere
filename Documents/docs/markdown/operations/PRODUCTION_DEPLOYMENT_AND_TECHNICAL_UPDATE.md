@@ -874,7 +874,7 @@ npm run test:e2e:meeting-lifecycle          # requires cloud credentials
 | PDF defect register (23 items) | 2026-05-30 | **Verified** — `reports/defect-fix/DEFECT_REGISTER.md` |
 | `npm run test:quality:gate` | 2026-05-30 | **PASS** — 151 files, 2736 unit tests |
 | Defect-regression Playwright | 2026-05-30 | **36/36** PASS |
-| `npm run test:cloud:full` (headed) | 2026-05-31 | **85/85** PASS, 212 PNG → `Documents/docs/screenshots/` |
+| `npm run test:cloud:full` (headed) | 2026-05-31 | **85/85** PASS, 212 PNG → `docs/screenshots/` |
 | User guides | 2026-05-31 | Patient PPT 76 imgs, Doctor DOCX/PPT 93 imgs |
 
 Ledger: `reports/defect-fix/v1.7.48-final.txt`, `Documents/docs/markdown/testing/UNIT_TEST_UI_COVERAGE.md`
@@ -896,7 +896,7 @@ Ledger: `reports/defect-fix/v1.7.48-final.txt`, `Documents/docs/markdown/testing
 |------|------|--------|
 | `npm run test:e2e:docker:core-multibrowser` | 2026-06-05 | **PASS** — A-auth 13/13 + W-core × 3 browsers **18/18** |
 | DB baseline | each browser run | `cleanup-test-data.sql` + `seed-dev-data.sql` before Chromium, Firefox, WebKit |
-| Screenshot sync | post-green | `npm run docs:sync-screenshots` → `Documents/docs/screenshots/group-W/` |
+| Screenshot sync | post-green | `npm run docs:sync-screenshots` → `docs/screenshots/group-W/` |
 
 Setup: [DOCKER_MULTIBROWSER_E2E.md](../testing/DOCKER_MULTIBROWSER_E2E.md) · User guide: [APPOINTMENT_USER_GUIDE.md](APPOINTMENT_USER_GUIDE.md) § Docker Multi-Browser Verification
 
@@ -910,7 +910,7 @@ Setup: [DOCKER_MULTIBROWSER_E2E.md](../testing/DOCKER_MULTIBROWSER_E2E.md) · Us
 | 1.1 | 2026-05-23 | Structural review, encryption, E2E map, demo cleanup, Thai doc regeneration |
 | 1.2 | 2026-05-31 | v1.7.48 defect re-audit; cloud full 85/85 headed; 212 UI screenshots |
 | 1.3 | 2026-06-05 | v1.7.50 queue traceability + Jitsi JWT roles; Docker test suite 2938+78 |
-| 1.4 | 2026-06-05 | Group W Docker multi-browser E2E 18/18; screenshots synced to `Documents/docs/screenshots/group-W/` |
+| 1.4 | 2026-06-05 | Group W Docker multi-browser E2E 18/18; screenshots synced to `docs/screenshots/group-W/` |
 
 **Related artifacts:**
 

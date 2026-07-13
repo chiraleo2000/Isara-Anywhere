@@ -6,8 +6,8 @@
 > **Cloud E2E Test Results: PASS — full headed cloud suite (85/85, 2026-05-31)**
 > **Docker Multi-Browser E2E: PASS — Group W (18/18, Chromium + Firefox + WebKit, 2026-06-05)**
 > Tested on: `2026-05-31` (cloud) · `2026-06-05` (Docker local) | Environment: Cloud Run + Docker Compose
-> Groups A–P — headed Playwright, 1 worker, 212 screenshots → `Documents/docs/screenshots/`
-> Group W — Docker multi-browser, 39 workflow PNG → `Documents/docs/screenshots/group-W/` (sync: `npm run docs:sync-screenshots`)
+> Groups A–P — headed Playwright, 1 worker, 212 screenshots → `docs/screenshots/`
+> Group W — Docker multi-browser, 39 workflow PNG → `docs/screenshots/group-W/` (sync: `npm run docs:sync-screenshots`)
 > Defect track: v1.7.51 | Unit Tests: **2982/2982** ✅ | Local E2E core: **35/35, 0 skipped** ✅ | Cloud UI: **85/85** ✅ | Docker W: **18/18** ✅
 
 ---
@@ -1246,7 +1246,7 @@ Workers:      1 (serial D→E→F chain)
 Browser:      Headed (Chrome/Edge/Firefox per fixture)
 Total Time:   7.7 minutes
 Result:       85/85 PASSED ✅
-Screenshots:  212 PNG in Documents/docs/screenshots/ (16 folders)
+Screenshots:  212 PNG in docs/screenshots/ (16 folders)
 ```
 
 | Group | Focus | Tests |
@@ -1273,7 +1273,7 @@ Environment:  Docker Compose (patient :3005, doctor :3010, meeting :3020)
 Browsers:     Chromium, Firefox, WebKit (PW_CORE_BROWSER per project)
 Workers:      1 (serial W01→W06 per engine)
 Result:       18/18 PASSED ✅  (+ A-auth 13/13)
-Screenshots:  39 PNG → tests/output/screenshots/ → sync to Documents/docs/screenshots/group-W/
+Screenshots:  39 PNG → tests/output/screenshots/ → sync to docs/screenshots/group-W/
 ```
 
 Full setup guide: [DOCKER_MULTIBROWSER_E2E.md](../testing/DOCKER_MULTIBROWSER_E2E.md)
@@ -1287,7 +1287,7 @@ Full setup guide: [DOCKER_MULTIBROWSER_E2E.md](../testing/DOCKER_MULTIBROWSER_E2
 | W05 | Patient detail + EMR editor | ![W05 EMR](../../screenshots/group-W/W05-emr-editor.png) |
 | W06 | Gemini AI Studio + API Connected | ![W06 Gemini](../../screenshots/group-W/W06-gemini-api-connected.png) |
 
-Per-browser captures: `Documents/docs/screenshots/group-W/browsers/{chromium,firefox,webkit}/`
+Per-browser captures: `docs/screenshots/group-W/browsers/{chromium,firefox,webkit}/`
 
 Refresh after green runs: `npm run docs:sync-screenshots`
 

@@ -570,7 +570,7 @@ npm run test:unit:docker          # full Vitest in container
 npm run test:unit:docker:grouped  # memory-safe shards
 npm run test:unit:docker:deploy   # rebuild stack + unit + contracts
 npm run test:e2e:docker:core-multibrowser  # Group W — Chromium + Firefox + WebKit
-npm run docs:sync-screenshots     # copy green PNGs → Documents/docs/screenshots/group-W/
+npm run docs:sync-screenshots     # copy green PNGs → docs/screenshots/group-W/
 ```
 
 **Cross-reference:** [DOCKER_MULTIBROWSER_E2E.md](../docs/markdown/testing/DOCKER_MULTIBROWSER_E2E.md) · [UNIT_TEST_UI_COVERAGE.md](../docs/markdown/testing/UNIT_TEST_UI_COVERAGE.md) · **Diagram:** [html-diagrams/17-testing-quality-gate.html](html-diagrams/17-testing-quality-gate.html) · **Thai docs:** [../Technical_Documents/](../Technical_Documents/)
@@ -579,17 +579,17 @@ npm run docs:sync-screenshots     # copy green PNGs → Documents/docs/screensho
 
 | Test project | Browser | Tests | Screenshot folder |
 | --- | --- | --- | --- |
-| W-core-chromium | Chromium | 6 (W01–W06) | `Documents/docs/screenshots/group-W/browsers/chromium/` |
-| W-core-firefox | Firefox | 6 | `Documents/docs/screenshots/group-W/browsers/firefox/` |
-| W-core-webkit | WebKit | 6 | `Documents/docs/screenshots/group-W/browsers/webkit/` |
+| W-core-chromium | Chromium | 6 (W01–W06) | `docs/screenshots/group-W/browsers/chromium/` |
+| W-core-firefox | Firefox | 6 | `docs/screenshots/group-W/browsers/firefox/` |
+| W-core-webkit | WebKit | 6 | `docs/screenshots/group-W/browsers/webkit/` |
 
 Canonical Chromium captures (used in user guides):
 
-![W02 appointments](../docs/screenshots/group-W/W02-appointments-list.png)
+![W02 appointments](../../docs/screenshots/group-W/W02-appointments-list.png)
 
-![W04 virtual meeting](../docs/screenshots/group-W/W04-doctor-virtual-meeting.png)
+![W04 virtual meeting](../../docs/screenshots/group-W/W04-doctor-virtual-meeting.png)
 
-![W06 Gemini AI Studio](../docs/screenshots/group-W/W06-gemini-api-connected.png)
+![W06 Gemini AI Studio](../../docs/screenshots/group-W/W06-gemini-api-connected.png)
 
 ### 7.1.1 Cloud Test Suites (tests/*.ui-test.ts) — 215 Tests
 

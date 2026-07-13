@@ -10,7 +10,7 @@
 > **Visuals:** [html-diagrams/17-testing-quality-gate.html](html-diagrams/17-testing-quality-gate.html) · [23-defect-remediation-v1748.html](html-diagrams/23-defect-remediation-v1748.html)
 > **Thai technical (As-is):** [../Technical_Documents/01_System_Architecture_and_Workflow.md](../Technical_Documents/01_System_Architecture_and_Workflow.md) · [05 process steps](../Technical_Documents/05_Appendix_Full_Process_Steps.md)
 > **Coverage:** [UNIT_TEST_UI_COVERAGE.md](../docs/markdown/testing/UNIT_TEST_UI_COVERAGE.md) · [DOCKER_MULTIBROWSER_E2E.md](../docs/markdown/testing/DOCKER_MULTIBROWSER_E2E.md)
-> **UI evidence:** [../docs/screenshots/group-W/](../docs/screenshots/group-W/)
+> **UI evidence:** [../docs/screenshots/group-W/](../../docs/screenshots/group-W/)
 
 ---
 

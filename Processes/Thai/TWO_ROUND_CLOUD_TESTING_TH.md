@@ -197,7 +197,7 @@ npm run test:e2e:meeting-lifecycle
 | E10d | Patient | Public `/meeting/{id}` — no portal login; Jitsi iframe after lobby + host-ready |
 | E21+ | Guest / admin guest | `/guest-join/{id}?guestType=admin` — lobby → admit → iframe, camera/mic |
 
-### Screenshot groups (auto under `Documents/docs/screenshots/`)
+### Screenshot groups (auto under `docs/screenshots/`)
 
 | Group | Content |
 |-------|---------|
@@ -206,7 +206,7 @@ npm run test:e2e:meeting-lifecycle
 | F | PHR / lab after E2a |
 | J-meeting-jitsi | Jitsi iframe visible (แพทย์ + ผู้ป่วย) |
 
-Playwright saves via `snap()` helper → `Documents/docs/screenshots/group-{D|E|F|J}/`.
+Playwright saves via `snap()` helper → `docs/screenshots/group-{D|E|F|J}/`.
 
 ### Troubleshooting
 

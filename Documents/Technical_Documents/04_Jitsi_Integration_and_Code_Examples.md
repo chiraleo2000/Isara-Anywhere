@@ -748,16 +748,16 @@ flowchart TB
 
 ทดสอบ W04 ใน Docker Compose — ห้องประชุมแพทย์และผู้ป่วย (Chromium canonical):
 
-![Doctor virtual meeting](../docs/screenshots/group-W/W04-doctor-virtual-meeting.png)
+![Doctor virtual meeting](../../docs/screenshots/group-W/W04-doctor-virtual-meeting.png)
 
-![Patient meeting room](../docs/screenshots/group-W/W04-patient-meeting-room.png)
+![Patient meeting room](../../docs/screenshots/group-W/W04-patient-meeting-room.png)
 
 คู่มือเต็ม: [DOCKER_MULTIBROWSER_E2E.md](../docs/markdown/testing/DOCKER_MULTIBROWSER_E2E.md)
 
 ### 13.7 ทดสอบอัตโนมัติ (อ้างอิงจาก Processes)
 
-- Playwright Groups D, Q, video-meeting workflow screenshots ใน `Documents/docs/screenshots/`
-- **Docker Group W (2026-06-05):** `npm run test:e2e:docker:core-multibrowser` — 18/18 Chromium + Firefox + WebKit; PNG → `Documents/docs/screenshots/group-W/` (`npm run docs:sync-screenshots`)
+- Playwright Groups D, Q, video-meeting workflow screenshots ใน `docs/screenshots/`
+- **Docker Group W (2026-06-05):** `npm run test:e2e:docker:core-multibrowser` — 18/18 Chromium + Firefox + WebKit; PNG → `docs/screenshots/group-W/` (`npm run docs:sync-screenshots`)
 - **Local Docker (v1.7.50):** `npm run test:unit:docker:deploy` — rebuild stack + **2938** Vitest (167 files) + **78** meeting-server contracts
 - **Grouped (memory-safe):** `npm run test:unit:docker:grouped` — doctor / patient / cross-portal / meeting-server
 - Defect PDF regression: `queueAcceptTraceability.test.ts`, `defectIsaraPdfMeetingQueue.test.ts`, `jitsiRoleJwt.test.ts`

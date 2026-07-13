@@ -53,7 +53,7 @@ npm run test:meeting-server:contract
 # Group W — Chromium + Firefox + WebKit in Docker (DB reset per browser)
 npm run test:e2e:docker:core-multibrowser
 
-# Copy green screenshots into Documents/docs/screenshots/group-W/
+# Copy green screenshots into docs/screenshots/group-W/
 npm run docs:sync-screenshots
 ```
 

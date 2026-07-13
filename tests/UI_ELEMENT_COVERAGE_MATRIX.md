@@ -1,7 +1,7 @@
 # UI Element Coverage Matrix
 
 **Generated:** auto (`scripts/audit-ui-element-coverage.py`)
-**Controls:** 580 | **covered:** 49 | **partial:** 146 | **missing:** 385
+**Controls:** 599 | **covered:** 56 | **partial:** 147 | **missing:** 396
 **P0 missing:** 0
 
 | Page | Control | testid | Type | Group | Group U | Priority | Status | Screenshot |
@@ -171,6 +171,21 @@
 | Doctor-Portal/11_Patient_Record_Viewer.md | Appointmentid | `appointmentId` | control | F | U-C | P1 | missing | U-appointmentId |
 | Doctor-Portal/11_Patient_Record_Viewer.md | Meetingid | `meetingId` | control | F | U-C | P1 | missing | U-meetingId |
 | Doctor-Portal/11_Patient_Record_Viewer.md | Healthrecordsemrworkflow | `healthRecordsEmrWorkflow` | control | F | U-C | P1 | missing | U-healthRecordsEmrWorkflow |
+| Doctor-Portal/11_Patient_Record_Viewer.md | Patient Record Tab Summary | `patient-record-tab-summary` | control | F | U-C | P1 | missing | U-patient-record-tab-summary |
+| Doctor-Portal/11_Patient_Record_Viewer.md | Patient Record Tab Emr | `patient-record-tab-emr` | control | F | U-C | P1 | missing | U-patient-record-tab-emr |
+| Doctor-Portal/11_Patient_Record_Viewer.md | Patient Record Tab Labs | `patient-record-tab-labs` | control | F | U-C | P1 | missing | U-patient-record-tab-labs |
+| Doctor-Portal/11_Patient_Record_Viewer.md | Patient Record Tab Rx | `patient-record-tab-rx` | control | F | U-C | P1 | missing | U-patient-record-tab-rx |
+| Doctor-Portal/11_Patient_Record_Viewer.md | Patient Record Tab Docs | `patient-record-tab-docs` | control | F | U-C | P1 | missing | U-patient-record-tab-docs |
+| Doctor-Portal/11_Patient_Record_Viewer.md | Patient Record Tab Meetings | `patient-record-tab-meetings` | control | F | U-C | P1 | missing | U-patient-record-tab-meetings |
+| Doctor-Portal/11_Patient_Record_Viewer.md | Patient Record Tab Pdpa | `patient-record-tab-pdpa` | control | F | U-C | P1 | missing | U-patient-record-tab-pdpa |
+| Doctor-Portal/11_Patient_Record_Viewer.md | Patient Record Lab Download | `patient-record-lab-download` | control | F | U-C | P1 | covered | U-patient-record-lab-download |
+| Doctor-Portal/11_Patient_Record_Viewer.md | Patient Record Rx Download | `patient-record-rx-download` | control | F | U-C | P1 | covered | U-patient-record-rx-download |
+| Doctor-Portal/11_Patient_Record_Viewer.md | Patient Record Doc Download | `patient-record-doc-download` | control | F | U-C | P1 | covered | U-patient-record-doc-download |
+| Doctor-Portal/11_Patient_Record_Viewer.md | Patient Record Doc Upload | `patient-record-doc-upload` | control | F | U-C | P1 | covered | U-patient-record-doc-upload |
+| Doctor-Portal/11_Patient_Record_Viewer.md | Patient Record Video Download | `patient-record-video-download` | control | F | U-C | P1 | covered | U-patient-record-video-download |
+| Doctor-Portal/11_Patient_Record_Viewer.md | Dashboard Search Treatment History | `dashboard-search-treatment-history` | control | F | U-C | P1 | covered | U-dashboard-search-treatment-history |
+| Doctor-Portal/11_Patient_Record_Viewer.md | Externalrecords | `externalRecords` | control | F | U-C | P1 | missing | U-externalRecords |
+| Doctor-Portal/11_Patient_Record_Viewer.md | Userealtimesync | `useRealtimeSync` | control | F | U-C | P1 | missing | U-useRealtimeSync |
 | Doctor-Portal/12_Medical_Consultants_Page.md | Data Testid | `data-testid` | control | H | U-C | P1 | missing | U-data-testid |
 | Doctor-Portal/12_Medical_Consultants_Page.md | Confirmed | `confirmed` | control | H | U-C | P1 | missing | U-confirmed |
 | Doctor-Portal/12_Medical_Consultants_Page.md | Appointmentid | `appointmentId` | control | H | U-C | P1 | missing | U-appointmentId |
@@ -400,6 +415,7 @@
 | Patient-Portal/05_Appointments_Page.md | Pending | `pending` | control | D | U-B | P1 | missing | U-pending |
 | Patient-Portal/05_Appointments_Page.md | Userealtimesync | `useRealtimeSync` | control | D | U-B | P1 | missing | U-useRealtimeSync |
 | Patient-Portal/05_Appointments_Page.md | Onappointmentchange | `onAppointmentChange` | control | D | U-B | P1 | missing | U-onAppointmentChange |
+| Patient-Portal/06_PHR_Page.md | Userealtimesync | `useRealtimeSync` | control | F | U-B | P1 | missing | U-useRealtimeSync |
 | Patient-Portal/06_PHR_Page.md | Data Testid | `data-testid` | control | F | U-B | P1 | missing | U-data-testid |
 | Patient-Portal/06_PHR_Page.md | Confirmed | `confirmed` | control | F | U-B | P1 | missing | U-confirmed |
 | Patient-Portal/06_PHR_Page.md | Phr Page | `phr-page` | control | F | U-B | P1 | covered | U-phr-page |
@@ -462,6 +478,8 @@
 | Patient-Portal/14_Timeline_Page.md | Message | `message` | control | J | U-B | P1 | missing | U-message |
 | Patient-Portal/14_Timeline_Page.md | Code | `code` | control | J | U-B | P1 | missing | U-code |
 | Patient-Portal/14_Timeline_Page.md | Timelinepage | `timelinePage` | control | J | U-B | P1 | missing | U-timelinePage |
+| Patient-Portal/14_Timeline_Page.md | Timeline Download | `timeline-download` | control | J | U-B | P1 | covered | U-timeline-download |
+| Patient-Portal/14_Timeline_Page.md | Userealtimesync | `useRealtimeSync` | control | J | U-B | P1 | missing | U-useRealtimeSync |
 | Patient-Portal/15_Notification_System.md | Data Testid | `data-testid` | control | I | U-B | P1 | missing | U-data-testid |
 | Patient-Portal/15_Notification_System.md | Confirmed | `confirmed` | control | I | U-B | P1 | missing | U-confirmed |
 | Patient-Portal/15_Notification_System.md | Appointmentid | `appointmentId` | control | I | U-B | P1 | missing | U-appointmentId |

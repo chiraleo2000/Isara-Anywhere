@@ -18,7 +18,7 @@ HTML slides (Sarabun 16 pt): `Documents/docs/technical/slides/TECHNICAL_ARCHITEC
 
 **After cloud / Code Breaker testing:** purge demo data only (no re-seed): `npm run cleanup:cloud-test-only` (requires valid `DB_PASSWORD` in `.env`)
 
-**Current doc build:** v1.7.53 · Unit **~3200** + meeting contracts **78** + Socket.IO integration · Phase gates **0–9** · LAN Mode B (`deploy/nginx/`) · Static guards `test:guards:static` · Word `TH Sarabun New` 16 pt · PPT `FC Iconic` 32/18/16 pt · Screenshots groups A–S in `Documents/docs/screenshots/` (sync: `npm run docs:sync-screenshots`) · Prune stale artifacts: `npm run cleanup:project`
+**Current doc build:** v1.7.53 · Unit **~3200** + meeting contracts **78** + Socket.IO integration · Phase gates **0–9** · LAN Mode B (`deploy/nginx/`) · Static guards `test:guards:static` · Word `TH Sarabun New` 16 pt · PPT `FC Iconic` 32/18/16 pt · Screenshots groups A–S in `docs/screenshots/` (sync: `npm run docs:sync-screenshots`) · Prune stale artifacts: `npm run cleanup:project`
 
 ---
 

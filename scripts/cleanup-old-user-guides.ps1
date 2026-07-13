@@ -43,4 +43,4 @@ foreach ($sub in @("patient", "doctor")) {
     }
 }
 
-Write-Host "Canonical: Documents/docs/guides/patient|doctor/*.docx|pptx|pdf" -ForegroundColor Green
+Write-Host "Canonical: Documents/docs/guides/patient|doctor/*.docx|pptx (PDF via npm run guides:pdf)" -ForegroundColor Green

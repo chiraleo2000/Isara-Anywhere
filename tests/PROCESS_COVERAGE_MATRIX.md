@@ -86,7 +86,7 @@
 | **Priority** | P0 meeting · P1 clinical/admin · P2 secondary |
 | **UnitTest** | Vitest under `tests/unit/` |
 | **UI** | Playwright project (group letter) |
-| **ScreenshotRef** | Expected PNG under `Documents/docs/screenshots/` |
+| **ScreenshotRef** | Expected PNG under `docs/screenshots/` |
 
 ---
 

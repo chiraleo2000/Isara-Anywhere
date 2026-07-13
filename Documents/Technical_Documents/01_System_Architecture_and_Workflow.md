@@ -527,7 +527,7 @@ flowchart LR
 | 3 | `/admin/appointments` หรือ Health Meeting queue | มอบหมาย `doctor_id` → `awaiting_doctor_response` |
 | 4 | ติดตามคิว | dashboard แอดมิน sync จำนวนคิวกับแพทย์ — หลักฐาน UI: Group W W03 (Health Meeting queue) |
 
-![Health Meeting queue](../docs/screenshots/group-W/W03-health-meeting.png)
+![Health Meeting queue](../../docs/screenshots/group-W/W03-health-meeting.png)
 | 5 | เนื้อหา | อนุมัติ `medical_content` (ถ้ามี workflow รออนุมัติ) |
 
 **ข้อจำกัด As-is:** Admin **ไม่ใช่** Jitsi HOST — เฉพาะแพทย์ที่ได้รับมอบหมายเท่านั้น

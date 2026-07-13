@@ -76,7 +76,7 @@ Presentations/
 ## Testing cross-reference
 
 - Docker multi-browser E2E: [../docs/markdown/testing/DOCKER_MULTIBROWSER_E2E.md](../docs/markdown/testing/DOCKER_MULTIBROWSER_E2E.md)
-- UI screenshots (Group W): [../docs/screenshots/group-W/](../docs/screenshots/group-W/)
+- UI screenshots (Group W): [../docs/screenshots/group-W/](../../docs/screenshots/group-W/)
 - Coverage: [../docs/markdown/testing/UNIT_TEST_UI_COVERAGE.md](../docs/markdown/testing/UNIT_TEST_UI_COVERAGE.md)
 - Diagram: [html-diagrams/17-testing-quality-gate.html](html-diagrams/17-testing-quality-gate.html)
 - Latest defect diagram: [html-diagrams/23-defect-remediation-v1748.html](html-diagrams/23-defect-remediation-v1748.html)
