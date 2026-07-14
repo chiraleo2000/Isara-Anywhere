@@ -538,11 +538,11 @@ When a telehealth consultation is completed, the timeline shows results in patie
 
 | Field | Value |
 |-------|-------|
-| **Status** | covered |
+| **Status** | covered — verified 2026-07-14 (ready_for_patient MITL gate on recording/summary) |
 | **Unit tests** | `timelinePage` |
-| **UI (Playwright)** | Group J |
+| **UI (Playwright)** | Group J, F |
 | **data-testid** | See [tests/SELECTORS.md](../../tests/SELECTORS.md) |
-| **Last verified** | 2026-05-22 |
+| **Last verified** | 2026-07-14 |
 
 **Run locally**
 

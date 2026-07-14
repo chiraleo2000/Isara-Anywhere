@@ -377,11 +377,11 @@ Left: ประวัติการรักษา (month navigator)
 
 | Field | Value |
 |-------|-------|
-| **Status** | covered |
+| **Status** | covered — verified 2026-07-14 (Docs/Meetings socket refresh + ACL download) |
 | **Unit tests** | `healthRecordsEmrWorkflow` |
 | **UI (Playwright)** | Group E, F |
 | **data-testid** | See [tests/SELECTORS.md](../../tests/SELECTORS.md) |
-| **Last verified** | 2026-05-22 |
+| **Last verified** | 2026-07-14 |
 
 **Run locally**
 

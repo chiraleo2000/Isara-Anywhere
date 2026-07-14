@@ -224,6 +224,21 @@ export const PatientRecordViewer: React.FC<PatientRecordViewerProps> = ({
       setLoadedTabs(new Set());
       void loadTabData(activeTab, true);
     },
+    onNotification: () => {
+      if (!hasMedicalAccess) return;
+      // document_delivered and meeting-end arrive as notifications / data:changed fans
+      patientRecordService.invalidatePatient(patient.id);
+      setLoadedTabs(prev => {
+        const next = new Set(prev);
+        next.delete('docs');
+        next.delete('meetings');
+        next.delete('emr');
+        return next;
+      });
+      if (activeTab === 'docs' || activeTab === 'meetings' || activeTab === 'emr') {
+        void loadTabData(activeTab, true);
+      }
+    },
   });
 
   // PDPA consent check on mount

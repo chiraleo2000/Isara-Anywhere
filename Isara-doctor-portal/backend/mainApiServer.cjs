@@ -2035,6 +2035,37 @@ app.post('/api/emr/:emrId/sign', authenticateToken, async (req, res) => {
     if (!signedEmr) {
       return res.status(404).json({ success: false, error: 'EMR not found' });
     }
+
+    try {
+      const patientId = signedEmr.patient_id || signedEmr.patientId;
+      const appointmentId = signedEmr.appointment_id || signedEmr.appointmentId || null;
+      if (patientId && DB_AVAILABLE) {
+        const emrDoc = await publishEmrReportDocument(pool, {
+          patientId,
+          emrId,
+          doctorId,
+          appointmentId,
+          emrRow: signedEmr,
+          healthLogEntry: {
+            encounterDate: signedEmr.signed_at || signedEmr.updated_at || new Date().toISOString(),
+            chiefComplaint: signedEmr.subjective?.text || signedEmr.chief_complaint || '',
+            treatmentPlan: signedEmr.plan?.treatment || signedEmr.treatment_plan || '',
+            followUpInstructions: signedEmr.patient_instructions || signedEmr.patient_instructions_thai || '',
+            aiSummary: signedEmr.ai_summary || '',
+            signedAt: signedEmr.signed_at || new Date().toISOString(),
+          },
+        });
+        await notifyDocumentDelivered({
+          patientId,
+          documentId: emrDoc?.id || null,
+          sourceType: 'emr_report',
+          title: 'รายงาน EMR พร้อมแล้ว',
+          doctorId,
+        });
+      }
+    } catch (pubErr) {
+      console.warn('[EMR] Sign publish skipped:', pubErr.message || pubErr);
+    }
     
     res.json({ success: true, emr: signedEmr });
   } catch (error) {
@@ -2078,6 +2109,37 @@ app.post('/api/emr/sign', authenticateToken, async (req, res) => {
           error: 'EMR not found', 
           code: 'EMR_NOT_FOUND' 
         });
+      }
+
+      try {
+        const patientId = signedEmr.patient_id || signedEmr.patientId;
+        const appointmentId = signedEmr.appointment_id || signedEmr.appointmentId || null;
+        if (patientId) {
+          const emrDoc = await publishEmrReportDocument(pool, {
+            patientId,
+            emrId,
+            doctorId,
+            appointmentId,
+            emrRow: signedEmr,
+            healthLogEntry: {
+              encounterDate: signedEmr.signed_at || signedEmr.updated_at || new Date().toISOString(),
+              chiefComplaint: signedEmr.subjective?.text || signedEmr.chief_complaint || '',
+              treatmentPlan: signedEmr.plan?.treatment || signedEmr.treatment_plan || '',
+              followUpInstructions: signedEmr.patient_instructions || signedEmr.patient_instructions_thai || '',
+              aiSummary: signedEmr.ai_summary || '',
+              signedAt: signedEmr.signed_at || new Date().toISOString(),
+            },
+          });
+          await notifyDocumentDelivered({
+            patientId,
+            documentId: emrDoc?.id || null,
+            sourceType: 'emr_report',
+            title: 'รายงาน EMR พร้อมแล้ว',
+            doctorId,
+          });
+        }
+      } catch (pubErr) {
+        console.warn('[EMR] Sign publish skipped:', pubErr.message || pubErr);
       }
       
       res.json({ success: true, emr: signedEmr });
@@ -2577,10 +2639,32 @@ app.post('/api/patients/:patientId/documents', authenticateToken, validateDoctor
 
 app.get('/api/documents/:docId/download', authenticateToken, async (req, res) => {
   try {
+    const role = String(req.user?.role || '').toLowerCase();
+    const actorId = req.user?.id || req.user?.userId;
     const doc = await DocumentDeliveryService.getDocument(pool, req.params.docId);
     if (!doc || !doc.file_data) {
       return res.status(404).json({ error: 'Document not found' });
     }
+
+    // Patients may only download their own documents.
+    if (role === 'patient') {
+      if (!actorId || doc.patient_id !== actorId) {
+        return res.status(403).json({ error: 'Access denied' });
+      }
+    } else if (role === 'doctor' || role === 'admin') {
+      if (role === 'doctor') {
+        const access = await resolveMedicalRecordConsent(PostgresDataService.pool, doc.patient_id, actorId);
+        if (!access?.hasAccess) {
+          return res.status(403).json({
+            error: 'PDPA consent required',
+            message: 'You do not have consent to download this patient document',
+          });
+        }
+      }
+    } else {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
     res.setHeader('Content-Type', doc.mime_type || 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(doc.file_name)}"`);
     res.send(doc.file_data);
@@ -3170,6 +3254,7 @@ ${resultsSummary}
     }
 
     // Publish lab report documents to patient_documents
+    let publishedLabDocumentId = null;
     try {
       for (const doc of documents || []) {
         const published = await DocumentDeliveryService.publishDocument(pool, {
@@ -3186,6 +3271,7 @@ ${resultsSummary}
           metadata: { labOrderId, tests: results?.length || 0 },
         });
         doc.documentId = published?.id;
+        if (published?.id) publishedLabDocumentId = published.id;
         await logDocumentDeliveredAudit({
           userId: req.user?.id,
           patientId: updated.patient_id,
@@ -3208,6 +3294,7 @@ ${resultsSummary}
           fileData: Buffer.from(summary, 'utf8'),
           metadata: { labOrderId, results },
         });
+        if (published?.id) publishedLabDocumentId = published.id;
         await logDocumentDeliveredAudit({
           userId: req.user?.id,
           patientId: updated.patient_id,
@@ -3231,11 +3318,15 @@ ${resultsSummary}
           title_thai: 'ผลแล็บของคุณพร้อมแล้ว',
           message: 'แพทย์ส่งผลการตรวจแล็บของคุณแล้ว',
           message_thai: 'แพทย์ส่งผลการตรวจแล็บของคุณแล้ว กรุณาตรวจสอบในหน้าสุขภาพของฉัน',
-          data: { lab_order_id: labOrderId, appointment_id: updated.appointment_id },
+          data: {
+            lab_order_id: labOrderId,
+            appointment_id: updated.appointment_id,
+            document_id: publishedLabDocumentId,
+          },
         });
         await notifyDocumentDelivered({
           patientId,
-          documentId: null,
+          documentId: publishedLabDocumentId,
           sourceType: 'lab_report',
           title: 'ผลแล็บพร้อมแล้ว',
           doctorId: req.user?.id,

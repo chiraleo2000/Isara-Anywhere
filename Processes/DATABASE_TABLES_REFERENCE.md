@@ -93,6 +93,7 @@ Additional migrations (manual via `db-tool.cjs`): `v2.2.0-ai-specialty-matching.
 | ----- | ------- | ---------- | -------- |
 | `appointments` | Booking, pool, confirmation, meeting links | `status`, `symptoms`, `ai_triage`, `jitsi_room_name`, `doctor_meeting_url`, `patient_meeting_url` | [Appointment_Workflows.md](Appointment_Workflows.md) |
 | `meeting_records` | Video session lifecycle, AI output, recordings | `status`, `transcript`, `ai_summary`, `recording_data` (BYTEA), `doctor_validation_status`, `ready_for_patient` | [VIDEO_MEETING_JITSI_GEMINI.md](VIDEO_MEETING_JITSI_GEMINI.md), [POST_MEETING_WORKFLOW.md](POST_MEETING_WORKFLOW.md) |
+| `patient_documents` | Unified clinical file registry delivered to patients | `source_type` (`emr_report`, `instruction_sheet`, `lab_report`, `imaging_report`, `prescription`, `patient_upload`, …), `file_data` (BYTEA), `status` | [Clinical_Document_Delivery_Workflows.md](Clinical_Document_Delivery_Workflows.md) |
 | `meeting_transcripts` | Segment-level speech-to-text | `speaker_role`, `content`, `start_time_seconds`, `confidence` | Video Meeting |
 | `meeting_chats` | In-meeting chat messages (Meeting Server runtime) | `meeting_record_id`, `sender_role`, `message`, `type` | Video Meeting |
 | `meeting_invites` | Guest invite tokens (Meeting Server runtime) | `meeting_record_id`, `guest_email`, `token`, `expires_at` | Video Meeting |
@@ -204,7 +205,8 @@ Reverse lookup: which process documents use each table.
 | [Appointment_Workflows.md](Appointment_Workflows.md) | `appointments`, `doctor_schedules`, `doctors`, `appointment_ai_suggestions`, `follow_ups`, `notifications` |
 | [VIDEO_MEETING_JITSI_GEMINI.md](VIDEO_MEETING_JITSI_GEMINI.md) | `appointments`, `meeting_records`, `meeting_transcripts`, `meeting_chats`, `meeting_invites`, `transcript_embeddings` |
 | [POST_MEETING_WORKFLOW.md](POST_MEETING_WORKFLOW.md) | `meeting_records`, `ai_validations`, `patient_instructions`, `emr`, `recording_share_tokens` |
-| [Health_Records_Processes.md](Health_Records_Processes.md) | `phr`, `vital_signs`, `emr`, `prescriptions`, `lab_orders`, `imaging_orders`, `health_timeline` |
+| [Health_Records_Processes.md](Health_Records_Processes.md) | `phr`, `vital_signs`, `emr`, `prescriptions`, `lab_orders`, `imaging_orders`, `health_timeline`, `patient_documents` |
+| [Clinical_Document_Delivery_Workflows.md](Clinical_Document_Delivery_Workflows.md) | `patient_documents`, `emr`, `prescriptions`, `lab_orders`, `imaging_orders`, `meeting_records.recording_url`, `notifications` |
 | [Living_Will_Processes.md](Living_Will_Processes.md) | `living_wills`, `living_will_versions`, `patient_consents` |
 | [Medicine_Content_Processes.md](Medicine_Content_Processes.md) | `medical_content` |
 | [Clinical_Resources_&_Medical_Library_Workflows.md](Clinical_Resources_&_Medical_Library_Workflows.md) | `clinical_resources`, `knowledge_base` |

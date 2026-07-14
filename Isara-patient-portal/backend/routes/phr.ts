@@ -295,6 +295,7 @@ router.get('/meetings', authMiddleware, async (req: Request, res: Response) => {
       `SELECT mr.id, mr.appointment_id, mr.doctor_id, mr.status,
               mr.started_at, mr.ended_at, mr.created_at,
               mr.recording_url, mr.recording_filename, mr.ai_summary,
+              mr.ready_for_patient,
               u.name as doctor_name, u.name_thai as doctor_name_thai
        FROM meeting_records mr
        LEFT JOIN users u ON mr.doctor_id = u.id
@@ -305,7 +306,8 @@ router.get('/meetings', authMiddleware, async (req: Request, res: Response) => {
     );
 
     const meetings = (result.rows || []).map((row: any) => {
-      const recordingUrl = row.recording_url || null;
+      const unlocked = row.ready_for_patient === true;
+      const recordingUrl = unlocked ? (row.recording_url || null) : null;
       const hasRecording = Boolean(recordingUrl);
       return {
         id: row.id,
@@ -316,12 +318,13 @@ router.get('/meetings', authMiddleware, async (req: Request, res: Response) => {
         startedAt: row.started_at,
         endedAt: row.ended_at,
         createdAt: row.created_at,
+        readyForPatient: unlocked,
         hasRecording,
         recordingUrl,
         downloadUrl: hasRecording
           ? `/api/meetings/recording-download?path=${encodeURIComponent(recordingUrl)}`
           : null,
-        hasSummary: Boolean(row.ai_summary),
+        hasSummary: unlocked && Boolean(row.ai_summary),
       };
     });
 
@@ -349,6 +352,7 @@ router.get('/:patientId/meetings', authMiddleware, async (req: Request, res: Res
       `SELECT mr.id, mr.appointment_id, mr.doctor_id, mr.status,
               mr.started_at, mr.ended_at, mr.created_at,
               mr.recording_url, mr.recording_filename, mr.ai_summary,
+              mr.ready_for_patient,
               u.name as doctor_name, u.name_thai as doctor_name_thai
        FROM meeting_records mr
        LEFT JOIN users u ON mr.doctor_id = u.id
@@ -359,7 +363,8 @@ router.get('/:patientId/meetings', authMiddleware, async (req: Request, res: Res
     );
 
     const meetings = (result.rows || []).map((row: any) => {
-      const recordingUrl = row.recording_url || null;
+      const unlocked = row.ready_for_patient === true;
+      const recordingUrl = unlocked ? (row.recording_url || null) : null;
       const hasRecording = Boolean(recordingUrl);
       return {
         id: row.id,
@@ -370,12 +375,13 @@ router.get('/:patientId/meetings', authMiddleware, async (req: Request, res: Res
         startedAt: row.started_at,
         endedAt: row.ended_at,
         createdAt: row.created_at,
+        readyForPatient: unlocked,
         hasRecording,
         recordingUrl,
         downloadUrl: hasRecording
           ? `/api/meetings/recording-download?path=${encodeURIComponent(recordingUrl)}`
           : null,
-        hasSummary: Boolean(row.ai_summary),
+        hasSummary: unlocked && Boolean(row.ai_summary),
       };
     });
 
@@ -1054,7 +1060,7 @@ router.get('/:patientId/timeline', authMiddleware, async (req: Request, res: Res
             `SELECT mr.*, u.name as doctor_name, u.name_thai as doctor_name_thai
          FROM meeting_records mr
          LEFT JOIN users u ON mr.doctor_id = u.id
-         WHERE mr.patient_id = $1 AND mr.status IN ('completed', 'ended')
+         WHERE mr.patient_id = $1 AND mr.status IN ('completed','ended')
          ORDER BY COALESCE(mr.ended_at, mr.started_at, mr.created_at) DESC
          LIMIT 50`,
             [patientId],
@@ -1062,7 +1068,8 @@ router.get('/:patientId/timeline', authMiddleware, async (req: Request, res: Res
         { rows: [] as any[] },
       );
       meetings.rows.forEach((m: any) => {
-        const recordingUrl = m.recording_url || null;
+        const unlocked = m.ready_for_patient === true;
+        const recordingUrl = unlocked ? (m.recording_url || null) : null;
         const downloadUrl = recordingUrl
           ? (recordingUrl.includes('?') ? `${recordingUrl}&download=1` : `${recordingUrl}?download=1`)
           : null;
@@ -1072,12 +1079,15 @@ router.get('/:patientId/timeline', authMiddleware, async (req: Request, res: Res
           date: m.ended_at || m.started_at || m.created_at,
           title: 'การประชุมวิดีโอ',
           titleThai: 'การประชุมวิดีโอ',
-          description: m.ai_summary
+          description: unlocked && m.ai_summary
             ? String(m.ai_summary).slice(0, 120)
-            : (recordingUrl ? 'มีวิดีโอบันทึกการประชุม' : 'การปรึกษาทางวิดีโอ'),
+            : (unlocked && recordingUrl
+              ? 'มีวิดีโอบันทึกการประชุม'
+              : (unlocked ? 'การปรึกษาทางวิดีโอ' : 'รอแพทย์ตรวจสอบสรุปก่อนปลดล็อก')),
           doctorName: m.doctor_name_thai || m.doctor_name,
           status: m.status,
           hasRecording: Boolean(recordingUrl),
+          readyForPatient: unlocked,
           downloadUrl: downloadUrl
             ? `/api/meetings/recording-download?path=${encodeURIComponent(recordingUrl)}`
             : null,

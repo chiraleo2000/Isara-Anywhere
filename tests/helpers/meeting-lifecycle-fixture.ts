@@ -485,9 +485,8 @@ export async function admitAllLobbyParticipants(opts: AdmitAllLobbyParticipantsO
   await resyncPatientLobbyUiAfterAdmit(patientPage, meetingUrl, lobbyKey);
   await assertLobbyScreensHidden(patientPage, guestPage, isCloud);
 
-  const doctorBff = process.env.DOCTOR_URL || 'http://127.0.0.1:3010';
   await notifyHostPresentAfterJitsi(doctorPage, appointmentId, {
-    bffUrl: doctorBff,
+    bffUrl: DOCTOR_URL,
     meetingUrl,
   });
 
@@ -700,8 +699,13 @@ export async function notifyHostPresentAfterJitsi(
   meetingKey: string,
   options: { bffUrl?: string; meetingUrl?: string; timeoutMs?: number } = {},
 ): Promise<void> {
-  const bff = options.bffUrl || process.env.DOCTOR_URL || 'http://127.0.0.1:3010';
-  const meetingUrl = options.meetingUrl || process.env.MEETING_URL || 'http://127.0.0.1:3020';
+  const bff = options.bffUrl || DOCTOR_URL;
+  const meetingUrl = options.meetingUrl || process.env.MEETING_URL || (IS_CLOUD_FIXTURE
+    ? (process.env.CLOUD_MEETING_URL || process.env.MEETING_SERVER_URL || '')
+    : 'http://127.0.0.1:3020');
+  if (!meetingUrl) {
+    throw new Error('notifyHostPresentAfterJitsi: meetingUrl unresolved (set MEETING_URL / CLOUD_MEETING_URL)');
+  }
   const timeout = options.timeoutMs ?? 90_000;
   await expect(doctorPage.getByTestId('jitsi-meeting-container')).toBeVisible({ timeout });
   await expect(
@@ -1202,7 +1206,7 @@ export async function pollRecordingUrl(
 ): Promise<string> {
   const pollBases = [
     meetingUrl,
-    options.bffUrl || process.env.DOCTOR_URL || 'http://127.0.0.1:3010',
+    options.bffUrl || DOCTOR_URL,
   ].filter((u, i, arr) => Boolean(u) && arr.indexOf(u) === i);
   const keys = [...new Set([...(options.meetingKeys || []), meetingKey].filter(Boolean))];
   const perRequestTimeout = 30_000;
@@ -1261,8 +1265,10 @@ export async function fetchRecordingPlaybackWithAuth(
     timeoutMs?: number;
   } = {},
 ): Promise<{ ok: boolean; status: number; response: { ok: () => boolean; status: () => number; headers: () => Record<string, string>; body: () => Promise<Buffer>; text: () => Promise<string> } }> {
-  const meetingUrl = (options.meetingUrl || process.env.MEETING_URL || 'http://127.0.0.1:3020').replace(/\/$/, '');
-  const bffUrl = (options.bffUrl || process.env.DOCTOR_URL || 'http://127.0.0.1:3010').replace(/\/$/, '');
+  const meetingUrl = (options.meetingUrl || process.env.MEETING_URL || (IS_CLOUD_FIXTURE
+    ? (process.env.CLOUD_MEETING_URL || '')
+    : 'http://127.0.0.1:3020')).replace(/\/$/, '');
+  const bffUrl = (options.bffUrl || DOCTOR_URL).replace(/\/$/, '');
   const timeout = options.timeoutMs ?? 30_000;
   let bearer = token;
 

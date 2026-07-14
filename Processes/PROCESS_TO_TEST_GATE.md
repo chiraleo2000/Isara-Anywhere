@@ -10,7 +10,9 @@ Maps each Processes document to Vitest contracts, Playwright groups, and gate st
 npm run test:local:pre-deploy-gate
 ```
 
-**Latest:** 2026-07-13 — `phase:9:strict` **full pass** (ledger round 9 **P0=0**); UX showup `test:gate:ui-showup` **69/69**; Group U **31/31**; unit groups sequential **17/17**; GATE0 local+cloud G1–G5 pass; P0 UI partial=0; `env:audit` / `sonar:lint` / `security:scan` green; `test:cloud:deploy-gate` **21/21** (smoke + GATE0 + cloud-meeting-ai + A/D/Q).
+**Latest:** 2026-07-14 — Meeting+PHR share redo: `phase:9:strict` **full pass** (`PHASE9_EXIT=0`, ledger round 9 **P0=0**); gap ledger `tests/MEETING_PHR_SHARE_GAP_LEDGER.md` closed locally; Q+Q2+R+J **25**; E+F+L+Q2 **38**; units meeting **422** / clinical **411**; byte download PASS; UI showup **69/69**; Group U **31/31**; cloud deploy-gate **21/21** CLOUD_EXIT=0 (existing images). Stage-2 code in working tree: meeting GET ensure, guest prejoin, token guest URLs, EMR sign→publish, validate→emr_report, Timeline MITL gate, doc ACL, lab notify id, PHR honesty. Cloud Run Stage-2 image roll still blocked — run `gcloud auth login` then `npm run cloud:deploy -- -Tag v1.7.61`.
+
+**Prior:** 2026-07-13 — `phase:9:strict` **full pass** (ledger round 9 **P0=0**); UX showup `test:gate:ui-showup` **69/69**; Group U **31/31**; unit groups sequential **17/17**; GATE0 local+cloud G1–G5 pass; P0 UI partial=0; `env:audit` / `sonar:lint` / `security:scan` green; `test:cloud:deploy-gate` **21/21** (smoke + GATE0 + cloud-meeting-ai + A/D/Q).
 
 | Step | Command | Process docs covered |
 |------|---------|-------------------|

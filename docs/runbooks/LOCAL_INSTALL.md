@@ -185,7 +185,7 @@ npm run test:lan:deploy-gate
 ## Visual test evidence (local, headed UI)
 
 > Browsers run **visible** during gates: `$env:PW_HEADED='1'` + `$env:BASELINE_VISUAL='1'`
-> Updated: 2026-07-13
+> Updated: 2026-07-14
 
 **Ledger:** `reports/local-error-ledger/round-9-latest.json` — tests **?**, **P0=0**
 

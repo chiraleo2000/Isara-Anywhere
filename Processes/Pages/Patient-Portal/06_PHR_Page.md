@@ -490,11 +490,11 @@ When PDPA consent is granted, doctors can see:
 
 | Field | Value |
 |-------|-------|
-| **Status** | covered |
+| **Status** | covered — verified 2026-07-14 (PHR tab parity + honest download + Group F) |
 | **Unit tests** | `phrRoute` |
 | **UI (Playwright)** | Group F |
 | **data-testid** | See [tests/SELECTORS.md](../../tests/SELECTORS.md) |
-P26-07-13 |
+| **Last verified** | 2026-07-14 |
 
 **Run locally**
 

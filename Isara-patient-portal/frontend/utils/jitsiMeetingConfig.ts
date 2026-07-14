@@ -405,6 +405,8 @@ export async function mountGuestJitsiMeeting(opts: {
     ),
     userInfo: { displayName: cfg?.displayName || opts.displayName },
   });
+  // Match doctor/patient MeetingRoom — skip Jitsi prejoin so admitted guests enter the call.
+  wireJitsiSkipPrejoin(api);
   const iframe = opts.container.querySelector('iframe');
   if (iframe) {
     iframe.style.width = '100%';

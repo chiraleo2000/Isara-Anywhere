@@ -1417,7 +1417,11 @@ app.post('/api/meeting/create', authenticateToken, async (req, res) => { // NOSO
 app.get('/api/meetings/:id', optionalAuth, async (req, res) => {
   try {
     const { id } = req.params;
-    
+
+    // Auto-provision meeting_records for appointment ids (same as lobby/join-config)
+    // so patient/guest GET does not 404 before the doctor finishes create.
+    await ensureMeetingRecordForAppointment(id);
+
     const result = await pool.query(
       `SELECT mr.*, 
               u_doc.name as doctor_name, u_doc.name_thai as doctor_name_thai,
@@ -2223,7 +2227,14 @@ app.post('/api/meetings/:id/share-link', optionalAuth, (req, res) => {
   if (!meetingInvites.has(id)) meetingInvites.set(id, []);
   meetingInvites.get(id).push(invite);
 
-  const patientBase = process.env.PATIENT_PORTAL_URL || `${req.protocol}://${req.get('host')}`;
+  const patientBase = process.env.PATIENT_PORTAL_URL;
+  if (!patientBase) {
+    return res.status(503).json({
+      success: false,
+      error: 'PATIENT_PORTAL_URL is required for guest invite links',
+      code: 'PATIENT_PORTAL_URL_MISSING',
+    });
+  }
   const meetingKey = resolveLobbyKeySync(id) || id;
   const guestName = recipientName || 'Guest';
   const urls = buildGuestPortalUrls({
@@ -2232,13 +2243,22 @@ app.post('/api/meetings/:id/share-link', optionalAuth, (req, res) => {
     guestName,
     token,
   });
+  const inviteLink = urls.guestLink || urls.guestTokenUrl;
+  if (!inviteLink) {
+    return res.status(503).json({
+      success: false,
+      error: 'Unable to build token guest invite URL',
+      code: 'GUEST_TOKEN_URL_MISSING',
+    });
+  }
 
   res.json({
     success: true,
     invite,
-    inviteLink: urls.guestJoinUrl,
+    inviteLink,
     guestJoinUrl: urls.guestJoinUrl,
     guestTokenUrl: urls.guestTokenUrl,
+    guestLink: inviteLink,
   });
 });
 
@@ -2287,7 +2307,14 @@ app.post('/api/meetings/:id/guest-invite', authenticateToken, async (req, res) =
     );
   } catch { /* best effort */ }
 
-  const patientBase = process.env.PATIENT_PORTAL_URL || `${req.protocol}://${req.get('host')}`;
+  const patientBase = process.env.PATIENT_PORTAL_URL;
+  if (!patientBase) {
+    return res.status(503).json({
+      success: false,
+      error: 'PATIENT_PORTAL_URL is required for guest invite links',
+      code: 'PATIENT_PORTAL_URL_MISSING',
+    });
+  }
   const meetingKey = (await resolveLobbyKey(id)) || id;
   const urls = buildGuestPortalUrls({
     patientPortalBase: patientBase,
@@ -2295,14 +2322,22 @@ app.post('/api/meetings/:id/guest-invite', authenticateToken, async (req, res) =
     guestName: sanitizedName,
     token,
   });
+  const guestLink = urls.guestLink || urls.guestTokenUrl;
+  if (!guestLink) {
+    return res.status(503).json({
+      success: false,
+      error: 'Unable to build token guest invite URL',
+      code: 'GUEST_TOKEN_URL_MISSING',
+    });
+  }
 
   res.json({
     success: true,
     invite,
     token,
-    guestLink: urls.guestLink,
+    guestLink,
     guestJoinUrl: urls.guestJoinUrl,
-    guestTokenUrl: urls.guestTokenUrl,
+    guestTokenUrl: urls.guestTokenUrl || guestLink,
   });
 });
 
@@ -4154,6 +4189,47 @@ app.post('/api/meetings/:id/validate', authenticateToken, async (req, res) => { 
             ]
           );
           console.log(`[Meeting Validate] EMR record created for meeting ${id}`);
+
+          // Always publish emr_report into patient_documents on MITL unlock (not Gemini-conditional).
+          try {
+            const summaryText = String(summaryContent || '');
+            const reportBuf = Buffer.from(summaryText || 'สรุปรายงานการพบแพทย์', 'utf8');
+            await safeQuery(
+              `INSERT INTO patient_documents (
+                patient_id, source_type, source_id, appointment_id, doctor_id,
+                title, file_name, mime_type, file_data, file_size, status, metadata
+              ) VALUES ($1, 'emr_report', $2, $3, $4, $5, $6, 'text/plain', $7, $8, 'delivered', $9::jsonb)`,
+              [
+                meeting.patient_id,
+                id,
+                meeting.appointment_id,
+                doctorId || req.user?.id,
+                `รายงานการรักษา EMR — ${new Date().toLocaleDateString('th-TH')}`,
+                `emr-report-${meeting.appointment_id || id}.txt`,
+                reportBuf,
+                reportBuf.length,
+                JSON.stringify({ meetingId: id, fromValidate: true }),
+              ]
+            );
+            try {
+              await safeQuery(
+                `INSERT INTO notifications (id, user_id, type, title, title_thai, message, message_thai, data, created_at)
+                 VALUES ($1, $2, 'document_delivered', $3, $3, $4, $4, $5::jsonb, NOW())
+                 ON CONFLICT DO NOTHING`,
+                [
+                  uuidv4(),
+                  meeting.patient_id,
+                  'รายงาน EMR พร้อมแล้ว',
+                  'แพทย์ตรวจสอบสรุปการพบแพทย์และส่งเอกสารให้คุณแล้ว',
+                  JSON.stringify({ meetingId: id, source_type: 'emr_report' }),
+                ]
+              );
+            } catch (notifyErr) {
+              console.warn('[Meeting Validate] document_delivered notify skipped:', notifyErr.message);
+            }
+          } catch (emrDocErr) {
+            console.error('[Meeting Validate] emr_report publish failed:', emrDocErr.message || emrDocErr);
+          }
           
           // Notify patient portal of new EMR
           io.to(`patient-${meeting.patient_id}`).emit('emr:created', {
@@ -4205,6 +4281,34 @@ app.post('/api/meetings/:id/validate', authenticateToken, async (req, res) => { 
               console.log(`[Meeting Validate] Patient instructions auto-generated for ${id}`);
             } catch (instrErr) {
               console.warn('[Meeting Validate] Patient instructions generation skipped:', instrErr.message);
+            }
+          } else {
+            // Without Gemini still publish a minimal instruction sheet from summary text.
+            try {
+              const fallback = String(summaryContent || 'กรุณาปฏิบัติตามคำแนะนำของแพทย์').slice(0, 4000);
+              await safeQuery(
+                `UPDATE meeting_records SET patient_instructions = COALESCE(patient_instructions, $2) WHERE id::text = $1 OR appointment_id = $1`,
+                [id, fallback]
+              );
+              await safeQuery(
+                `INSERT INTO patient_documents (
+                  patient_id, source_type, source_id, appointment_id, doctor_id,
+                  title, file_name, mime_type, file_data, file_size, status, metadata
+                ) VALUES ($1, 'instruction_sheet', $2, $3, $4, $5, $6, 'text/plain', $7, $8, 'delivered', $9::jsonb)`,
+                [
+                  meeting.patient_id,
+                  id,
+                  meeting.appointment_id,
+                  doctorId || req.user?.id,
+                  `คำแนะนำหลังพบแพทย์ — ${new Date().toLocaleDateString('th-TH')}`,
+                  `instruction-${meeting.appointment_id || id}.txt`,
+                  Buffer.from(fallback, 'utf8'),
+                  Buffer.byteLength(fallback, 'utf8'),
+                  JSON.stringify({ meetingId: id, fallback: true }),
+                ]
+              );
+            } catch (fallbackErr) {
+              console.warn('[Meeting Validate] Fallback instruction publish skipped:', fallbackErr.message);
             }
           }
         }

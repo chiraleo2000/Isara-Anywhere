@@ -614,11 +614,11 @@ Patient Delivery
 
 | Field | Value |
 |-------|-------|
-| **Status** | covered |
-| **Unit tests** | `emrService, emrAutosave.test.ts` |
+| **Status** | covered — verified 2026-07-14 (EMR sign→publishEmrReportDocument) |
+| **Unit tests** | `emrService, emrAutosave.test.ts, meetingPhrShareRedoContract` |
 | **UI (Playwright)** | Group E |
 | **data-testid** | See [tests/SELECTORS.md](../../tests/SELECTORS.md) |
-| **Last verified** | 2026-05-22 |
+| **Last verified** | 2026-07-14 |
 
 **Run locally**
 

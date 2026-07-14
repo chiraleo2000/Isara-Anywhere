@@ -160,8 +160,8 @@
 | ProcessDoc | Domain | UnitTest | UI | Status | Priority | ScreenshotRef |
 |------------|--------|----------|-----|--------|----------|---------------|
 | Meeting-Server/00_Meeting_Server_Overview | Meeting | meeting-server/*, meetingRuntimeApi, saveRecordingContract | E, Q | covered | P0 | group-Q/ |
-| Meeting-Server/01_Meeting_Room | Meeting | meetingRoomRoutes, meetingUxContract, jitsiMeetingConfig | E, Q, R | covered | P0 | group-E/ (cloud capture) |
-| Meeting-Server/02_Meeting_Results | Meeting | meetingResultsValidation, meetingUxContract, postMeetingWorkflow | Q | covered | P0 | group-Q/ (cloud capture) |
+| Meeting-Server/01_Meeting_Room | Meeting | meetingRoomRoutes, meetingUxContract, jitsiMeetingConfig, meetingPhrShareRedoContract | E, Q, R | covered | P0 | group-Q/ — 2026-07-14 share redo |
+| Meeting-Server/02_Meeting_Results | Meeting | meetingResultsValidation, meetingUxContract, postMeetingWorkflow, meetingPhrShareRedoContract | Q, Q2 | covered | P0 | group-Q2/ — 2026-07-14 MITL publish |
 | Meeting-Server/03_Emr_Appointment_Page | Clinical | emrAiDraft, meetingRoomRoutes, phrEmrUxContract | E, F | covered | P0 | group-E/ (cloud capture) |
 
 ---

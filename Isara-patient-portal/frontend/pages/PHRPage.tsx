@@ -1516,7 +1516,9 @@ function PrescriptionsTab({ language, isDark }: Readonly<{ language: string; isD
 
   return (
     <div className="space-y-3">
-      {prescriptions.map((rx) => (
+      {prescriptions.map((rx) => {
+        const canDownload = Boolean(rx.download_url || rx.document_id);
+        return (
         <div key={rx.id} className={`p-4 rounded-xl border ${cardClass}`}>
           <div className="flex justify-between items-start gap-2">
             <div>
@@ -1525,13 +1527,19 @@ function PrescriptionsTab({ language, isDark }: Readonly<{ language: string; isD
               </h4>
               <p className="text-sm opacity-70">{new Date(rx.created_at).toLocaleDateString()}</p>
             </div>
-            <button
-              type="button"
-              className="text-sm px-3 py-1 bg-emerald-600 text-white rounded-lg"
-              onClick={() => void downloadPrescription(rx)}
-            >
-              {language === 'th' ? 'ดาวน์โหลด' : 'Download'}
-            </button>
+            {canDownload ? (
+              <button
+                type="button"
+                className="text-sm px-3 py-1 bg-emerald-600 text-white rounded-lg"
+                onClick={() => void downloadPrescription(rx)}
+              >
+                {language === 'th' ? 'ดาวน์โหลด' : 'Download'}
+              </button>
+            ) : (
+              <span className="text-xs opacity-60 px-2 py-1">
+                {language === 'th' ? 'ยังไม่มีไฟล์' : 'No file'}
+              </span>
+            )}
           </div>
           <ul className="mt-2 text-sm space-y-1">
             {(Array.isArray(rx.medications) ? rx.medications : []).map((m: any, i: number) => (
@@ -1539,7 +1547,8 @@ function PrescriptionsTab({ language, isDark }: Readonly<{ language: string; isD
             ))}
           </ul>
         </div>
-      ))}
+        );
+      })}
     </div>
   );
 }
@@ -1750,12 +1759,24 @@ function LabImagingTab() {
                   <div>
                     <span className={`font-medium ${textClass}`}>{order.test_name || 'Lab Test'}</span>
                     <LabPriorityBadge priority={order.priority} />
+                    {order.status === 'completed' || order.status === 'results_ready' ? (
+                      <span className="ml-2 text-xs text-emerald-600">
+                        {language === 'th' ? 'ผลพร้อม' : 'Results ready'}
+                      </span>
+                    ) : (
+                      <span className="ml-2 text-xs opacity-70">
+                        {language === 'th' ? 'รอผล' : 'Pending'}
+                      </span>
+                    )}
                   </div>
                   <span className={`px-2 py-0.5 rounded text-xs ${getLabStatusColor(order.status)}`}>{getLabStatusLabel(order.status, language)}</span>
                 </div>
                 <div className={`flex gap-4 mt-1 text-sm ${subTextClass}`}>
                   <span>{language === 'th' ? 'แพทย์' : 'Dr.'}: {order.doctor_name || '-'}</span>
                   <span>{formatLabDate(order.order_date, language)}</span>
+                  {(order.document_id || order.download_url || order.downloadUrl) ? (
+                    <span className="text-emerald-600">{language === 'th' ? 'มีไฟล์ดาวน์โหลด' : 'Download available'}</span>
+                  ) : null}
                 </div>
               </button>
             ))}
@@ -2115,10 +2136,10 @@ function PHRPage() {
   const tabs = [
     { id: 'overview' as const, label: t('phr.overview') || (language === 'th' ? 'ภาพรวม' : 'Overview'), icon: FileText },
     { id: 'vitals' as const, label: t('phr.vitalSigns'), icon: Activity },
-    { id: 'medications' as const, label: t('phr.medications'), icon: Pill },
+    { id: 'medications' as const, label: language === 'th' ? 'ยาที่ใช้ปัจจุบัน' : 'Current Medications', icon: Pill },
     { id: 'allergies' as const, label: t('phr.allergies'), icon: AlertTriangle },
     { id: 'lab-imaging' as const, label: language === 'th' ? 'ผลตรวจ' : 'Lab & Imaging', icon: FlaskConical },
-    { id: 'prescriptions' as const, label: language === 'th' ? 'ใบสั่งยา' : 'Prescriptions', icon: FileText },
+    { id: 'prescriptions' as const, label: language === 'th' ? 'ประวัติการรับยา' : 'Medication History', icon: FileText },
     { id: 'documents' as const, label: t('health.documents') || (language === 'th' ? 'เอกสาร' : 'Documents'), icon: Paperclip },
     { id: 'profile' as const, label: t('phr.personalInfo'), icon: UserIcon },
   ];
@@ -2155,23 +2176,15 @@ function PHRPage() {
       />
     ),
     medications: (
-      <div className="space-y-6">
-        <div>
-          <h2 className={`text-lg font-semibold mb-3 ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>
-            {language === 'th' ? 'ประวัติการรับยา' : 'Medication History'}
-          </h2>
-          <PrescriptionsTab language={language} isDark={isDark} />
-        </div>
-        <MedicationsTab
-          medications={phr?.medications || phr?.currentMedications}
-          showAddMedication={showAddMedication}
-          setShowAddMedication={setShowAddMedication}
-          newMedication={newMedication}
-          setNewMedication={setNewMedication}
-          saving={saving}
-          onAddMedication={handleAddMedication}
-        />
-      </div>
+      <MedicationsTab
+        medications={phr?.medications || phr?.currentMedications}
+        showAddMedication={showAddMedication}
+        setShowAddMedication={setShowAddMedication}
+        newMedication={newMedication}
+        setNewMedication={setNewMedication}
+        saving={saving}
+        onAddMedication={handleAddMedication}
+      />
     ),
     allergies: (
       <AllergiesTab
@@ -2189,6 +2202,9 @@ function PHRPage() {
     ),
     prescriptions: (
       <div className="space-y-6">
+        <h2 className={`text-lg font-semibold mb-3 ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>
+          {language === 'th' ? 'ประวัติการรับยา' : 'Medication History'}
+        </h2>
         <PrescriptionsTab language={language} isDark={isDark} />
       </div>
     ),

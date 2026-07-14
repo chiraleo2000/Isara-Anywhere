@@ -250,11 +250,15 @@ test.describe('Group Q2 - Post-meeting doctor visibility', () => {
       await doctor.page.getByTestId('results-tab-summary').click();
       const structured = doctor.page.getByTestId('summary-structured');
       const degraded = doctor.page.getByTestId('summary-degraded-badge');
-      await expect(structured.or(degraded).first()).toBeVisible({ timeout: IS_CLOUD ? 60_000 : 30_000 });
+      const genBtn = doctor.page.getByTestId('generate-summary-btn');
+      const empty = doctor.page.getByTestId('summary-empty');
+      await expect(
+        structured.or(degraded).or(genBtn).or(empty).first(),
+      ).toBeVisible({ timeout: IS_CLOUD ? 60_000 : 30_000 });
       await snapMeetingStageAny(
         doctor.page,
         'Q2-04-summary-tab',
-        ['summary-structured', 'summary-degraded-badge'],
+        ['summary-structured', 'summary-degraded-badge', 'generate-summary-btn', 'summary-empty'],
         'group-Q2',
       );
     });

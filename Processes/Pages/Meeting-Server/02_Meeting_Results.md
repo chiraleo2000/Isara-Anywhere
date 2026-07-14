@@ -269,11 +269,11 @@ Production ใช้ `meet.jit.si` — บันทึกจากเบรา�
 
 | Field | Value |
 |-------|-------|
-| **Status** | covered — verified 2026-07-13 (Group Q2 + U MITL validate/apply) |
+| **Status** | covered — verified 2026-07-14 (Q2 + MITL validate publish + summary empty degraded badge) |
 | **Unit tests** | See tests/PROCESS_COVERAGE_MATRIX.md + processWorkflowRegistry |
 | **UI (Playwright)** | Groups D, Q, Q2, U |
 | **data-testid** | See tests/SELECTORS.md + UI Controls Inventory |
-| **Last verified** | 2026-07-13 |
+| **Last verified** | 2026-07-14 |
 
 **Matrix:** tests/PROCESS_COVERAGE_MATRIX.md
 

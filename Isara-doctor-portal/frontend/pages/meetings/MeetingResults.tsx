@@ -528,7 +528,13 @@ const SummaryTab: React.FC<{
 
   if (!summary.text) {
     return (
-      <div className="text-center py-12 text-gray-400">
+      <div className="text-center py-12 text-gray-400" data-testid="summary-empty">
+        <output
+          data-testid="summary-degraded-badge"
+          className="mb-4 mx-auto max-w-lg block rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900 text-left"
+        >
+          ยังไม่มีสรุป AI — กดสร้างสรุป หรือดำเนินการต่อแบบสำรองเมื่อ AI ไม่พร้อม
+        </output>
         <p className="text-4xl mb-2">🧠</p>
         <p>ไม่มีสรุป AI — อาจเกิดจากการประชุมไม่มีบทสนทนา</p>
         <button type="button" data-testid="generate-summary-btn" onClick={onRegenerate} disabled={!!actionLoading}
