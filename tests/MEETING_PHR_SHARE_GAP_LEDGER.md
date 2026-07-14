@@ -98,7 +98,8 @@ From `PROCESS_TO_TEST_GATE.md` / `PROCESS_COVERAGE_MATRIX.md` (do not treat as r
 
 All M-* / C-* gap IDs closed in code. Stage-3 local reprove closed.
 
-### Stage-5 cloud note
+### Stage-5 cloud note (2026-07-14)
 
-- `test:cloud:deploy-gate` **21/21** against **existing** Cloud Run images (pre–Stage-2 bit-identical not guaranteed).
-- `npm run cloud:deploy -- -Tag v1.7.61` still blocked: `gcloud auth list` → **No credentialed accounts** (needs `gcloud auth login` then redeploy Stage-2 images).
+- `npm run cloud:deploy -- -Tag v1.7.61` — Cloud Build **SUCCESS** (`f507d925-…`); traffic shifted 100% on doctor/patient; meeting image published; post-deploy smoke **200** for doctor/patient/meeting.
+- `test:cloud:deploy-gate` (`PW_INCLUDE_GUEST=1`) — **21/21** `CLOUD_EXIT=0` against **v1.7.61** Stage-2 images (first attempt flaked once on transient `meet.jit.si` timeout in Q01b; isolated Q retry **21/21** then full gate **21/21**).
+- Branch `v1.7.52-test-hardening` commit `d8a612cd` pushed to `github`.

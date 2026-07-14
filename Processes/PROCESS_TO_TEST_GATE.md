@@ -10,7 +10,7 @@ Maps each Processes document to Vitest contracts, Playwright groups, and gate st
 npm run test:local:pre-deploy-gate
 ```
 
-**Latest:** 2026-07-14 — Meeting+PHR share redo: `phase:9:strict` **full pass** (`PHASE9_EXIT=0`, ledger round 9 **P0=0**); gap ledger `tests/MEETING_PHR_SHARE_GAP_LEDGER.md` closed locally; Q+Q2+R+J **25**; E+F+L+Q2 **38**; units meeting **422** / clinical **411**; byte download PASS; UI showup **69/69**; Group U **31/31**; cloud deploy-gate **21/21** CLOUD_EXIT=0 (existing images). Stage-2 code in working tree: meeting GET ensure, guest prejoin, token guest URLs, EMR sign→publish, validate→emr_report, Timeline MITL gate, doc ACL, lab notify id, PHR honesty. Cloud Run Stage-2 image roll still blocked — run `gcloud auth login` then `npm run cloud:deploy -- -Tag v1.7.61`.
+**Latest:** 2026-07-14 — Meeting+PHR share redo **closed end-to-end**: local `phase:9:strict` **P0=0**; Cloud Run **v1.7.61** built+deployed (`cloud:deploy -Tag v1.7.61`, post-deploy smoke 200s); `test:cloud:deploy-gate` **21/21** `CLOUD_EXIT=0` on Stage-2 images (smoke+GATE0+cloud-meeting-ai+A/D/Q, `PW_INCLUDE_GUEST=1`); gap ledger `tests/MEETING_PHR_SHARE_GAP_LEDGER.md`; commit `d8a612cd` on `v1.7.52-test-hardening`. Fixes: meeting GET ensure, guest prejoin, token guest URLs, EMR sign→publish, validate→emr_report, Timeline MITL gate, doc ACL, lab notify id, PHR honesty.
 
 **Prior:** 2026-07-13 — `phase:9:strict` **full pass** (ledger round 9 **P0=0**); UX showup `test:gate:ui-showup` **69/69**; Group U **31/31**; unit groups sequential **17/17**; GATE0 local+cloud G1–G5 pass; P0 UI partial=0; `env:audit` / `sonar:lint` / `security:scan` green; `test:cloud:deploy-gate` **21/21** (smoke + GATE0 + cloud-meeting-ai + A/D/Q).
 
@@ -137,8 +137,8 @@ npm run test:lan:deploy-gate   # TEST_ENV=lan, Q+R+B headed, BASELINE_VISUAL=1
 
 ## Release ladder (local → LAN → cloud)
 
-1. `npm run test:local:pre-deploy-gate` / `npm run phase:9:strict` — ledger round 9 P0=0 ✅ (2026-07-13)
+1. `npm run test:local:pre-deploy-gate` / `npm run phase:9:strict` — ledger round 9 P0=0 ✅ (2026-07-14 Meeting+PHR redo)
 2. `npm run test:lan:deploy-gate` — **BLOCKED** until Ubuntu LAN reachable
 3. Self-hosted Jitsi LAN (`meet.demotoday.net`) — j8 deferred with LAN
-4. `npm run test:cloud:deploy-gate` — ✅ full pass 2026-07-13 (smoke + GATE0 G1–G5 + cloud-meeting-ai + Playwright A/D/Q **21/21**)
+4. `npm run cloud:deploy -- -Tag v1.7.61` + `npm run test:cloud:deploy-gate` — ✅ Cloud Run Stage-2 roll + full pass 2026-07-14 (smoke + GATE0 G1–G5 + cloud-meeting-ai + Playwright A/D/Q **21/21** `CLOUD_EXIT=0`)
 5. `npm run test:cloud:doc-screenshots` + `docs:sync-screenshots` + `guides:all` (optional after cloud green)
