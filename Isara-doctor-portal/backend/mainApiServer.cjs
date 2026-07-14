@@ -3503,6 +3503,7 @@ app.put('/api/imaging-orders/:orderId/results', authenticateToken, async (req, r
       return res.status(404).json({ error: 'Imaging order not found' });
     }
 
+    let publishedImagingDocumentId = null;
     try {
       for (const doc of documents || []) {
         const published = await DocumentDeliveryService.publishDocument(pool, {
@@ -3518,6 +3519,7 @@ app.put('/api/imaging-orders/:orderId/results', authenticateToken, async (req, r
           fileSize: doc.size,
           metadata: { imagingOrderId: orderId },
         });
+        if (published?.id) publishedImagingDocumentId = published.id;
         await logDocumentDeliveredAudit({
           userId: req.user?.id,
           patientId: updated.patient_id,
@@ -3534,11 +3536,14 @@ app.put('/api/imaging-orders/:orderId/results', authenticateToken, async (req, r
           title_thai: 'ผลภาพถ่ายพร้อมแล้ว',
           message: 'แพทย์ส่งผลการตรวจภาพถ่ายของคุณแล้ว',
           message_thai: 'แพทย์ส่งผลการตรวจภาพถ่ายของคุณแล้ว',
-          data: { imaging_order_id: orderId },
+          data: {
+            imaging_order_id: orderId,
+            document_id: publishedImagingDocumentId,
+          },
         });
         await notifyDocumentDelivered({
           patientId: updated.patient_id,
-          documentId: null,
+          documentId: publishedImagingDocumentId,
           sourceType: 'imaging_report',
           title: 'ผลภาพถ่ายพร้อมแล้ว',
           doctorId: req.user?.id,

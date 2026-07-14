@@ -2,6 +2,10 @@
  * MITL validate — patient-visible summary only after validation; badge selection.
  */
 import { describe, it, expect } from 'vitest';
+import fs from 'node:fs';
+import path from 'node:path';
+
+const root = path.resolve(__dirname, '../../..');
 
 function patientCanSeeSummary(opts: {
   requiresValidation: boolean;
@@ -16,6 +20,13 @@ function patientCanSeeSummary(opts: {
 function summaryBadge(opts: { skipLiveGemini: boolean; hasStructured: boolean }): string {
   if (opts.skipLiveGemini || !opts.hasStructured) return 'summary-degraded-badge';
   return 'summary-structured';
+}
+
+function patientCanSeeMeetingRecording(opts: {
+  readyForPatient: boolean;
+  hasRecordingUrl: boolean;
+}): boolean {
+  return opts.readyForPatient === true && opts.hasRecordingUrl === true;
 }
 
 describe('mitlValidateContract — patient visibility', () => {
@@ -55,5 +66,33 @@ describe('mitlValidateContract — summary badge', () => {
     expect(summaryBadge({ skipLiveGemini: false, hasStructured: true })).toBe(
       'summary-structured',
     );
+  });
+});
+
+describe('mitlValidateContract — recording unlock', () => {
+  it('MITL-03 — recording visible only when ready_for_patient', () => {
+    expect(
+      patientCanSeeMeetingRecording({ readyForPatient: false, hasRecordingUrl: true }),
+    ).toBe(false);
+    expect(
+      patientCanSeeMeetingRecording({ readyForPatient: true, hasRecordingUrl: true }),
+    ).toBe(true);
+    expect(
+      patientCanSeeMeetingRecording({ readyForPatient: true, hasRecordingUrl: false }),
+    ).toBe(false);
+  });
+});
+
+describe('mitlValidateContract — source', () => {
+  it('MITL-SRC — validate publishes emr_report and sets ready_for_patient', () => {
+    const src = fs.readFileSync(
+      path.join(root, 'Izara-jitsi-server/backend/index.js'),
+      'utf8',
+    );
+    const validateIdx = src.indexOf("app.post('/api/meetings/:id/validate'");
+    expect(validateIdx).toBeGreaterThan(-1);
+    expect(src.indexOf("VALUES ($1, 'emr_report'", validateIdx)).toBeGreaterThan(validateIdx);
+    expect(src.indexOf('ready_for_patient', validateIdx)).toBeGreaterThan(validateIdx);
+    expect(src).toMatch(/fromValidate:\s*true/);
   });
 });

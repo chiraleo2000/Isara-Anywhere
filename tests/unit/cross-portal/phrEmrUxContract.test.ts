@@ -37,4 +37,20 @@ describe('PHR/EMR UX contract (PHR-UX)', () => {
     expect(phr).toContain('useRealtimeSync');
     expect(phr).not.toContain('/api/documents?source=prescription');
   });
+
+  it('PHR-UX-06 — PrescriptionsTab download disabled without download_url/document_id', () => {
+    const phr = fs.readFileSync(path.join(root, 'Isara-patient-portal/frontend/pages/PHRPage.tsx'), 'utf8');
+    expect(phr).toMatch(/const canDownload = Boolean\(rx\.download_url \|\| rx\.document_id\)/);
+    expect(phr).toMatch(/canDownload \?/);
+  });
+
+  it('PHR-UX-07 — lab tab requires document id/url before download', () => {
+    const phr = fs.readFileSync(path.join(root, 'Isara-patient-portal/frontend/pages/PHRPage.tsx'), 'utf8');
+    expect(phr).toMatch(/order\.document_id \|\| order\.download_url \|\| order\.downloadUrl/);
+  });
+
+  it('PHR-UX-08 — meetings unlock field readyForPatient wired in phr API', () => {
+    const api = fs.readFileSync(path.join(root, 'Isara-patient-portal/backend/routes/phr.ts'), 'utf8');
+    expect(api).toMatch(/readyForPatient:\s*unlocked/);
+  });
 });

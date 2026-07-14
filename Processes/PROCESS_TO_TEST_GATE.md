@@ -10,7 +10,7 @@ Maps each Processes document to Vitest contracts, Playwright groups, and gate st
 npm run test:local:pre-deploy-gate
 ```
 
-**Latest:** 2026-07-14 — Meeting+PHR share redo **closed end-to-end**: local `phase:9:strict` **P0=0**; Cloud Run **v1.7.61** built+deployed (`cloud:deploy -Tag v1.7.61`, post-deploy smoke 200s); `test:cloud:deploy-gate` **21/21** `CLOUD_EXIT=0` on Stage-2 images (smoke+GATE0+cloud-meeting-ai+A/D/Q, `PW_INCLUDE_GUEST=1`); gap ledger `tests/MEETING_PHR_SHARE_GAP_LEDGER.md`; commit `d8a612cd` on `v1.7.52-test-hardening`. Fixes: meeting GET ensure, guest prejoin, token guest URLs, EMR sign→publish, validate→emr_report, Timeline MITL gate, doc ACL, lab notify id, PHR honesty.
+**Latest:** 2026-07-14 — Deeper local unit/workflow coverage for Meeting+PHR share: `test:unit:clinical` **449**, `test:unit:meeting` **437**, `test:unit:process-contracts` **232** (added `meetingPhrShareRuntime`, `phrReadyForPatient`, `pageWorkflowCoverage`, `meetingGuestShareUi`, imaging `publishedImagingDocumentId` notify). Prior: Cloud Run **v1.7.61** + deploy-gate **21/21** + `phase:9:strict` **P0=0**. Residual non-unit risks remain: Jitsi/network flake, LAN/`meet.demotoday.net` blocked.
 
 **Prior:** 2026-07-13 — `phase:9:strict` **full pass** (ledger round 9 **P0=0**); UX showup `test:gate:ui-showup` **69/69**; Group U **31/31**; unit groups sequential **17/17**; GATE0 local+cloud G1–G5 pass; P0 UI partial=0; `env:audit` / `sonar:lint` / `security:scan` green; `test:cloud:deploy-gate` **21/21** (smoke + GATE0 + cloud-meeting-ai + A/D/Q).
 

@@ -97,4 +97,13 @@ describe('meetingPhrShareRedoContract', () => {
     expect(src).toMatch(/publishedLabDocumentId/);
     expect(src).toMatch(/documentId:\s*publishedLabDocumentId/);
   });
+
+  it('C-IMG — imaging notify passes publishedImagingDocumentId', () => {
+    const src = fs.readFileSync(
+      path.join(root, 'Isara-doctor-portal/backend/mainApiServer.cjs'),
+      'utf8',
+    );
+    expect(src).toMatch(/publishedImagingDocumentId/);
+    expect(src).toMatch(/documentId:\s*publishedImagingDocumentId/);
+  });
 });

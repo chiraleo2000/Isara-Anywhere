@@ -122,4 +122,13 @@ describe('imagingRxLabDeliveryContract — source', () => {
     expect(patientDelivery).toMatch(/patientId/);
     expect(patientDelivery).toMatch(/imaging_report|lab_report/);
   });
+
+  it('IRL-SRC-02 — lab + imaging notify use published document ids', () => {
+    const api = fs.readFileSync(
+      path.join(root, 'Isara-doctor-portal/backend/mainApiServer.cjs'),
+      'utf8',
+    );
+    expect(api).toMatch(/documentId:\s*publishedLabDocumentId/);
+    expect(api).toMatch(/documentId:\s*publishedImagingDocumentId/);
+  });
 });

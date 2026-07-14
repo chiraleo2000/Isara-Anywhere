@@ -97,4 +97,29 @@ describe('pageElementContract — P0 UI controls in code', () => {
     expect(composer).toContain('data-testid="patient-message-send-btn"');
     expect(composer).toContain('/api/patients/${patient.id}/messages');
   });
+
+  it('PEC-MEET-SHARE — guest URL hints + validate summary CTA', () => {
+    const room = fs.readFileSync(
+      path.join(root, 'Isara-doctor-portal/frontend/pages/meetings/MeetingRoom.tsx'),
+      'utf8',
+    );
+    expect(room).toContain('data-testid="guest-join-url-hint"');
+    expect(room).toContain('data-testid="guest-token-url-hint"');
+    const results = fs.readFileSync(
+      path.join(root, 'Isara-doctor-portal/frontend/pages/meetings/MeetingResults.tsx'),
+      'utf8',
+    );
+    expect(results).toContain('data-testid="validate-summary-btn"');
+  });
+
+  it('PEC-RECORD — patient record viewer tab testids', () => {
+    const viewer = fs.readFileSync(
+      path.join(root, 'Isara-doctor-portal/frontend/components/PatientRecordViewer.tsx'),
+      'utf8',
+    );
+    expect(viewer).toMatch(/patient-record-tab-\$\{tab\.key\}/);
+    for (const key of ['summary', 'emr', 'labs', 'rx', 'docs', 'meetings', 'pdpa']) {
+      expect(viewer).toContain(`key: '${key}'`);
+    }
+  });
 });

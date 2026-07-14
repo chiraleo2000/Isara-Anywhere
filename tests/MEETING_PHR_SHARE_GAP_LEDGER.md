@@ -103,3 +103,14 @@ All M-* / C-* gap IDs closed in code. Stage-3 local reprove closed.
 - `npm run cloud:deploy -- -Tag v1.7.61` — Cloud Build **SUCCESS** (`f507d925-…`); traffic shifted 100% on doctor/patient; meeting image published; post-deploy smoke **200** for doctor/patient/meeting.
 - `test:cloud:deploy-gate` (`PW_INCLUDE_GUEST=1`) — **21/21** `CLOUD_EXIT=0` against **v1.7.61** Stage-2 images (first attempt flaked once on transient `meet.jit.si` timeout in Q01b; isolated Q retry **21/21** then full gate **21/21**).
 - Branch `v1.7.52-test-hardening` commit `d8a612cd` pushed to `github`.
+
+### Coverage depth follow-up (2026-07-14)
+
+| Pack | Result |
+|------|--------|
+| `test:unit:clinical` (incl. runtime HTTP + share redo) | **449** passed |
+| `test:unit:meeting` (incl. guest UI + MITL src) | **437** passed |
+| `test:unit:process-contracts` (page workflow + RFP + guest UI) | **232** passed |
+| Imaging notify `publishedImagingDocumentId` | fixed in `mainApiServer.cjs` |
+
+Still **not** claimed bug-free globally: Jitsi/WebRTC flake, LAN DNS, and headed console noise remain outside unit depth.

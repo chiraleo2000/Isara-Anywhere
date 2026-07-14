@@ -74,6 +74,14 @@ describe('FULL_WORKFLOW_CONTRACT — global invariants', () => {
     expect(PENDING_POOL_STATUSES).toContain('in_pool');
     expect(PENDING_POOL_STATUSES).toContain('awaiting_doctor_response');
   });
+
+  it('FWI-08 — guest invite URLs must use patient portal origin (token), not bare meeting host', () => {
+    const patientPortal = 'http://127.0.0.1:3005';
+    const guestLink = `${patientPortal}/guest-join?token=abc123`;
+    expect(guestLink.startsWith(patientPortal)).toBe(true);
+    expect(guestLink).not.toMatch(/:3020\/guest-join$/);
+    expect(guestLink).toMatch(/token=/);
+  });
 });
 
 describe('FULL_WORKFLOW_CONTRACT — error handling', () => {

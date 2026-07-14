@@ -48,4 +48,17 @@ describe('Book → meet → PHR combined chain (BMP)', () => {
     expect(portal).not.toMatch(/path=["']virtual-meeting/);
     expect(portal).toMatch(/meeting\/:appointmentId/);
   });
+
+  it('BMP-07 — meeting+PHR share redo packs registered', () => {
+    expect(fs.existsSync(path.join(root, 'tests/unit/cross-portal/meetingPhrShareRedoContract.test.ts'))).toBe(true);
+    expect(fs.existsSync(path.join(root, 'tests/unit/cross-portal/meetingPhrShareRuntime.integration.test.ts'))).toBe(true);
+    expect(fs.existsSync(path.join(root, 'tests/unit/cross-portal/phrReadyForPatientContract.test.ts'))).toBe(true);
+    expect(fs.existsSync(path.join(root, 'tests/MEETING_PHR_SHARE_GAP_LEDGER.md'))).toBe(true);
+  });
+
+  it('BMP-08 — MITL unlock + EMR sign publish wired end-to-end in sources', () => {
+    expect(read('Izara-jitsi-server/backend/index.js')).toMatch(/ready_for_patient|fromValidate:\s*true/);
+    expect(read('Isara-doctor-portal/backend/mainApiServer.cjs')).toMatch(/publishEmrReportDocument/);
+    expect(read('Isara-patient-portal/backend/routes/phr.ts')).toMatch(/readyForPatient/);
+  });
 });

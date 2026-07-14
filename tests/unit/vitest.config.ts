@@ -87,6 +87,11 @@ const GROUP_CLINICAL = [
   'cross-portal/imagingRxLabDeliveryContract.test.ts',
   'cross-portal/pdpaG15G16Contract.test.ts',
   'cross-portal/livingWillShareContract.test.ts',
+  'cross-portal/meetingPhrShareRedoContract.test.ts',
+  'cross-portal/byteShareChain.integration.test.ts',
+  'cross-portal/meetingPhrShareRuntime.integration.test.ts',
+  'cross-portal/phrReadyForPatientContract.test.ts',
+  'cross-portal/pageWorkflowCoverageContract.test.ts',
 ];
 const GROUP_CONTENT = [
   'doctor-portal/medicalContentWorkflow.test.ts',
@@ -130,6 +135,8 @@ const GROUP_MEETING = [
   'cross-portal/defectIsaraPdfMeetingQueue.test.ts',
   'cross-portal/mitlValidateContract.test.ts',
   'cross-portal/adminLobbyModeratorDenyContract.test.ts',
+  'cross-portal/meetingPhrShareRedoContract.test.ts',
+  'cross-portal/meetingGuestShareUiContract.test.ts',
   'patient-portal/jitsiDisplayName.behavior.test.ts',
 ];
 const GROUP_AI = [
