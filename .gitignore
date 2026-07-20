@@ -3,39 +3,19 @@ node_modules/
 /.pnp
 .pnp.js
 
+# Testing
+/coverage
+*.lcov
+
 # Production build
-dist/
-build/
-.next/
-out/
+/dist
+/build
+/.next/
+/out/
 
-# Environment variables
-.env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
-.env.*.local
-.env.docker
-.env.test
-Isara-patient-portal/.env
-Isara-doctor-portal/.env
-Izara-jitsi-server/.env
-
-deploy/nginx/*.pem
-deploy/nginx/isara-mkcert-rootCA.pem
-!.env.example
-!.env.docker.example
-!.env.docker.template
-!.env.docker.lan.example
-!.env.docker.lan.https.example
-
-# Local Docker bind mounts (Postgres data, etc.)
-data/postgres/*
-!data/postgres/.gitkeep
 
 # Logs
-logs/
+logs
 *.log
 npm-debug.log*
 yarn-debug.log*
@@ -43,20 +23,11 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-# Testing
-coverage/
-*.lcov
-cve-lite-scan-*.json
-tests/e2e/test-results/
-tests/e2e/playwright-report/
-tests/e2e/.auth-cache.json
-tests/e2e/.auth-states/
-tests/e2e/cloud-test-snapshots/
-
 # Editor directories and files
 .vscode/
 !.vscode/extensions.json
 .idea/
+.kiro/
 .DS_Store
 *.suo
 *.ntvs*
@@ -71,66 +42,83 @@ tests/e2e/cloud-test-snapshots/
 *.tmp
 *.temp
 .cache/
-Documents/docs/diagrams/.$*
-Documents/docs/**/*_BUILD.docx
-Documents/docs/**/*_BUILD.pptx
-Documents/docs/**/~$*
+.parcel-cache/
+.vite/
 
-# Credentials (NEVER commit service account keys!)
-credentials/
-!credentials/*.sample.json
-
-# OS generated files
+# OS files
 Thumbs.db
-ehthumbs.db
+.Spotlight-V100
+.Trashes
 
-# Python
-__pycache__/
-*.py[cod]
-*$py.class
-.Python
-venv/
-.venv/
-
-# Build artifacts
+# TypeScript
 *.tsbuildinfo
+next-env.d.ts
 
-# Package manager lock files (optional - uncomment if needed)
-# package-lock.json
-# yarn.lock
-# pnpm-lock.yaml
+# Debug
+debug.log
 
-# Root-level test artifacts
-test-results/
-playwright-report/
-test-logs/
-reports/*.log
-reports/local-failures/
-reports/local-unit-gate-*.log
-reports/local-error-ledger/round-*-20*.json
-!reports/local-error-ledger/*-latest.json
-LOCAL_E2E_ERROR_LEDGER_ROUND*.md
-CLOUD_E2E_ERROR_LEDGER_ROUND*.md
-tests/unit/coverage/
-tests/output/screenshots/**/*.png
-!tests/output/screenshots/.gitkeep
+# Optional npm cache directory
+.npm
 
-# Full-deck exports (regenerate locally; committed guides live under docs/)
-Presentations/IZARA_User_Guide.pdf
-Presentations/IZARA_User_Guide.docx
+# Optional eslint cache
+.eslintcache
 
-# User guide build intermediates (source of truth: Documents/docs/guides/**)
-Documents/docs/guides/**/USER_GUIDE_PATIENT_WORD_TH.md
-Documents/docs/guides/**/USER_GUIDE_DOCTOR_WORD_TH.md
-Documents/docs/guides/**/USER_GUIDE_PATIENT_PPT_TH.md
-Documents/docs/guides/**/USER_GUIDE_DOCTOR_PPT_TH.md
-Documents/docs/guides/**/*_NEW.docx
-Documents/docs/guides/**/*_NEW.pptx
-Documents/docs/guides/**/*.docx.building
-Documents/docs/guides/**/*.pptx.building
-Documents/docs/guides/**/USER_GUIDE_PPT_SCRIPT_TH.*
-Documents/docs/guides/**/USER_GUIDE_WORD_REPORT_TH.*
-Documents/docs/guides/**/*Portal_*Sample*
-Documents/docs/guides/**/USER_GUIDE_PATIENT_TH.md
-Documents/docs/guides/**/USER_GUIDE_DOCTOR_TH.md
-# PDF exports: committed under Documents/docs/guides/** and Documents/docs/technical/pdf/
+# Optional REPL history
+.node_repl_history
+
+# Output of 'npm pack'
+*.tgz
+
+# Yarn
+.yarn-integrity
+.yarn/cache
+.yarn/unplugged
+.yarn/build-state.yml
+.yarn/install-state.gz
+.pnp.*
+
+# Generated files
+mock-data/*.json
+
+# Service account keys (NEVER commit these!)
+*.key.json
+*-service-account.json
+credentials.json
+service-account-key.json
+izara-telemedicine-*.json
+
+# Credentials folder (NEVER commit service account keys!)
+credentials/
+
+# Google Cloud
+.gcloud/
+.config/gcloud/
+
+# Backup files
+*.bak
+*.backup
+*.old
+
+# Mac
+.AppleDouble
+.LSOverride
+Icon
+
+# Windows
+desktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msix
+*.msm
+*.msp
+*.lnk
+
+# Linux
+.directory
+.Trash-*
+
+# Sibling portal junctions (separate git repos) — do not nest in workspace monorepo
+issara-patient/
+issara-doctor/
+issara-jitsi/

@@ -32,11 +32,35 @@ Write-Host "=== Cloud full coverage (headed) ===" -ForegroundColor Cyan
 Write-Host "Projects: $($projects -join ', ')" -ForegroundColor Gray
 
 if (-not $SkipReseed -and $env:CLOUD_SKIP_RESEED -ne '1') {
-    Write-Host "`n=== Cloud DB reseed (demo + SSO fixture users for Group N) ===" -ForegroundColor Cyan
-    npm run cleanup:cloud-test
+    Write-Host "`n=== Cloud DB purge test-only (retain seed) ===" -ForegroundColor Cyan
+    npm run cleanup:cloud-test-only
     if ($LASTEXITCODE -ne 0) {
-        Write-Warning "cleanup:cloud-test returned $LASTEXITCODE (continuing - SSO tests may 404)"
+        Write-Warning "cleanup:cloud-test-only returned $LASTEXITCODE (continuing)"
     }
+}
+
+# Group N needs SSO fixture users; seed after purge (or when skip-reseed left DB without them).
+Write-Host "`n=== Seed SSO fixture users (Group N) ===" -ForegroundColor Cyan
+$seedEnv = @{
+    CLOUD_DB_HOST = if ($env:CLOUD_DB_HOST) { $env:CLOUD_DB_HOST } else { '35.240.157.230' }
+    DB_HOST = if ($env:CLOUD_DB_HOST) { $env:CLOUD_DB_HOST } else { '35.240.157.230' }
+    DB_PORT = '5432'
+    DB_NAME = if ($env:DB_NAME) { $env:DB_NAME } else { 'izara_phase1' }
+    DB_USER = if ($env:DB_USER) { $env:DB_USER } else { 'postgres' }
+    DB_SSL = 'false'
+}
+foreach ($k in $seedEnv.Keys) { Set-Item -Path "Env:$k" -Value $seedEnv[$k] }
+# Always prefer Secret Manager db-password for GCE VM (stale/local CLOUD_DB_PASSWORD must not win).
+try {
+    $sec = (gcloud secrets versions access latest --secret=db-password --project=izara-telemedicine 2>$null)
+    if ($LASTEXITCODE -eq 0 -and $sec) {
+        $env:CLOUD_DB_PASSWORD = ([string]$sec).Trim()
+    }
+} catch { }
+if ($env:CLOUD_DB_PASSWORD) { $env:DB_PASSWORD = $env:CLOUD_DB_PASSWORD }
+node scripts/database/db-tool.cjs --target cloud --seed-sso
+if ($LASTEXITCODE -ne 0) {
+    Write-Warning "seed-sso returned $LASTEXITCODE (Group N may 404)"
 }
 
 & "$root/scripts/run-cloud-tests.ps1" @args

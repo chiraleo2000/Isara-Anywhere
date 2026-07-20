@@ -426,7 +426,7 @@ stateDiagram-v2
         <mxCell id="auth_srv" value="login | refresh | google-auth&#xa;register | requireAdmin routes" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="zone_auth">
           <mxGeometry x="25" y="45" width="290" height="65" as="geometry" />
         </mxCell>
-        <mxCell id="zone_data" value="Zone 4 — Trusted Data (Cloud SQL)" style="swimlane;startSize=30;fillColor=#F3E5F5;strokeColor=#6A1B9A;" vertex="1" parent="1">
+        <mxCell id="zone_data" value="Zone 4 — Trusted Data (GCE VM Postgres)" style="swimlane;startSize=30;fillColor=#F3E5F5;strokeColor=#6A1B9A;" vertex="1" parent="1">
           <mxGeometry x="760" y="70" width="280" height="470" as="geometry" />
         </mxCell>
         <mxCell id="users_tbl" value="users&#xa;role, is_admin, approval_status" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="zone_data">

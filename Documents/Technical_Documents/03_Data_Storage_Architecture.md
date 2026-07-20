@@ -1,7 +1,7 @@
 # สถาปัตยกรรมการจัดเก็บข้อมูล (Data Storage Architecture)
 
-> **อัปเดต:** 2 มิถุนายน 2569 | **ชุด:** `Documents/Technical_Documents` · [ดัชนี](../README.md)  
-> **ไม่มี Nextcloud** — เก็บที่ PostgreSQL/Cloud SQL, `/tmp/recordings`, GCS (ถ้ามี env)  
+> **อัปเดต:** 9 กรกฎาคม 2569 | **ชุด:** `Documents/Technical_Documents` · [ดัชนี](../README.md)  
+> **ไม่มี Nextcloud** — เก็บที่ PostgreSQL (GCE VM / Docker), `/tmp/recordings`, GCS (ถ้ามี env)  
 > **ก่อนหน้า:** [02](02_Authentication_and_Authorization.md) · **ถัดไป:** [04](04_Jitsi_Integration_and_Code_Examples.md) · [05 ขั้นตอน](05_Appendix_Full_Process_Steps.md)  
 > **แผนภาพ draw.io:** [Documents/docs/diagrams/diagrams.drawio](../Documents/docs/diagrams/diagrams.drawio)
 
@@ -10,7 +10,7 @@
 ## สารบัญ
 
 1. [ภาพรวมการจัดเก็บ](#1-ภาพรวมการจัดเก็บ)
-2. [ฐานข้อมูลเชิงสัมพันธ์ (PostgreSQL / Cloud SQL)](#2-ฐานข้อมูลเชิงสัมพันธ์-postgresql--cloud-sql)
+2. [ฐานข้อมูลเชิงสัมพันธ์ (PostgreSQL / GCE VM)](#2-ฐานข้อมูลเชิงสัมพันธ์-postgresql--gce-vm)
 3. [ตารางหลักและความสัมพันธ์](#3-ตารางหลักและความสัมพันธ์)
 4. [JSONB และ pgvector](#4-jsonb-และ-pgvector)
 5. [การจัดเก็บไฟล์และข้อมูลไบนารี](#5-การจัดเก็บไฟล์และข้อมูลไบนารี)
@@ -37,7 +37,7 @@
 ```text
 ┌──────────────────────────────────────────────────────────────┐
 │  APPLICATION DATA (โครงสร้าง + คลินิก + auth)               │
-│  → Cloud SQL / Docker PostgreSQL  izara_phase1               │
+│  → GCE VM / Docker PostgreSQL  izara_phase1                  │
 ├──────────────────────────────────────────────────────────────┤
 │  MEETING MEDIA (วิดีโอ/เสียง)                                 │
 │  → BYTEA (persist) + ชั่วคราว Cloud Run disk + GCS (optional) │
@@ -46,7 +46,7 @@
 
 ---
 
-## 2. ฐานข้อมูลเชิงสัมพันธ์ (PostgreSQL / Cloud SQL)
+## 2. ฐานข้อมูลเชิงสัมพันธ์ (PostgreSQL / GCE VM)
 
 ### 2.1 ข้อมูลพื้นฐาน
 
@@ -69,14 +69,16 @@
 
 ### 2.3 การเชื่อมต่อ — Google Cloud
 
-| รายการ | ค่า (ตามเอกสารใน repo) |
-|--------|-------------------------|
-| Production / dev-testing | Cloud SQL instance `izara-postgres-server` |
+| รายการ | ค่า (as-is gate) |
+|--------|------------------|
+| Production / dev-testing | **GCE VM PostgreSQL** `35.240.157.230:5432` — **ไม่ใช้ Cloud SQL** |
+| Database | `izara_phase1` |
 | Region | `asia-southeast1` |
 | Project | `izara-telemedicine` |
-| Connection | `DATABASE_URL` ใน env ของ Cloud Run services |
+| Connection | Cloud Run `DB_HOST` / `DB_PORT` / `DB_NAME` / `DB_USER` / `DB_PASSWORD` (`db-password` secret); `DB_SSL=false` |
+| Forbidden | `/cloudsql/...` sockets, `--add-cloudsql-instances`, mounting `DATABASE_URL` that overrides `DB_HOST` |
 
-เอกสาร `Processes/PostgreSQL_Database_Architecture.md` ยังอ้าง GCE VM `35.240.157.230` สำหรับบาง environment — ตรวจ env จริงของ deployment ที่ใช้งาน
+Cloud Run portals/meeting ใช้ discrete `DB_*` เท่านั้น — ไม่ mount Secret Manager `database-url`
 
 ### 2.4 จำนวนตารางโดยประมาณ
 
@@ -91,10 +93,10 @@
 | กลุ่ม | ตาราง | จำนวนโดยประมาณ |
 |-------|-------|----------------|
 | User & Auth | `users`, `sessions`, `password_resets`, `refresh_tokens`, `device_tokens`, `biometric_credentials` | 6 |
-| Patient | `patient_profiles`, `phr`, `vital_signs`, `living_wills`, `living_will_versions`, `patient_consents`, `push_subscriptions` | 7 |
+| Patient | `patient_profiles`, `phr`, `vital_signs`, `living_wills`, `living_will_versions`, `patient_consents`, `patient_documents`, `patient_doctor_messages`, `push_subscriptions` | 9 |
 | Doctor | `doctor_profiles`, `doctors`, `doctor_schedules`, `doctor_reviews`, `consultants` | 5 |
 | Appointment & Meeting | `appointments`, `meeting_records`, `meeting_transcripts` | 3+ |
-| Clinical | `emr`, `prescriptions`, `lab_orders` | 3+ |
+| Clinical | `emr`, `prescriptions`, `lab_orders`, `imaging_orders` | 4+ |
 | Content & AI | `medical_content`, `clinical_resources`, `knowledge_base`, `ai_chat_history`, `transcript_embeddings` | หลายตาราง |
 | System | `notifications`, `audit_logs`, `user_settings`, `sync_queue` | หลายตาราง |
 
@@ -138,12 +140,17 @@
 | `recording_data` | **BYTEA** — ไฟล์บันทึกในฐานข้อมูล |
 | `doctor_validation_status`, `ready_for_patient` | man-in-the-loop |
 
-### 3.5 ตาราง `emr` และ `phr`
+### 3.5 ตาราง `emr`, `phr` และ `patient_documents`
 
 | ตาราง | ผู้เป็นเจ้าของข้อมูล | การใช้ |
 |-------|---------------------|--------|
 | `phr` | ผู้ป่วย | ประวัติสุขภาพส่วนบุคคล — JSONB หลายฟิลด์ |
 | `emr` | แพทย์บันทึกต่อ patient/appointment | SOAP, การวินิจฉัย |
+| `patient_documents` | ผู้ป่วย (inbox) | เอกสารคลินิกที่ส่งถึงผู้ป่วย — EMR, lab PDF, Rx, imaging, instruction sheet; `file_data` BYTEA หรือ metadata อ้างอิง `source_type`/`source_id` |
+
+**`patient_documents` (v2.3.0):** ทะเบียนกลางสำหรับทุก artifact ที่ผู้ป่วยดาวน์โหลดได้ — `source_type` เช่น `emr_report`, `lab_report`, `prescription`, `imaging_report`, `instruction_sheet`, `patient_upload`; API `GET/POST/DELETE /api/patients/documents` และ `GET /api/documents/:id/download` บน patient portal; แพทย์ publish ผ่าน `DocumentDeliveryService` หลัง sign EMR / ส่งผล lab / บันทึก Rx
+
+**`patient_doctor_messages`:** ข้อความแพทย์→ผู้ป่วย (in-app + email) จากหน้า Patient Detail
 
 ---
 
@@ -182,6 +189,17 @@ recording_stopped_at     TIMESTAMPTZ,
 
 Pipeline หลังประชุมอาจ persist ลง `recording_data` ก่อนลบไฟล์ชั่วคราว
 
+ตาราง `patient_documents` (v2.3.0):
+
+```sql
+file_data    BYTEA,          -- PDF หรือไฟล์ที่ส่งถึงผู้ป่วย
+mime_type    TEXT DEFAULT 'application/pdf',
+file_size    INTEGER,
+source_type  TEXT NOT NULL,  -- emr_report | lab_report | prescription | ...
+```
+
+Clinical delivery เก็บ PDF ใน BYTEA ภายใน `izara_phase1` — **ไม่**ใช้ GCS path สำหรับเอกสารคลินิก (GCS clinical paths ปิดใน production gate)
+
 ### 5.2 ดิสก์ชั่วคราว — Meeting Server
 
 | รายการ | ค่า |
@@ -216,7 +234,7 @@ Production Cloud Run: sweep โฟลเดอร์ว่างทุกชั�
 
 | ชั้น | เหมาะกับ | ถาวร? |
 |------|----------|-------|
-| PostgreSQL relational | ธุรกิจ, คลินิก, auth | ใช่ (Cloud SQL) |
+| PostgreSQL relational | ธุรกิจ, คลินิก, auth | ใช่ (GCE VM Postgres) |
 | PostgreSQL BYTEA | recording ขนาดเล็ก-กลาง | ใช่ |
 | `/tmp/recordings` | ประมวลผลระหว่าง upload | ไม่ (ephemeral) |
 | GCS | recording ขนาดใหญ่ (ถ้าเปิด env) | ใช่ (ใน bucket GCP) |
@@ -229,10 +247,10 @@ Production Cloud Run: sweep โฟลเดอร์ว่างทุกชั�
 
 | องค์ประกอบ | รายละเอียด As-is |
 |------------|------------------|
-| **Cloud SQL** | ฐานข้อมูลหลัก — ข้อมูลผู้ป่วย/คลินิก/นัดหมาย |
+| **GCE VM PostgreSQL** | ฐานข้อมูลหลัก (`35.240.157.230`) — ข้อมูลผู้ป่วย/คลินิก/นัดหมาย (**ไม่ใช้ Cloud SQL**) |
 | **Cloud Run** | รัน Patient, Doctor, Meeting — ไม่เก็บข้อมูลถาวรบน instance |
 | **GCS** | วิดีโอบันทึก (ถ้า `GCS_BUCKET` ตั้งค่า) — อยู่ใน project/region เดียวกัน |
-| **Secrets** | `JWT_SECRET`, `DATABASE_URL`, API keys ผ่าน env / Secret Manager |
+| **Secrets** | `JWT_SECRET`, `DB_PASSWORD` (`db-password`), API keys ผ่าน env / Secret Manager |
 | **External** | Jitsi (`meet.jit.si`), Gemini, Google Maps — ส่งเฉพาะข้อมูลที่ API ต้องการ |
 
 การแยกขอบเขตตาม PDPA ในแอป: `patient_consents` ควบคุมว่าแพทย์คนใดเข้าถึง PHR ของผู้ป่วยคนใดได้
@@ -282,9 +300,9 @@ Production Cloud Run: sweep โฟลเดอร์ว่างทุกชั�
 | `refresh_tokens` | 30 วัน |
 | Recording local disk | ลบตาม `RECORDING_LOCAL_RETENTION` |
 
-### 8.3 Cloud SQL Backup (ระดับ GCP)
+### 8.3 Backup บน GCE VM (ระดับ ops)
 
-การสำรองอัตโนมัติของ Cloud SQL เป็นความสามารถของ GCP — การตั้งค่าจริงอยู่ที่ console/ IaC ของ deployment ไม่ได้ hard-code ใน repo แอป
+Cloud DB เป็น **GCE VM PostgreSQL** — สำรองด้วย `pg_dump` / `db-tool` ตามตารางด้านบน (ไม่พึ่ง Cloud SQL automated backup)
 
 ---
 
@@ -297,6 +315,7 @@ Production Cloud Run: sweep โฟลเดอร์ว่างทุกชั�
 | `migrations/v2.0.0-phase2-tables.sql` | device_tokens, sync_queue, user_settings |
 | `migrations/v2.1.0-phase2-ai-his.sql` | ตาราง AI/HIS เพิ่ม |
 | `migrations/v2.2.0-ai-specialty-matching.sql` | appointment_ai_suggestions |
+| `migrations/v2.3.0-patient-documents-and-messages.sql` | `patient_documents`, `patient_doctor_messages`, booking columns |
 | `migrations/add_meeting_url_columns.sql` | คอลัมน์ Jitsi บน appointments |
 | `v2.2.0-notify-triggers.sql` | NOTIFY triggers |
 | `migrations/pdpa-access-control-migration.sql` | access_audit |
@@ -323,6 +342,8 @@ erDiagram
     users ||--o{ emr : clinician_writes
     users ||--o{ prescriptions : prescribes
     users ||--o{ lab_orders : orders
+    users ||--o{ patient_documents : receives
+    users ||--o{ patient_doctor_messages : exchanges
     users ||--o{ patient_consents : grants
     users ||--o{ notifications : receives
     users ||--o{ living_wills : owns
@@ -405,7 +426,7 @@ erDiagram
         <mxCell id="crun" value="Cloud Run&#xa;Patient | Doctor | Meeting" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="gcp">
           <mxGeometry x="25" y="40" width="220" height="55" as="geometry" />
         </mxCell>
-        <mxCell id="cloudsql" value="Cloud SQL izara_phase1&#xa;Relational + BYTEA + pgvector" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;size=12;fillColor=#B39DDB;" vertex="1" parent="gcp">
+        <mxCell id="cloudsql" value="GCE VM Postgres izara_phase1&#xa;Relational + BYTEA + pgvector" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;size=12;fillColor=#B39DDB;" vertex="1" parent="gcp">
           <mxGeometry x="280" y="35" width="250" height="95" as="geometry" />
         </mxCell>
         <mxCell id="gcs" value="GCS Bucket&#xa;(เมื่อ GCS_BUCKET)" style="shape=folder;fillColor=#CFD8DC;" vertex="1" parent="gcp">
@@ -488,7 +509,7 @@ erDiagram
 | Access control matrix | §2 + เอกสาร 02 PDPA |
 | Backup pg_dump / db-tool | §8 |
 
-> **As-is บน GCP:** การ deploy จริงใช้ **Cloud SQL** (`izara-postgres-server`) ตาม `CLOUD_ACCESS_TH.md` — สเปก Processes บางส่วนอ้าง GCE VM เป็นประวัติการ deploy ในเอกสาร ENRICH; โค้ดและ Cloud Run ชี้ Cloud SQL
+> **As-is บน GCP:** การ deploy จริงใช้ **GCE VM PostgreSQL** `35.240.157.230:5432` / `izara_phase1` / `DB_SSL=false` ตาม `CLOUD_ACCESS_TH.md` และ cloudbuild — **ไม่ใช้ Cloud SQL**; Cloud Run ใช้ discrete `DB_*` (ไม่ mount `DATABASE_URL`)
 
 ### 13.3 `Data_Sync_Documentation.md`
 
@@ -510,7 +531,7 @@ erDiagram
 
 | Processes | ตาราง | หมายเหตุ |
 |-----------|-------|----------|
-| `Living_Will_Processes.md`, `Living_Will_Implementation_Plan.md` | `living_wills`, `living_will_versions` | Patient 11 |
+| `Living_Will_Processes.md` | `living_wills`, `living_will_versions` | Patient 11 |
 | `Patient-Portal/10_PDPA_Page.md` | `patient_consents` | แยกจาก living will |
 
 ### 13.6 เนื้อหาและ RAG

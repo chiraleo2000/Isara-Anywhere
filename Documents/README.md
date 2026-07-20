@@ -1,7 +1,17 @@
 # Documents — Izara Anywhere documentation hub
 
-> **Layout version:** June 2026 · **App release:** v1.7.54  
-> **Gates:** `npm run phase:0` … `phase:9` · LAN: [deploy/nginx/DEPLOYMENT.md](../deploy/nginx/DEPLOYMENT.md)
+> **Layout version:** July 2026 · **App release:** v1.7.61  
+> **Gates:** `npm run phase:0` … `phase:9` · UX showup: `npm run test:gate:ui-showup` · LAN: [deploy/nginx/DEPLOYMENT.md](../deploy/nginx/DEPLOYMENT.md) · Video (TH): [docs/markdown/operations/LAN_VIDEO_CLIENT_TH.md](docs/markdown/operations/LAN_VIDEO_CLIENT_TH.md)
+
+**Start here:** [INSTALLATION_GUIDE.md](docs/markdown/operations/INSTALLATION_GUIDE.md) · [PROJECT_GUIDELINES.md](docs/markdown/operations/PROJECT_GUIDELINES.md)
+
+**Local-first → cloud → docs → purge (required process):** real Istanbul unit coverage + expanded local headed matrix + UI showup must **all pass** before cloud; after cloud UI showup + `test:cloud:full` + uniqueness, run `docs:sync-screenshots` / `docs:evidence:cloud` — **published images** = cloud UI showup unique PNGs only in [`docs/screenshots/`](../docs/screenshots/). Post-phase: `cleanup:local-test-only` / `cleanup:cloud-test-only`.
+
+Evidence paths (re-verify before trusting): [LOCAL_GREEN_CHECKPOINT.md](../reports/LOCAL_GREEN_CHECKPOINT.md) · [CLOUD_GREEN_CHECKPOINT.md](../reports/CLOUD_GREEN_CHECKPOINT.md) · [HEADED_UI_RUN_RESULTS.md](../reports/HEADED_UI_RUN_RESULTS.md) · [LOCAL_UI_SHOWUP_RESULTS.md](../reports/LOCAL_UI_SHOWUP_RESULTS.md) · [CLOUD_FULL_COVERAGE_RESULTS.md](../reports/CLOUD_FULL_COVERAGE_RESULTS.md) · [CLOUD_UI_SHOWUP_RESULTS.md](../reports/CLOUD_UI_SHOWUP_RESULTS.md) · [CLOUD_DEMO_DATA_CLEANUP.md](../reports/CLOUD_DEMO_DATA_CLEANUP.md) · [local-unit-gate-latest.json](../reports/local-unit-gate-latest.json) · [FIX_LOOP_ROUNDS.md](../reports/FIX_LOOP_ROUNDS.md) · published PNGs [`docs/screenshots/`](../docs/screenshots/) (cloud UI showup unique only; ~427 PNGs after sync)
+
+**Showup (cloud, 2026-07-16 baseline `20260716-093250`):** A/B/C headed **15 passed** — [CLOUD_UI_SHOWUP_RESULTS.md](../reports/CLOUD_UI_SHOWUP_RESULTS.md) (`CLOUD_UI_SHOWUP_RUN3.txt`). Full coverage **zero residuals** (Group N after GCE SSO seed) — [CLOUD_FULL_COVERAGE_RESULTS.md](../reports/CLOUD_FULL_COVERAGE_RESULTS.md). Checkpoint — [CLOUD_GREEN_CHECKPOINT.md](../reports/CLOUD_GREEN_CHECKPOINT.md). Cloud purge: **soft-blocked** (TCP `db-password` auth) — [CLOUD_DEMO_DATA_CLEANUP.md](../reports/CLOUD_DEMO_DATA_CLEANUP.md).
+
+User guides (Word/PPT from cloud-synced PNGs): [Patient](docs/guides/patient/) · [Doctor](docs/guides/doctor/) — rebuild: `python scripts/build-portal-user-guides.py`
 
 รวมเอกสารทั้งหมดของโปรเจกต์ภายใต้โฟลเดอร์เดียว `Documents/`
 
@@ -59,7 +69,7 @@ Documents/
 |---|------|-------------|
 | 1 | [01_System_Architecture_and_Workflow.md](Technical_Documents/01_System_Architecture_and_Workflow.md) | 3 พอร์ทัล, routes, workflow, appointment lifecycle, draw.io |
 | 2 | [02_Authentication_and_Authorization.md](Technical_Documents/02_Authentication_and_Authorization.md) | Session/JWT, RBAC, Google SSO, PDPA |
-| 3 | [03_Data_Storage_Architecture.md](Technical_Documents/03_Data_Storage_Architecture.md) | Cloud SQL, BYTEA/GCS, NOTIFY, backup, ER |
+| 3 | [03_Data_Storage_Architecture.md](Technical_Documents/03_Data_Storage_Architecture.md) | GCE VM Postgres, BYTEA/GCS, NOTIFY, backup, ER |
 | 4 | [04_Jitsi_Integration_and_Code_Examples.md](Technical_Documents/04_Jitsi_Integration_and_Code_Examples.md) | Lobby, API, โค้ด FE/BE, topology |
 | 5 | [05_Appendix_Full_Process_Steps.md](Technical_Documents/05_Appendix_Full_Process_Steps.md) | Workflow + ขั้นตอนเต็มจาก `Processes/` |
 
@@ -73,10 +83,10 @@ python scripts/build-appendix-process-steps.py   # สร้าง/อัปเ�
 
 ## แผนภาพ (diagrams)
 
-| ชนิด | ที่อยู่ | คำสั่ง |
-|------|--------|--------|
-| draw.io master (12 แท็บรายงาน) | [Documents/docs/diagrams/diagrams.drawio](Documents/docs/diagrams/diagrams.drawio) | `npm run diagrams:export` |
-| PNG export | [Documents/docs/diagrams/export/pages/](Documents/docs/diagrams/export/pages/) | `npm run diagrams:report` |
+| ชนิด | ที่อยู่ | หมายเหตุ |
+|------|--------|----------|
+| draw.io master | [docs/diagrams/diagrams.drawio](docs/diagrams/diagrams.drawio) | Edit in draw.io |
+| PNG export | [docs/diagrams/export/pages/](docs/diagrams/export/pages/) | Export from draw.io as needed |
 | Mermaid → HTML | [Presentations/html-diagrams/](Presentations/html-diagrams/index.html) | `.\Documents\Presentations\generate-diagrams.ps1` |
 
 ---
@@ -92,22 +102,28 @@ python scripts/build-appendix-process-steps.py
 
 ---
 
-## การทดสอบ (v1.7.53)
+## การทดสอบ (v1.7.61)
 
 | คำสั่ง | ความหมาย |
 |--------|----------|
 | `npm run phase:0` … `phase:9` | Phase gates — smoke, unit, headed E2E, screenshots, ledger |
-| `npm run test:local:pre-deploy-gate` | Phase 9 full gate (alias `phase:9`) |
-| `npm run test:unit:docker` | **~3200** Vitest tests ใน `node:20-alpine` |
-| `npm run test:unit:groups-sequential` | 17 unit groups แบบ sequential + fail-fast |
+| `USE_DOCKER_COVERAGE=1` + `test:unit:coverage:gate` / `test:unit:docker:coverage` | Real Istanbul coverage (Windows via Docker); thresholds **60/55/50/60** |
+| `npm run test:local:pre-deploy-gate` | Full local gate — expanded E2E default beyond A–J |
+| `npm run test:local:e2e-full` | Headed default: A…J + D-queue/D-host/Q/L/J-prejoin/K/R/S/Defect |
+| `npm run test:e2e:ui-showup` | Local headed A/B/C (archive only) |
+| `npm run test:gate:ui-showup` | Cloud headed A/B/C + S — **docs screenshot source** |
+| `npm run docs:sync-screenshots` | Copy cloud-pass unique PNGs → `docs/screenshots/` |
+| `npm run docs:evidence:cloud` | Sync PNGs + refresh LOCAL_INSTALL evidence from cloud shots |
+| `python scripts/build-portal-user-guides.py` | Rebuild Patient/Doctor Word + PPT guides under `docs/guides/` |
+| `npm run test:unit:docker` | Vitest in `node:20-alpine` (no coverage unless `:coverage`) |
+| `npm run test:unit:groups-sequential` | Unit groups sequential + fail-fast |
 | `npm run test:meeting-server:contract` | Meeting-server HTTP/JWT contracts |
-| `npm run test:meeting-server:integration` | Socket.IO lobby + integration (skip ถ้า :3020 ไม่ขึ้น) |
 | `npm run test:guards:static` | Legacy-src, credentials-include, dev-env guards |
 | `npm run docker:probe-health` / `docker:meeting-api-smoke` | Pre-phase smoke ก่อน E2E |
-| `bash deploy/nginx/compose.sh` | Docker Compose wrapper (V2 หรือ `docker-compose` V1) |
+| `npm run cleanup:local-test-only` / `cleanup:cloud-test-only` | Post-phase demo purge |
 | `npm run cleanup:project` | ลบ log/cache/regenerable artifacts |
 
-คู่มือ LAN: [deploy/nginx/DEPLOYMENT.md](../deploy/nginx/DEPLOYMENT.md) · สัญญา workflow: [Processes/FULL_WORKFLOW_CONTRACT.md](../Processes/FULL_WORKFLOW_CONTRACT.md)
+คู่มือ LAN: [deploy/nginx/DEPLOYMENT.md](../deploy/nginx/DEPLOYMENT.md) · วิดีโอ LAN: [docs/markdown/operations/LAN_VIDEO_CLIENT_TH.md](docs/markdown/operations/LAN_VIDEO_CLIENT_TH.md) · รายงาน: [reports/README.md](../reports/README.md) · reverify: [FULL_COVERAGE_REVERIFY_AUDIT.md](../reports/FULL_COVERAGE_REVERIFY_AUDIT.md)
 
 **Registry:** `tests/unit/cross-portal/processWorkflowRegistry.ts` · matrix: [tests/PROCESS_COVERAGE_MATRIX.md](../tests/PROCESS_COVERAGE_MATRIX.md)
 

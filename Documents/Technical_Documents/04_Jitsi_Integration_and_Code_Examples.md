@@ -528,9 +528,14 @@ export function validateJibriWebhookRequest(body, { expectedSecret, providedSecr
 จาก `Izara-jitsi-server/.env.example` (สรุปที่เกี่ยวข้อง):
 
 ```bash
-# พอร์ตและ DB
+# พอร์ตและ DB (Cloud Run: discrete DB_* — do not mount DATABASE_URL)
 PORT=3020
-DATABASE_URL=postgresql://postgres:***@localhost:5432/izara_phase1
+DB_HOST=35.240.157.230
+DB_PORT=5432
+DB_NAME=izara_phase1
+DB_USER=postgres
+DB_PASSWORD=***
+DB_SSL=false
 
 # Jitsi
 JITSI_DOMAIN=meet.jit.si
@@ -591,7 +596,7 @@ flowchart TB
         P[postMeetingPipeline]
     end
 
-    subgraph DB [Cloud SQL]
+    subgraph DB [GCE_VM_Postgres]
         MR[(meeting_records)]
         MT[(meeting_transcripts)]
     end
@@ -650,7 +655,7 @@ flowchart TB
         <mxCell id="jitsi_ext" value="meet.jit.si&#xa;WebRTC (media only)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#FCE4EC;" vertex="1" parent="1">
           <mxGeometry x="580" y="75" width="180" height="85" as="geometry" />
         </mxCell>
-        <mxCell id="cloudsql" value="Cloud SQL&#xa;meeting_records transcripts" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;size=12;fillColor=#B39DDB;" vertex="1" parent="1">
+        <mxCell id="cloudsql" value="GCE VM Postgres&#xa;meeting_records transcripts" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;size=12;fillColor=#B39DDB;" vertex="1" parent="1">
           <mxGeometry x="580" y="200" width="180" height="75" as="geometry" />
         </mxCell>
         <mxCell id="gcs_opt" value="GCS optional&#xa;meetings/doctorId/meetingId" style="shape=folder;fillColor=#CFD8DC;" vertex="1" parent="1">
@@ -748,16 +753,16 @@ flowchart TB
 
 ทดสอบ W04 ใน Docker Compose — ห้องประชุมแพทย์และผู้ป่วย (Chromium canonical):
 
-![Doctor virtual meeting](../docs/screenshots/group-W/W04-doctor-virtual-meeting.png)
+![Doctor virtual meeting](../../docs/screenshots/group-W/W04-doctor-virtual-meeting.png)
 
-![Patient meeting room](../docs/screenshots/group-W/W04-patient-meeting-room.png)
+![Patient meeting room](../../docs/screenshots/group-W/W04-patient-meeting-room.png)
 
 คู่มือเต็ม: [DOCKER_MULTIBROWSER_E2E.md](../docs/markdown/testing/DOCKER_MULTIBROWSER_E2E.md)
 
 ### 13.7 ทดสอบอัตโนมัติ (อ้างอิงจาก Processes)
 
-- Playwright Groups D, Q, video-meeting workflow screenshots ใน `Documents/docs/screenshots/`
-- **Docker Group W (2026-06-05):** `npm run test:e2e:docker:core-multibrowser` — 18/18 Chromium + Firefox + WebKit; PNG → `Documents/docs/screenshots/group-W/` (`npm run docs:sync-screenshots`)
+- Playwright Groups D, Q, video-meeting workflow screenshots ใน `docs/screenshots/`
+- **Docker Group W (2026-06-05):** `npm run test:e2e:docker:core-multibrowser` — 18/18 Chromium + Firefox + WebKit; PNG → `docs/screenshots/group-W/` (`npm run docs:sync-screenshots`)
 - **Local Docker (v1.7.50):** `npm run test:unit:docker:deploy` — rebuild stack + **2938** Vitest (167 files) + **78** meeting-server contracts
 - **Grouped (memory-safe):** `npm run test:unit:docker:grouped` — doctor / patient / cross-portal / meeting-server
 - Defect PDF regression: `queueAcceptTraceability.test.ts`, `defectIsaraPdfMeetingQueue.test.ts`, `jitsiRoleJwt.test.ts`

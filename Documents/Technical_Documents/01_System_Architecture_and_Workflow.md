@@ -149,7 +149,7 @@
 
 ```text
                     ┌─────────────────┐
-                    │  Cloud SQL /    │
+                    │  GCE VM PG /    │
                     │  izara_phase1   │
                     └────────▲────────┘
                              │
@@ -213,7 +213,7 @@
 | `meeting/:appointmentId` | `07_Virtual_Meeting.md` | doctor HOST |
 | `meeting/:appointmentId/results` | `06` (แท็บผล) | doctor — man-in-the-loop |
 | `virtual-meeting/:appointmentId` | `07` (legacy modal path) | doctor |
-| `appointment-pool` | `20_Appointment_Pool_Management.md` | doctor/admin |
+| `appointment-pool` | Redirect → `06_Health_Meeting_Page.md` (`?tab=queue`) | doctor/admin |
 | `doctor-management` | `18_Admin_Doctor_Management.md` | **admin** |
 | `appointment-management` | `17_Admin_Appointment_Management.md` | **admin** |
 | `doctors` | `19_Doctors_Management_Page.md` | admin/directory |
@@ -225,7 +225,7 @@
 | `consultants`, `ai-studio` | `12` (redirect → dashboard) | stub As-is |
 | `admin/doctors` → `doctor-management` | alias | admin |
 | `admin/appointments` → `appointment-management` | alias | admin |
-| `admin/pool` → `appointment-pool` | alias | admin |
+| `admin/pool` → `health-meeting?tab=queue` | alias redirect | admin |
 
 ### 5.3 Meeting Server — ความสามารถ (`Processes/Pages/Meeting-Server/00_Meeting_Server_Overview.md`)
 
@@ -313,10 +313,10 @@ Init DB โหลดจาก `scripts/database/izara-database.sql` และ mi
 | องค์ประกอบ GCP | รายละเอียด |
 |----------------|------------|
 | **Cloud Run** | 3 services, region `asia-southeast1`, project `izara-telemedicine` |
-| **Cloud SQL** | instance `izara-postgres-server`, database `izara_phase1` |
-| **Cloud Build** | `Isara-*-portal/cloudbuild.yaml`, `Izara-jitsi-server/cloudbuild.yaml` |
+| **GCE VM PostgreSQL** | host `35.240.157.230:5432`, database `izara_phase1` (**ไม่ใช้ Cloud SQL**) |
+| **Cloud Build** | root / portal / jitsi `cloudbuild.yaml` |
 | **GCS** | เก็บวิดีโอบันทึกเมื่อตั้ง `GCS_BUCKET` บน Meeting Server |
-| **Secret Manager / env** | คีย์ JWT, DB URL, Gemini ผ่าน env ตอน deploy |
+| **Secret Manager / env** | คีย์ JWT, `DB_PASSWORD` (`db-password`), Gemini ผ่าน env ตอน deploy |
 
 **Health check:**
 
@@ -498,7 +498,7 @@ flowchart LR
 | 8 | ก่อนเข้าห้อง | หน้า agreement → **Izara Lobby** รอแพทย์ admit (`prejoinPageEnabled: false`) |
 | 9 | หลัง admit | iframe Jitsi — display name จาก auth (`getIzaraDisplayName`); ไม่ใช่ moderator |
 | 10 | หลังประชุม | รอแพทย์ปิด EMR — ผู้ป่วยยังไม่เห็นสรุป AI จนกว่าแพทย์ validate |
-| 11 | ดูผล | PHR, Timeline, Notifications แสดงข้อมูลที่ `ready_for_patient` |
+| 11 | ดูผล | PHR (แท็บเอกสาร `patient_documents`), Timeline, Notifications — EMR/lab/Rx หลัง sign/deliver |
 
 ### 10.2 แพทย์ — ตั้งแต่ล็อกอินจนปิดเคส
 
@@ -507,16 +507,16 @@ flowchart LR
 | 1 | `/login` Doctor Portal | `POST /auth/login` → JWT + refresh |
 | 2 | ถ้า `approval_status = pending` | แสดงหน้ารออนุมัติ (แพทย์ใหม่) — ต้องรอ Admin |
 | 3 | Dashboard / Schedule | เห็นนัดที่รอ confirm หรือ confirmed — `/schedule` แสดงเฉพาะ `confirmed`/`scheduled` พร้อมลิงก์ประชุม |
-| 4 | นัดจาก pool | รับจาก `/appointment-pool` หรือ Admin assign มาแล้ว |
-| 5 | Confirm นัด | อัปเดต `confirmed` (UI: accepted) — แถวยังอยู่ใน pool 7 วัน |
-| 6 | Health Meeting / Queue | เห็นคิว pending + accepted แบบ realtime (`includeAccepted=true`) |
+| 4 | นัดจากคิว | รับจาก **Health Meeting → Patient Queue** (`/health-meeting?tab=queue`) — Claim / AI Match / Admin assign |
+| 5 | Confirm นัด | อัปเดต `confirmed` — แถว accepted ยังอยู่ในคิว 7 วัน |
+| 6 | Health Meeting / Queue | คิวรอจัดสรร + รอตอบรับ + ที่รับแล้ว แบบ realtime |
 | 7 | เริ่มประชุม | `POST /api/meetings/create` (ถ้ายังไม่มี record) |
 | 8 | เข้า Jitsi ก่อนผู้ป่วย | **HOST/moderator** — `buildDoctorJitsiMountOptions`; บน meet.jit.si ใช้ `configOverwrite.moderator: true` |
 | 9 | ระหว่างประชุม | transcript segments → `meeting_transcripts` |
 | 10 | จบประชุม | pipeline: บันทึก → STT → Gemini ร่าง SOAP |
 | 11 | EMR Editor | แพทย์แก้/ลงนาม — man-in-the-loop |
-| 12 | Prescribing / Lab | บันทึก `prescriptions`, `lab_orders` ผูก appointment |
-| 13 | ปิดงาน | ผู้ป่วยได้รับแจ้งเตือน + เห็นใน Timeline |
+| 12 | Prescribing / Lab | บันทึก `prescriptions`, `lab_orders` → publish `patient_documents` + แจ้งเตือน |
+| 13 | ปิดงาน | ผู้ป่วยดาวน์โหลดเอกสารจาก PHR + Timeline |
 
 ### 10.3 Admin — งานที่ทำบน Doctor Portal
 
@@ -524,12 +524,10 @@ flowchart LR
 |-------|---------|----------------------|
 | 1 | ล็อกอินด้วยบัญชี `admin` | JWT + `isAdmin` / `requireAdmin` routes |
 | 2 | `/admin/doctors` | อนุมัติ/ปฏิเสธแพทย์ `approval_status` |
-| 3 | `/admin/appointments` หรือ Appointment Pool | มอบหมาย `doctor_id` → `awaiting_doctor_response` |
-| 4 | ติดตามคิว | dashboard แอดมิน sync จำนวนคิวกับแพทย์ — หลักฐาน UI: Group W W03 (Health Meeting + Appointment Pool) |
+| 3 | `/admin/appointments` หรือ Health Meeting queue | มอบหมาย `doctor_id` → `awaiting_doctor_response` |
+| 4 | ติดตามคิว | dashboard แอดมิน sync จำนวนคิวกับแพทย์ — หลักฐาน UI: Group W W03 (Health Meeting queue) |
 
-![Health Meeting queue](../docs/screenshots/group-W/W03-health-meeting.png)
-
-![Appointment Pool](../docs/screenshots/group-W/W03-appointment-pool.png)
+![Health Meeting queue](../../docs/screenshots/group-W/W03-health-meeting.png)
 | 5 | เนื้อหา | อนุมัติ `medical_content` (ถ้ามี workflow รออนุมัติ) |
 
 **ข้อจำกัด As-is:** Admin **ไม่ใช่** Jitsi HOST — เฉพาะแพทย์ที่ได้รับมอบหมายเท่านั้น
@@ -676,7 +674,7 @@ sequenceDiagram
         <mxCell id="crun" value="Cloud Run&#xa;Patient | Doctor | Meeting" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#CFD8DC;" vertex="1" parent="gcp_box">
           <mxGeometry x="20" y="50" width="280" height="60" as="geometry" />
         </mxCell>
-        <mxCell id="sql" value="Cloud SQL&#xa;PostgreSQL izara_phase1" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=12;fillColor=#B39DDB;" vertex="1" parent="gcp_box">
+        <mxCell id="sql" value="GCE VM Postgres&#xa;izara_phase1" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=12;fillColor=#B39DDB;" vertex="1" parent="gcp_box">
           <mxGeometry x="80" y="140" width="160" height="80" as="geometry" />
         </mxCell>
         <mxCell id="gcs" value="GCS (เมื่อตั้ง GCS_BUCKET)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#CFD8DC;" vertex="1" parent="gcp_box">
@@ -773,7 +771,7 @@ sequenceDiagram
 | `Appointment_Workflows.md` | สถานะนัด, HOST, guest, instruction sheet PDF |
 | `Clinical_Resources_&_Medical_Library_Workflows.md` | หน้า 08 Patient, 13–14 Doctor, RAG |
 | `Health_Records_Processes.md` | PHR, EMR, Timeline, Patient Record Viewer |
-| `Living_Will_Processes.md` + `Living_Will_Implementation_Plan.md` | หน้า 10–11 Patient |
+| `Living_Will_Processes.md` | หน้า 10–11 Patient |
 | `Medical_Consultants_Workflows.md` | หน้า 12 Doctor (redirect stub) |
 | `Medicine_Content_Processes.md` | medical_content, drugs, CDS |
 | `Notification_Workflows.md` | NOTIFY → Socket, หน้า 15 Patient, 03 Doctor |

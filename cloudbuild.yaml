@@ -1,295 +1,177 @@
-# ============================================================================
-# Izara Telemedicine — Root Cloud Build Configuration v1.7.3
-# Orchestrates build & deploy of all 3 Cloud Run services
+# Root Cloud Build — Issara Anywhere (aligned with sibling portal cloudbuilds)
+# Used by: scripts/deploy-cloud-from-env.ps1 → gcloud builds submit --config=cloudbuild.yaml
 #
-# Usage:
-#   gcloud builds submit . --config=cloudbuild.yaml
-#   gcloud builds submit . --config=cloudbuild.yaml --substitutions=_TAG=v1.7.3
+# Build contexts are sibling junctions (issara-patient / issara-doctor / issara-jitsi).
+# Dockerfiles use flat COPY (repo root = context).
 #
-# Required Secret Manager secrets (run setup-cloud-build.ps1 first):
-#   jwt-secret, db-password, database-url, gemini-api-key, google-maps-api-key,
-#   google-client-id (Google OAuth Client ID for SSO — same value baked into
-#   the Vite bundle as GOOGLE_CLIENT_ID at build time and passed to the
-#   backends as GOOGLE_CLIENT_ID at runtime).
-#
-# Build flow:
-#   1. Build all 3 Docker images in parallel
-#   2. Push all 3 images in parallel
-#   3. Deploy Meeting Server (portals need its URL)
-#   4. Deploy Patient Portal + Doctor Portal in parallel
-#   5. Update Meeting Server CORS with portal URLs
-# ============================================================================
+# Cloud Postgres = GCE VM 35.240.157.230 only (NOT Cloud SQL /cloudsql sockets).
 
 substitutions:
-  _REGION: asia-southeast1
-  _REGISTRY: asia-southeast1-docker.pkg.dev/izara-telemedicine/isara-anywhere-portals
-  _TAG: v1.7.12
-  # Google OAuth Client ID (also stored in Secret Manager as `google-client-id`).
-  # Override at submit time: --substitutions=_GOOGLE_CLIENT_ID=xxx.apps.googleusercontent.com
-  _GOOGLE_CLIENT_ID: "724889190329-svf2733fjqklfic9tet9d2qkmhkgmu0l.apps.googleusercontent.com"
-  _DB_HOST: "35.240.157.230"
-  _DB_PORT: "5432"
-  _DB_NAME: izara_phase1
-  _DB_USER: postgres
-  _GEMINI_MODEL: gemini-3.1-flash-lite
-  _JITSI_DOMAIN: meet.jit.si
-  _PATIENT_SVC: izara-patient-portal-dev-testing
-  _DOCTOR_SVC: izara-doctor-portal-dev-testing
-  _MEETING_SVC: izara-meeting-server-dev-testing
-
-steps:
-  # ============================================================
-  # PHASE 1: BUILD — all 3 images build in parallel
-  # ============================================================
-
-  - id: build-meeting-server
-    name: gcr.io/cloud-builders/docker
-    args:
-      - build
-      - -f
-      - Izara-jitsi-server/Dockerfile
-      - -t
-      - ${_REGISTRY}/izara-jitsi-meeting:${_TAG}
-      - -t
-      - ${_REGISTRY}/izara-jitsi-meeting:latest
-      - .
-    waitFor: ["-"]
-
-  - id: build-patient-portal
-    name: gcr.io/cloud-builders/docker
-    args:
-      - build
-      - -f
-      - Isara-patient-portal/Dockerfile.unified
-      - -t
-      - ${_REGISTRY}/izara-patient-portal:${_TAG}
-      - -t
-      - ${_REGISTRY}/izara-patient-portal:latest
-      - --build-arg
-      - VITE_APP_ENV=production
-      - --build-arg
-      - VITE_APP_VERSION=2.0.0
-      - --build-arg
-      - VITE_GCP_PROJECT_ID=${PROJECT_ID}
-      - --build-arg
-      - VITE_USE_POSTGRESQL=true
-      - --build-arg
-      - VITE_USE_GCS=false
-      - --build-arg
-      - GOOGLE_CLIENT_ID=${_GOOGLE_CLIENT_ID}
-      - .
-    waitFor: ["-"]
-
-  - id: build-doctor-portal
-    name: gcr.io/cloud-builders/docker
-    args:
-      - build
-      - -f
-      - Isara-doctor-portal/Dockerfile.unified
-      - -t
-      - ${_REGISTRY}/izara-doctor-portal:${_TAG}
-      - -t
-      - ${_REGISTRY}/izara-doctor-portal:latest
-      - --build-arg
-      - VITE_APP_ENV=production
-      - --build-arg
-      - VITE_APP_VERSION=2.0.0
-      - --build-arg
-      - VITE_GCP_PROJECT_ID=${PROJECT_ID}
-      - --build-arg
-      - VITE_USE_POSTGRESQL=true
-      - --build-arg
-      - VITE_USE_GCS=false
-      - --build-arg
-      - GOOGLE_CLIENT_ID=${_GOOGLE_CLIENT_ID}
-      - .
-    waitFor: ["-"]
-
-  # ============================================================
-  # PHASE 2: PUSH — all 3 images pushed in parallel
-  # ============================================================
-
-  - id: push-meeting-server
-    name: gcr.io/cloud-builders/docker
-    args:
-      - push
-      - --all-tags
-      - ${_REGISTRY}/izara-jitsi-meeting
-    waitFor:
-      - build-meeting-server
-
-  - id: push-patient-portal
-    name: gcr.io/cloud-builders/docker
-    args:
-      - push
-      - --all-tags
-      - ${_REGISTRY}/izara-patient-portal
-    waitFor:
-      - build-patient-portal
-
-  - id: push-doctor-portal
-    name: gcr.io/cloud-builders/docker
-    args:
-      - push
-      - --all-tags
-      - ${_REGISTRY}/izara-doctor-portal
-    waitFor:
-      - build-doctor-portal
-
-  # ============================================================
-  # PHASE 3: DEPLOY Meeting Server (portals depend on its URL)
-  # ============================================================
-
-  - id: deploy-meeting-server
-    name: gcr.io/cloud-builders/gcloud
-    args:
-      - run
-      - deploy
-      - ${_MEETING_SVC}
-      - --image=${_REGISTRY}/izara-jitsi-meeting:${_TAG}
-      - --region=${_REGION}
-      - --platform=managed
-      - --allow-unauthenticated
-      - --port=3020
-      - --memory=1Gi
-      - --cpu=1
-      - --min-instances=1
-      - --max-instances=2
-      - --timeout=600
-      - --cpu-boost
-      - --set-env-vars=NODE_ENV=production,USE_POSTGRESQL=true,DB_HOST=${_DB_HOST},DB_PORT=${_DB_PORT},DB_NAME=${_DB_NAME},DB_USER=${_DB_USER},DB_SSL=false,JITSI_DOMAIN=${_JITSI_DOMAIN},GEMINI_MODEL=${_GEMINI_MODEL},CORS_ORIGINS=*,IZARA_DEV_TESTING=1,GOOGLE_TOKEN_VERIFIER_FIXTURE=1,RECORDINGS_DIR=/tmp/recordings,PIPELINE_RETRY_MAX=3,MIN_RECORDING_BYTES=1024,WHISPER_MODEL=whisper-1
-      - --set-secrets=GEMINI_API_KEY=gemini-api-key:latest,JWT_SECRET=jwt-secret:latest,DB_PASSWORD=db-password:latest,DATABASE_URL=database-url:latest,GOOGLE_SPEECH_API_KEY=google-speech-api-key:latest
-    waitFor: [push-meeting-server]
-
-  # Capture the meeting server URL for portals and write to /workspace
-  - id: get-meeting-url
-    name: gcr.io/cloud-builders/gcloud
-    entrypoint: bash
-    args:
-      - -c
-      - |
-        URL=$(gcloud run services describe ${_MEETING_SVC} \
-          --region=${_REGION} --format='value(status.url)')
-        echo "Meeting Server URL: $$URL"
-        printf '%s' "$$URL" > /workspace/meeting_url.txt
-    waitFor: [deploy-meeting-server]
-
-  # ============================================================
-  # PHASE 4: DEPLOY Portals (parallel — both need meeting URL)
-  # ============================================================
-
-  - id: deploy-patient-portal
-    name: gcr.io/cloud-builders/gcloud
-    entrypoint: bash
-    args:
-      - -c
-      - |
-        MEETING_URL=$(cat /workspace/meeting_url.txt)
-        echo "Deploying Patient Portal with meeting URL: $$MEETING_URL"
-        gcloud run deploy ${_PATIENT_SVC} \
-          --image=${_REGISTRY}/izara-patient-portal:${_TAG} \
-          --region=${_REGION} \
-          --platform=managed \
-          --allow-unauthenticated \
-          --port=3005 \
-          --memory=1Gi \
-          --cpu=1 \
-          --min-instances=1 \
-          --max-instances=2 \
-          --timeout=300 \
-          --set-env-vars="NODE_ENV=production,DB_HOST=${_DB_HOST},DB_PORT=${_DB_PORT},DB_NAME=${_DB_NAME},DB_USER=${_DB_USER},DB_SSL=false,USE_POSTGRESQL=true,VITE_USE_POSTGRESQL=true,GEMINI_MODEL=${_GEMINI_MODEL},GCP_PROJECT_ID=${PROJECT_ID},MEETING_SERVER_URL=$$MEETING_URL,VITE_MEETING_SERVER_URL=$$MEETING_URL,IZARA_DEV_TESTING=1,GOOGLE_TOKEN_VERIFIER_FIXTURE=1" \
-          --set-secrets=GEMINI_API_KEY=gemini-api-key:latest,VITE_GEMINI_API_KEY=gemini-api-key:latest,DB_PASSWORD=db-password:latest,DATABASE_URL=database-url:latest,JWT_SECRET=jwt-secret:latest,VITE_GOOGLE_MAPS_API_KEY=google-maps-api-key:latest,GOOGLE_CLIENT_ID=google-client-id:latest,GOOGLE_SPEECH_API_KEY=google-speech-api-key:latest
-    waitFor: [push-patient-portal, get-meeting-url]
-
-  - id: deploy-doctor-portal
-    name: gcr.io/cloud-builders/gcloud
-    entrypoint: bash
-    args:
-      - -c
-      - |
-        MEETING_URL=$(cat /workspace/meeting_url.txt)
-        echo "Deploying Doctor Portal with meeting URL: $$MEETING_URL"
-        gcloud run deploy ${_DOCTOR_SVC} \
-          --image=${_REGISTRY}/izara-doctor-portal:${_TAG} \
-          --region=${_REGION} \
-          --platform=managed \
-          --allow-unauthenticated \
-          --port=8080 \
-          --memory=1Gi \
-          --cpu=1 \
-          --min-instances=1 \
-          --max-instances=2 \
-          --timeout=300 \
-          --execution-environment=gen2 \
-          --cpu-boost \
-          --set-env-vars="NODE_ENV=production,DB_HOST=${_DB_HOST},DB_PORT=${_DB_PORT},DB_NAME=${_DB_NAME},DB_USER=${_DB_USER},DB_SSL=false,USE_POSTGRESQL=true,VITE_USE_POSTGRESQL=true,JITSI_DOMAIN=${_JITSI_DOMAIN},GEMINI_MODEL=${_GEMINI_MODEL},GCP_PROJECT_ID=${PROJECT_ID},MEETING_SERVER_URL=$$MEETING_URL,VITE_MEETING_SERVER_URL=$$MEETING_URL,IZARA_DEV_TESTING=1,GOOGLE_TOKEN_VERIFIER_FIXTURE=1" \
-          --set-secrets=GEMINI_API_KEY=gemini-api-key:latest,VITE_GEMINI_API_KEY=gemini-api-key:latest,DB_PASSWORD=db-password:latest,DATABASE_URL=database-url:latest,JWT_SECRET=jwt-secret:latest,GOOGLE_CLIENT_ID=google-client-id:latest,GOOGLE_SPEECH_API_KEY=google-speech-api-key:latest
-    waitFor: [push-doctor-portal, get-meeting-url]
-
-  # ============================================================
-  # PHASE 5: UPDATE CORS on Meeting Server with portal URLs
-  # ============================================================
-
-  - id: update-meeting-cors
-    name: gcr.io/cloud-builders/gcloud
-    entrypoint: bash
-    args:
-      - -c
-      - |
-        PATIENT_URL=$(gcloud run services describe ${_PATIENT_SVC} \
-          --region=${_REGION} --format='value(status.url)')
-        DOCTOR_URL=$(gcloud run services describe ${_DOCTOR_SVC} \
-          --region=${_REGION} --format='value(status.url)')
-        CORS_VAL="$${PATIENT_URL},$${DOCTOR_URL}"
-        echo "CORS: $$CORS_VAL"
-        MEETING_URL=$(gcloud run services describe ${_MEETING_SVC} \
-          --region=${_REGION} --format='value(status.url)')
-        gcloud run services update ${_MEETING_SVC} \
-          --region=${_REGION} \
-          --update-env-vars="^##^CORS_ORIGINS=$$CORS_VAL##PATIENT_PORTAL_URL=$$PATIENT_URL##DOCTOR_PORTAL_URL=$$DOCTOR_URL##MEETING_SERVER_PUBLIC_URL=$$MEETING_URL"
-    waitFor: [deploy-patient-portal, deploy-doctor-portal]
-
-  # ============================================================
-  # PHASE 6: DB migrations (NOTIFY triggers + SSO seed users)
-  # ============================================================
-  - id: apply-db-migrations
-    name: postgres:15-alpine
-    entrypoint: sh
-    args:
-      - -c
-      - |
-        set -e
-        DB_URL=$$(printf %s "$$DATABASE_URL" | tr -d '\r\n')
-        echo "Applying PG NOTIFY triggers..."
-        psql "$$DB_URL" -v ON_ERROR_STOP=1 -f /workspace/scripts/database/v2.2.0-notify-triggers.sql
-        echo "Applying google_sub migration..."
-        psql "$$DB_URL" -v ON_ERROR_STOP=1 -f /workspace/scripts/database/migrations/2025-add-google-sub.sql
-        if [ -f /workspace/scripts/database/seed-sso-test-users.sql ]; then
-          echo "Seeding SSO test users..."
-          psql "$$DB_URL" -v ON_ERROR_STOP=1 -f /workspace/scripts/database/seed-sso-test-users.sql
-        fi
-        echo "DB migrations complete."
-    secretEnv: [DATABASE_URL]
-    waitFor: [update-meeting-cors]
-
-# Store all built images in Artifact Registry
-images:
-  - ${_REGISTRY}/izara-jitsi-meeting:${_TAG}
-  - ${_REGISTRY}/izara-jitsi-meeting:latest
-  - ${_REGISTRY}/izara-patient-portal:${_TAG}
-  - ${_REGISTRY}/izara-patient-portal:latest
-  - ${_REGISTRY}/izara-doctor-portal:${_TAG}
-  - ${_REGISTRY}/izara-doctor-portal:latest
-
-# 40 minutes total (parallel builds keep this reasonable)
-timeout: 2400s
-
-availableSecrets:
-  secretManager:
-    - versionName: projects/${PROJECT_ID}/secrets/database-url/versions/latest
-      env: DATABASE_URL
+  _TAG: 'v1.7.62'
+  _REGION: 'asia-southeast1'
+  _PROJECT: 'izara-telemedicine'
+  _DB_HOST: '35.240.157.230'
+  _MEETING_SERVER_URL: 'https://izara-meeting-server-dev-testing-724889190329.asia-southeast1.run.app'
+  _REGISTRY: 'asia-southeast1-docker.pkg.dev/izara-telemedicine/isara-anywhere-portals'
 
 options:
   logging: CLOUD_LOGGING_ONLY
-  # High-CPU machine speeds up parallel Docker builds
-  machineType: E2_HIGHCPU_8
+  machineType: 'E2_HIGHCPU_8'
+
+steps:
+  - id: build-patient
+    name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '-f'
+      - 'Dockerfile.unified'
+      - '-t'
+      - '${_REGISTRY}/izara-patient-portal:${_TAG}'
+      - '-t'
+      - '${_REGISTRY}/izara-patient-portal:latest'
+      - '--build-arg'
+      - 'VITE_APP_ENV=production'
+      - '--build-arg'
+      - 'VITE_APP_VERSION=2.0.0'
+      - '--build-arg'
+      - 'VITE_GCP_PROJECT_ID=${_PROJECT}'
+      - '--build-arg'
+      - 'VITE_MEETING_SERVER_URL=${_MEETING_SERVER_URL}'
+      - '.'
+    dir: 'issara-patient'
+
+  - id: build-doctor
+    name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '-f'
+      - 'Dockerfile.unified'
+      - '-t'
+      - '${_REGISTRY}/izara-doctor-portal:${_TAG}'
+      - '-t'
+      - '${_REGISTRY}/izara-doctor-portal:latest'
+      - '--build-arg'
+      - 'VITE_APP_ENV=production'
+      - '--build-arg'
+      - 'VITE_APP_VERSION=2.0.0'
+      - '--build-arg'
+      - 'VITE_GCP_PROJECT_ID=${_PROJECT}'
+      - '--build-arg'
+      - 'VITE_MEETING_SERVER_URL=${_MEETING_SERVER_URL}'
+      - '.'
+    dir: 'issara-doctor'
+    waitFor: ['-']
+
+  - id: build-meeting
+    name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '-f'
+      - 'Dockerfile'
+      - '-t'
+      - '${_REGISTRY}/izara-jitsi-meeting:${_TAG}'
+      - '-t'
+      - '${_REGISTRY}/izara-jitsi-meeting:latest'
+      - '.'
+    dir: 'issara-jitsi'
+    waitFor: ['-']
+
+  - id: push-patient
+    name: 'gcr.io/cloud-builders/docker'
+    args: ['push', '--all-tags', '${_REGISTRY}/izara-patient-portal']
+    waitFor: ['build-patient']
+
+  - id: push-doctor
+    name: 'gcr.io/cloud-builders/docker'
+    args: ['push', '--all-tags', '${_REGISTRY}/izara-doctor-portal']
+    waitFor: ['build-doctor']
+
+  - id: push-meeting
+    name: 'gcr.io/cloud-builders/docker'
+    args: ['push', '--all-tags', '${_REGISTRY}/izara-jitsi-meeting']
+    waitFor: ['build-meeting']
+
+  - id: deploy-patient
+    name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      - 'run'
+      - 'deploy'
+      - 'izara-patient-portal-dev-testing'
+      - '--image=${_REGISTRY}/izara-patient-portal:${_TAG}'
+      - '--region=${_REGION}'
+      - '--platform=managed'
+      - '--allow-unauthenticated'
+      - '--port=3005'
+      - '--memory=1Gi'
+      - '--cpu=1'
+      - '--min-instances=1'
+      - '--max-instances=2'
+      - '--timeout=300'
+      - '--execution-environment=gen2'
+      - '--cpu-boost'
+      - '--clear-cloudsql-instances'
+      - '--set-env-vars=NODE_ENV=production,USE_EMBEDDED_PG=false,DB_HOST=${_DB_HOST},DB_PORT=5432,DB_NAME=izara_phase1,DB_USER=postgres,DB_SSL=false,USE_POSTGRESQL=true,VITE_USE_POSTGRESQL=true,JITSI_DOMAIN=meet.jit.si,VITE_JITSI_DOMAIN=meet.jit.si,GEMINI_MODEL=gemini-3.1-flash-lite,GCP_PROJECT_ID=${_PROJECT},MEETING_SERVER_URL=${_MEETING_SERVER_URL},VITE_MEETING_SERVER_URL=${_MEETING_SERVER_URL},IZARA_DEV_TESTING=1,GOOGLE_TOKEN_VERIFIER_FIXTURE=1,NODE_OPTIONS=--max-old-space-size=768 --max-semi-space-size=64,UV_THREADPOOL_SIZE=4'
+      - '--set-secrets=GEMINI_API_KEY=gemini-api-key:latest,VITE_GEMINI_API_KEY=gemini-api-key:latest,DB_PASSWORD=db-password:latest,JWT_SECRET=jwt-secret:latest,VITE_GOOGLE_MAPS_API_KEY=google-maps-api-key:latest,GOOGLE_CLIENT_ID=google-client-id:latest'
+      - '--quiet'
+    waitFor: ['push-patient']
+
+  - id: deploy-doctor
+    name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      - 'run'
+      - 'deploy'
+      - 'izara-doctor-portal-dev-testing'
+      - '--image=${_REGISTRY}/izara-doctor-portal:${_TAG}'
+      - '--region=${_REGION}'
+      - '--platform=managed'
+      - '--allow-unauthenticated'
+      - '--port=8080'
+      - '--memory=1Gi'
+      - '--cpu=1'
+      - '--min-instances=1'
+      - '--max-instances=2'
+      - '--timeout=300'
+      - '--cpu-boost'
+      - '--execution-environment=gen2'
+      - '--clear-cloudsql-instances'
+      - '--set-env-vars=NODE_ENV=production,USE_EMBEDDED_PG=false,DB_HOST=${_DB_HOST},DB_PORT=5432,DB_NAME=izara_phase1,DB_USER=postgres,DB_SSL=false,USE_POSTGRESQL=true,VITE_USE_POSTGRESQL=true,JITSI_DOMAIN=meet.jit.si,GEMINI_MODEL=gemini-3.1-flash-lite,GCP_PROJECT_ID=${_PROJECT},MEETING_SERVER_URL=${_MEETING_SERVER_URL},VITE_MEETING_SERVER_URL=${_MEETING_SERVER_URL},IZARA_DEV_TESTING=1,GOOGLE_TOKEN_VERIFIER_FIXTURE=1,UPLOADS_DIR=/app/uploads,NODE_OPTIONS=--max-old-space-size=768 --max-semi-space-size=64,UV_THREADPOOL_SIZE=4,AUTH_NODE_OPTIONS=--max-old-space-size=256 --max-semi-space-size=32,MAIN_NODE_OPTIONS=--max-old-space-size=448 --max-semi-space-size=48'
+      - '--set-secrets=GEMINI_API_KEY=gemini-api-key:latest,VITE_GEMINI_API_KEY=gemini-api-key:latest,DB_PASSWORD=db-password:latest,JWT_SECRET=jwt-secret:latest,GOOGLE_CLIENT_ID=google-client-id:latest,GOOGLE_SPEECH_API_KEY=google-speech-api-key:latest'
+      - '--quiet'
+    waitFor: ['push-doctor']
+
+  - id: deploy-meeting
+    name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      - 'run'
+      - 'deploy'
+      - 'izara-meeting-server-dev-testing'
+      - '--image=${_REGISTRY}/izara-jitsi-meeting:${_TAG}'
+      - '--region=${_REGION}'
+      - '--platform=managed'
+      - '--allow-unauthenticated'
+      - '--port=3020'
+      - '--memory=2Gi'
+      - '--cpu=1'
+      - '--min-instances=0'
+      - '--max-instances=2'
+      - '--timeout=600'
+      - '--cpu-boost'
+      # meet.demotoday.net is LAN-only — cloud E2E needs public meet.jit.si (see CLOUD_ACCESS_TH.md)
+      - '--clear-cloudsql-instances'
+      - '--set-env-vars=NODE_ENV=production,USE_POSTGRESQL=true,DB_HOST=35.240.157.230,DB_PORT=5432,DB_NAME=izara_phase1,DB_USER=postgres,DB_SSL=false,JITSI_DOMAIN=meet.jit.si,GEMINI_MODEL=gemini-3.1-flash-lite,IZARA_DEV_TESTING=1'
+      - '--set-secrets=GEMINI_API_KEY=gemini-api-key:latest,JWT_SECRET=jwt-secret:latest,DB_PASSWORD=db-password:latest,GOOGLE_SPEECH_API_KEY=google-speech-api-key:latest'
+      - '--quiet'
+    waitFor: ['push-meeting']
+
+images:
+  - '${_REGISTRY}/izara-patient-portal:${_TAG}'
+  - '${_REGISTRY}/izara-patient-portal:latest'
+  - '${_REGISTRY}/izara-doctor-portal:${_TAG}'
+  - '${_REGISTRY}/izara-doctor-portal:latest'
+  - '${_REGISTRY}/izara-jitsi-meeting:${_TAG}'
+  - '${_REGISTRY}/izara-jitsi-meeting:latest'
+
+timeout: 3600s

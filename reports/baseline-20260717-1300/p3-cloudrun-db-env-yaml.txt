@@ -1,0 +1,91 @@
+﻿
+        - name: NODE_ENV
+        - name: USE_EMBEDDED_PG
+        - name: DB_HOST
+        - name: DB_PORT
+        - name: DB_NAME
+        - name: DB_USER
+        - name: DB_SSL
+        - name: USE_POSTGRESQL
+        - name: VITE_USE_POSTGRESQL
+        - name: JITSI_DOMAIN
+        - name: VITE_JITSI_DOMAIN
+        - name: GEMINI_MODEL
+        - name: GCP_PROJECT_ID
+        - name: MEETING_SERVER_URL
+        - name: VITE_MEETING_SERVER_URL
+        - name: IZARA_DEV_TESTING
+        - name: GOOGLE_TOKEN_VERIFIER_FIXTURE
+        - name: NODE_OPTIONS
+        - name: UV_THREADPOOL_SIZE
+        - name: GEMINI_API_KEY
+              name: gemini-api-key
+        - name: VITE_GEMINI_API_KEY
+              name: gemini-api-key
+        - name: DB_PASSWORD
+              name: db-password
+        - name: JWT_SECRET
+              name: jwt-secret
+        - name: VITE_GOOGLE_MAPS_API_KEY
+              name: google-maps-api-key
+        - name: GOOGLE_CLIENT_ID
+              name: google-client-id
+
+
+
+        - name: NODE_ENV
+        - name: USE_EMBEDDED_PG
+        - name: DB_HOST
+        - name: DB_PORT
+        - name: DB_NAME
+        - name: DB_USER
+        - name: DB_SSL
+        - name: USE_POSTGRESQL
+        - name: VITE_USE_POSTGRESQL
+        - name: JITSI_DOMAIN
+        - name: GEMINI_MODEL
+        - name: GCP_PROJECT_ID
+        - name: MEETING_SERVER_URL
+        - name: VITE_MEETING_SERVER_URL
+        - name: IZARA_DEV_TESTING
+        - name: GOOGLE_TOKEN_VERIFIER_FIXTURE
+        - name: UPLOADS_DIR
+        - name: NODE_OPTIONS
+        - name: UV_THREADPOOL_SIZE
+        - name: AUTH_NODE_OPTIONS
+        - name: MAIN_NODE_OPTIONS
+        - name: GEMINI_API_KEY
+              name: gemini-api-key
+        - name: VITE_GEMINI_API_KEY
+              name: gemini-api-key
+        - name: DB_PASSWORD
+              name: db-password
+        - name: JWT_SECRET
+              name: jwt-secret
+        - name: GOOGLE_CLIENT_ID
+              name: google-client-id
+        - name: GOOGLE_SPEECH_API_KEY
+              name: google-speech-api-key
+
+
+
+        - name: NODE_ENV
+        - name: USE_POSTGRESQL
+        - name: DB_HOST
+        - name: DB_PORT
+        - name: DB_NAME
+        - name: DB_USER
+        - name: DB_SSL
+        - name: JITSI_DOMAIN
+        - name: GEMINI_MODEL
+        - name: IZARA_DEV_TESTING
+        - name: GEMINI_API_KEY
+              name: gemini-api-key
+        - name: JWT_SECRET
+              name: jwt-secret
+        - name: DB_PASSWORD
+              name: db-password
+        - name: GOOGLE_SPEECH_API_KEY
+              name: google-speech-api-key
+
+

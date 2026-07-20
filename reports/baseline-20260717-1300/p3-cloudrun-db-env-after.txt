@@ -1,0 +1,4 @@
+SERVICE=izara-patient-portal-dev-testing DB_HOST=35.240.157.230 DB_SSL=false DATABASE_URL=absent CLOUDSQL=
+SERVICE=izara-doctor-portal-dev-testing DB_HOST=35.240.157.230 DB_SSL=false DATABASE_URL=absent CLOUDSQL=
+SERVICE=izara-meeting-server-dev-testing DB_HOST=35.240.157.230 DB_SSL=false DATABASE_URL=absent CLOUDSQL= (cleared 2026-07-17)
+PROOF=PASS effective DB via DB_HOST only; DATABASE_URL not mounted; no cloudsql instances
