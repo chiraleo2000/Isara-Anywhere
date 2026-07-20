@@ -4,9 +4,12 @@
  */
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { expect, type Locator, type Page } from '@playwright/test';
 import { resolveCoreBrowserEngine, type BrowserEngine } from './browser-matrix';
 import { registerScreenshotHash } from './screenshot-distinct';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export const SCREENSHOT_ROOT = path.join(__dirname, '..', 'output', 'screenshots');
 const DOCS_SS_ROOT = path.join(__dirname, '..', '..', 'docs', 'screenshots');
@@ -66,8 +69,15 @@ export async function snapMeetingStageAny(
   const docsPath = path.join(docsDir, `${safeName}.png`);
   await writeScreenshot(page, filePath, { locator });
   const minBytes = Number.parseInt(process.env.SCREENSHOT_MIN_BYTES || '15000', 10);
+  const jitsiMin = Number.parseInt(process.env.SCREENSHOT_JITSI_MIN_BYTES || '7000', 10);
   if (fs.statSync(filePath).size < minBytes) {
+    await page.waitForTimeout(1_500);
     await writeScreenshot(page, filePath, { fullPage: true });
+  }
+  // Second chance: viewport (not clipped to empty iframe) when still under Jitsi floor
+  if (fs.statSync(filePath).size < jitsiMin) {
+    await page.waitForTimeout(1_000);
+    await writeScreenshot(page, filePath, { fullPage: false });
   }
   fs.copyFileSync(filePath, docsPath);
   registerScreenshotHash(safeSubDir, docsPath);
@@ -98,8 +108,15 @@ export async function snapMeetingStage(
   const docsPath = path.join(docsDir, `${safeName}.png`);
   await writeScreenshot(page, filePath, { locator });
   const minBytes = Number.parseInt(process.env.SCREENSHOT_MIN_BYTES || '15000', 10);
+  const jitsiMin = Number.parseInt(process.env.SCREENSHOT_JITSI_MIN_BYTES || '7000', 10);
   if (fs.statSync(filePath).size < minBytes) {
+    await page.waitForTimeout(1_500);
     await writeScreenshot(page, filePath, { fullPage: true });
+  }
+  // Second chance: viewport (not clipped to empty iframe) when still under Jitsi floor
+  if (fs.statSync(filePath).size < jitsiMin) {
+    await page.waitForTimeout(1_000);
+    await writeScreenshot(page, filePath, { fullPage: false });
   }
   fs.copyFileSync(filePath, docsPath);
   registerScreenshotHash(safeSubDir, docsPath);

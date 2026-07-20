@@ -9,8 +9,8 @@ import {
   matchesDoctorPoolAccess,
   matchesPoolFilter,
   splitQueueSections,
-} from '../../../Isara-doctor-portal/backend/appointmentPoolQuery.cjs';
-import { derivePoolStatus, mapAppointmentToPoolItem } from '../../../Isara-doctor-portal/backend/appointmentQueueMapper.cjs';
+} from '../../../../issara-doctor/backend/appointmentPoolQuery.cjs';
+import { derivePoolStatus, mapAppointmentToPoolItem } from '../../../../issara-doctor/backend/appointmentQueueMapper.cjs';
 
 describe('queueAcceptTraceability — status transition (no delete)', () => {
   it('QAT01 — accept updates status to confirmed, not removed from includeAccepted list', () => {

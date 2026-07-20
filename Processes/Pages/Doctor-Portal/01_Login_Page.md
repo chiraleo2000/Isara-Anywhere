@@ -32,7 +32,21 @@
 3. **ผลลัพธ์ที่คาดหวัง** — สถานะระบบ / API / ฐานข้อมูลหลังจบขั้นตอน
 
 ---
+## UI Controls Inventory
 
+| # | Control | testid | Action | Expected | Screenshot |
+|---|---------|--------|--------|----------|------------|
+| 1 | Email input | `login-email` | type | UI responds; API optional | U-login-email |
+| 2 | Password input | `login-password` | type | UI responds; API optional | U-login-password |
+| 3 | Login submit | `login-submit` | click | UI responds; API optional | U-login-submit |
+| 4 | Data Testid | `data-testid` | click | Documented control | U-data-testid |
+| 5 | Confirmed | `confirmed` | click | Documented control | U-confirmed |
+| 6 | Google Sign In Btn | `google-sign-in-btn` | click | Documented control | U-google-sign-in-btn |
+| 7 | Appointmentid | `appointmentId` | click | Documented control | U-appointmentId |
+| 8 | Meetingid | `meetingId` | click | Documented control | U-meetingId |
+| 9 | Pending | `pending` | click | Documented control | U-pending |
+| 10 | Dashboard Page | `dashboard-page` | click | Documented control | U-dashboard-page |
+| 11 | Authroute | `authRoute` | click | Documented control | U-authRoute |
 
 ## 1. Purpose
 

@@ -237,3 +237,51 @@ Production ใช้ `meet.jit.si` — บันทึกจากเบรา�
 - อย่าแชร์ลิงก์ประชุมหรือ JWT ทางช่องทางไม่ปลอดภัย
 - ผลลัพธ์ AI ไม่ใช่การวินิจฉัย — แพทย์ต้องตรวจก่อนลง EMR
 
+
+## UI Controls Inventory
+
+| # | Control | testid | Action | Expected | Screenshot |
+|---|---------|--------|--------|----------|------------|
+| 1 | End meeting | `end-meeting-btn` | click | UI responds; API optional | U-end-meeting-btn |
+| 2 | Admit all lobby | `admit-all-btn` | click | UI responds; API optional | U-admit-all-btn |
+| 3 | Host Present | `host-present` | click | Documented control | U-host-present |
+| 4 | Waitforhostready | `waitForHostReady` | click | Documented control | U-waitForHostReady |
+| 5 | Jitsi Meeting Container | `jitsi-meeting-container` | click | Documented control | U-jitsi-meeting-container |
+| 6 | Meeting Agreement | `meeting-agreement` | click | Documented control | U-meeting-agreement |
+| 7 | Join Meeting Btn | `join-meeting-btn` | click | Documented control | U-join-meeting-btn |
+| 8 | Host Waiting Screen | `host-waiting-screen` | click | Documented control | U-host-waiting-screen |
+| 9 | Data Testid | `data-testid` | click | Documented control | U-data-testid |
+| 10 | Confirmed | `confirmed` | click | Documented control | U-confirmed |
+| 11 | Lobby Waiting Screen | `lobby-waiting-screen` | click | Documented control | U-lobby-waiting-screen |
+| 12 | Jitsi Doctor Container | `jitsi-doctor-container` | click | Documented control | U-jitsi-doctor-container |
+| 13 | Jitsi Guest Container | `jitsi-guest-container` | click | Documented control | U-jitsi-guest-container |
+| 14 | Insert Meeting Summary Emr Btn | `insert-meeting-summary-emr-btn` | click | Documented control | U-insert-meeting-summary-emr-btn |
+| 15 | Host Ready | `host-ready` | click | Documented control | U-host-ready |
+| 16 | Notifyhostpresent | `notifyHostPresent` | click | Documented control | U-notifyHostPresent |
+| 17 | Appointmentid | `appointmentId` | click | Documented control | U-appointmentId |
+| 18 | Meetingid | `meetingId` | click | Documented control | U-meetingId |
+| 19 | Guestjoinurl | `guestJoinUrl` | click | Documented control | U-guestJoinUrl |
+| 20 | Share Link | `share-link` | click | Documented control | U-share-link |
+| 21 | Guest Invite | `guest-invite` | click | Documented control | U-guest-invite |
+| 22 | Guest Lobby Waiting | `guest-lobby-waiting` | click | Documented control | U-guest-lobby-waiting |
+| 23 | Frame Src | `frame-src` | click | Documented control | U-frame-src |
+| 24 | Connect Src | `connect-src` | click | Documented control | U-connect-src |
+| 25 | Guest Transcript Segment | `guest-transcript-segment` | click | Documented control | U-guest-transcript-segment |
+| 26 | Recordingurl | `recordingUrl` | click | Documented control | U-recordingUrl |
+| 27 | Meeting Summary Ready | `meeting-summary-ready` | click | Documented control | U-meeting-summary-ready |
+
+
+---
+
+## Automated verification
+
+| Field | Value |
+|-------|-------|
+| **Status** | covered — verified 2026-07-14 (Meeting+PHR share redo: GET ensure + guest prejoin + Q/R) |
+| **Unit tests** | See tests/PROCESS_COVERAGE_MATRIX.md + processWorkflowRegistry |
+| **UI (Playwright)** | Groups D, Q, Q2, U |
+| **data-testid** | See tests/SELECTORS.md + UI Controls Inventory |
+| **Last verified** | 2026-07-14 |
+
+**Matrix:** tests/PROCESS_COVERAGE_MATRIX.md
+

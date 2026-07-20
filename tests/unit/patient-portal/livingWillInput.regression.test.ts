@@ -4,7 +4,7 @@ import path from 'node:path';
 
 const livingWillPath = path.resolve(
   __dirname,
-  '../../../Isara-patient-portal/frontend/pages/pdpa/LivingWillPage.tsx',
+  '../../../issara-patient/frontend/pages/pdpa/LivingWillPage.tsx',
 );
 
 describe('Living will input regression guard', () => {

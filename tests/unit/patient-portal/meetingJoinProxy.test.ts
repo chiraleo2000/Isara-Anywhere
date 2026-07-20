@@ -7,7 +7,7 @@ import path from 'node:path';
 
 const root = path.resolve(__dirname, '../../..');
 const proxy = fs.readFileSync(
-  path.join(root, 'Isara-patient-portal/backend/routes/video-meeting-proxy.ts'),
+  path.join(root, 'issara-patient/backend/routes/video-meeting-proxy.ts'),
   'utf8',
 );
 

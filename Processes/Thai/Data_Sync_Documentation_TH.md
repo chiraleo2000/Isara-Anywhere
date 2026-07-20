@@ -1,500 +1,765 @@
-# Izara Telemedicine - สถาปัตยกรรมข้อมูลและเอกสาร Sync
+# Izara Telemedicine - Data Architecture & Sync Documentation
 
-**เวอร์ชัน:** 3.1.0
-**อัปเดตล่าสุด:** 26 มกราคม 2569
-**สถานะ:** ✅ PostgreSQL ใช้งานเสร็จสมบูรณ์ + Meeting Server
+> **เอกสารภาษาไทย** — สร้างอัตโนมัติจาก `Data_Sync_Documentation.md`  
+> **ต้นฉบับภาษาอังกฤษ:** [`Data_Sync_Documentation.md`](../Data_Sync_Documentation.md)  
+> **อัปเดต:** 9 กรกฎาคม 2569 · รัน `python scripts/sync-processes-thai.py` เพื่อสร้างใหม่
+
+**เวอร์ชัน:** 1.6.1
+**อัปเดตล่าสุด:** March 31, 2026
+**สถานะ:** ✅ PostgreSQL Implementation Complete + Meeting Server + Cross-Portal Fixes + Full Schema
+
 
 ---
 
 
 ## 📋 ภาพรวม
 
-Izara Telemedicine ใช้ PostgreSQL เป็นฐานข้อมูลหลัก ติดตั้งคู่กับพอร์ทัลแอปพลิเคชันใน Docker containers เอกสารนี้อธิบายโครงสร้างข้อมูล ตารางฐานข้อมูล และรูปแบบการไหลของข้อมูล
+Izara Telemedicine uses PostgreSQL as the primary database, deployed alongside the application portals in Docker containers. This document describes the data architecture, table structure, and data flow patterns.
 
 ---
 
 
-## 🗄️ การตั้งค่าฐานข้อมูล
+## 🗄️ ฐานข้อมูล Configuration
 
 
-### บริการ Docker
+### Docker Services
 
-| บริการ | ชื่อ Container | พอร์ต | วัตถุประสงค์ |
+| Service | Container Name | Port | Purpose |
 | --------- | ---------------- | ------ | --------- |
-| PostgreSQL | izara-postgres | 5433 (ภายนอก) / 5432 (ภายใน) | ฐานข้อมูลหลัก |
-| พอร์ทัลผู้ป่วย | izara-patient-portal | 3005 | Frontend + Backend ผู้ป่วย |
-| พอร์ทัลแพทย์ | izara-doctor-portal | 3010 | Frontend + Backend แพทย์ |
+| PostgreSQL | izara-postgres | 5433 (external) / 5432 (internal) | Primary database |
+| พอร์ทัลผู้ป่วย | izara-ผู้ป่วย-portal | 3005 | ผู้ป่วย frontend + backend |
+| พอร์ทัลแพทย์ | izara-แพทย์-portal | 3010 | แพทย์ frontend + backend |
 | Meeting Server | izara-meeting-server | 3020 | Jitsi transcription + AI summary |
-| pgAdmin | izara-pgadmin | 5050 | จัดการฐานข้อมูล |
+| pgAdmin | izara-pgadmin | 5050 | Database administration |
 
 
-
-
-### รายละเอียดการเชื่อมต่อ
+### Connection Details
 
 ```text
-Host: localhost (Local Docker) / postgres (Docker network)
-Port: 5433 (ภายนอก) / 5432 (ภายใน)
+Host: localhost (local Docker) / postgres (Docker network)
+Port: 5433 (external) / 5432 (internal)
 User: postgres
 Password: YOUR_TEST_PASSWORD
 Database: izara_phase1
 ```
 
 
-### Extension ฐานข้อมูล
+### ฐานข้อมูล Extension
 
 
-- **pgvector** - สำหรับเก็บ AI embedding และค้นหาความคล้ายคลึง
+- **pgvector** - For AI embedding storage and similarity search
+
+
+- **uuid-ossp** - UUID generation for primary keys
+
+
+- **pgcrypto** - Password hashing and encryption
+
+
+### Production Deployment (Google Cloud)
+
+```text
+┌─────────────────────────────────────────────────────────────────────────┐
+│                    PRODUCTION DEPLOYMENT ARCHITECTURE                     │
+├─────────────────────────────────────────────────────────────────────────┤
+│                                                                          │
+│  Google Cloud Run (asia-southeast1)                                      │
+│  ┌──────────────────┐  ┌──────────────────┐  ┌──────────────────┐      │
+│  │ Patient Portal    │  │ Doctor Portal     │  │ Meeting Server   │      │
+│  │ 1 CPU / 1 GB      │  │ 1 CPU / 1 GB      │  │ 1 CPU / 2 GB     │      │
+│  │ 1-2 instances*    │  │ 1-2 instances*    │  │ 0-2 instances    │      │
+│  │ gen2 + CPU Boost  │  │ gen2 + CPU Boost  │  │ gen2 + CPU Boost │      │
+│  │ Timeout: 300s     │  │ Timeout: 300s     │  │ Timeout: 600s    │      │
+│  └────────┬─────────┘  └────────┬─────────┘  └────────┬────────┘      │
+│           └─────────────────────┼──────────────────────┘                │
+│                                 ▼                                        │
+│                    ┌──────────────────────┐                              │
+│                    │ PostgreSQL VM (GCE)  │                              │
+│                    │ 35.240.157.230:5432  │                              │
+│                    │ DB: izara_phase1     │                              │
+│                    │ NOT Cloud SQL        │                              │
+│                    │ pgvector + pgcrypto  │                              │
+│                    │ + uuid-ossp          │                              │
+│                    └──────────────────────┘                              │
+│                                                                          │
+│  Artifact Registry: asia-southeast1-docker.pkg.dev                       │
+│  ├── izara-patient-portal:v1.5.8                                         │
+│  ├── izara-doctor-portal:v1.5.8                                          │
+│  └── izara-jitsi-meeting:v1.5.10                                         │
+│                                                                          │
+│  Cloud Build: Automated CI/CD via cloudbuild.yaml per service            │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+
+### ฐานข้อมูล Initialization Scripts
+
+| Order | Script | Purpose |
+| ----- | ------ | ------- |
+| 1 | `scripts/database/izara-database.sql` | Main schema (37+ tables, extensions, indexes) |
+| 2 | `scripts/database/migrations/v2.0.0-phase2-tables.sql` | Phase 2 enhancement tables |
+| 3 | `scripts/database/migrations/v2.1.0-phase2-ai-his.sql` | AI & HIS tables |
+| 4 | `scripts/database/v2.2.0-notify-triggers.sql` | LISTEN/NOTIFY triggers |
+| 5 | `scripts/database/seed-dev-data.sql` | Test data (7 seed users) |
+
+
+### Complete Table Inventory (37+ Tables)
+
+
+#### User Management (6 tables)
+
+| Table | Key Columns | Purpose |
+| ----- | ----------- | ------- |
+| **users** | id, email, password_hash, role, name, name_thai, phone, date_of_birth, national_id, doctor_id, patient_id, is_active, is_verified, is_approved, approval_status, preferences (JSONB), notification_settings (JSONB), login_attempts, locked_until | Unified user table for all roles |
+| **sessions** | id, user_id, token, ip_address, user_agent, expires_at, logged_out_at | JWT session tracking |
+| **password_resets** | id, user_id, token, expires_at, used, used_at | Password reset tokens |
+| **device_tokens** | id, user_id, device_token, platform, device_name, is_active | Push notification devices |
+| **biometric_credentials** | id, user_id, credential_type, public_key, device_id, is_active | Biometric auth (Phase 2) |
+| **refresh_tokens** | id, user_id, token_hash, device_id, expires_at, is_revoked | JWT refresh rotation (Phase 2) |
+
+
+#### Patient Data (7 tables)
+
+| Table | Key Columns | Purpose |
+| ----- | ----------- | ------- |
+| **patient_profiles** | patient_id, demographics (JSONB), emergency_contact (JSONB), insurance_info (JSONB) | ผู้ป่วย demographics |
+| **phr** | id, patient_id, demographics (JSONB), vital_signs_history (JSONB), allergies (JSONB), chronic_conditions (JSONB), medications (JSONB), vaccinations (JSONB), lifestyle (JSONB), family_history (JSONB), blood_type, height_cm, weight_kg, bmi | Personal เวชระเบียน |
+| **vital_signs** | id (UUID), patient_id, blood_pressure_systolic/diastolic, heart_rate, temperature, respiratory_rate, oxygen_saturation, blood_glucose, weight, height, measured_at, source | Individual vital measurements |
+| **living_wills** | id, patient_id, statement, treatments (JSONB), representatives (JSONB), signature (JSONB), pdpa_consent (JSONB), สถานะ, is_shared_with_doctors, เวอร์ชัน, audit_log (JSONB) | Advance directives |
+| **living_will_versions** | id, patient_id, เวอร์ชัน, data (JSONB), note | เวอร์ชัน history |
+| **patient_consents** | id, patient_id, consent_type, granted, doctor_id, data_types (JSONB), สถานะ | PDPA consent management |
+| **push_subscriptions** | id, user_id, appointment_reminders, medication_reminders, quiet_hours_start/end | Push notification preferences |
+
+
+#### Doctor Management (5 tables)
+
+| Table | Key Columns | Purpose |
+| ----- | ----------- | ------- |
+| **doctor_profiles** | doctor_id, specialty, sub_specialties (JSONB), qualifications, experience_years, hospital_name, department, languages (JSONB), rating, consultation_fee, is_available, schedule (JSONB) | Extended แพทย์ info |
+| **doctors** | id, name, name_thai, specialty, specialty_thai, hospital, avatar_url, rating, is_available | ผู้ป่วย-facing แพทย์ listing |
+| **doctor_schedules** | id, doctor_id, day_of_week (0-6), start_time, end_time, slot_duration_minutes, is_available | Availability slots |
+| **doctor_reviews** | id, doctor_id, patient_id, appointment_id, rating (1-5), comment | ผู้ป่วย feedback |
+| **consultants** | id, name, specialty, email, phone, hospital, languages (JSONB), is_available, rating, reviews (JSONB), admin_notes | External specialist directory |
+
+
+#### Appointments & Meetings (4 tables)
+
+| Table | Key Columns | Purpose |
+| ----- | ----------- | ------- |
+| **นัดหมาย** | id, patient_id, doctor_id, requested_date/time, confirmed_date/time, appointment_type, สถานะ, urgency_level, symptoms (JSONB), ai_triage (JSONB), meet_link, jitsi_room_name, invitees (JSONB) | Consultation scheduling |
+| **meeting_records** | id (UUID), appointment_id, doctor_id, patient_id, room_name, jitsi_domain, สถานะ, meeting_config (JSONB), transcript, ai_summary, ai_recommendations, section_summaries (JSONB), doctor_validation_status, patient_instructions, recording_data (BYTEA), duration_minutes | Video sessions + AI |
+| **meeting_transcripts** | id (UUID), meeting_record_id, speaker_id, speaker_role, speaker_name, content, language, confidence, start_time_seconds, is_final | STT segments |
+| **ai_chat_history** | id, user_id, session_id, role, content, context (JSONB), embedding (vector) | Chat with AI embeddings |
+
+
+#### Clinical Data (5 tables)
+
+| Table | Key Columns | Purpose |
+| ----- | ----------- | ------- |
+| **emr** | id, appointment_id, patient_id, doctor_id, subjective/objective/assessment/plan (JSONB), ai_summary, ai_summary_approved, patient_instructions, doctor_signature, signed_at, สถานะ (draft/ลงนามแล้ว) | SOAP medical records |
+| **ใบสั่งยา** | id, emr_id, appointment_id, patient_id, doctor_id, medications (JSONB), pharmacy_instructions, cds_warnings (JSONB), สถานะ | E-prescribing |
+| **lab_orders** | id, emr_id, appointment_id, patient_id, doctor_id, tests (JSONB), priority, results (JSONB), ai_analysis, สถานะ | Lab test orders |
+| **transcriptions_embeddings** | meeting_record_id, chunk_text, speaker_role, start/end_time_seconds, embedding (vector), metadata (JSONB) | Vectorized transcript chunks |
+| **ai_chat_memory** | id, user_id, memory_type, title, content, source_session_id, embedding (vector), relevance_score, is_active | Long-term AI memory |
+
+
+#### Content & Knowledge (6 tables)
+
+| Table | Key Columns | Purpose |
+| ----- | ----------- | ------- |
+| **medical_content** | id, title_thai, title_english, content_thai, content_english, category, tags (JSONB), author_id, สถานะ (draft/published), image_url, view_count | ผู้ป่วย education |
+| **clinical_resources** | id, title_thai, title_english, content_thai, content_english, category, specialty, guideline_year, tags (JSONB), สถานะ (รอดำเนินการ/approved), author_id, approved_by | แพทย์ reference |
+| **icd10_codes** | code (PK), description_english, description_thai, category, chapter | Diagnosis codes |
+| **drugs** | id, generic_name, brand_names (JSONB), drug_class, dosage_forms (JSONB), indications (JSONB), contraindications (JSONB), interactions (JSONB), pregnancy_category, renal_adjustment (JSONB) | Drug database |
+| **knowledge_base** | id, title, content, source, category, guideline_year, language, embedding (vector), is_active | RAG knowledge base |
+| **ai_document_analysis** | id, patient_id, doctor_id, document_type, filename, summary, key_findings (JSONB), abnormal_values (JSONB), validation_status | AI doc analysis |
+
+
+#### AI & Decision Support (3 tables)
+
+| Table | Key Columns | Purpose |
+| ----- | ----------- | ------- |
+| **cds_logs** | id, patient_id, doctor_id, appointment_id, recommendation_type, severity, title, คำอธิบาย, guideline_source, doctor_decision (accepted/rejected/modified) | CDS audit trail |
+| **ai_validations** | id, type, patient_id, doctor_id, decision (approved/rejected), content_snapshot, validated_at | Man-in-the-Loop (แพทย์ตรวจสอบก่อนส่งถึงผู้ป่วย) log |
+| **การแจ้งเตือน** | id (UUID), user_id, type, title, title_thai, message, message_thai, data (JSONB), read_at | User การแจ้งเตือน |
+
+
+#### Audit (1 table)
+
+| Table | Key Columns | Purpose |
+| ----- | ----------- | ------- |
+| **audit_logs** | id, user_id, patient_id, การกระทำ, entity_type, entity_id, details (JSONB), old_value (JSONB), new_value (JSONB), ip_address, user_agent, performed_by | Compliance audit trail |
+
+
+### PostgreSQL LISTEN/NOTIFY Triggers
+
+| Trigger | Table | Events | Socket.IO Event |
+| ------- | ----- | ------ | --------------- |
+| notify_appointment_change | นัดหมาย | INSERT, UPDATE, DELETE | นัดหมาย:updated |
+| notify_emr_change | emr | INSERT, UPDATE | emr:updated |
+| notify_prescription_change | ใบสั่งยา | INSERT, UPDATE | ใบสั่งยา:updated |
+| notify_lab_order_change | lab_orders | INSERT, UPDATE | lab-order:updated |
+| notify_phr_change | phr | UPDATE | phr:updated |
+| notify_schedule_change | doctor_schedules | INSERT, UPDATE, DELETE | schedule:updated |
+| notify_notification_insert | การแจ้งเตือน | INSERT | notification:new |
+| notify_meeting_change | meeting_records | INSERT, UPDATE | meeting:updated |
 
 ---
 
 
-## 📊 สถาปัตยกรรมข้อมูล
+## 📊 Data Architecture
 
 ```text
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                    ฐานข้อมูล POSTGRESQL: izara_phase1                        │
+│                    POSTGRESQL DATABASE: izara_phase1                        │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │                                                                             │
 │  ┌─────────────────────────────────────────────────────────────────────┐   │
-│  │                         ตารางหลัก                                    │   │
+│  │                         CORE TABLES                                  │   │
 │  ├─────────────────────────────────────────────────────────────────────┤   │
-│  │  users            │ บัญชีผู้ใช้ทั้งหมด (ผู้ป่วย, แพทย์, ผู้ดูแล)       │   │
-│  │  doctor_profiles  │ ข้อมูลโปรไฟล์เฉพาะแพทย์                         │   │
-│  │  patient_profiles │ ข้อมูลโปรไฟล์เฉพาะผู้ป่วย                        │   │
-│  │  sessions         │ Session การยืนยันตัวตน                          │   │
+│  │  users            │ All user accounts (patient, doctor, admin)      │   │
+│  │  doctor_profiles  │ Doctor-specific profile data                    │   │
+│  │  patient_profiles │ Patient-specific profile data                   │   │
+│  │  sessions         │ Authentication sessions                         │   │
 │  └─────────────────────────────────────────────────────────────────────┘   │
 │                                                                             │
 │  ┌─────────────────────────────────────────────────────────────────────┐   │
-│  │                       ตารางทางคลินิก                                  │   │
+│  │                       CLINICAL TABLES                                │   │
 │  ├─────────────────────────────────────────────────────────────────────┤   │
-│  │  appointments     │ ตารางนัดหมาย                                    │   │
-│  │  emr              │ Electronic Medical Records (รูปแบบ SOAP)        │   │
+│  │  appointments     │ Appointment scheduling                          │   │
+│  │  emr              │ Electronic Medical Records (SOAP format)        │   │
 │  │  phr              │ Personal Health Records                         │   │
-│  │  vital_signs      │ การวัดสัญญาณชีพผู้ป่วย                            │   │
-│  │  prescriptions    │ ใบสั่งยา                                        │   │
-│  │  lab_orders       │ คำสั่งตรวจแล็บ                                   │   │
+│  │  vital_signs      │ Patient vital measurements                      │   │
+│  │  prescriptions    │ Medication prescriptions                        │   │
+│  │  lab_orders       │ Laboratory test orders                          │   │
 │  └─────────────────────────────────────────────────────────────────────┘   │
 │                                                                             │
 │  ┌─────────────────────────────────────────────────────────────────────┐   │
-│  │                       ตารางเนื้อหา                                    │   │
+│  │                       CONTENT TABLES                                 │   │
 │  ├─────────────────────────────────────────────────────────────────────┤   │
-│  │  medical_content     │ บทความสุขภาพสำหรับผู้ป่วย                       │   │
-│  │  clinical_resources  │ แนวทางทางคลินิกสำหรับแพทย์                       │   │
-│  │  consultants         │ ไดเรกทอรีแพทย์ผู้เชี่ยวชาญ                       │   │
-│  │  notifications       │ การแจ้งเตือนผู้ใช้                               │   │
+│  │  medical_content     │ Health articles for patients                 │   │
+│  │  clinical_resources  │ Clinical guidelines for doctors              │   │
+│  │  consultants         │ Specialist directory                         │   │
+│  │  notifications       │ User notifications                           │   │
 │  └─────────────────────────────────────────────────────────────────────┘   │
 │                                                                             │
 │  ┌─────────────────────────────────────────────────────────────────────┐   │
-│  │                      ตาราง AI/CDS (Phase 1)                          │   │
+│  │                      AI/CDS TABLES (Phase 1)                         │   │
 │  ├─────────────────────────────────────────────────────────────────────┤   │
-│  │  knowledge_base       │ รายการ RAG พร้อม embeddings                   │   │
-│  │  ai_chat_history      │ บันทึกการสนทนา AI ของแพทย์                     │   │
-│  │  ai_document_analysis │ ผลวิเคราะห์ PDF/Lab                           │   │
-│  │  cds_logs             │ บันทึกตรวจสอบ Clinical Decision Support       │   │
-│  │  patient_instructions │ เอกสารคำแนะนำผู้ป่วยที่สร้างอัตโนมัติ             │   │
-│  └─────────────────────────────────────────────────────────────────────┘   │
-│                                                                             │
-│  ┌─────────────────────────────────────────────────────────────────────┐   │
-│  │                      ตาราง Meeting (Phase 1)                         │   │
-│  ├─────────────────────────────────────────────────────────────────────┤   │
-│  │  meeting_sessions     │ Metadata การประชุม Jitsi                      │   │
-│  │  meeting_transcripts  │ ข้อความถอดเสียง                               │   │
-│  │  meeting_summaries    │ สรุปที่สร้างโดย AI                             │   │
-│  │  guest_invites        │ Token เชิญแขก                                 │   │
+│  │  knowledge_base       │ RAG knowledge entries with embeddings       │   │
+│  │  ai_chat_history      │ Doctor AI chat conversation logs            │   │
+│  │  ai_document_analysis │ PDF/Lab analysis results                    │   │
+│  │  cds_logs             │ Clinical Decision Support audit trail       │   │
+│  │  patient_instructions │ Generated patient instruction sheets        │   │
+│  │  ai_validations       │ Man-in-the-Loop approval records            │   │
 │  └─────────────────────────────────────────────────────────────────────┘   │
 │                                                                             │
 └─────────────────────────────────────────────────────────────────────────────┘
+                                    │
+            ┌───────────────────────┼───────────────────────┐
+            ▼                       ▼                       ▼
+┌───────────────────────┐ ┌───────────────────────┐ ┌───────────────────────┐
+│   PATIENT PORTAL      │ │    DOCTOR PORTAL      │ │    AI SERVICES        │
+│   (Port 3005)         │ │    (Port 3010)        │ │    (Gemini 2.5 Flash) │
+├───────────────────────┤ ├───────────────────────┤ ├───────────────────────┤
+│ • View PHR            │ │ • Manage patients     │ │ • Pre-consultation    │
+│ • Book appointments   │ │ • EMR documentation   │ │   summary             │
+│ • Join video meetings │ │ • AI Chat Assistant   │ │ • Document analysis   │
+│ • View instructions   │ │ • Document analysis   │ │ • CDS alerts          │
+│ • AI health chat      │ │ • Man-in-the-loop     │ │ • RAG search          │
+│ • Health timeline     │ │ • Patient instructions│ │ • Chat memory         │
+└───────────────────────┘ └───────────────────────┘ └───────────────────────┘
 ```
 
 ---
 
 
-## 📋 โครงสร้างตาราง
+## 🔄 Data Flow Patterns
 
 
-### 1. ตาราง users
-
-```sql
-CREATE TABLE users (
-    id VARCHAR(50) PRIMARY KEY,
-    email VARCHAR(255) UNIQUE NOT NULL,
-    password_hash VARCHAR(255) NOT NULL,
-    role VARCHAR(20) NOT NULL CHECK (role IN ('doctor', 'admin', 'patient')),
-    name VARCHAR(255) NOT NULL,
-    name_thai VARCHAR(255),
-    avatar_url TEXT,
-    phone VARCHAR(50),
-    date_of_birth DATE,
-    gender VARCHAR(20),
-    national_id VARCHAR(20),
-
-    -- ฟิลด์เฉพาะแพทย์
-    doctor_id VARCHAR(50),
-    medical_license_number VARCHAR(50),
-    specialty VARCHAR(100),
-    hospital_name VARCHAR(255),
-
-    -- ฟิลด์เฉพาะผู้ป่วย
-    patient_id VARCHAR(50),
-
-    -- สถานะ
-    is_active BOOLEAN DEFAULT true,
-    is_verified BOOLEAN DEFAULT false,
-    is_approved BOOLEAN DEFAULT false,
-    approval_status VARCHAR(20) DEFAULT 'pending',
-
-    -- Timestamps
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    last_login TIMESTAMP WITH TIME ZONE
-);
-```
-
-
-### 2. ตาราง appointments
-
-```sql
-CREATE TABLE appointments (
-    id VARCHAR(50) PRIMARY KEY,
-    patient_id VARCHAR(50) REFERENCES users(id),
-    doctor_id VARCHAR(50) REFERENCES users(id),
-
-    -- ข้อมูลนัดหมาย
-    scheduled_date DATE NOT NULL,
-    scheduled_time TIME NOT NULL,
-    duration_minutes INTEGER DEFAULT 30,
-    appointment_type VARCHAR(50) NOT NULL,
-
-    -- สถานะ
-    status VARCHAR(20) DEFAULT 'pending',
-    chief_complaint TEXT,
-    notes TEXT,
-
-    -- ข้อมูลประชุม
-    meeting_link TEXT,
-    meeting_room_id VARCHAR(100),
-
-    -- Timestamps
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    confirmed_at TIMESTAMP WITH TIME ZONE,
-    completed_at TIMESTAMP WITH TIME ZONE
-);
-```
-
-
-### 3. ตาราง emr
-
-```sql
-CREATE TABLE emr (
-    id VARCHAR(50) PRIMARY KEY,
-    appointment_id VARCHAR(50) REFERENCES appointments(id),
-    patient_id VARCHAR(50) REFERENCES users(id),
-    doctor_id VARCHAR(50) REFERENCES users(id),
-
-    -- รูปแบบ SOAP
-    subjective TEXT,      -- S: อาการสำคัญ, ประวัติปัจจุบัน
-    objective TEXT,       -- O: การตรวจร่างกาย, สัญญาณชีพ
-    assessment TEXT,      -- A: การวินิจฉัย
-    plan TEXT,            -- P: แผนการรักษา
-
-    -- สรุป AI
-    ai_summary TEXT,
-    ai_validated BOOLEAN DEFAULT false,
-    validated_by VARCHAR(50),
-    validated_at TIMESTAMP WITH TIME ZONE,
-
-    -- สถานะ
-    status VARCHAR(20) DEFAULT 'draft',
-    signed_at TIMESTAMP WITH TIME ZONE,
-
-    -- Timestamps
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-);
-```
-
-
-### 4. ตาราง meeting_transcripts
-
-```sql
-CREATE TABLE meeting_transcripts (
-    id VARCHAR(50) PRIMARY KEY,
-    appointment_id VARCHAR(50) REFERENCES appointments(id),
-    meeting_room_id VARCHAR(100),
-
-    -- เนื้อหา Transcript
-    segment_number INTEGER,
-    start_time TIMESTAMP WITH TIME ZONE,
-    end_time TIMESTAMP WITH TIME ZONE,
-    speaker VARCHAR(100),
-    text TEXT NOT NULL,
-    language VARCHAR(10) DEFAULT 'th',
-    confidence DECIMAL(3,2),
-
-    -- Timestamps
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-);
-```
-
-
-### 5. ตาราง knowledge_base (สำหรับ RAG)
-
-```sql
-CREATE TABLE knowledge_base (
-    id VARCHAR(50) PRIMARY KEY,
-    title VARCHAR(500) NOT NULL,
-    content TEXT NOT NULL,
-    category VARCHAR(100),
-    source VARCHAR(255),
-
-    -- Vector embedding (pgvector)
-    embedding vector(768),
-
-    -- Metadata
-    tags TEXT[],
-    language VARCHAR(10) DEFAULT 'th',
-
-    -- Timestamps
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-);
-
--- Index สำหรับค้นหาความคล้ายคลึง
-CREATE INDEX ON knowledge_base USING ivfflat (embedding vector_cosine_ops);
-```
-
----
-
-
-## 🔄 การไหลของข้อมูล
-
-
-### 1. ขั้นตอนการลงทะเบียน
+### 1. User Authentication Flow
 
 ```text
-┌─────────────────────────────────────────────────────────────┐
-│                    การไหลข้อมูลลงทะเบียน                     │
-├─────────────────────────────────────────────────────────────┤
-│                                                              │
-│  [ผู้ใช้กรอกแบบฟอร์ม]                                         │
-│           ↓                                                  │
-│  [Backend ตรวจสอบข้อมูล]                                      │
-│           ↓                                                  │
-│  [เข้ารหัสรหัสผ่าน bcrypt]                                    │
-│           ↓                                                  │
-│  ┌─────────────────────────────┐                            │
-│  │ INSERT INTO users           │                            │
-│  │ (id, email, password_hash,  │                            │
-│  │  role, name, ...)           │                            │
-│  └─────────────────────────────┘                            │
-│           ↓                                                  │
-│  [สร้าง patient_profiles หรือ doctor_profiles]               │
-│           ↓                                                  │
-│  [สร้าง Session Token]                                       │
-│           ↓                                                  │
-│  [ส่ง Response + Cookie]                                     │
-│                                                              │
-└─────────────────────────────────────────────────────────────┘
+Patient Login                          Doctor/Admin Login
+     │                                       │
+     ▼                                       ▼
+┌─────────────┐                        ┌─────────────┐
+│ Patient     │                        │ Doctor      │
+│ Portal      │                        │ Portal      │
+│ Backend     │                        │ Backend     │
+│ (Port 3005) │                        │ (Port 3010) │
+└──────┬──────┘                        └──────┬──────┘
+       │                                      │
+       └────────────────┬─────────────────────┘
+                        ▼
+┌──────────────────────────────────────────────────┐
+│         PostgreSQL - users table                 │
+│                                                  │
+│  SELECT * FROM users WHERE email = $1            │
+│  AND password_hash = crypt($2, password_hash)    │
+│                                                  │
+│  Columns:                                        │
+│  - id, email, password_hash, role                │
+│  - name_th, name_en                             │
+│  - created_at, last_login                       │
+└──────────────────────────────────────────────────┘
 ```
 
 
-### 2. ขั้นตอนการนัดหมาย
+### 2. Appointment Data Flow
 
 ```text
-┌─────────────────────────────────────────────────────────────┐
-│                    การไหลข้อมูลนัดหมาย                       │
-├─────────────────────────────────────────────────────────────┤
-│                                                              │
-│  [ผู้ป่วยสร้างนัดหมาย]                                        │
-│           ↓                                                  │
-│  ┌─────────────────────────────┐                            │
-│  │ INSERT INTO appointments    │                            │
-│  │ status = 'pending'          │                            │
-│  └─────────────────────────────┘                            │
-│           ↓                                                  │
-│  [แจ้งเตือนแพทย์/ผู้ดูแล]                                      │
-│           ↓                                                  │
-│  [แพทย์ยืนยัน]                                                │
-│           ↓                                                  │
-│  ┌─────────────────────────────┐                            │
-│  │ UPDATE appointments         │                            │
-│  │ status = 'confirmed',       │                            │
-│  │ meeting_link = 'jitsi://...'│                            │
-│  └─────────────────────────────┘                            │
-│           ↓                                                  │
-│  [แจ้งเตือนผู้ป่วย + ส่งอีเมล]                                  │
-│                                                              │
-└─────────────────────────────────────────────────────────────┘
+Patient Books Appointment
+         │
+         ▼
+┌─────────────────┐
+│ POST /api/      │
+│ appointments    │
+│ (Patient Portal)│
+└────────┬────────┘
+         │
+         ▼
+┌──────────────────────────────────────────────────┐
+│         PostgreSQL - appointments table          │
+│                                                  │
+│  INSERT INTO appointments (                      │
+│    id, patient_id, doctor_id, status,           │
+│    appointment_type, symptoms,                   │
+│    requested_date_time, meeting_link             │
+│  )                                               │
+└────────────────────┬─────────────────────────────┘
+                     │
+         ┌───────────┴───────────┐
+         │                       │
+         ▼                       ▼
+┌─────────────────┐    ┌─────────────────┐
+│ Doctor Portal   │    │ Admin Portal    │
+│ Schedule Tab    │    │ All Appts Tab   │
+│ (Port 3010)     │    │ (Port 3010)     │
+└────────┬────────┘    └────────┬────────┘
+         │                       │
+         └───────────┬───────────┘
+                     │
+                     ▼ (Doctor/Admin Confirms)
+┌──────────────────────────────────────────────────┐
+│  UPDATE appointments SET                         │
+│    status = 'confirmed',                         │
+│    confirmed_date_time = NOW(),                  │
+│    meeting_link = '<https://meet.jit.si/...',>    │
+│    doctor_meeting_url = '...',                  │
+│    patient_meeting_url = '...'                  │
+│  WHERE id = $1                                   │
+└──────────────────────────────────────────────────┘
+         │
+         ▼
+┌─────────────────┐
+│ Patient Portal  │
+│ Appointments    │
+│ (Shows meeting) │
+└─────────────────┘
 ```
 
 
-### 3. ขั้นตอนการประชุมและ AI
+### 3. AI-Assisted EMR Flow (Phase 1 Feature)
 
 ```text
-┌─────────────────────────────────────────────────────────────┐
-│                    การไหลข้อมูลประชุม + AI                   │
-├─────────────────────────────────────────────────────────────┤
-│                                                              │
-│  [เริ่มประชุม Jitsi]                                          │
-│           ↓                                                  │
-│  ┌─────────────────────────────┐                            │
-│  │ INSERT INTO meeting_sessions │                           │
-│  │ room_id, start_time         │                            │
-│  └─────────────────────────────┘                            │
-│           ↓                                                  │
-│  [Web Speech API ถอดเสียง Realtime]                          │
-│           ↓                                                  │
-│  ┌─────────────────────────────┐                            │
-│  │ INSERT INTO meeting_transcripts │                        │
-│  │ (แต่ละ segment)              │                            │
-│  └─────────────────────────────┘                            │
-│           ↓                                                  │
-│  [จบการประชุม]                                               │
-│           ↓                                                  │
-│  ┌─────────────────────────────┐                            │
-│  │ Meeting Server:             │                            │
-│  │ 1. รวม transcripts          │                            │
-│  │ 2. ส่งไป Gemini AI          │                            │
-│  │ 3. สร้าง EMR Draft          │                            │
-│  │ 4. สร้างคำแนะนำผู้ป่วย        │                            │
-│  └─────────────────────────────┘                            │
-│           ↓                                                  │
-│  ┌─────────────────────────────┐                            │
-│  │ INSERT INTO emr             │                            │
-│  │ (ai_summary, status='draft')│                            │
-│  └─────────────────────────────┘                            │
-│           ↓                                                  │
-│  [แพทย์ตรวจสอบ Man-in-the-Loop]                              │
-│           ↓                                                  │
-│  ┌─────────────────────────────┐                            │
-│  │ UPDATE emr                  │                            │
-│  │ ai_validated = true,        │                            │
-│  │ status = 'signed'           │                            │
-│  └─────────────────────────────┘                            │
-│                                                              │
-└─────────────────────────────────────────────────────────────┘
+Video Meeting Completes
+         │
+         ▼
+┌──────────────────────────────────────────────────┐
+│  Device Speech-to-Text (Browser API)             │
+│  - Real-time transcription during call           │
+│  - Saves to meeting_transcripts table            │
+└────────────────────┬─────────────────────────────┘
+                     │
+                     ▼
+┌──────────────────────────────────────────────────┐
+│  Gemini AI - Meeting Summary Generation          │
+│                                                  │
+│  Input: Full transcript + Patient history (RAG)  │
+│  Output: SOAP format EMR draft                   │
+│         + AI-generated summary                   │
+└────────────────────┬─────────────────────────────┘
+                     │
+                     ▼
+┌──────────────────────────────────────────────────┐
+│  Man-in-the-Loop Validation                      │
+│                                                  │
+│  Doctor reviews AI-generated EMR:                │
+│  ┌────────────────────────────────────────────┐ │
+│  │ S: ผู้ป่วยมาด้วยอาการปวดศีรษะ 2 วัน...       │ │
+│  │ O: BP 120/80, T 37.5°C...                   │ │
+│  │ A: Tension headache                         │ │
+│  │ P: Paracetamol 500mg prn, rest              │ │
+│  │                                             │ │
+│  │     [✓ Approve]  [✏️ Edit]  [✗ Reject]      │ │
+│  └────────────────────────────────────────────┘ │
+└────────────────────┬─────────────────────────────┘
+                     │
+         ┌───────────┴───────────┐
+         │                       │
+         ▼                       ▼
+ (If Approved)           (If Edited/Rejected)
+┌───────────────┐      ┌────────────────────────┐
+│ INSERT INTO   │      │ Doctor edits manually  │
+│ emr           │      │ or AI regenerates      │
+│ ai_validations│      └────────────────────────┘
+└───────────────┘
 ```
 
----
 
-
-## 🔍 การค้นหา AI (RAG)
-
-
-### ขั้นตอนการค้นหาความรู้
+### 4. Patient Instruction Sheet Generation
 
 ```text
-┌─────────────────────────────────────────────────────────────┐
-│                    การค้นหา RAG                              │
-├─────────────────────────────────────────────────────────────┤
-│                                                              │
-│  [แพทย์ถามคำถามใน AI Chat]                                    │
-│           ↓                                                  │
-│  [สร้าง Embedding จากคำถาม]                                   │
-│           ↓                                                  │
-│  ┌─────────────────────────────┐                            │
-│  │ SELECT * FROM knowledge_base │                           │
-│  │ ORDER BY embedding <=>       │  ← pgvector cosine search │
-│  │   $query_embedding           │                            │
-│  │ LIMIT 5                      │                            │
-│  └─────────────────────────────┘                            │
-│           ↓                                                  │
-│  [รวมเอกสารที่เกี่ยวข้อง]                                      │
-│           ↓                                                  │
-│  [ส่งไป Gemini พร้อม Context]                                 │
-│           ↓                                                  │
-│  [แสดงคำตอบให้แพทย์]                                          │
-│                                                              │
-└─────────────────────────────────────────────────────────────┘
+Doctor Completes EMR
+         │
+         ▼
+┌──────────────────────────────────────────────────┐
+│  Gemini AI - Patient Instruction Generation      │
+│                                                  │
+│  Input: EMR (SOAP) + Prescription + Guidelines   │
+│  Output: Patient-friendly instruction sheet      │
+│         - Diagnosis summary (lay terms)          │
+│         - Medication instructions                │
+│         - Lifestyle recommendations              │
+│         - Warning signs to watch                │
+│         - Follow-up appointment info             │
+└────────────────────┬─────────────────────────────┘
+                     │
+                     ▼
+┌──────────────────────────────────────────────────┐
+│  Man-in-the-Loop Validation                      │
+│                                                  │
+│  Doctor approves/edits instruction sheet         │
+└────────────────────┬─────────────────────────────┘
+                     │
+         ┌───────────┴───────────┐
+         │                       │
+         ▼                       ▼
+┌─────────────────┐    ┌─────────────────────────┐
+│ INSERT INTO     │    │ Patient Portal          │
+│ patient_        │──▶│ Health Records > View   │
+│ instructions    │    │ Instruction Sheet       │
+└─────────────────┘    └─────────────────────────┘
 ```
 
 ---
 
 
-## 🛡️ ความปลอดภัยข้อมูล
+## 🔐 Access Control Matrix
+
+| Resource | ผู้ป่วย | แพทย์ | ผู้ดูแลระบบ |
+| ---------- | --------- | -------- | ------- |
+| Own PHR | Read/Write | Read | Read |
+| Other ผู้ป่วย PHR | ❌ | Read (assigned) | Read (all) |
+| นัดหมาย (own) | Read/Write | Read/Write | Read/Write |
+| นัดหมาย (all) | ❌ | Read (queue) | Read/Write |
+| Medical Content | Read | Read/Write | Read/Write |
+| Clinical Resources | ❌ | Read | Read/Write |
+| AI Chat Assistant | ❌ | Read/Write | Read/Write |
+| AI Validations | ❌ | Write (own) | Read (audit) |
+| User Management | ❌ | ❌ | Read/Write |
+
+---
 
 
-### การเข้ารหัส
-
-| ประเภทข้อมูล | วิธีการ |
-| ----------- | ------- |
-| รหัสผ่าน | bcrypt (10 rounds) |
-| Session Token | Crypto random hex |
-| การสื่อสาร | HTTPS/TLS |
+## 📡 API Endpoints
 
 
+### Patient Portal (Port 3005)
+
+| Endpoint | Method | Data Source | คำอธิบาย |
+| ---------- | -------- | ------------- | ------------- |
+| `/api/auth/login` | POST | PostgreSQL users | Patient authentication |
+| `/api/phr` | GET/POST | PostgreSQL phr | Personal health records |
+| `/api/appointments` | GET/POST | PostgreSQL appointments | Appointment management |
+| `/api/doctors` | GET | PostgreSQL doctor_profiles | Available doctors list |
+| `/api/content/articles` | GET | PostgreSQL medical_content | Medical articles |
+| `/api/video-meeting` | POST | Jitsi API | Create meeting link |
+| `/api/patient-instructions/:id` | GET | PostgreSQL patient_instructions | View instruction sheet |
 
 
-### การควบคุมการเข้าถึง
+### Doctor Portal (Port 3010)
 
-| บทบาท | ข้อมูลที่เข้าถึงได้ |
-| ----- | ----------------- |
-| ผู้ป่วย | ข้อมูลของตนเองเท่านั้น |
-| แพทย์ | ผู้ป่วยที่ได้รับมอบหมาย |
-| ผู้ดูแลระบบ | ข้อมูลทั้งหมด |
+| Endpoint | Method | Data Source | คำอธิบาย |
+| ---------- | -------- | ------------- | ------------- |
+| `/api/auth/login` | POST | PostgreSQL users | Doctor authentication |
+| `/api/patients` | GET | PostgreSQL patient_profiles | Patient list |
+| `/api/appointments` | GET/PUT | PostgreSQL appointments | Appointment management |
+| `/api/emr` | GET/POST | PostgreSQL emr | EMR records |
+| `/api/prescriptions` | POST | PostgreSQL prescriptions | Prescriptions |
+| `/api/clinical-resources` | GET | PostgreSQL clinical_resources | Clinical guidelines |
+| `/api/ai/chat` | POST | Gemini + RAG | AI Chat Assistant |
+| `/api/ai/document-analysis` | POST | Gemini | PDF/Lab analysis |
+| `/api/ai/meeting-summary` | POST | Gemini | Meeting transcription summary |
+| `/api/ai/patient-instructions` | POST | Gemini | Generate instruction sheet |
+| `/api/ai/validate` | POST | PostgreSQL ai_validations | Man-in-the-Loop approval |
+
+---
 
 
+## 🔍 Data Validation Rules
 
 
-### การบันทึกตรวจสอบ
+### Appointment Data
 
-```sql
-CREATE TABLE audit_logs (
-    id VARCHAR(50) PRIMARY KEY,
-    user_id VARCHAR(50) REFERENCES users(id),
-    action VARCHAR(100) NOT NULL,
-    table_name VARCHAR(50),
-    record_id VARCHAR(50),
-    old_values JSONB,
-    new_values JSONB,
-    ip_address VARCHAR(45),
-    user_agent TEXT,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-);
+```javascript
+{
+  id: "APT-{uuid}",                    // Required, unique
+  patient_id: "PATIENT-{id}",          // Required, FK to users
+  doctor_id: "DOC-{id}" | null,        // Optional (for pool)
+  status: enum["pending", "in_pool", "assigned", "confirmed", "in_progress", "completed", "cancelled", "declined"],
+  appointment_type: enum["telehealth", "onsite"],
+  urgency: enum["normal", "urgent", "emergency"],
+  symptoms: {
+    main: string,                       // Required
+    description: string,
+    duration: string,
+    severity: number (1-10)
+  },
+  requested_date_time: TIMESTAMP,       // Required
+  confirmed_date_time: TIMESTAMP | null,
+  meeting_link: URL | null,
+  created_at: TIMESTAMP,
+  updated_at: TIMESTAMP
+}
+```
+
+
+### EMR Data (SOAP Format)
+
+```javascript
+{
+  id: "EMR-{uuid}",
+  appointment_id: "APT-{uuid}",         // FK to appointments
+  patient_id: "PATIENT-{id}",           // FK to users
+  doctor_id: "DOC-{id}",                // FK to users
+  subjective: text,                     // Patient complaints, history
+  objective: text,                      // Physical exam, vitals
+  assessment: text,                     // Diagnosis (ICD-10)
+  plan: text,                           // Treatment plan
+  ai_generated: boolean,                // Was this AI-generated?
+  ai_validation_status: enum["pending", "approved", "rejected", "edited"],
+  validated_by: "DOC-{id}" | null,
+  validated_at: TIMESTAMP | null,
+  created_at: TIMESTAMP,
+  updated_at: TIMESTAMP
+}
+```
+
+
+### AI Validation Record (Man-in-the-Loop)
+
+```javascript
+{
+  id: "VAL-{uuid}",
+  content_type: enum["emr", "patient_instruction", "summary", "document_analysis"],
+  content_id: "{uuid}",                 // Reference to the content
+  ai_model: "gemini-3.1-flash-lite",
+  original_content: JSONB,              // AI-generated original
+  validated_content: JSONB,             // Doctor-approved final
+  validation_status: enum["pending", "approved", "rejected", "edited"],
+  doctor_id: "DOC-{id}",
+  doctor_notes: text | null,            // Reason for edit/reject
+  created_at: TIMESTAMP,
+  validated_at: TIMESTAMP | null
+}
 ```
 
 ---
 
 
-## 📁 การ Backup และ Recovery
+## ✅ Testing Coverage
 
 
-### Backup อัตโนมัติ
-
-```bash
-
-# Backup รายวัน
-pg_dump -h localhost -p 5433 -U postgres izara_phase1 > backup_$(date +%Y%m%d).sql
+### Playwright Tests (26 tests)
 
 
-# Restore
-psql -h localhost -p 5433 -U postgres izara_phase1 < backup_20260204.sql
+- พอร์ทัลผู้ป่วย: 10 tests
+
+
+- พอร์ทัลแพทย์: 10 tests
+
+
+- ผู้ดูแลระบบ workflows: 6 tests
+
+
+### Run Tests
+
+```powershell
+
+
+# Complete test suite (Playwright)
+cd Isara-doctor-portal
+npx playwright test
+
+
+
+# Specific test file
+npx playwright test tests/doctor-portal.spec.ts
+
+
+
+# With UI mode
+npx playwright test --ui
+
+
+
+# Debug mode
+npx playwright test --debug
 ```
 
 
-### Docker Volume
+### Test Users
 
-```yaml
-volumes:
-  postgres_data:
-    driver: local
-```
+| Role | Email | Password |
+| ------ | ------- | ---------- |
+| ผู้ป่วย | `demo.test@gmail.com` | `YOUR_TEST_PASSWORD` |
+| ผู้ป่วย | `Somchai.Mankong@gmail.com` | `YOUR_TEST_PASSWORD` |
+| ผู้ป่วย | `Anan.Khayanrian@gmail.com` | `YOUR_TEST_PASSWORD` |
+| แพทย์ | `doctor.test@izara.com` | `YOUR_TEST_DOCTOR_PASSWORD` |
+| ผู้ดูแลระบบ | `admin.test@izara.com` | `YOUR_TEST_ADMIN_PASSWORD` |
 
 ---
 
 
-## สรุป
-
-| ส่วนประกอบ | เทคโนโลยี | วัตถุประสงค์ |
-| --------- | --------- | ---------- |
-| ฐานข้อมูลหลัก | PostgreSQL | เก็บข้อมูลทั้งหมด |
-| Vector Search | pgvector | AI knowledge search |
-| Session | PostgreSQL sessions | การยืนยันตัวตน |
-| Backup | pg_dump | การสำรองข้อมูล |
+## 🚀 Deployment Checklist
 
 
+### Local Development
+
+
+- [ ] Docker containers running (postgres, ผู้ป่วย-portal, แพทย์-portal, pgadmin)
+
+
+- [ ] Database seeded with `seed-local.sql`
+
+
+- [ ] พอร์ทัลผู้ป่วย accessible at <http://localhost:3005>
+
+
+- [ ] พอร์ทัลแพทย์ accessible at <http://localhost:3010>
+
+
+- [ ] pgAdmin accessible at <http://localhost:5050>
+
+
+### Production Deployment
+
+
+- [ ] Cloud Run services deployed
+
+
+- [ ] Cloud SQL PostgreSQL configured
+
+
+- [ ] Database seeded with `seed-cloud.sql`
+
+
+- [ ] Gemini API key configured
+
+
+- [ ] CORS and security headers configured
+
+
+- [ ] All Playwright tests pass
 
 ---
 
-เอกสารนี้สะท้อนการใช้งาน PostgreSQL ปัจจุบันของ Izara Telemedicine (Phase 1 เสร็จสมบูรณ์)
+Documentation generated for Izara Telemedicine Platform v3.0.0
+Phase 1: AI-Assisted Consultation with Man-in-the-Loop (แพทย์ตรวจสอบก่อนส่งถึงผู้ป่วย) Validation
+
+---
+
+
+## 📝 Changelog — v1.6.0 (July 2026)
+
+
+### Bug Fixes Applied
+
+| # | Issue | Files Changed | Fix |
+| --- | ------- | --------------- | ----- |
+| 1 | Appointment queries used non-existent `scheduled_date`/`scheduled_time` columns | `postgresDataService.ts`, `appointments.ts` | Use `COALESCE(confirmed_date, requested_date, appointment_date)`; remove demo data fallback |
+| 2 | Session timeout too short (15 min) | `AuthContext.tsx`, `auth.ts`, `authServices.ts`, `config.ts`, `useAuth.ts` | Changed to 3-hour inactivity timeout across all portals |
+| 3 | Medical content library: "Failed to create article" | `MedicalContent.tsx` | Unwrap `result.article \| \| result` from backend response; add auth headers to all fetch calls |
+| 4 | Lab result upload sends no ผู้ป่วย notification | `mainApiServer.cjs` | Added `createNotification()` call with type `lab_results` after lab upload |
+| 5 | Dashboard shows all patients (privacy violation) | `apiDataService.ts`, `DoctorDashboard.tsx`, `mainApiServer.cjs` | Filter patients by `doctorId` via นัดหมาย relationship; added 30s auto-refresh |
+| 6 | Meeting room camera/mic toggle desync | `PatientMeetingRoom.tsx`, `MeetingRoom.tsx` | Set `cameraOn`/`micOn` to false when permission denied |
+| 7 | AI summary silently skips when Gemini unconfigured | `index.js` (Meeting Server) | Emit `meeting-summary-ready` socket event with error message |
+| 8 | Consultant page freezes on add/update | `MedicalConsultants.tsx` | Unwrap `result.consultant \| \| result` from backend response |
+| 9 | Specialties query references wrong table | `mainApiServer.cjs` | Changed `medical_consultants` → `consultants` |
+| 10 | Meeting transcript POST with undefined appointmentId | `MeetingRoom.tsx` | Guard against undefined `appointmentId` before REST save |
+| 11 | Validation errors silently logged | `MeetingResults.tsx` | Added user-facing `setError()` for regenerate and validation failures |
+
+
+### Multi-Browser Playwright Configuration
+
+| Project | Browser | Role | Base URL |
+| --------- | --------- | ------ | ---------- |
+| `Patient-Chrome` | Chrome | Patient | `<http://localhost:3005`> |
+| `Doctor-Edge` | Microsoft Edge | Doctor | `<http://localhost:3010`> |
+| `Admin-Firefox` | Firefox | Admin | `<http://localhost:3010`> |
+
+New test spec: `tests/e2e/specs/32-cross-portal-sync.spec.ts` — validates all 11 fixes above.
+
+---
+
+## GATE 0 — Realtime sync on Cloud Run (May 2026)
+
+\* ผู้ป่วย + แพทย์ portals deploy with **`--min-instances=1`** so Socket.IO rooms stay warm during Gate validation. For horizontal scale, set **`REDIS_URL`** and use `socketRedisAdapter.cjs` on both portals (main API port 3009).
+
+### Clinical chart / document surfaces (July 2026)
+
+| Surface | File | Subscribes via `useRealtimeSync` | Refetch |
+|---------|------|----------------------------------|---------|
+| แพทย์ PatientRecordViewer | `PatientRecordViewer.tsx` | emr, ใบสั่งยา, lab-order, data:changed | Invalidate tab cache + reload active tab |
+| ผู้ป่วย PHR | `pages/PHRPage.tsx` | emr, Rx, lab, phr/vitals, notification, data:changed | `loadData()` |
+| ผู้ป่วย Timeline | `pages/TimelinePage.tsx` | same as PHR | `loadTimeline()` |
+| Notification | `document_delivered` | Via การแจ้งเตือน NOTIFY | Bell badge |
+
+See [Clinical_Document_Delivery_Workflows.md](Clinical_Document_Delivery_Workflows.md) §9.
+
+| Channel | Implementation |
+|---------|----------------|
+| DB change | `pg_notify` on channel `data_changes` via `scripts/database/v2.2.0-notify-triggers.sql` |
+| LISTEN | Dedicated `pg.Client` in `pgNotifyListener` (not pooled `release()`) |
+| Emit | `io.to('doctor-{id}')`, `io.to('admin-notifications')`, `io.to('queue-{id}')` |
+| Doctor `/ws` | Nginx → **3009** main API (not 3011 auth) |
+
+Canonical นัดหมาย pool = PostgreSQL `appointments.status IN ('in_pool','pending','awaiting_doctor_response')` — no GCS pool file.
+
+See [`GATE0_IMPLEMENTATION_STATUS.md`](GATE0_IMPLEMENTATION_STATUS.md).
+
+---
+
+## Offline EMR localStorage sync (May 2026)
+
+When the พอร์ทัลแพทย์ loses connectivity during EMR editing, drafts are queued in browser storage and flushed on reconnect.
+
+| Key | Structure | Behavior |
+|-----|-----------|----------|
+| `izara_emr_sync_queue` | JSON array of `{ id, payload, updatedAt }` | Upsert by `id`; failed server pushes remain until `flushQueue` succeeds |
+
+**Autosave:** 30s debounce before enqueue/API save (`tests/unit/doctor-portal/emrAutosave.test.ts`).
+
+**Tests:** `tests/unit/cross-portal/offlineEmrSync.test.ts`
+
+---
+
+## Appointment transactional rollback (interrupted booking)
+
+ผู้ป่วย booking uses PostgreSQL transactions so partial inserts do not leave corrupt pool/queue state if the client disconnects mid-request.
+
+**Tests:** `tests/unit/patient-portal/appointmentsRollback.test.ts` — validates rollback on simulated failure after slot lock.
+
+---
+
+## Meeting recording persistence (cloud)
+
+| Layer | Path |
+|-------|------|
+| Filesystem | `RECORDINGS_DIR` (Cloud Run: `/tmp/recordings`) |
+| Database | `meeting_records.recording_data` BYTEA + `recording_url` metadata |
+| Serve | `GET /api/recordings/:meetingId/:filename` — disk first, BYTEA fallback |
+
+See [`VIDEO_MEETING_JITSI_GEMINI.md`](VIDEO_MEETING_JITSI_GEMINI.md) and Group Q in [`TWO_ROUND_CLOUD_TESTING.md`](TWO_ROUND_CLOUD_TESTING.md).

@@ -1,0 +1,40 @@
+flowchart TB
+  subgraph doctor [Doctor Portal]
+    EMR[EMR Sign]
+    LAB[Lab PDF]
+    IMG[Imaging Upload]
+    RX[Prescription]
+    MSG[Message Patient]
+  end
+
+  subgraph svc [DocumentDeliveryService]
+    PUB[publishDocument]
+    AUD[audit_logs]
+    NOT[notifications]
+  end
+
+  subgraph db [PostgreSQL]
+    PD[(patient_documents)]
+    EMR_T[(emr)]
+  end
+
+  subgraph patient [Patient Portal]
+    DOC[Documents Tab]
+    TR[Treatment Results]
+    LAB_V[Lab Tab]
+    RX_V[Prescriptions Tab]
+  end
+
+  EMR --> PUB
+  LAB --> PUB
+  IMG --> PUB
+  RX --> PUB
+  PUB --> PD
+  PUB --> NOT
+  PUB --> AUD
+  EMR --> EMR_T
+  PD --> DOC
+  EMR_T --> TR
+  PD --> LAB_V
+  PD --> RX_V
+  MSG --> NOT

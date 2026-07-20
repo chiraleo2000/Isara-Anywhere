@@ -405,7 +405,13 @@ CREATE TABLE appointments (
     confirmed_at TIMESTAMP WITH TIME ZONE,
     completed_at TIMESTAMP WITH TIME ZONE,
     cancelled_at TIMESTAMP WITH TIME ZONE,
-    cancellation_reason TEXT
+    cancellation_reason TEXT,
+    -- Booking wizard enrichment (appointment queue cards)
+    preferred_dates JSONB DEFAULT '[]'::jsonb,
+    preferred_time_slot VARCHAR(20),
+    required_specialty VARCHAR(100),
+    suggested_specialty VARCHAR(100),
+    booking_metadata JSONB DEFAULT '{}'::jsonb
 );
 
 -- Meeting Records (video consultation sessions)
@@ -549,13 +555,26 @@ CREATE TABLE medical_content (
     title_english VARCHAR(500),
     content_thai TEXT NOT NULL,
     content_english TEXT,
+    summary_thai TEXT,
+    summary_english TEXT,
     category VARCHAR(100),
+    content_type VARCHAR(50) DEFAULT 'article',
     tags JSONB,
     author_id VARCHAR(50) REFERENCES users(id),
+    author_name VARCHAR(255),
     status VARCHAR(20) DEFAULT 'draft',
     published_at TIMESTAMP WITH TIME ZONE,
+    submitted_at TIMESTAMP WITH TIME ZONE,
     view_count INTEGER DEFAULT 0,
     image_url TEXT,
+    video_url TEXT,
+    is_featured BOOLEAN DEFAULT false,
+    approved_by VARCHAR(50) REFERENCES users(id),
+    approved_at TIMESTAMP WITH TIME ZONE,
+    rejection_reason TEXT,
+    history JSONB DEFAULT '[]'::jsonb,
+    version INTEGER DEFAULT 1,
+    comments JSONB DEFAULT '[]'::jsonb,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
@@ -567,10 +586,13 @@ CREATE TABLE clinical_resources (
     title_english VARCHAR(500),
     content_thai TEXT NOT NULL,
     content_english TEXT,
+    description_thai TEXT,
+    description_english TEXT,
     category VARCHAR(100),
     specialty VARCHAR(100),
     guideline_year INTEGER,
     source VARCHAR(255),
+    resource_type VARCHAR(50) DEFAULT 'guideline',
     tags JSONB,
     status VARCHAR(20) DEFAULT 'pending',
     image_url TEXT,
@@ -578,6 +600,12 @@ CREATE TABLE clinical_resources (
     author_name VARCHAR(255),
     approved_by VARCHAR(50) REFERENCES users(id),
     approved_at TIMESTAMP WITH TIME ZONE,
+    submitted_at TIMESTAMP WITH TIME ZONE,
+    published_at TIMESTAMP WITH TIME ZONE,
+    rejection_reason TEXT,
+    history JSONB DEFAULT '[]'::jsonb,
+    version INTEGER DEFAULT 1,
+    comments JSONB DEFAULT '[]'::jsonb,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
@@ -1074,17 +1102,17 @@ VALUES
 
 INSERT INTO clinical_resources (id, title_thai, title_english, content_thai, content_english, category, specialty, guideline_year, source, status, image_url, author_id, author_name)
 VALUES
-('CR-001', 'แนวทางการรักษาความดันโลหิตสูง 2024', 'Hypertension Treatment Guidelines 2024', E'## แนวทางการรักษาความดันโลหิตสูง\n\n**เป้าหมาย:**\n- ผู้ใหญ่ทั่วไป: < 140/90 mmHg\n- ผู้ป่วยเบาหวาน: < 130/80 mmHg\n\n**ยาเริ่มต้น:**\n- ACEI หรือ ARB\n- CCB\n- Thiazide diuretics', 'Guidelines for hypertension treatment according to WHO 2024 standards.', 'cardiovascular', 'Cardiology', 2024, 'Thai Hypertension Society', 'approved', 'https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=800', 'DOC-SOMCHAI-001', 'นพ.สมชาย ประเสริฐ'),
+('CR-001', 'แนวทางการรักษาความดันโลหิตสูง 2024', 'Hypertension Treatment Guidelines 2024', E'## แนวทางการรักษาความดันโลหิตสูง\n\n**เป้าหมาย:**\n- ผู้ใหญ่ทั่วไป: < 140/90 mmHg\n- ผู้ป่วยเบาหวาน: < 130/80 mmHg\n\n**ยาเริ่มต้น:**\n- ACEI หรือ ARB\n- CCB\n- Thiazide diuretics', 'Guidelines for hypertension treatment according to WHO 2024 standards.', 'treatment', 'Cardiology', 2024, 'Thai Hypertension Society', 'published', 'https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=800', 'DOC-SOMCHAI-001', 'นพ.สมชาย ประเสริฐ'),
 
-('CR-002', 'การใช้ยาปฏิชีวนะอย่างสมเหตุผล', 'Rational Antibiotic Use', E'## หลักการใช้ยาปฏิชีวนะ\n\n**ข้อบ่งใช้:**\n- การติดเชื้อแบคทีเรียที่ยืนยันได้\n- การติดเชื้อรุนแรงที่สงสัยแบคทีเรีย', 'Guidelines for appropriate antibiotic prescribing to reduce antimicrobial resistance.', 'infectious', 'Infectious Disease', 2024, 'Thai FDA', 'approved', 'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=800', 'DOC-TEST-001', 'นพ. ทดสอบ แพทย์ดี'),
+('CR-002', 'การใช้ยาปฏิชีวนะอย่างสมเหตุผล', 'Rational Antibiotic Use', E'## หลักการใช้ยาปฏิชีวนะ\n\n**ข้อบ่งใช้:**\n- การติดเชื้อแบคทีเรียที่ยืนยันได้\n- การติดเชื้อรุนแรงที่สงสัยแบคทีเรีย', 'Guidelines for appropriate antibiotic prescribing to reduce antimicrobial resistance.', 'pharmacology', 'Infectious Disease', 2024, 'Thai FDA', 'published', 'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=800', 'DOC-TEST-001', 'นพ. ทดสอบ แพทย์ดี'),
 
-('CR-003', 'การดูแลผู้ป่วยเบาหวานแบบองค์รวม KDIGO 2024', 'Holistic Diabetes Care KDIGO 2024', E'## แนวทาง KDIGO 2024\n\n**การปรับยาในผู้ป่วยโรคไต:**\n- Metformin: ลดขนาดเมื่อ eGFR < 45\n- หยุดใช้เมื่อ eGFR < 30', 'Comprehensive diabetes care including dose adjustments for CKD per KDIGO 2024.', 'endocrinology', 'Endocrinology', 2024, 'KDIGO', 'approved', 'https://images.unsplash.com/photo-1576669801943-7a8a2c1e3b7e?w=800', 'DOC-SIRIPORN-001', 'พญ.ศิริพร ทองชัย'),
+('CR-003', 'การดูแลผู้ป่วยเบาหวานแบบองค์รวม KDIGO 2024', 'Holistic Diabetes Care KDIGO 2024', E'## แนวทาง KDIGO 2024\n\n**การปรับยาในผู้ป่วยโรคไต:**\n- Metformin: ลดขนาดเมื่อ eGFR < 45\n- หยุดใช้เมื่อ eGFR < 30', 'Comprehensive diabetes care including dose adjustments for CKD per KDIGO 2024.', 'pharmacology', 'Endocrinology', 2024, 'KDIGO', 'published', 'https://images.unsplash.com/photo-1576669801943-7a8a2c1e3b7e?w=800', 'DOC-SIRIPORN-001', 'พญ.ศิริพร ทองชัย'),
 
-('CR-004', 'แบบประเมินสุขภาพจิต PHQ-9', 'PHQ-9 Mental Health Assessment', E'## แบบประเมิน PHQ-9\n\n**การให้คะแนน:**\n- 0-4: ปกติ\n- 5-9: ซึมเศร้าเล็กน้อย\n- 10-14: ซึมเศร้าปานกลาง', 'PHQ-9 Depression screening tool in Thai for patient assessment.', 'psychiatry', 'Psychiatry', 2024, 'Thai Psychiatric Association', 'approved', 'https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=800', 'DOC-TEST-001', 'นพ. ทดสอบ แพทย์ดี'),
+('CR-004', 'แบบประเมินสุขภาพจิต PHQ-9', 'PHQ-9 Mental Health Assessment', E'## แบบประเมิน PHQ-9\n\n**การให้คะแนน:**\n- 0-4: ปกติ\n- 5-9: ซึมเศร้าเล็กน้อย\n- 10-14: ซึมเศร้าปานกลาง', 'PHQ-9 Depression screening tool in Thai for patient assessment.', 'diagnosis', 'Psychiatry', 2024, 'Thai Psychiatric Association', 'published', 'https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=800', 'DOC-TEST-001', 'นพ. ทดสอบ แพทย์ดี'),
 
-('CR-005', 'การดูแลผู้สูงอายุในชุมชน', 'Elderly Care in Community', E'## คู่มือการดูแลผู้สูงอายุ\n\n**การประเมิน:**\n- ADL (กิจวัตรประจำวัน)\n- IADL (กิจกรรมเครื่องมือ)', 'Community elderly care handbook for healthcare workers and caregivers.', 'geriatrics', 'Geriatrics', 2024, 'Department of Health Thailand', 'approved', 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=800', 'DOC-TEST-001', 'นพ. ทดสอบ แพทย์ดี'),
+('CR-005', 'การดูแลผู้สูงอายุในชุมชน', 'Elderly Care in Community', E'## คู่มือการดูแลผู้สูงอายุ\n\n**การประเมิน:**\n- ADL (กิจวัตรประจำวัน)\n- IADL (กิจกรรมเครื่องมือ)', 'Community elderly care handbook for healthcare workers and caregivers.', 'nursing', 'Geriatrics', 2024, 'Department of Health Thailand', 'published', 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=800', 'DOC-TEST-001', 'นพ. ทดสอบ แพทย์ดี'),
 
-('CR-006', 'เครื่องคำนวณ BMI และความเสี่ยงโรคเรื้อรัง', 'BMI and Chronic Disease Risk Calculator', E'## การคำนวณ BMI\n\n**สูตร:** น้ำหนัก(kg) / ส่วนสูง(m)²\n\n**การแปลผล (เกณฑ์เอเชีย):**\n- < 18.5: น้ำหนักต่ำกว่าเกณฑ์\n- 18.5-22.9: ปกติ', 'BMI calculator tool with chronic disease risk assessment for Asian population.', 'general', 'General Medicine', 2024, 'Thai Medical Association', 'approved', 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=800', 'DOC-SOMCHAI-001', 'นพ.สมชาย ประเสริฐ');
+('CR-006', 'เครื่องคำนวณ BMI และความเสี่ยงโรคเรื้อรัง', 'BMI and Chronic Disease Risk Calculator', E'## การคำนวณ BMI\n\n**สูตร:** น้ำหนัก(kg) / ส่วนสูง(m)²\n\n**การแปลผล (เกณฑ์เอเชีย):**\n- < 18.5: น้ำหนักต่ำกว่าเกณฑ์\n- 18.5-22.9: ปกติ', 'BMI calculator tool with chronic disease risk assessment for Asian population.', 'treatment', 'General Medicine', 2024, 'Thai Medical Association', 'published', 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=800', 'DOC-SOMCHAI-001', 'นพ.สมชาย ประเสริฐ');
 
 -- =============================================================================
 -- SECTION 21: SEED DATA - KNOWLEDGE BASE (RAG)
@@ -1376,6 +1404,50 @@ INSERT INTO notification_preferences (id, user_id, channel, category, enabled) V
 ON CONFLICT DO NOTHING;
 
 \echo '>>> Phase 2 seed data complete.'
+
+-- =============================================================================
+-- SECTION 33b: PATIENT DOCUMENTS & DOCTOR MESSAGES
+-- =============================================================================
+\echo '>>> Creating patient documents and doctor messages tables...'
+
+CREATE TABLE patient_documents (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    patient_id VARCHAR(50) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    source_type TEXT NOT NULL,
+    source_id VARCHAR(50),
+    appointment_id VARCHAR(50) REFERENCES appointments(id) ON DELETE SET NULL,
+    doctor_id VARCHAR(50) REFERENCES users(id) ON DELETE SET NULL,
+    title TEXT NOT NULL,
+    description TEXT,
+    file_name TEXT NOT NULL,
+    mime_type TEXT NOT NULL DEFAULT 'application/pdf',
+    file_data BYTEA,
+    file_size INTEGER,
+    status TEXT NOT NULL DEFAULT 'delivered',
+    delivered_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    metadata JSONB DEFAULT '{}'::jsonb,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_patient_documents_patient ON patient_documents(patient_id, delivered_at DESC);
+CREATE INDEX idx_patient_documents_source ON patient_documents(source_type, source_id);
+
+CREATE TABLE patient_doctor_messages (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    patient_id VARCHAR(50) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    doctor_id VARCHAR(50) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    appointment_id VARCHAR(50) REFERENCES appointments(id) ON DELETE SET NULL,
+    subject TEXT NOT NULL,
+    body TEXT NOT NULL,
+    channel TEXT NOT NULL DEFAULT 'both',
+    status TEXT NOT NULL DEFAULT 'sent',
+    read_at TIMESTAMP WITH TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_patient_doctor_messages_patient ON patient_doctor_messages(patient_id, created_at DESC);
+CREATE INDEX idx_patient_doctor_messages_doctor ON patient_doctor_messages(doctor_id, created_at DESC);
 
 -- =============================================================================
 -- SECTION 34: VERIFICATION

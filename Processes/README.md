@@ -5,7 +5,8 @@
 **Focus:** Web Application Only (Patient Portal + Doctor Portal + Meeting Server)
 **Status:** ✅ Phase 1 Complete — see [WORKFLOW_CONNECTIONS.md](WORKFLOW_CONNECTIONS.md) for diagrams
 
-> **Hub navigation:** [WORKFLOW_CONNECTIONS.md](WORKFLOW_CONNECTIONS.md) · [Combined_Workflows](Combined_Workflows_And_Actions.md) · [Pages/](Pages/)
+> **Hub navigation:** [WORKFLOW_CONNECTIONS.md](WORKFLOW_CONNECTIONS.md) · [Combined_Workflows](Combined_Workflows_And_Actions.md) · [Pages/](Pages/)  
+> **New-Isara-Anywhere sibling layout:** [ISSARA_ANYWHERE_PROJECT_DESCRIPTION.md](ISSARA_ANYWHERE_PROJECT_DESCRIPTION.md) · [BACKEND_AND_FRONTEND_OVERVIEW.md](BACKEND_AND_FRONTEND_OVERVIEW.md) · local bug ledger: [`tests/LOCAL_FAILURE_LEDGER.md`](../tests/LOCAL_FAILURE_LEDGER.md)
 
 ---
 
@@ -171,10 +172,10 @@ All 5 services run via `docker-compose up --build`:
 │   │                                                              │    │
 │   │  izara-patient-portal-dev-testing    1CPU / 1GB / max 2     │    │
 │   │  izara-doctor-portal-dev-testing     1CPU / 1GB / max 2     │    │
-│   │  izara-meeting-server-dev-testing    1CPU / 2GB / max 2     │    │
+│   │  izara-meeting-server-dev-testing    1CPU / 1GB / max 2     │    │
 │   │                                                              │    │
 │   │  • gen2 execution environment                                │    │
-│   │  • cpu-boost enabled                                         │    │
+│   │  • --no-cpu-boost (cost profile)                             │    │
 │   │  • allow-unauthenticated (public)                            │    │
 │   │  • timeout: 300s (portals), 600s (meeting server)            │    │
 │   │  • min-instances: 0 (scale to zero)                          │    │
@@ -777,7 +778,7 @@ Users can configure notification preferences per channel and category via `notif
 
 ### 4.7 Living Will & PDPA Compliance
 
-> **Full Documentation:** [Living_Will_Processes.md](Living_Will_Processes.md), [Living_Will_Implementation_Plan.md](Living_Will_Implementation_Plan.md)
+> **Full Documentation:** [Living_Will_Processes.md](Living_Will_Processes.md)
 
 Enables patients to create legally-binding Living Will documents with PDPA-compliant sharing controls.
 
@@ -1425,6 +1426,7 @@ Legacy: [07_Virtual_Meeting.md](Pages/Doctor-Portal/07_Virtual_Meeting.md) (stub
 | [Clinical_Resources_&_Medical_Library_Workflows.md](Clinical_Resources_&_Medical_Library_Workflows.md) | Clinical guidelines, protocols, RAG knowledge base | Doctor CRUD, admin approval, AI search |
 | [Medical_Consultants_Workflows.md](Medical_Consultants_Workflows.md) | Specialist directory, consultant management | Admin CRUD, doctor rating, availability toggle |
 | [Notification_Workflows.md](Notification_Workflows.md) | In-app, email, push notifications, preferences | 16+ event types incl. `schedule_entry_ready` + `calendarEventUrl` on confirm |
+| [Clinical_Document_Delivery_Workflows.md](Clinical_Document_Delivery_Workflows.md) | EMR/Rx/lab PDF registry → PHR Documents tab | `patient_documents`, DocumentDeliveryService |
 | [Data_Sync_Documentation.md](Data_Sync_Documentation.md) | PostgreSQL sync, NOTIFY triggers, audit trail | 8 triggers, Socket.IO events, cross-portal sync |
 
 
@@ -1434,7 +1436,7 @@ Legacy: [07_Virtual_Meeting.md](Pages/Doctor-Portal/07_Virtual_Meeting.md) (stub
 | ---------- | ------------- |
 | [Living_Will_Processes.md](Living_Will_Processes.md) | 4-step wizard, healthcare proxy, PDPA sharing controls, audit trail |
 
-> Archived: [Living_Will_Implementation_Plan.md](Living_Will_Implementation_Plan.md) (merged) · [UI_Pages_Workflows.md](UI_Pages_Workflows.md) (use `Pages/`)
+> Archived: [UI_Pages_Workflows.md](UI_Pages_Workflows.md) (use `Pages/`) · `Living_Will_Implementation_Plan.md` **deleted** — see [Living_Will_Processes.md](Living_Will_Processes.md)
 
 ### UI & Requirements Documents (1)
 
@@ -1452,11 +1454,11 @@ Legacy: [07_Virtual_Meeting.md](Pages/Doctor-Portal/07_Virtual_Meeting.md) (stub
 | [Pages/Meeting-Server/](Pages/Meeting-Server/) | 4 pages | Meeting Server architecture, Meeting Room, Meeting Results, EMR page |
 
 
-### Thai Translations (7)
+### Thai Translations (auto-sync)
 
 | Document | Description |
 | ---------- | ------------- |
-| [Thai/](Thai/) | Thai-language versions: Appointment, Data Sync, Health Records, Notification, User Management, Video Meeting workflows |
+| [Thai/](Thai/) | Full mirror: run `python scripts/sync-processes-thai.py` — hub [README_TH.md](Thai/README_TH.md), [WORKFLOW_CONNECTIONS_TH.md](Thai/WORKFLOW_CONNECTIONS_TH.md), all workflows + [Thai/Pages/](Thai/Pages/) |
 
 ---
 

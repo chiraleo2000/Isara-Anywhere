@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { mapAppointmentForClient } from '../../../Isara-doctor-portal/backend/appointmentMapper.cjs';
-import { resolveAppointmentSchedule } from '../../../Isara-doctor-portal/frontend/utils/appointmentSchedule';
+import { mapAppointmentForClient } from '../../../../issara-doctor/backend/appointmentMapper.cjs';
+import { resolveAppointmentSchedule, normalizeAppointmentTime } from '../../../../issara-doctor/frontend/utils/appointmentSchedule';
 
 describe('mapAppointmentForClient', () => {
   it('maps snake_case confirmed telehealth row to camelCase UI fields', () => {
@@ -35,5 +35,15 @@ describe('resolveAppointmentSchedule', () => {
     });
     expect(date).toBe('2026-06-15');
     expect(time).toBe('09:30');
+  });
+
+  it('maps preferredTimeSlot morning/afternoon/evening to HH:mm', () => {
+    expect(normalizeAppointmentTime('morning')).toBe('10:00');
+    expect(normalizeAppointmentTime('afternoon')).toBe('14:00');
+    expect(normalizeAppointmentTime('evening')).toBe('18:00');
+    expect(resolveAppointmentSchedule({
+      requested_date: '2026-07-20',
+      preferred_time_slot: 'morning',
+    }).time).toBe('10:00');
   });
 });

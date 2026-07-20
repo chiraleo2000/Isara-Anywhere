@@ -59,7 +59,7 @@ describe('threePartyLobby.integration — TPL', () => {
   });
 
   it('TPL-06 — lobbySession applyLobbyJoin preserves admitted reconnect', () => {
-    const lobby = path.resolve(__dirname, '../../../Izara-jitsi-server/backend/lobbySession.js');
+    const lobby = path.resolve(__dirname, '../../../issara-jitsi/backend/lobbySession.js');
     expect(fs.readFileSync(lobby, 'utf8')).toMatch(/reconnect_admitted|admitted/);
   });
 

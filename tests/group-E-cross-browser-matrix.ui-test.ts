@@ -16,9 +16,9 @@ test.describe('Group E — Cross-browser matrix guards', () => {
     const doctorSpec = getRoleBrowserSpec('doctor');
     const adminSpec = getRoleBrowserSpec('admin');
 
-    expect(portals.patient.browserName).toBe(patientSpec.engine === 'chromium' ? 'chrome' : patientSpec.browserName);
-    expect(portals.doctor.browserName).toBe(doctorSpec.engine === 'chromium' ? 'chrome' : doctorSpec.browserName);
-    expect(portals.admin.browserName).toBe(adminSpec.engine === 'chromium' ? 'chrome' : adminSpec.browserName);
+    expect(portals.patient.browserName).toBe(patientSpec.browserName);
+    expect(portals.doctor.browserName).toBe(doctorSpec.browserName);
+    expect(portals.admin.browserName).toBe(adminSpec.browserName);
   });
 
   test('EXB02 — meeting UI timeouts scale for Firefox (JIT-01)', () => {

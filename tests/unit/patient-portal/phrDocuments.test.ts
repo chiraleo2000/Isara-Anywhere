@@ -5,7 +5,7 @@ import { describe, it, expect } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
 
-const phrPage = path.resolve(__dirname, '../../../Isara-patient-portal/frontend/pages/PHRPage.tsx');
+const phrPage = path.resolve(__dirname, '../../../issara-patient/frontend/pages/PHRPage.tsx');
 
 describe('PHR documents (PHD)', () => {
   const pageSrc = fs.readFileSync(phrPage, 'utf8');
@@ -19,7 +19,7 @@ describe('PHR documents (PHD)', () => {
   });
 
   it('PHD-03 — PHR types include medical documents', () => {
-    const types = path.resolve(__dirname, '../../../Isara-patient-portal/frontend/types.ts');
+    const types = path.resolve(__dirname, '../../../issara-patient/frontend/types.ts');
     expect(fs.readFileSync(types, 'utf8')).toMatch(/MedicalDocument|documents/);
   });
 
@@ -40,7 +40,7 @@ describe('PHR documents (PHD)', () => {
   });
 
   it('PHD-08 — TreatmentResults component surfaces fetch errors', () => {
-    const tr = path.resolve(__dirname, '../../../Isara-patient-portal/frontend/components/health/TreatmentResults.tsx');
+    const tr = path.resolve(__dirname, '../../../issara-patient/frontend/components/health/TreatmentResults.tsx');
     expect(fs.readFileSync(tr, 'utf8')).toMatch(/error|setError|failed/i);
   });
 });

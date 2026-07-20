@@ -41,8 +41,8 @@ DELETE FROM vital_signs;
 DELETE FROM notifications;
 
 -- 11. Clean all child tables for non-core users/doctors
-DELETE FROM doctor_schedules WHERE doctor_id NOT IN ('DOC-TEST-001','DOC-SIRIPORN-001','DOC-SOMCHAI-001','DOC-PIYAWAT-001','DOC-KANNIKA-001');
-DELETE FROM doctor_profiles WHERE doctor_id NOT IN ('DOC-TEST-001','DOC-SIRIPORN-001','DOC-SOMCHAI-001','DOC-PIYAWAT-001','DOC-KANNIKA-001');
+DELETE FROM doctor_schedules WHERE doctor_id NOT IN ('DOC-TEST-001','DOC-SIRIPORN-001','DOC-SOMCHAI-001','DOC-PIYAWAT-001','DOC-KANNIKA-001','DOC-SSO-APPROVED','DOC-SSO-PENDING','DOC-SSO-REJECTED');
+DELETE FROM doctor_profiles WHERE doctor_id NOT IN ('DOC-TEST-001','DOC-SIRIPORN-001','DOC-SOMCHAI-001','DOC-PIYAWAT-001','DOC-KANNIKA-001','DOC-SSO-APPROVED','DOC-SSO-PENDING','DOC-SSO-REJECTED');
 DELETE FROM doctor_reviews;
 
 -- 12. Clean PHR/living wills for non-core patients
@@ -61,17 +61,20 @@ DELETE FROM password_resets;
 DELETE FROM biometric_credentials;
 DELETE FROM user_api_connections;
 
--- 14. Clean E2E generated doctors (keep seed 3 + JSON extra 2)
+-- 14. Clean E2E generated doctors (keep seed 3 + JSON extra 2 + SSO fixtures)
 DELETE FROM doctors WHERE id NOT IN (
   'DOC-TEST-001','DOC-SIRIPORN-001','DOC-SOMCHAI-001',
-  'DOC-PIYAWAT-001','DOC-KANNIKA-001'
+  'DOC-PIYAWAT-001','DOC-KANNIKA-001',
+  'DOC-SSO-APPROVED','DOC-SSO-PENDING','DOC-SSO-REJECTED'
 );
 
--- 15. Clean E2E generated users (keep 9 core users)
+-- 15. Clean E2E generated users (keep 9 core users + SSO fixtures for Group N)
 DELETE FROM users WHERE id NOT IN (
   'ADMIN-TEST-001','DOC-TEST-001','DOC-SOMCHAI-001','DOC-SIRIPORN-001',
   'PATIENT-SOMCHAI','PATIENT-ANAN','PATIENT-DEMO',
-  'DOC-PIYAWAT-001','DOC-KANNIKA-001'
+  'DOC-PIYAWAT-001','DOC-KANNIKA-001',
+  'PATIENT-SSO-EXISTING','DOC-SSO-APPROVED','DOC-SSO-PENDING','DOC-SSO-REJECTED',
+  'PATIENT-SSO-STUB'
 );
 
 COMMIT;

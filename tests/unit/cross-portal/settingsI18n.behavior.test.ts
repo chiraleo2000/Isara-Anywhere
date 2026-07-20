@@ -4,7 +4,7 @@ import path from 'node:path';
 
 const patientSettingsPath = path.resolve(
   __dirname,
-  '../../../Isara-patient-portal/frontend/contexts/SettingsContext.tsx',
+  '../../../issara-patient/frontend/contexts/SettingsContext.tsx',
 );
 
 function extractTranslationBlock(source: string, key: string): string | null {

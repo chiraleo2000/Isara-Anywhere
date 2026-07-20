@@ -3,7 +3,7 @@
  * GATE 0 — Cloud appointment sync smoke (G1–G6 API chain).
  * Usage: PATIENT_URL=... DOCTOR_URL=... PATIENT_TOKEN=... DOCTOR_TOKEN=... ADMIN_TOKEN=... node scripts/verify-cloud-appointment-sync.mjs
  */
-import fetch from 'node-fetch';
+const fetch = globalThis.fetch;
 
 const PATIENT_URL = (
   process.env.PATIENT_URL ||

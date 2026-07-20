@@ -1,12 +1,39 @@
 # 💊 Patient Portal — PHR Page (Personal Health Records)
 
 **Route:** `/phr`
-**Component:** `frontend/pages/health/PHRPage.tsx`
+**Component:** `frontend/pages/PHRPage.tsx` (routed; not `pages/health/PHRPage.tsx`)
 **Access:** 🔒 Authenticated patients
 **Thai Title:** ระเบียนสุขภาพส่วนบุคคล
 
+See also: [Clinical_Document_Delivery_Workflows.md](../../Clinical_Document_Delivery_Workflows.md)
 
-## มาตรฐานเอกสาร (รายงานภาษาไทย)
+## 1. Purpose
+
+Central health data + shared clinical documents: vitals, **ประวัติการรับยา** (prescription history), current self-reported meds, allergies, lab/imaging with downloads, documents upload/download, near-real-time Socket.IO refresh.
+
+## 2. Page Layout (tabs)
+
+```text
+Tabs: [ภาพรวม] [สัญญาณชีพ] [ประวัติการรับยา] [แพ้ยา] [ผลตรวจ] [เอกสาร] [โปรไฟล์]
+```
+
+| Tab | Content | Upload | Download |
+|-----|---------|--------|----------|
+| ประวัติการรับยา | Prescriptions list + ยาที่ใช้ปัจจุบัน subsection | Add current med | Rx download |
+| ผลตรวจ | Lab + imaging orders | — | Report PDF/text |
+| เอกสาร | All `patient_documents` | `phr-document-upload` | Per-row download |
+
+## 3. Realtime
+
+`useRealtimeSync` on PHRPage refetches on EMR / Rx / lab / PHR / notification / data:changed.
+
+## 4. Expected results
+
+- Tab label **ประวัติการรับยา** (not ยาที่ใช้ประจำ)
+- Rx download uses `/api/documents/:id/download` only
+- Lab detail shows download when document linked
+- Lists refresh without hard reload after doctor delivers documents
+
 
 เอกสารชุดนี้จัดทำให้สอดคล้อง**มาตรฐานการรายงานภาษาไทย**ของหน่วยงานราชการและสาธารณสุข (โครงสร้าง: วัตถุประสงค์ → ขอบเขต → ขั้นตอน → ผลลัพธ์ → ข้อควรระวัง → อ้างอิง)
 
@@ -32,7 +59,25 @@
 3. **ผลลัพธ์ที่คาดหวัง** — สถานะระบบ / API / ฐานข้อมูลหลังจบขั้นตอน
 
 ---
+## UI Controls Inventory
 
+| # | Control | testid | Action | Expected | Screenshot |
+|---|---------|--------|--------|----------|------------|
+| 1 | Overview tab | `phr-tab-overview` | click | UI responds; API optional | U-phr-tab-overview |
+| 2 | Vitals tab | `phr-tab-vitals` | click | UI responds; API optional | U-phr-tab-vitals |
+| 3 | Medications tab | `phr-tab-medications` | click | UI responds; API optional | U-phr-tab-medications |
+| 4 | Allergies tab | `phr-tab-allergies` | click | UI responds; API optional | U-phr-tab-allergies |
+| 5 | Lab tab | `phr-tab-lab-imaging` | click | UI responds; API optional | U-phr-tab-lab-imaging |
+| 6 | Prescriptions tab | `phr-tab-prescriptions` | click | UI responds; API optional | U-phr-tab-prescriptions |
+| 7 | Documents tab | `phr-tab-documents` | click | UI responds; API optional | U-phr-tab-documents |
+| 8 | Profile tab | `phr-tab-profile` | click | UI responds; API optional | U-phr-tab-profile |
+| 9 | Document upload | `phr-document-upload` | type | UI responds; API optional | U-phr-document-upload |
+| 10 | Data Testid | `data-testid` | click | Documented control | U-data-testid |
+| 11 | Confirmed | `confirmed` | click | Documented control | U-confirmed |
+| 12 | Phr Page | `phr-page` | click | Documented control | U-phr-page |
+| 13 | Appointmentid | `appointmentId` | click | Documented control | U-appointmentId |
+| 14 | Meetingid | `meetingId` | click | Documented control | U-meetingId |
+| 15 | Phrroute | `phrRoute` | click | Documented control | U-phrRoute |
 
 ## 1. Purpose
 
@@ -445,11 +490,11 @@ When PDPA consent is granted, doctors can see:
 
 | Field | Value |
 |-------|-------|
-| **Status** | partial |
+| **Status** | covered — verified 2026-07-14 (PHR tab parity + honest download + Group F) |
 | **Unit tests** | `phrRoute` |
 | **UI (Playwright)** | Group F |
 | **data-testid** | See [tests/SELECTORS.md](../../tests/SELECTORS.md) |
-| **Last verified** | 2026-05-22 |
+| **Last verified** | 2026-07-14 |
 
 **Run locally**
 

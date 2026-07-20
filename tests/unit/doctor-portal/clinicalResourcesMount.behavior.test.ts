@@ -4,7 +4,7 @@ import path from 'node:path';
 
 const clinicalPath = path.resolve(
   __dirname,
-  '../../../Isara-doctor-portal/frontend/pages/content/ClinicalResources.tsx',
+  '../../../issara-doctor/frontend/pages/content/ClinicalResources.tsx',
 );
 
 describe('clinical resources mount (D7–D8)', () => {

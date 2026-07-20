@@ -2,11 +2,11 @@
 
 **Document type:** Deployment & Operations Handoff (final)  
 **Product:** Isara Telemedicine — Patient Portal, Doctor Portal, Meeting Server  
-**Release track:** `v1.7.25-post-meeting-pipeline` (guest video, Izara lobby, encrypted recording → AI EMR)  
-**Target environment:** Google Cloud Run (`asia-southeast1`) + PostgreSQL + optional GCS  
+**Release track:** `v1.7.58` (cloud CSP Jitsi fix + headed parallel E2E)  
+**Target environment:** Google Cloud Run (`asia-southeast1`) + PostgreSQL + **Ubuntu LAN** (`*.demotoday.net`)  
 **Classification:** Internal — Operations & Engineering  
-**Last updated:** 2026-06-22  
-**Verification:** v1.7.53 — unit **~3200** (Docker PASS) + meeting contracts **78** + Socket.IO integration; phase gates 0–9; LAN Mode B (`*.isara.local` CORS); `npm run test:local:pre-deploy-gate`
+**Last updated:** 2026-07-02  
+**Verification:** v1.7.58 — cloud deploy + `test:cloud:release-gate`
 
 ### Document typography (มาตรฐานรายงานภาษาไทย)
 
@@ -47,7 +47,11 @@ This release delivers a **production-grade telemedicine video workflow** compara
 | **AI SOAP summary** on Doctor Portal dashboard & EMR tab | ✅ |
 | Man-in-the-loop physician validation before EMR sign-off | ✅ |
 
-**Critical architecture fact for operations:** Production **WebRTC media** runs on **public `meet.jit.si`** via `JitsiMeetExternalAPI` (iframe). **Admission control** is **Izara lobby** on the Meeting Server (REST + Socket.IO) — not Jitsi Prosody lobby. **Recording** is captured in the **doctor browser** (`MediaRecorder`) and uploaded to the Meeting Server; **Jibri is not used** on the current production path (documented in Appendix A for self-hosted migration).
+**Critical architecture fact for operations:**  
+- **Cloud / default dev:** WebRTC may use public `meet.jit.si` when `JITSI_DOMAIN=meet.jit.si`.  
+- **LAN / self-hosted (v1.7.54):** WebRTC runs on **`https://meet.demotoday.net`** (docker-jitsi-meet on Ubuntu) with JWT moderator roles. Camera/microphone are captured on the **doctor/patient laptop browser**, not on the server.  
+- **Admission control** is **Izara lobby** on the Meeting Server (REST + Socket.IO) — not Jitsi Prosody lobby.  
+- **Recording** is captured in the **doctor browser** (`MediaRecorder`) and uploaded to the Meeting Server; **Jibri is optional** on LAN.
 
 **Demo / E2E data:** Cloud Playwright rows were purged on **2026-05-23** via `npm run cleanup:cloud-test-only` (no baseline re-seed).
 
@@ -93,10 +97,10 @@ This release delivers a **production-grade telemedicine video workflow** compara
 
 ### 0.3 Resource consumption (Cloud Run)
 
-| Service | Recommended | Rationale |
-|---------|-------------|-----------|
-| Meeting Server | `--memory=1Gi`, `--timeout=600`, `--min-instances=1` | Async pipeline + 50 MB upload cap; avoid cold-start lobby gaps. |
-| Doctor / Patient portals | `--memory=512Mi`–`1Gi` | Static SPA + API proxy; scale on request count. |
+| Service | Recommended (dev-testing cost profile) | Rationale |
+|---------|----------------------------------------|-----------|
+| Meeting Server | `--cpu=1 --memory=1Gi --min-instances=0 --max-instances=2 --concurrency=40` | Scale-to-zero dev-testing; patch min=1 for demo days only. |
+| Doctor / Patient portals | `--cpu=1 --memory=1Gi --min-instances=0 --max-instances=2 --concurrency=80` | Scale-to-zero; static SPA + API proxy. |
 | Recording upload | Max **50 MB** per `save-recording` | Validated in `postMeetingPipeline.js`; Whisper skips >25 MB (use Google STT or live segments). |
 | Pipeline retries | `PIPELINE_RETRY_MAX=3`, `PIPELINE_RETRY_BASE_MS=500` | Exponential backoff in `pipelineRetry.js`; avoids hammering Gemini/STT on transient errors. |
 | Ephemeral disk | `RECORDINGS_DIR=/tmp/recordings` | **Always** dual-write `recording_data` BYTEA + optional GCS — pod restart must not lose sole copy. |
@@ -107,7 +111,7 @@ This release delivers a **production-grade telemedicine video workflow** compara
 |------|-------------------------------------|-------------------|
 | `CORS_ORIGINS` | May be `*` during dev-testing | Exact portal HTTPS origins |
 | `IZARA_DEV_TESTING` | `1` | **Unset** |
-| `DB_SSL` | `false` in sample build | **`true`** for Cloud SQL |
+| `DB_SSL` | `false` in sample build | **`false`** for GCE VM PostgreSQL (TCP) |
 | `RECORDING_ENCRYPTION_KEY` | Optional (falls back to JWT scrypt) | **Dedicated secret** in Secret Manager |
 
 ---
@@ -360,7 +364,7 @@ gcloud builds submit . --config=cloudbuild.yaml \
 | `PORT` | `3020` | No | Cloud Run `--port=3020` |
 | `JWT_SECRET` | 256-bit random | **Yes** | Must match both portals |
 | `DATABASE_URL` | `postgresql://...` | **Yes** | Or `DB_HOST` + `DB_PASSWORD` |
-| `DB_SSL` | `true` | No | Cloud SQL |
+| `DB_SSL` | `false` | No | GCE VM PostgreSQL (TCP) |
 | `GEMINI_API_KEY` | API key | **Yes** | Required for AI summary |
 | `GEMINI_MODEL` | `gemini-3.1-flash-lite` | No | |
 | `JITSI_DOMAIN` | `meet.jit.si` | No | Do not self-host until Appendix A ready |
@@ -385,7 +389,7 @@ gcloud builds submit . --config=cloudbuild.yaml \
 **Cloud Run flags (Meeting Server):**
 
 ```text
---memory=1Gi --cpu=1 --min-instances=1 --max-instances=5 --timeout=600 --cpu-boost
+--memory=1Gi --cpu=1 --min-instances=1 --max-instances=3 --concurrency=40 --timeout=600
 ```
 
 ---
@@ -688,7 +692,7 @@ curl -X POST -H "Authorization: Bearer $JWT" -H "Content-Type: application/json"
 
 | Asset | Recommendation |
 |-------|----------------|
-| PostgreSQL | Daily backup + PITR (Cloud SQL) |
+| PostgreSQL | Daily backup on GCE VM (`pg_dump` / VM snapshots) |
 | GCS recordings | Lifecycle → Coldline; delete per PDPA schedule |
 | BYTEA | Migrate durable copy to GCS; shorten BYTEA retention |
 | Transcripts | Hospital policy; anonymize for analytics |
@@ -870,7 +874,7 @@ npm run test:e2e:meeting-lifecycle          # requires cloud credentials
 | PDF defect register (23 items) | 2026-05-30 | **Verified** — `reports/defect-fix/DEFECT_REGISTER.md` |
 | `npm run test:quality:gate` | 2026-05-30 | **PASS** — 151 files, 2736 unit tests |
 | Defect-regression Playwright | 2026-05-30 | **36/36** PASS |
-| `npm run test:cloud:full` (headed) | 2026-05-31 | **85/85** PASS, 212 PNG → `Documents/docs/screenshots/` |
+| `npm run test:cloud:full` (headed) | 2026-05-31 | **85/85** PASS, 212 PNG → `docs/screenshots/` |
 | User guides | 2026-05-31 | Patient PPT 76 imgs, Doctor DOCX/PPT 93 imgs |
 
 Ledger: `reports/defect-fix/v1.7.48-final.txt`, `Documents/docs/markdown/testing/UNIT_TEST_UI_COVERAGE.md`
@@ -892,7 +896,7 @@ Ledger: `reports/defect-fix/v1.7.48-final.txt`, `Documents/docs/markdown/testing
 |------|------|--------|
 | `npm run test:e2e:docker:core-multibrowser` | 2026-06-05 | **PASS** — A-auth 13/13 + W-core × 3 browsers **18/18** |
 | DB baseline | each browser run | `cleanup-test-data.sql` + `seed-dev-data.sql` before Chromium, Firefox, WebKit |
-| Screenshot sync | post-green | `npm run docs:sync-screenshots` → `Documents/docs/screenshots/group-W/` |
+| Screenshot sync | post-green | `npm run docs:sync-screenshots` → `docs/screenshots/group-W/` |
 
 Setup: [DOCKER_MULTIBROWSER_E2E.md](../testing/DOCKER_MULTIBROWSER_E2E.md) · User guide: [APPOINTMENT_USER_GUIDE.md](APPOINTMENT_USER_GUIDE.md) § Docker Multi-Browser Verification
 
@@ -906,7 +910,7 @@ Setup: [DOCKER_MULTIBROWSER_E2E.md](../testing/DOCKER_MULTIBROWSER_E2E.md) · Us
 | 1.1 | 2026-05-23 | Structural review, encryption, E2E map, demo cleanup, Thai doc regeneration |
 | 1.2 | 2026-05-31 | v1.7.48 defect re-audit; cloud full 85/85 headed; 212 UI screenshots |
 | 1.3 | 2026-06-05 | v1.7.50 queue traceability + Jitsi JWT roles; Docker test suite 2938+78 |
-| 1.4 | 2026-06-05 | Group W Docker multi-browser E2E 18/18; screenshots synced to `Documents/docs/screenshots/group-W/` |
+| 1.4 | 2026-06-05 | Group W Docker multi-browser E2E 18/18; screenshots synced to `docs/screenshots/group-W/` |
 
 **Related artifacts:**
 

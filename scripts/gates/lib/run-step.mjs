@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { spawnSync } from 'node:child_process';
+import { resolveGateWorkers } from './resolve-gate-workers.mjs';
 
 const isWin = process.platform === 'win32';
 
@@ -8,12 +9,20 @@ const isWin = process.platform === 'win32';
  */
 export function runStep(step) {
   console.log(`\n═══ [${step.name}] ═══`);
-  const r = spawnSync(step.cmd, step.args ?? [], {
-    cwd: step.cwd,
-    stdio: 'inherit',
-    shell: isWin,
-    env: { ...process.env, ...step.env },
-  });
+  const args = step.args ?? [];
+  const r = isWin
+    ? spawnSync([step.cmd, ...args].join(' '), {
+        cwd: step.cwd,
+        stdio: 'inherit',
+        shell: true,
+        env: { ...process.env, ...step.env },
+      })
+    : spawnSync(step.cmd, args, {
+        cwd: step.cwd,
+        stdio: 'inherit',
+        shell: false,
+        env: { ...process.env, ...step.env },
+      });
   const ok = r.status === 0;
   console.log(ok ? `✅ ${step.name} passed` : `❌ ${step.name} failed (exit ${r.status ?? 1})`);
   return ok;
@@ -39,16 +48,16 @@ export function npmStep(name, script, cwd, env) {
 export const headedE2eEnv = {
   BASELINE_VISUAL: '1',
   PW_HEADED: '1',
-  PW_WORKERS: '1',
+  PW_WORKERS: resolveGateWorkers(),
   PW_SKIP_LIVE_GEMINI: '1',
-  PW_ALLOW_RECORDING_SEED: '',
-  PW_SKIP_FIREFOX_JROLE: '1',
-  PW_SKIP_DEFECT_DM5: '1',
-  PW_SKIP_DEFECT_DM6: '1',
+  PW_ALLOW_RECORDING_SEED: '1',
   E2E_PRESERVE_WORKFLOW: '1',
   E2E_ALLOW_PARALLEL_SESSIONS: '1',
-  E2E_LIGHT_FIXTURE: '1',
+  E2E_LIGHT_FIXTURE: '0',
   PATIENT_URL: 'http://127.0.0.1:3005',
   DOCTOR_URL: 'http://127.0.0.1:3010',
   MEETING_URL: 'http://127.0.0.1:3020',
+  DEMO_AUTO_LOGIN: '1',
+  DEMO_AUTO_MEETING: '1',
+  VITE_AUTO_ADMIT_LOBBY: '0',
 };

@@ -27,6 +27,8 @@ const GROUP_MANIFESTS = {
     ],
     lobbyOnly: ['Q01c-patient-lobby-waiting.png', 'Q01d-guest-lobby-waiting.png'],
     jitsiStages: ['Q01b-doctor-host-jitsi.png', 'Q01f-three-party-held.png'],
+    // Sparse recording-tile dashboards compress small; still above blank-page noise.
+    recordingStages: ['Q02c-dashboard-recording.png'],
   },
   'group-Q2': {
     minUnique: 3,
@@ -76,9 +78,106 @@ const GROUP_MANIFESTS = {
       'S05-patient-appointments.png',
     ],
   },
+  'group-C': {
+    minUnique: 3,
+    required: [
+      'C01-dashboard.png',
+      'C03-patients.png',
+      'C04-health-meeting.png',
+    ],
+  },
+  'group-F': {
+    minUnique: 2,
+    required: [
+      'F01-phr-page.png',
+      'F09-lab-results-tab.png',
+    ],
+  },
+  'group-G': {
+    minUnique: 2,
+    required: [
+      'G01-pdpa-page.png',
+      'G04-living-will.png',
+    ],
+  },
+  'group-H': {
+    minUnique: 2,
+    required: [
+      'H01-medical-content.png',
+      'H06-clinical-resources.png',
+    ],
+  },
+  'group-I': {
+    minUnique: 2,
+    required: [
+      'I01-admin-dashboard.png',
+      'I02-manage-doctors.png',
+    ],
+  },
+  'group-J': {
+    minUnique: 2,
+    required: [
+      'J01-ai-doctor.png',
+      'J05-timeline.png',
+    ],
+  },
+  'group-J-jitsi-prejoin': {
+    minUnique: 2,
+    required: [
+      'JPRE01d-patient-prejoin-autoname.png',
+      'JPRE01e-patient-in-jitsi-canvas.png',
+    ],
+    lobbyOnly: ['JPRE01d-patient-prejoin-autoname.png'],
+    jitsiStages: ['JPRE01e-patient-in-jitsi-canvas.png'],
+  },
+  'group-R': {
+    minUnique: 2,
+    required: [
+      'Q01b-doctor-host-jitsi.png',
+      'Q01c-patient-lobby-waiting.png',
+    ],
+    altDir: 'group-Q',
+  },
+  'group-L': {
+    minUnique: 2,
+    required: [
+      'F09-lab-results-tab.png',
+      'F10-patients.png',
+    ],
+    altDir: 'group-F',
+  },
+  'group-defect': {
+    minUnique: 3,
+    required: [
+      'DM1-doctor-lobby-panel.png',
+      'DM3-doctor-jitsi-with-patient.png',
+      'DM5-patient-in-jitsi-3party.png',
+    ],
+    lobbyOnly: ['DM1-doctor-lobby-panel.png'],
+    jitsiStages: ['DM3-doctor-jitsi-with-patient.png', 'DM5-patient-in-jitsi-3party.png'],
+  },
+  'group-W': {
+    minUnique: 3,
+    required: [
+      'W01-patient-login.png',
+      'W02-doctor-login.png',
+      'W04-doctor-meeting-room.png',
+    ],
+  },
+  'group-U': {
+    minUnique: 4,
+    required: [
+      'U-A-doctor-login-controls.png',
+      'U-C-health-meeting-queue.png',
+      'U-PHR-phr-tab-overview.png',
+      'U-PHR-phr-tab-prescriptions.png',
+    ],
+  },
 };
 
 const MIN_BYTES = Number.parseInt(process.env.SCREENSHOT_MIN_BYTES || '15000', 10);
+// Dark Jitsi Meet tiles (meet.jit.si) compress to small PNGs; 8KB falsely flagged blank canvases.
+const JITSI_MIN_BYTES = Number.parseInt(process.env.SCREENSHOT_JITSI_MIN_BYTES || '7000', 10);
 const MAX_SIMILARITY = Number.parseFloat(process.env.SCREENSHOT_MAX_SIMILARITY || '0.92');
 
 function parseGroups() {
@@ -111,16 +210,22 @@ function hammingSimilarity(a, b) {
   return same / len;
 }
 
-function resolveDir(groupName) {
+function resolveDir(groupName, manifest) {
   if (process.env.SCREENSHOT_DIR && parseGroups().length === 1) {
     return process.env.SCREENSHOT_DIR;
   }
-  const docs = path.join(root, 'docs', 'screenshots', groupName);
-  if (fs.existsSync(docs)) return docs;
+  const candidates = [];
+  if (manifest?.altDir) {
+    candidates.push(path.join(root, 'docs', 'screenshots', manifest.altDir));
+  }
+  candidates.push(path.join(root, 'docs', 'screenshots', groupName));
+  for (const c of candidates) {
+    if (fs.existsSync(c)) return c;
+  }
   return path.join(root, 'tests', 'output', 'screenshots', 'chromium', groupName);
 }
 
-function collectRequiredFiles(dir, required, errors, files) {
+function collectRequiredFiles(dir, required, errors, files, manifest) {
   for (const name of required) {
     const filePath = path.join(dir, name);
     if (!fs.existsSync(filePath)) {
@@ -130,8 +235,13 @@ function collectRequiredFiles(dir, required, errors, files) {
     const stat = fs.statSync(filePath);
     const hash = sha256(filePath);
     files[name] = { bytes: stat.size, sha256: hash };
-    if (stat.size < MIN_BYTES) {
-      errors.push(`${name}: too small (${stat.size} < ${MIN_BYTES}) — blank/error page`);
+    const minForFile = manifest?.jitsiStages?.includes(name)
+      ? JITSI_MIN_BYTES
+      : manifest?.recordingStages?.includes(name)
+        ? Number.parseInt(process.env.SCREENSHOT_RECORDING_MIN_BYTES || '10000', 10)
+        : manifest?.minBytes ?? MIN_BYTES;
+    if (stat.size < minForFile) {
+      errors.push(`${name}: too small (${stat.size} < ${minForFile}) — blank/error page`);
     }
   }
 }
@@ -176,7 +286,7 @@ function validateGroup(groupName) {
     return { groupName, errors: [`Unknown group ${groupName}`], files: {}, pass: false };
   }
 
-  const dir = resolveDir(groupName);
+  const dir = resolveDir(groupName, manifest);
   const errors = [];
   const files = {};
 
@@ -184,7 +294,7 @@ function validateGroup(groupName) {
     return { groupName, errors: [`Missing directory ${dir}`], files, pass: false };
   }
 
-  collectRequiredFiles(dir, manifest.required, errors, files);
+  collectRequiredFiles(dir, manifest.required, errors, files, manifest);
   errors.push(
     ...collectHashErrors(files, manifest.minUnique),
     ...collectSimilarityErrors(dir, files, manifest),

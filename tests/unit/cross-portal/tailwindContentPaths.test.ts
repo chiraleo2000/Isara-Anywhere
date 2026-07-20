@@ -6,10 +6,10 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
-const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..');
+const anywhereRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../..');
 
 function readTailwindContent(portal: 'doctor' | 'patient'): string {
-  const file = path.join(repoRoot, `Isara-${portal}-portal`, 'tailwind.config.js');
+  const file = path.join(anywhereRoot, `issara-${portal}`, 'tailwind.config.js');
   return readFileSync(file, 'utf8');
 }
 

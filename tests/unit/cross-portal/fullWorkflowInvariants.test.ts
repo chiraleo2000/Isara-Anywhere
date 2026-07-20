@@ -3,11 +3,11 @@
  * Global invariants — auth, appointments, meeting roles, clinical boundaries.
  */
 import { describe, it, expect } from 'vitest';
-import { createJitsiRoleJwt, validateGuestJoinAccess } from '../../../Izara-jitsi-server/backend/sessionAuth.js';
-import { buildDoctorJitsiMountOptions, resolveMountJwt } from '../../../Isara-doctor-portal/frontend/utils/jitsiMeetingConfig.ts';
-import { buildPatientJitsiMountOptions } from '../../../Isara-patient-portal/frontend/utils/jitsiMeetingConfig.ts';
-import { matchesPoolFilter, PENDING_POOL_STATUSES } from '../../../Isara-doctor-portal/backend/appointmentPoolQuery.cjs';
-import { derivePoolStatus } from '../../../Isara-doctor-portal/backend/appointmentQueueMapper.cjs';
+import { createJitsiRoleJwt, validateGuestJoinAccess } from '../../../../issara-jitsi/backend/sessionAuth.js';
+import { buildDoctorJitsiMountOptions, resolveMountJwt } from '../../../../issara-doctor/frontend/utils/jitsiMeetingConfig.ts';
+import { buildPatientJitsiMountOptions } from '../../../../issara-patient/frontend/utils/jitsiMeetingConfig.ts';
+import { matchesPoolFilter, PENDING_POOL_STATUSES } from '../../../../issara-doctor/backend/appointmentPoolQuery.cjs';
+import { derivePoolStatus } from '../../../../issara-doctor/backend/appointmentQueueMapper.cjs';
 
 describe('FULL_WORKFLOW_CONTRACT — global invariants', () => {
   it('FWI-01 — doctor is Jitsi host via moderator config (no room JWT)', () => {
@@ -25,7 +25,7 @@ describe('FULL_WORKFLOW_CONTRACT — global invariants', () => {
       user: { name: 'Patient' },
       roomName: 'izara-room',
     });
-    expect(mount.apiOptions.configOverwrite.moderator).toBeUndefined();
+    expect(mount.apiOptions.configOverwrite.moderator).toBe(false);
     expect(mount.apiOptions.configOverwrite.prejoinPageEnabled).toBe(false);
   });
 
@@ -53,7 +53,7 @@ describe('FULL_WORKFLOW_CONTRACT — global invariants', () => {
       user: { name: 'Patient Test' },
       roomName: 'izara-apt',
     });
-    expect(mount.apiOptions.configOverwrite.moderator).toBeUndefined();
+    expect(mount.apiOptions.configOverwrite.moderator).toBe(false);
     expect(mount.apiOptions.configOverwrite.prejoinPageEnabled).toBe(false);
   });
 
@@ -73,6 +73,14 @@ describe('FULL_WORKFLOW_CONTRACT — global invariants', () => {
     expect(PENDING_POOL_STATUSES).not.toContain('confirmed');
     expect(PENDING_POOL_STATUSES).toContain('in_pool');
     expect(PENDING_POOL_STATUSES).toContain('awaiting_doctor_response');
+  });
+
+  it('FWI-08 — guest invite URLs must use patient portal origin (token), not bare meeting host', () => {
+    const patientPortal = 'http://127.0.0.1:3005';
+    const guestLink = `${patientPortal}/guest-join?token=abc123`;
+    expect(guestLink.startsWith(patientPortal)).toBe(true);
+    expect(guestLink).not.toMatch(/:3020\/guest-join$/);
+    expect(guestLink).toMatch(/token=/);
   });
 });
 

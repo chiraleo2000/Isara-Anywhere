@@ -1,6 +1,17 @@
 # Environment and Stack Check (Doctor + Patient + Jitsi)
 
-Last verified: 2026-06-22 (v1.7.53 — LAN Mode B CORS, patient runtime env-config, phase gates)
+Last verified: 2026-07-09 (v2.3.0 — clinical document delivery + Health Meeting queue)
+
+## v2.3.0 production readiness (clinical delivery)
+
+| Check | Status | Notes |
+| --- | --- | --- |
+| `patient_documents` + `patient_doctor_messages` tables | Required | Migration `v2.3.0-patient-documents-and-messages.sql` |
+| GCS clinical paths disabled | Required | `DocumentDeliveryService` uses BYTEA in Postgres |
+| Stub `/api/health-records*` removed | Done | Real EMR/meeting_records data |
+| `/appointment-pool` redirect | Done | `/health-meeting?tab=queue` |
+| Content workflow columns | Required | `medical_content` + `clinical_resources` extended columns on startup |
+| Local gate ladder | See `docs/runbooks/LOCAL_INSTALL.md` §2b | phase:0 → phase:9 |
 
 ## Scope
 
@@ -32,7 +43,8 @@ Validated configuration parity and prerequisites for:
 - Doctor and patient services include dedicated `pgNotifyListener` implementations listening on `LISTEN data_changes`.
 - Meeting server has dedicated PG listener wiring and Socket.IO room emission for appointment/meeting events.
 - Optional Redis adapter support exists for multi-instance scaling (`REDIS_URL`) in doctor service.
-- Cloud deploy uses `--min-instances=1` in main pipeline for warm websocket baseline.
+- Cloud deploy uses `--min-instances=0 --max-instances=2` (1 vCPU / 1Gi, no cpu-boost) via `_MIN_INSTANCES` / `_MAX_INSTANCES` substitutions in all `cloudbuild.yaml` files.
+- **GCE postgres VM idle savings:** `gcloud compute instances stop izara-postgres-dev-testing --zone=asia-southeast1-a` when not testing (largest non-Cloud Run cost).
 
 ### Gemini (cloud E2E gate)
 
@@ -49,7 +61,8 @@ Validated configuration parity and prerequisites for:
 
 - Doctor portal, patient portal, and meeting server enforce fail-fast behavior when `JWT_SECRET` is missing.
 - **Env schema:** `scripts/env/schema.js` (Zod) validates `JWT_SECRET`, `GEMINI_API_KEY`, optional `DATABASE_URL` / `JITSI_DOMAIN` at doctor portal boot.
-- **Jitsi roles (public meet.jit.si):** Session auth via Izara lobby + `configOverwrite.moderator`; `createJitsiRoleJwt` in `Izara-jitsi-server/backend/sessionAuth.js` returns null on public Jitsi.
+- **Jitsi roles (public meet.jit.si):** Session auth via Izara lobby + `configOverwrite.moderator`; `createJitsiRoleJwt` returns null on public Jitsi.
+- **Jitsi roles (self-hosted `meet.localhost` / LAN):** `JITSI_TOKEN_AUTH_ENABLED=true`; `join-config` issues HS256 JWT — doctor `moderator: true`, patient/guest `moderator: false`. See `deploy/jitsi/README.md`.
 - **Display names:** `getIzaraDisplayName` from auth state → `userInfo.displayName`; `prejoinPageEnabled: false` on all portal Jitsi inits.
 - Token verification paths are present in auth and protected route middleware.
 - Cloud deploy injects JWT secret from Secret Manager.

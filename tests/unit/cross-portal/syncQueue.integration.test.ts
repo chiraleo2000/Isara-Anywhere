@@ -37,7 +37,7 @@ describe('Sync queue merge', () => {
   });
 
   it('SQ-03 — doctor portal pgNotify listener wired', () => {
-    const listener = path.resolve(__dirname, '../../../Isara-doctor-portal/backend/pgNotifyListener.cjs');
+    const listener = path.resolve(__dirname, '../../../issara-doctor/backend/pgNotifyListener.cjs');
     expect(fs.existsSync(listener)).toBe(true);
     expect(fs.readFileSync(listener, 'utf8')).toMatch(/LISTEN\s+data_changes/i);
   });

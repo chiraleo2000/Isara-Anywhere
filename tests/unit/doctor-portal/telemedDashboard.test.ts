@@ -5,7 +5,7 @@ import { describe, it, expect } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
 
-const dashboard = path.resolve(__dirname, '../../../Isara-doctor-portal/frontend/pages/DoctorDashboard.tsx');
+const dashboard = path.resolve(__dirname, '../../../issara-doctor/frontend/pages/DoctorDashboard.tsx');
 
 describe('Telemed dashboard (TDK)', () => {
   const src = fs.readFileSync(dashboard, 'utf8');
@@ -27,7 +27,7 @@ describe('Telemed dashboard (TDK)', () => {
   });
 
   it('TDK-05 — mobile nav hamburger for doctor portal', () => {
-    const layout = path.resolve(__dirname, '../../../Isara-doctor-portal/frontend/components/common/ResponsiveLayout.tsx');
+    const layout = path.resolve(__dirname, '../../../issara-doctor/frontend/components/common/ResponsiveLayout.tsx');
     expect(fs.readFileSync(layout, 'utf8')).toMatch(/doctor-mobile-menu-btn|doctor-mobile-nav/);
   });
 });

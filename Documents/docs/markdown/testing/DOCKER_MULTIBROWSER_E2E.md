@@ -90,7 +90,7 @@ After a **100% green** run:
 npm run docs:sync-screenshots
 ```
 
-Copies PNGs from `tests/output/screenshots/` into `Documents/docs/screenshots/group-W/`:
+Copies PNGs from `tests/output/screenshots/` into `docs/screenshots/group-W/`:
 
 | Path | Content |
 |------|---------|
@@ -171,9 +171,9 @@ Test file: [tests/group-W-core-multibrowser.ui-test.ts](../../../tests/group-W-c
 Each workflow above was captured independently on **Chromium**, **Firefox**, and **WebKit** with a fresh DB seed per browser run. Compare per-engine renders:
 
 ```
-Documents/docs/screenshots/group-W/browsers/chromium/
-Documents/docs/screenshots/group-W/browsers/firefox/
-Documents/docs/screenshots/group-W/browsers/webkit/
+docs/screenshots/group-W/browsers/chromium/
+docs/screenshots/group-W/browsers/firefox/
+docs/screenshots/group-W/browsers/webkit/
 ```
 
 ---

@@ -1,0 +1,30 @@
+{
+  "cookies": [],
+  "origins": [
+    {
+      "origin": "https://izara-patient-portal-dev-testing-724889190329.asia-southeast1.run.app",
+      "localStorage": [
+        {
+          "name": "auth_token",
+          "value": "token_1784271297767_3a2d88a4db75e55359d1d1a4e95ed3bcfd524242fef08013ad542b82182a1f29"
+        },
+        {
+          "name": "izara_user",
+          "value": "{\"id\":\"PATIENT-DEMO\",\"email\":\"demo.test@gmail.com\",\"name\":\"Demo Test Patient\",\"role\":\"patient\"}"
+        },
+        {
+          "name": "izara_patient_last_activity",
+          "value": "1784271299420"
+        },
+        {
+          "name": "izara_auth_token",
+          "value": "token_1784271297767_3a2d88a4db75e55359d1d1a4e95ed3bcfd524242fef08013ad542b82182a1f29"
+        },
+        {
+          "name": "user",
+          "value": "{\"email\":\"demo.test@gmail.com\",\"name\":\"Demo Test Patient\",\"id\":\"PATIENT-DEMO\",\"role\":\"patient1\",\"token\":\"token_1784271297767_3a2d88a4db75e55359d1d1a4e95ed3bcfd524242fef08013ad542b82182a1f29\"}"
+        }
+      ]
+    }
+  ]
+}

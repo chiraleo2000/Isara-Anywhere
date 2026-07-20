@@ -4,11 +4,11 @@ import path from 'node:path';
 
 const healthMeetingPath = path.resolve(
   __dirname,
-  '../../../Isara-doctor-portal/frontend/pages/meetings/HealthMeeting.tsx',
+  '../../../issara-doctor/frontend/pages/meetings/HealthMeeting.tsx',
 );
 const apiServicePath = path.resolve(
   __dirname,
-  '../../../Isara-doctor-portal/frontend/services/apiDataService.ts',
+  '../../../issara-doctor/frontend/services/apiDataService.ts',
 );
 
 describe('confirm/assign appointment API behavior (D4–D6)', () => {

@@ -18,6 +18,9 @@ import {
   navPatient,
   navDoctor,
   waitForContent,
+  requirePatientAuth,
+  ensurePatientPortalAuthenticated,
+  ensureDoctorPortalAuthenticated,
   PATIENT_URL,
   DOCTOR_URL,
   MEETING_URL,
@@ -37,7 +40,11 @@ async function openGeminiStudio(doctorPage: Page): Promise<void> {
   await expect(doctorPage.locator('div.fixed.inset-0.bg-black\\/50')).toHaveCount(0, { timeout: 10_000 });
   const fab = doctorPage.getByTitle('AI Assistant');
   await expect(fab).toBeVisible({ timeout: 20_000 });
-  await fab.click();
+  try {
+    await fab.click({ force: true, timeout: 12_000 });
+  } catch {
+    await fab.evaluate((el: HTMLElement) => el.click());
+  }
   await expect(studioHeading).toBeVisible({ timeout: 15_000 });
 }
 
@@ -99,18 +106,21 @@ test.describe('Group W — Core multi-browser workflow', () => {
     const { patient, doctor, admin } = portals;
 
     await test.step('Patient dashboard', async () => {
+      await ensurePatientPortalAuthenticated(patient.page, 'W01-patient');
       await assertFullHealth(patient.page, 'W01-patient');
       await expect(patient.page.locator('body')).not.toBeEmpty();
       await snapSuccess(patient.page, 'W01-patient-dashboard', WORKFLOW);
     });
 
     await test.step('Doctor dashboard', async () => {
+      await ensureDoctorPortalAuthenticated(doctor.page, 'W01-doctor');
       await assertFullHealth(doctor.page, 'W01-doctor');
       await expect(doctor.page.locator('body')).not.toBeEmpty();
       await snapSuccess(doctor.page, 'W01-doctor-dashboard', WORKFLOW);
     });
 
     await test.step('Admin dashboard', async () => {
+      await ensureDoctorPortalAuthenticated(admin.page, 'W01-admin');
       await assertFullHealth(admin.page, 'W01-admin');
       await expect(admin.page.locator('body')).not.toBeEmpty();
       await snapSuccess(admin.page, 'W01-admin-dashboard', WORKFLOW);
@@ -121,6 +131,7 @@ test.describe('Group W — Core multi-browser workflow', () => {
     const { patient, doctor } = portals;
 
     await test.step('Appointments list loads', async () => {
+      await ensurePatientPortalAuthenticated(patient.page, 'W02');
       await navPatient(patient.page, '/appointments', 'W02');
       await assertFullHealth(patient.page, 'W02');
       await expect(patient.page.locator('body')).toContainText(/appointment|นัดหมาย/i, {
@@ -144,6 +155,14 @@ test.describe('Group W — Core multi-browser workflow', () => {
 
     await test.step('Health meeting queue page', async () => {
       await navDoctor(doctor.page, 'health-meeting', 'W03-meeting');
+      const pageRoot = doctor.page.getByTestId('health-meeting-page');
+      if (!(await pageRoot.isVisible({ timeout: 5_000 }).catch(() => false))) {
+        await doctor.page.goto(
+          `${DOCTOR_URL}/doctor/${doctor.userId}/health-meeting`,
+          { waitUntil: 'domcontentloaded', timeout: 30_000 },
+        );
+      }
+      await waitForContent(doctor.page, 'W03-meeting', 10_000);
       await assertFullHealth(doctor.page, 'W03-meeting');
       await expect(doctor.page.getByTestId('health-meeting-page')).toBeVisible({ timeout: 15_000 });
       await snapSuccess(doctor.page, 'W03-health-meeting', WORKFLOW);
@@ -194,16 +213,23 @@ test.describe('Group W — Core multi-browser workflow', () => {
     });
 
     await test.step('Patient meeting route', async () => {
-      const url = `${PATIENT_URL}/meeting/${workflowAppointmentId}`;
+      const { userId: patientUserId } = await requirePatientAuth(patient.page, 'W04');
+      const url = `${PATIENT_URL}/patient/${patientUserId}/meeting/${workflowAppointmentId}`;
       await patient.page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30_000 });
       await waitForContent(patient.page, 'W04-patient-meeting', 12_000);
       await assertFullHealth(patient.page, 'W04-patient-meeting');
       await expect(patient.page.getByTestId('patient-meeting-room')).toBeVisible({ timeout: 20_000 });
       const meetingShell = patient.page.locator(
-        '[data-testid="meeting-loading"], [data-testid="meeting-agreement"], [data-testid="host-waiting-screen"], [data-testid="jitsi-meeting-container"]',
+        '[data-testid="meeting-agreement"], [data-testid="meeting-auth-starting"], [data-testid="meeting-loading"], [data-testid="lobby-starting-screen"], [data-testid="lobby-waiting-screen"], [data-testid="host-waiting-screen"], [data-testid="pre-join-screen"], [data-testid="jitsi-meeting-container"]',
       ).first();
       await expect(meetingShell).toBeVisible({ timeout: 25_000 });
       await snapSuccess(patient.page, 'W04-patient-meeting-room', WORKFLOW);
+      // Leave meeting shells so Firefox can close contexts cleanly between serial tests.
+      await doctor.page.goto(`${DOCTOR_URL}/doctor/${doctor.userId}/dashboard`, {
+        waitUntil: 'domcontentloaded',
+        timeout: 30_000,
+      }).catch(() => {});
+      await patient.page.goto(PATIENT_URL, { waitUntil: 'domcontentloaded', timeout: 30_000 }).catch(() => {});
     });
   });
 
@@ -224,7 +250,12 @@ test.describe('Group W — Core multi-browser workflow', () => {
 
     await test.step('Open EMR editor modal', async () => {
       const createEmrBtn = doctor.page.getByRole('button', { name: /Create EMR|สร้าง EMR|สร้างบันทึก/i }).first();
-      await createEmrBtn.click();
+      await expect(createEmrBtn).toBeVisible({ timeout: 15_000 });
+      try {
+        await createEmrBtn.click({ force: true, timeout: 12_000 });
+      } catch {
+        await createEmrBtn.evaluate((el: HTMLElement) => el.click());
+      }
       await expect(doctor.page.getByTestId('emr-autosave-status')).toBeVisible({ timeout: 20_000 });
       await snapSuccess(doctor.page, 'W05-emr-editor', WORKFLOW);
     });
@@ -234,10 +265,12 @@ test.describe('Group W — Core multi-browser workflow', () => {
     const { doctor } = portals;
 
     await test.step('Open Gemini AI Studio from FAB', async () => {
+      await ensureDoctorPortalAuthenticated(doctor.page, 'W06-dashboard');
       await doctor.page.goto(
         `${DOCTOR_URL}/doctor/${doctor.userId}/dashboard`,
         { waitUntil: 'domcontentloaded', timeout: 30_000 },
       );
+      await ensureDoctorPortalAuthenticated(doctor.page, 'W06-dashboard');
       await waitForContent(doctor.page, 'W06-dashboard', 10_000);
       await expect(doctor.page.getByTestId('emr-autosave-status')).toBeHidden({ timeout: 10_000 });
       await assertFullHealth(doctor.page, 'W06');

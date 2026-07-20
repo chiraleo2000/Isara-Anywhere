@@ -1,9 +1,9 @@
 # 📝 Living Will – Process & Implementation Guide (Izara Telemedicine)
 
-**Version:** 2.0.0
-**Last Updated:** April 2, 2026
+**Version:** 2.1.0
+**Last Updated:** July 9, 2026
 **Status:** ✅ PostgreSQL Implementation + Full DB Schema
-**Merged from:** `Living_Will_Processes.md` v1.6.0 + `Living_Will_Implementation_Plan.md` v1.2
+**Canonical doc:** Single source for Living Will workflows (implementation plan merged here in v2.0)
 
 ---
 
@@ -36,10 +36,10 @@ A **Living Will** (พินัยกรรมชีวิต) is a legal docume
 | Task | File | Status |
 | ---- | ---- | ------ |
 | TypeScript Types | `Isara-patient-portal/frontend/types/sharedPHRTypes.ts` | ✅ Done |
-| Patient API Routes | `Isara-patient-portal/server/routes/phr.ts` | ✅ Done |
+| Patient API Routes | `Isara-patient-portal/backend/routes/phr.ts` | ✅ Done |
 | Doctor Portal Types | `Isara-doctor-portal/frontend/services/patientRecordService.ts` | ✅ Done |
-| Doctor GCS Service | `Isara-doctor-portal/frontend/services/gcsDataService.ts` | ✅ Done |
-| Doctor API Endpoint | `Isara-doctor-portal/server/mainApiServer.cjs` | ✅ Done |
+| Doctor API Endpoint | `Isara-doctor-portal/backend/mainApiServer.cjs` | ✅ Done |
+| Doctor PostgreSQL read | `postgresDataService.cjs` → `living_wills` | ✅ Done |
 | Living Will UI Card | `Isara-doctor-portal/frontend/components/PatientRecordViewer.tsx` | ✅ Done |
 
 ---
@@ -71,7 +71,7 @@ A **Living Will** (พินัยกรรมชีวิต) is a legal docume
 
 ### 3.1. Living Will Metadata
 
-**Storage Path:** `patients/{patientId}/living-will.json`
+**Storage:** PostgreSQL table `living_wills` (primary). Legacy path `patients/{patientId}/living-will.json` is **deprecated** — do not use for new implementations.
 
 ```json
 {
@@ -321,7 +321,7 @@ export interface LivingWillForDoctor {
 
 1. Patient reviews summary
 2. Clicks "Save Living Will"
-3. System stores to GCS: `patients/{patientId}/living-will.json`
+3. System persists to PostgreSQL: `INSERT/UPDATE living_wills` (+ `living_will_versions` on finalize/edit)
 4. Confirmation message with share status displayed
 
 
@@ -701,7 +701,7 @@ If the patient has not shared their Living Will:
 </Tab>
 ```
 
-**`Isara-patient-portal/server/routes/phr.ts`** — API route stubs:
+**`Isara-patient-portal/backend/routes/phr.ts`** — API route stubs:
 
 ```typescript
 // GET /api/phr/:patientId/living-will
@@ -746,7 +746,7 @@ const PHRView = ({ phrData, patient }) => {
 };
 ```
 
-**`Isara-doctor-portal/server/mainApiServer.cjs`** — Doctor API endpoint:
+**`Isara-doctor-portal/backend/mainApiServer.cjs`** — Doctor API endpoint:
 
 ```javascript
 // GET /api/patients/:patientId/living-will

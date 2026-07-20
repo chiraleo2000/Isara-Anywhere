@@ -182,7 +182,7 @@ describe('Doctor Portal — GCS API Server', () => {
     });
 
     it('D2-04 — gcsApiServer uses multer 2.x in package.json', () => {
-      const pkgPath = path.join(__dirname, '../../../Isara-doctor-portal/package.json');
+      const pkgPath = path.join(__dirname, '../../../issara-doctor/package.json');
       const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
       expect(pkg.dependencies.multer).toMatch(/^[\^~]?2\./);
     });

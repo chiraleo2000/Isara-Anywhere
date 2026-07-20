@@ -4,7 +4,7 @@
   Reads `.env` for DB_PASSWORD only (read-only). Does not modify `.env`.
 #>
 param(
-    [string]$Tag = "v1.7.12",
+    [string]$Tag = "v1.7.60",
     [switch]$Async,
     [switch]$MigrationsOnly,
     [switch]$SmokeOnly

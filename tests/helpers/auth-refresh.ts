@@ -6,17 +6,36 @@ import { request as playwrightRequest } from '@playwright/test';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 
-import { AUTH_CACHE_PATH } from '../e2e/global-setup';
+import { AUTH_CACHE_PATH, STORAGE_STATE_DIR } from './auth-paths';
 
 const IS_CLOUD = process.env.TEST_ENV === 'cloud';
 const PATIENT_URL = IS_CLOUD
   ? (process.env.CLOUD_PATIENT_URL || 'https://izara-patient-portal-dev-testing-724889190329.asia-southeast1.run.app')
-  : (process.env.LOCAL_PATIENT_URL || process.env.PATIENT_URL || 'http://localhost:3005');
+  : (process.env.PATIENT_URL || process.env.PATIENT_PORTAL_URL || process.env.LOCAL_PATIENT_URL || 'http://127.0.0.1:3005');
 const DOCTOR_URL = IS_CLOUD
   ? (process.env.CLOUD_DOCTOR_URL || 'https://izara-doctor-portal-dev-testing-724889190329.asia-southeast1.run.app')
-  : (process.env.LOCAL_DOCTOR_URL || process.env.DOCTOR_URL || 'http://localhost:3010');
+  : (process.env.DOCTOR_URL || process.env.DOCTOR_PORTAL_URL || process.env.LOCAL_DOCTOR_URL || 'http://127.0.0.1:3010');
 
-export const AUTH_STORAGE_DIR = path.join(__dirname, '..', 'e2e', '.auth-states');
+export const AUTH_STORAGE_DIR = STORAGE_STATE_DIR;
+
+/** Playwright storageState is origin-scoped; localhost and 127.0.0.1 do not share localStorage. */
+function storageOriginsFor(primary: string): string[] {
+  const origins = new Set<string>([primary]);
+  try {
+    const u = new URL(primary);
+    if (u.hostname === 'localhost') {
+      u.hostname = '127.0.0.1';
+      origins.add(u.origin);
+    } else if (u.hostname === '127.0.0.1') {
+      u.hostname = 'localhost';
+      origins.add(u.origin);
+    }
+  } catch {
+    /* keep primary only */
+  }
+  return [...origins];
+}
+
 
 const USERS = {
   patient1: {
@@ -48,7 +67,7 @@ async function apiLogin(
   ctx: Awaited<ReturnType<typeof playwrightRequest.newContext>>,
   baseUrl: string,
   creds: { email: string; password: string },
-): Promise<string> {
+): Promise<{ token: string; refreshToken: string }> {
   const attempts = IS_CLOUD ? 4 : 6;
   for (let attempt = 0; attempt < attempts; attempt++) {
     for (const loginPath of ['/api/auth/login', '/auth/login']) {
@@ -61,7 +80,12 @@ async function apiLogin(
         if (res.status() === 200) {
           const d = await res.json();
           const token = d.token || d.accessToken || d.data?.token || '';
-          if (token) return token;
+          if (token) {
+            return {
+              token,
+              refreshToken: d.refreshToken || d.data?.refreshToken || '',
+            };
+          }
         }
       } catch {
         /* try next path or retry */
@@ -71,13 +95,14 @@ async function apiLogin(
       await new Promise((r) => setTimeout(r, 2000 * (attempt + 1)));
     }
   }
-  return '';
+  return { token: '', refreshToken: '' };
 }
 
 function buildStorageState(
   role: RoleKey,
   token: string,
   u: (typeof USERS)[RoleKey],
+  refreshToken = '',
 ): { cookies: []; origins: Array<{ origin: string; localStorage: Array<{ name: string; value: string }> }> } {
   const isDoctorPortal = role === 'doctor' || role === 'admin';
   const origin = isDoctorPortal ? DOCTOR_URL : PATIENT_URL;
@@ -116,6 +141,9 @@ function buildStorageState(
       { name: 'izara_session_expiry', value: (now + 7_200_000).toString() },
       { name: 'izara_last_activity', value: now.toString() },
     );
+    if (refreshToken) {
+      localStorageEntries.push({ name: 'izara_refresh_token', value: refreshToken });
+    }
   } else {
     localStorageEntries.push(
       { name: 'auth_token', value: token },
@@ -129,7 +157,7 @@ function buildStorageState(
     { name: 'user', value: JSON.stringify({ email: u.email, name: u.name, id: u.id, role: u.role, token }) },
   );
 
-  return { cookies: [], origins: [{ origin, localStorage: localStorageEntries }] };
+  return { cookies: [], origins: storageOriginsFor(origin).map((o) => ({ origin: o, localStorage: localStorageEntries })) };
 }
 
 let refreshInFlight: Promise<void> | null = null;
@@ -147,11 +175,11 @@ function resolveTokenFromCache(role: RoleKey): string {
   }
 }
 
-function writeStorageStateFile(role: RoleKey, token: string): void {
+function writeStorageStateFile(role: RoleKey, token: string, refreshToken = ''): void {
   if (!fs.existsSync(AUTH_STORAGE_DIR)) {
     fs.mkdirSync(AUTH_STORAGE_DIR, { recursive: true });
   }
-  const state = buildStorageState(role, token, USERS[role]);
+  const state = buildStorageState(role, token, USERS[role], refreshToken);
   const target = path.join(AUTH_STORAGE_DIR, `${role}.json`);
   const payload = JSON.stringify(state, null, 2);
   const fd = fs.openSync(target, 'w');
@@ -167,15 +195,16 @@ async function refreshAuthStorageStateForRoleImpl(role: RoleKey): Promise<void> 
   const ctx = await playwrightRequest.newContext();
   try {
     const baseUrl = role === 'patient1' ? PATIENT_URL : DOCTOR_URL;
-    let resolved = await apiLogin(ctx, baseUrl, USERS[role]);
-    if (!resolved) {
-      resolved = resolveTokenFromCache(role);
+    let login = await apiLogin(ctx, baseUrl, USERS[role]);
+    if (!login.token) {
+      const cached = resolveTokenFromCache(role);
+      login = { token: cached, refreshToken: '' };
     }
-    if (!resolved) {
-      console.warn(`  ⚠️ auth-refresh: ${role} login returned empty token`);
+    if (!login.token) {
+      console.warn(`  ? auth-refresh: ${role} login returned empty token`);
       return;
     }
-    writeStorageStateFile(role, resolved);
+    writeStorageStateFile(role, login.token, login.refreshToken);
   } finally {
     await ctx.dispose();
   }
@@ -204,19 +233,19 @@ async function refreshAuthStorageStatesImpl(): Promise<void> {
       apiLogin(ctx, DOCTOR_URL, USERS.admin),
     ]);
 
-    const writes: Array<[RoleKey, string]> = [
+    const writes: Array<[RoleKey, { token: string; refreshToken: string }]> = [
       ['patient1', p1],
       ['doctor', doc],
       ['admin', adm],
     ];
 
-    for (const [role, token] of writes) {
-      let resolved = token || resolveTokenFromCache(role);
-      if (!resolved) {
-        console.warn(`  ⚠️ auth-refresh: ${role} login returned empty token`);
+    for (const [role, login] of writes) {
+      const token = login.token || resolveTokenFromCache(role);
+      if (!token) {
+        console.warn('  warn auth-refresh: ' + role + ' login returned empty token');
         continue;
       }
-      writeStorageStateFile(role, resolved);
+      writeStorageStateFile(role, token, login.refreshToken || '');
     }
   } finally {
     await ctx.dispose();
@@ -262,7 +291,9 @@ export async function reinjectAuthFromStorageFile(
   let lastErr: unknown;
   for (let attempt = 0; attempt < 4; attempt++) {
     try {
+      if (page.isClosed()) return;
       await page.waitForLoadState('domcontentloaded', { timeout: 8_000 }).catch(() => {});
+      if (page.isClosed()) return;
       await page.evaluate((entries: Array<{ name: string; value: string }>) => {
         for (const e of entries) localStorage.setItem(e.name, e.value);
         localStorage.setItem('izara_patient_last_activity', Date.now().toString());
@@ -272,9 +303,16 @@ export async function reinjectAuthFromStorageFile(
     } catch (err) {
       lastErr = err;
       const msg = err instanceof Error ? err.message : String(err);
-      const transient = /Execution context was destroyed|Target page, context or browser has been closed|navigation/i.test(msg);
+      const closed = /Target page, context or browser has been closed/i.test(msg);
+      // Teardown / viewport churn can close the page mid-reinject — treat as no-op.
+      if (closed || page.isClosed()) return;
+      const transient = /Execution context was destroyed|navigation/i.test(msg);
       if (!transient || attempt === 3) throw err;
-      await page.waitForTimeout(400 * (attempt + 1));
+      try {
+        await page.waitForTimeout(400 * (attempt + 1));
+      } catch {
+        return;
+      }
     }
   }
   throw lastErr;

@@ -1,338 +1,229 @@
 /**
- * ═══════════════════════════════════════════════════════════════════════
- * IZARA — FULL COVERAGE PLAYWRIGHT CONFIG (GROUPS A → J)
- * ═══════════════════════════════════════════════════════════════════════
- *
- * Orchestration strategy:
- *
- *   1) Group A (auth) runs FIRST — all other groups depend on it.
- *
- *   2) PARALLEL groups (independent — no data dependencies):
- *      B  Patient Portal pages
- *      C  Doctor & Admin Portal pages
- *      G  Living Will & PDPA
- *      H  Content, Resources & Consultants
- *      I  Admin, Users & Notifications
- *      J  AI Doctor, Timeline, Map & Find Doctors
- *
- *   3) SEQUENTIAL pipeline (data flows between groups):
- *      D  Appointment Workflows   → creates appointment
- *      E  Meeting & Clinical      → uses appointment from D
- *      F  PHR & Health Records    → doctor sends EMR/lab from E
- *
- *   Dependency graph:
- *     A ──┬── B (parallel)
- *         ├── C (parallel)
- *         ├── G (parallel)
- *         ├── H (parallel)
- *         ├── I (parallel)
- *         ├── J (parallel)
- *         └── D (sequential) → E → F
- *
- * Workers: PW_WORKERS (default 1 local, 4 cloud) for parallel groups; D→E→F stay serial.
- * Jitsi multi-party fixture: Patient=Firefox, Doctor=Edge, Admin=Firefox (PW_NO_CHROME=1).
- * ═══════════════════════════════════════════════════════════════════════
+ * Issara Anywhere — Playwright config (sibling layout: issara-*)
+ * Full project matrix A–W, Defect, MEET, W-core multi-browser.
+ * Headed via PW_HEADED=1; screenshots on; HTML → reports/playwright-html.
  */
-import { defineConfig } from '@playwright/test';
-import {
-  chromiumLaunchArgs,
-  FIREFOX_LAUNCH_OPTIONS,
-  isChromeChannelBanned,
-} from './tests/helpers/browser-matrix';
+import { defineConfig, devices } from '@playwright/test';
+import dotenv from 'dotenv';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const CLOUD_DEFAULTS = {
-  patient: 'https://izara-patient-portal-dev-testing-724889190329.asia-southeast1.run.app',
-  doctor: 'https://izara-doctor-portal-dev-testing-724889190329.asia-southeast1.run.app',
-  meeting: 'https://izara-meeting-server-dev-testing-724889190329.asia-southeast1.run.app',
-};
+const root = path.dirname(fileURLToPath(import.meta.url));
+dotenv.config({ path: path.join(root, '.env') });
 
-const IS_CLOUD = process.env.TEST_ENV === 'cloud';
-const BASELINE_VISUAL =
-  process.env.BASELINE_VISUAL === '1' ||
-  process.env.BASELINE_VISUAL === 'true';
-const FORCE_HEADED =
-  process.env.PW_HEADED === '1' ||
-  process.env.PW_HEADED === 'true' ||
-  BASELINE_VISUAL;
-/** Headed by default (local + cloud). Set PW_HEADLESS=1 only for debug/CI-only runs. */
-const USE_HEADLESS =
-  process.env.PW_HEADLESS === '1' ||
-  process.env.PW_HEADLESS === 'true';
-const BASELINE_SCREENSHOT =
-  BASELINE_VISUAL ? ('on' as const) : ('only-on-failure' as const);
-const PRE_DEBUG_OUTPUT = BASELINE_VISUAL
-  ? 'test-results/pre-debug'
-  : 'test-results';
-if (IS_CLOUD) {
-  process.env.CLOUD_PATIENT_URL ||= CLOUD_DEFAULTS.patient;
-  process.env.CLOUD_DOCTOR_URL ||= CLOUD_DEFAULTS.doctor;
-  process.env.CLOUD_MEETING_URL ||= CLOUD_DEFAULTS.meeting;
-}
-// Local default 1 worker (one 3-browser fixture). Set PW_WORKERS=4 to parallelize B/C/G/H/I/J.
-const workers = Number.parseInt(process.env.PW_WORKERS || (IS_CLOUD ? '4' : '1'), 10);
+const headed = process.env.PW_HEADED === '1' || process.env.PW_HEADED === 'true';
+const patientUrl = process.env.PATIENT_URL || 'http://127.0.0.1:3005';
+const doctorUrl = process.env.DOCTOR_URL || 'http://127.0.0.1:3010';
+const meetingUrl = process.env.MEETING_URL || 'http://127.0.0.1:3020';
 
-function resolveSlowMo(headless: boolean, isCloud: boolean): number {
-  if (headless) return 0;
-  return isCloud ? 300 : 150;
-}
-
-const coreSlowMo = resolveSlowMo(USE_HEADLESS, IS_CLOUD);
-
-function resolveGlobalTimeout(isCloud: boolean, headed: boolean): number {
-  if (isCloud) return 3_600_000;
-  if (headed) return 10_800_000;
-  return 1_800_000;
-}
-
-function resolvePlaywrightChannel(headless: boolean): string | undefined {
-  if (headless || isChromeChannelBanned()) return undefined;
-  return process.platform === 'win32' ? 'msedge' : undefined;
-}
-
-const defaultBrowserName = isChromeChannelBanned()
-  ? ('firefox' as const)
-  : ('chromium' as const);
-
-const sharedUse = {
-  headless: USE_HEADLESS,
-  viewport: { width: 1440, height: 900 } as const,
-  screenshot: BASELINE_SCREENSHOT,
-  trace: 'off' as const,
-  actionTimeout: IS_CLOUD ? 20_000 : 15_000,
-  navigationTimeout: IS_CLOUD ? 90_000 : 15_000,
-  launchOptions: {
-    slowMo: resolveSlowMo(USE_HEADLESS, IS_CLOUD),
-    ...(defaultBrowserName === 'firefox'
-      ? FIREFOX_LAUNCH_OPTIONS
-      : { args: chromiumLaunchArgs(USE_HEADLESS) }),
-  },
-  browserName: defaultBrowserName,
-  baseURL: IS_CLOUD
-    ? (process.env.CLOUD_PATIENT_URL || 'https://izara-patient-portal-dev-testing-724889190329.asia-southeast1.run.app')
-    : 'http://127.0.0.1:3005',
-};
-
-/** 5" phone through 13" tablet matrix (Group S). */
-const RESPONSIVE_VIEWPORTS = {
-  phoneXs: { width: 320, height: 568 },
-  phoneSm: { width: 360, height: 780 },
-  phoneMd: { width: 390, height: 844 },
-  phoneLg: { width: 430, height: 932 },
-  tabletSm: { width: 600, height: 960 },
-  tabletMd: { width: 768, height: 1024 },
-  tabletLg: { width: 1024, height: 1366 },
-  desktop: { width: 1440, height: 900 },
-} as const;
-
-const RESPONSIVE_PROJECTS = [
-  { name: 'S-phone-xs', viewport: RESPONSIVE_VIEWPORTS.phoneXs },
-  { name: 'S-phone-sm', viewport: RESPONSIVE_VIEWPORTS.phoneSm },
-  { name: 'S-phone-md', viewport: RESPONSIVE_VIEWPORTS.phoneMd },
-  { name: 'S-phone-lg', viewport: RESPONSIVE_VIEWPORTS.phoneLg },
-  { name: 'S-tablet-sm', viewport: RESPONSIVE_VIEWPORTS.tabletSm },
-  { name: 'S-tablet-md', viewport: RESPONSIVE_VIEWPORTS.tabletMd },
-  { name: 'S-tablet-lg', viewport: RESPONSIVE_VIEWPORTS.tabletLg },
-] as const;
+const chrome = { ...devices['Desktop Chrome'] };
+const edge = { ...devices['Desktop Edge'] };
+const firefox = { ...devices['Desktop Firefox'] };
+const webkit = { ...devices['Desktop Safari'] };
+const phoneSm = { ...devices['iPhone 12'] };
 
 export default defineConfig({
-  testDir: './tests',
-  outputDir: PRE_DEBUG_OUTPUT,
-  timeout: IS_CLOUD ? 420_000 : 300_000,
-  retries: IS_CLOUD ? 0 : process.env.PW_HEADED === '1' ? 1 : 0,
-  workers,
-  maxFailures: 10,
-  forbidOnly: true,
-  // Headed full A–P gate needs >1h on Windows (GT-01); cloud keeps 1h cap
-  globalTimeout: resolveGlobalTimeout(IS_CLOUD, process.env.PW_HEADED === '1'),
-  globalSetup: './tests/e2e/global-setup.ts',
+  testDir: path.join(root, 'tests'),
+  testMatch: /group-.*\.ui-test\.ts$/,
+  testIgnore: ['**/e2e/**', '**/unit/**', '**/node_modules/**', '**/output/**'],
+  fullyParallel: false,
+  forbidOnly: !!process.env.CI,
+  retries: 0,
+  workers: Number(process.env.PW_WORKERS || 1),
+  timeout: 180_000,
+  expect: { timeout: 30_000 },
   reporter: [
     ['list'],
-    ['html', { open: 'never', outputFolder: 'playwright-report' }],
-    ['json', { outputFile: 'test-results/full-coverage-results.json' }],
+    ['html', { open: 'never', outputFolder: 'reports/playwright-html' }],
   ],
-  use: sharedUse,
-
+  outputDir: path.join(root, 'tests/output/test-results'),
+  use: {
+    headless: !headed,
+    // Headed multi-portal runs hang on Firefox when recording traces across 3 browsers.
+    trace: headed ? 'off' : 'retain-on-failure',
+    screenshot: 'on',
+    video: headed ? 'off' : 'retain-on-failure',
+    actionTimeout: 30_000,
+    navigationTimeout: 60_000,
+    locale: 'th-TH',
+    viewport: { width: 1440, height: 900 },
+  },
   projects: [
-    /* ── AUTH GATE (runs first) ──────────────────────────────────── */
     {
       name: 'A-auth',
-      testMatch: 'group-A-auth-access.ui-test.ts',
+      testMatch: /group-A-auth-access\.ui-test\.ts$/,
+      use: { ...chrome, baseURL: patientUrl },
     },
-
-    /* ── PARALLEL GROUPS (B, C, G, H, I, J) ─────────────────────── */
+    {
+      name: 'A2b-public-auth',
+      testMatch: /group-A2b-public-auth\.ui-test\.ts$/,
+      use: { ...chrome, baseURL: patientUrl },
+    },
     {
       name: 'B-patient-portal',
-      testMatch: 'group-B-patient-portal.ui-test.ts',
-      dependencies: ['A-auth'],
+      testMatch: /group-B-patient-portal\.ui-test\.ts$/,
+      use: { ...chrome, baseURL: patientUrl },
     },
     {
       name: 'C-doctor-portal',
-      testMatch: 'group-C-doctor-portal.ui-test.ts',
-      dependencies: ['A-auth'],
+      testMatch: /group-C-doctor-portal\.ui-test\.ts$/,
+      use: { ...edge, baseURL: doctorUrl },
     },
-    {
-      name: 'G-livingwill-pdpa',
-      testMatch: 'group-G-livingwill-pdpa.ui-test.ts',
-      dependencies: ['A-auth'],
-    },
-    {
-      name: 'H-content-resources',
-      testMatch: 'group-H-content-resources-consultants.ui-test.ts',
-      dependencies: ['A-auth'],
-    },
-    {
-      name: 'I-admin-notifications',
-      testMatch: 'group-I-admin-users-notifications.ui-test.ts',
-      dependencies: ['A-auth'],
-    },
-    {
-      name: 'J-ai-timeline-map',
-      testMatch: 'group-J-ai-timeline-map.ui-test.ts',
-      dependencies: ['A-auth'],
-    },
-    {
-      name: 'J-patient-jitsi-prejoin',
-      testMatch: 'group-J-patient-jitsi-prejoin.ui-test.ts',
-      dependencies: ['A-auth'],
-    },
-    {
-      name: 'R-jitsi-role-permissions',
-      testMatch: 'group-R-jitsi-role-permissions.ui-test.ts',
-      dependencies: ['A-auth'],
-      timeout: IS_CLOUD ? 600_000 : 420_000,
-    },
-    {
-      name: 'Defect-regression',
-      testMatch: /group-Defect-.*\.ui-test\.ts/,
-      dependencies: ['A-auth'],
-    },
-
-    /* ── SEQUENTIAL PIPELINE (D → E → F) ────────────────────────── */
     {
       name: 'D-appointments',
-      testMatch: 'group-D-appointment-workflows.ui-test.ts',
-      dependencies: ['A-auth'],
+      testMatch: /group-D-appointment-workflows\.ui-test\.ts$/,
+      use: { ...chrome, baseURL: patientUrl },
     },
     {
       name: 'D-queue-traceability',
-      testMatch: 'group-D-queue-accept-traceability.ui-test.ts',
-      dependencies: ['A-auth'],
+      testMatch: /group-D-queue-accept-traceability\.ui-test\.ts$/,
+      use: { ...chrome, baseURL: doctorUrl },
     },
     {
       name: 'D-doctor-host',
-      testMatch: 'group-D-doctor-host-workflow.ui-test.ts',
-      dependencies: ['D-appointments'],
-      use: {
-        channel: resolvePlaywrightChannel(USE_HEADLESS),
-      },
-    },
-    {
-      name: 'Q-meeting-lifecycle',
-      testMatch: 'group-Q-meeting-lifecycle.ui-test.ts',
-      dependencies: ['D-appointments', 'D-doctor-host'],
-      timeout: IS_CLOUD ? 900_000 : 600_000,
-    },
-    {
-      name: 'Q2-post-meeting-doctor',
-      testMatch: 'group-Q2-post-meeting-doctor.ui-test.ts',
-      dependencies: ['Q-meeting-lifecycle'],
-      timeout: IS_CLOUD ? 600_000 : 300_000,
-    },
-    {
-      name: 'R1-code-breaker-network',
-      testMatch: 'group-R1-code-breaker-network.ui-test.ts',
-      dependencies: ['D-appointments'],
-      timeout: IS_CLOUD ? 600_000 : 300_000,
+      testMatch: /group-D-doctor-host-workflow\.ui-test\.ts$/,
+      use: { ...edge, baseURL: doctorUrl },
     },
     {
       name: 'E-meeting-clinical',
-      testMatch: /group-E-(meeting-clinical|cross-browser-matrix)\.ui-test\.ts/,
-      dependencies: ['D-appointments', 'Q-meeting-lifecycle', 'Q2-post-meeting-doctor'],
-      // Jitsi multi-party: Firefox (patient) + Edge (doctor) + Firefox (admin) — multi-portal.ts
+      testMatch: /group-E-meeting-clinical\.ui-test\.ts$/,
+      use: { ...chrome, baseURL: doctorUrl },
+    },
+    {
+      name: 'E-cross-browser',
+      testMatch: /group-E-cross-browser-matrix\.ui-test\.ts$/,
+      use: { ...chrome, baseURL: patientUrl },
     },
     {
       name: 'F-phr-health-records',
-      testMatch: 'group-F-phr-health-records.ui-test.ts',
-      dependencies: ['E-meeting-clinical'],  // must run AFTER E completes meeting
+      testMatch: /group-F-phr-health-records\.ui-test\.ts$/,
+      use: { ...chrome, baseURL: patientUrl },
+    },
+    {
+      name: 'G-livingwill-pdpa',
+      testMatch: /group-G-livingwill-pdpa\.ui-test\.ts$/,
+      use: { ...chrome, baseURL: patientUrl },
+    },
+    {
+      name: 'H-content-resources',
+      testMatch: /group-H-content-resources-consultants\.ui-test\.ts$/,
+      use: { ...chrome, baseURL: doctorUrl },
+    },
+    {
+      name: 'I-admin-notifications',
+      testMatch: /group-I-admin-users-notifications\.ui-test\.ts$/,
+      use: { ...chrome, baseURL: doctorUrl },
+    },
+    {
+      name: 'J-ai-timeline-map',
+      testMatch: /group-J-ai-timeline-map\.ui-test\.ts$/,
+      use: { ...chrome, baseURL: patientUrl },
+    },
+    {
+      name: 'J-patient-jitsi-prejoin',
+      testMatch: /group-J-patient-jitsi-prejoin\.ui-test\.ts$/,
+      use: { ...chrome, baseURL: patientUrl },
+    },
+    {
+      name: 'K-accessibility',
+      testMatch: /group-K-accessibility\.ui-test\.ts$/,
+      use: { ...chrome, baseURL: patientUrl },
     },
     {
       name: 'L-lab-ordering',
-      testMatch: 'group-L-lab-ordering.ui-test.ts',
-      dependencies: ['E-meeting-clinical'],
+      testMatch: /group-L-lab-ordering\.ui-test\.ts$/,
+      use: { ...chrome, baseURL: doctorUrl },
     },
-
-    /* ── A11Y GATE (runs after auth, independent) ───────────────── */
-    {
-      name: 'K-accessibility',
-      testMatch: 'group-K-accessibility.ui-test.ts',
-      dependencies: ['A-auth'],
-    },
-
-    /* ── HARDENING + SSO (no data dependencies — API + UI smoke) ── */
     {
       name: 'M-hardening',
-      testMatch: 'group-M-hardening.ui-test.ts',
+      testMatch: /group-M-hardening\.ui-test\.ts$/,
+      use: { ...chrome, baseURL: patientUrl },
     },
     {
       name: 'N-google-sso',
-      testMatch: 'group-N-google-sso.ui-test.ts',
+      testMatch: /group-N-google-sso\.ui-test\.ts$/,
+      use: { ...chrome, baseURL: patientUrl },
     },
     {
       name: 'O-sso-screenshots',
-      testMatch: 'group-O-sso-screenshots.ui-test.ts',
-      dependencies: ['A-auth'],
+      testMatch: /group-O-sso-screenshots\.ui-test\.ts$/,
+      use: { ...chrome, baseURL: patientUrl },
     },
     {
       name: 'P-workflow-screenshots',
-      testMatch: 'group-P-workflow-screenshots.ui-test.ts',
-      dependencies: ['A-auth', 'D-appointments'],
+      testMatch: /group-P-workflow-screenshots\.ui-test\.ts$/,
+      use: { ...chrome, baseURL: patientUrl },
     },
-
-    /* ── CORE MULTI-BROWSER (Firefox / WebKit; Chromium skipped when PW_NO_CHROME=1) ─ */
-    ...(isChromeChannelBanned()
-      ? []
-      : [
-          {
-            name: 'W-core-chromium',
-            testMatch: 'group-W-core-multibrowser.ui-test.ts',
-            timeout: IS_CLOUD ? 600_000 : 480_000,
-            use: {
-              ...sharedUse,
-              browserName: 'chromium' as const,
-              launchOptions: { slowMo: coreSlowMo, args: chromiumLaunchArgs(USE_HEADLESS) },
-            },
-          },
-        ]),
+    {
+      name: 'Q-meeting-lifecycle',
+      testMatch: /group-Q-meeting-lifecycle\.ui-test\.ts$/,
+      use: { ...chrome, baseURL: doctorUrl },
+    },
+    {
+      name: 'Q2-post-meeting-doctor',
+      testMatch: /group-Q2-post-meeting-doctor\.ui-test\.ts$/,
+      use: { ...chrome, baseURL: doctorUrl },
+    },
+    {
+      name: 'R-jitsi-role-permissions',
+      testMatch: /group-R-jitsi-role-permissions\.ui-test\.ts$/,
+      use: { ...chrome, baseURL: meetingUrl },
+    },
+    {
+      name: 'R1-code-breaker',
+      testMatch: /group-R1-code-breaker-network\.ui-test\.ts$/,
+      use: { ...chrome, baseURL: patientUrl },
+    },
+    {
+      name: 'S-responsive',
+      testMatch: /group-S-responsive\.ui-test\.ts$/,
+      use: { ...chrome, baseURL: patientUrl },
+    },
+    {
+      name: 'S-phone-sm',
+      testMatch: /group-S-responsive\.ui-test\.ts$/,
+      use: { ...phoneSm, baseURL: patientUrl },
+    },
+    {
+      name: 'U-ui-audit',
+      testMatch: /group-U-ui-element-audit\.ui-test\.ts$/,
+      use: { ...chrome, baseURL: patientUrl },
+    },
+    {
+      name: 'W-core-chromium',
+      testMatch: /group-W-core-multibrowser\.ui-test\.ts$/,
+      use: { ...chrome, baseURL: patientUrl },
+    },
     {
       name: 'W-core-firefox',
-      testMatch: 'group-W-core-multibrowser.ui-test.ts',
-      timeout: IS_CLOUD ? 600_000 : 480_000,
-      use: {
-        ...sharedUse,
-        browserName: 'firefox',
-        launchOptions: { slowMo: coreSlowMo, ...FIREFOX_LAUNCH_OPTIONS },
-      },
+      testMatch: /group-W-core-multibrowser\.ui-test\.ts$/,
+      use: { ...firefox, baseURL: patientUrl },
     },
     {
       name: 'W-core-webkit',
-      testMatch: 'group-W-core-multibrowser.ui-test.ts',
-      timeout: IS_CLOUD ? 600_000 : 480_000,
-      use: {
-        ...sharedUse,
-        browserName: 'webkit',
-        launchOptions: { slowMo: coreSlowMo },
-      },
+      testMatch: /group-W-core-multibrowser\.ui-test\.ts$/,
+      use: { ...webkit, baseURL: patientUrl },
     },
-
-    /* ── RESPONSIVE LAYOUT (7 viewports: 5" phone – 13" tablet) ─── */
-    ...RESPONSIVE_PROJECTS.map((rp) => ({
-      name: rp.name,
-      testMatch: 'group-S-responsive.ui-test.ts',
-      dependencies: ['A-auth'],
-      use: {
-        ...sharedUse,
-        viewport: rp.viewport,
-      },
-    })),
+    {
+      name: 'Defect-regression',
+      testMatch: /group-Defect-.*\.ui-test\.ts$/,
+      use: { ...chrome, baseURL: patientUrl },
+    },
+    {
+      name: 'MEET-auto-meeting',
+      testMatch: /group-MEET-auto-meeting\.ui-test\.ts$/,
+      use: { ...chrome, baseURL: doctorUrl },
+    },
+    {
+      name: 'smoke-ux',
+      testMatch: /group-local-smoke-ux\.ui-test\.ts$/,
+      use: { ...chrome },
+    },
   ],
+  metadata: {
+    patientUrl,
+    doctorUrl,
+    meetingUrl,
+    testEnv: process.env.TEST_ENV || 'local',
+  },
 });

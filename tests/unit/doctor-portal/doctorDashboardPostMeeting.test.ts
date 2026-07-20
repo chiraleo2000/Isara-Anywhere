@@ -2,7 +2,7 @@
  * @process Processes/POST_MEETING_WORKFLOW.md
  */
 import { describe, it, expect } from 'vitest';
-import { getRecentCompletedAppointments } from '../../../Isara-doctor-portal/frontend/utils/postMeetingAppointments';
+import { getRecentCompletedAppointments } from '../../../../issara-doctor/frontend/utils/postMeetingAppointments';
 
 describe('doctorDashboardPostMeeting — completed appointment summary source', () => {
   const appointments = [

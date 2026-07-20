@@ -38,10 +38,10 @@ sequenceDiagram
     end
 
     rect rgb(255, 243, 224)
-        Note over DB,D: ✅ DOCTOR CONFIRMATION & POOL
+        Note over DB,D: ✅ DOCTOR CONFIRMATION & POOL (Health Meeting queue)
         DB->>DP: New appointment notification
         DP->>D: Show pending / pool (includeAccepted)
-        D->>DP: Confirm from pool
+        D->>DP: Claim / AI match / Confirm from /health-meeting?tab=queue
         DP->>DB: UPDATE status confirmed (row kept, acceptedBy)
         Note over DB,DP: Accepted visible 7 days · decline → in_pool
         DB->>PP: Status update

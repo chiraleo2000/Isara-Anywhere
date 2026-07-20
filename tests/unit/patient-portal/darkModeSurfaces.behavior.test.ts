@@ -4,11 +4,11 @@ import path from 'node:path';
 
 const notificationsPagePath = path.resolve(
   __dirname,
-  '../../../Isara-patient-portal/frontend/pages/NotificationsPage.tsx',
+  '../../../issara-patient/frontend/pages/NotificationsPage.tsx',
 );
 const livingWillPath = path.resolve(
   __dirname,
-  '../../../Isara-patient-portal/frontend/pages/pdpa/LivingWillPage.tsx',
+  '../../../issara-patient/frontend/pages/pdpa/LivingWillPage.tsx',
 );
 describe('dark mode surfaces (G2)', () => {
   it('NotificationsPage branches title and rows on theme === dark', () => {
@@ -21,7 +21,7 @@ describe('dark mode surfaces (G2)', () => {
   it('notificationRowClass provides dark unread highlight', () => {
     const hookPath = path.resolve(
       __dirname,
-      '../../../Isara-patient-portal/frontend/hooks/useNotificationsPageHelpers.ts',
+      '../../../issara-patient/frontend/hooks/useNotificationsPageHelpers.ts',
     );
     const source = fs.readFileSync(hookPath, 'utf8');
     expect(source).toMatch(/isDark.*bg-emerald-950/);

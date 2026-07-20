@@ -1,7 +1,7 @@
 # IZARA Telemedicine — Presentation Materials
 
-> **Version:** 1.7.48 · **Updated:** 2 June 2026  
-> **Status:** Defect PDF — 23/23 verified · **2938** unit tests · Docker gate green  
+> **Version:** 1.7.60 · **Updated:** 13 July 2026  
+> **Status:** UX showup 69/69 · cloud doc screenshots green · deploy-gate 21/21 · P0=0  
 > **Documents hub:** [../README.md](../README.md) · **Thai As-is:** [../Technical_Documents/](../Technical_Documents/)
 
 ---
@@ -76,7 +76,7 @@ Presentations/
 ## Testing cross-reference
 
 - Docker multi-browser E2E: [../docs/markdown/testing/DOCKER_MULTIBROWSER_E2E.md](../docs/markdown/testing/DOCKER_MULTIBROWSER_E2E.md)
-- UI screenshots (Group W): [../docs/screenshots/group-W/](../docs/screenshots/group-W/)
+- UI screenshots (Group W): [../docs/screenshots/group-W/](../../docs/screenshots/group-W/)
 - Coverage: [../docs/markdown/testing/UNIT_TEST_UI_COVERAGE.md](../docs/markdown/testing/UNIT_TEST_UI_COVERAGE.md)
 - Diagram: [html-diagrams/17-testing-quality-gate.html](html-diagrams/17-testing-quality-gate.html)
 - Latest defect diagram: [html-diagrams/23-defect-remediation-v1748.html](html-diagrams/23-defect-remediation-v1748.html)

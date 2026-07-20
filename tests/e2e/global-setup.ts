@@ -15,6 +15,9 @@ import {
   assertAuthTokensPresent,
   waitForPortalServices,
 } from '../helpers/service-readiness';
+import { AUTH_CACHE_PATH, STORAGE_STATE_DIR } from '../helpers/auth-paths';
+
+export { AUTH_CACHE_PATH, STORAGE_STATE_DIR };
 
 // ── URLs ────────────────────────────────────────────────────────────────────
 const IS_CLOUD = process.env.TEST_ENV === 'cloud';
@@ -36,9 +39,6 @@ const USERS = {
   doctor:   { email: process.env.TEST_DOCTOR_EMAIL || 'doctor.test@izara.com', password: process.env.TEST_DOCTOR_PASSWORD || 'IzaraDoctor@2024', id: 'DOC-TEST-001', name: 'Dr. Test Good' }, // NOSONAR S2068
   admin:    { email: process.env.TEST_ADMIN_EMAIL || 'admin.test@izara.com', password: process.env.TEST_ADMIN_PASSWORD || 'IzaraAdmin@2024', id: 'ADMIN-TEST-001', name: 'Dr. Admin Kind' }, // NOSONAR S2068
 };
-
-export const AUTH_CACHE_PATH = path.join(__dirname, '.auth-cache.json');
-export const STORAGE_STATE_DIR = path.join(__dirname, '.auth-states');
 
 export interface CachedAuth {
   timestamp: number;
@@ -86,6 +86,7 @@ function ensureLocalDbMigrations(): void {
   const files = [
     '2025-add-google-sub.sql',
     '2025-ensure-appointment-columns.sql',
+    'v1.6.0-fix-content-approval.sql',
   ];
   for (const file of files) {
     const migrationPath = path.join(migrationDir, file);

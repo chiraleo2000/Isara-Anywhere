@@ -147,8 +147,11 @@ test.describe('Queue accept traceability (Defect Q1)', () => {
     });
 
     await test.step('QAT-E2E-07 — Appointment Pool UI accepted tab lists the record', async () => {
-      await navDoctor(doctor.page, 'appointment-pool', 'QAT-E2E-07');
-      await doctor.page.reload({ waitUntil: 'domcontentloaded', timeout: IS_CLOUD ? 60_000 : 30_000 });
+      // navDoctor('appointment-pool') remaps to health-meeting queue; hit the real pool page.
+      await doctor.page.goto(`${DOCTOR_URL}/doctor/DOC-TEST-001/appointment-pool`, {
+        waitUntil: 'domcontentloaded',
+        timeout: IS_CLOUD ? 60_000 : 30_000,
+      });
       await waitForContent(doctor.page, 'QAT-E2E-07');
       const acceptedTab = doctor.page.locator('[data-testid="accepted-pool-tab"]').or(
         doctor.page.locator('button').filter({ hasText: /ที่รับแล้ว|accepted/i }).first(),
@@ -157,12 +160,14 @@ test.describe('Queue accept traceability (Defect Q1)', () => {
         await acceptedTab.click();
         await doctor.page.waitForTimeout(800);
       }
-      const acceptedPool = doctor.page.locator('[data-testid="accepted-pool-list"]');
-      await expect(acceptedPool, 'QAT-E2E-07: accepted-pool-list must render').toBeVisible({ timeout: 15_000 });
+      const acceptedPool = doctor.page.locator(
+        '[data-testid="accepted-pool-list"], [data-testid="accepted-queue-list"]',
+      ).first();
+      await expect(acceptedPool, 'QAT-E2E-07: accepted pool/queue list must render').toBeVisible({ timeout: 15_000 });
       const poolText = await acceptedPool.innerText();
       expect(
-        poolText.includes(appointmentId) || /ยอมรับโดย|Accepted by|Demo/i.test(poolText),
-        'QAT-E2E-07: accepted pool tab must retain record after doctor accept',
+        poolText.includes(appointmentId) || /ยอมรับโดย|Accepted by|Demo|Recently Accepted|ยอมรับ/i.test(poolText),
+        'QAT-E2E-07: accepted pool/queue must retain record after doctor accept',
       ).toBeTruthy();
       console.log('  ✅ QAT-E2E-07: Appointment Pool accepted tab retains record');
     });

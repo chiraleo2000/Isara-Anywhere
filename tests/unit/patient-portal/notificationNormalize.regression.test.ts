@@ -4,7 +4,7 @@ import path from 'node:path';
 
 const postgresDataServicePath = path.resolve(
   __dirname,
-  '../../../Isara-patient-portal/backend/services/postgresDataService.ts',
+  '../../../issara-patient/backend/services/postgresDataService.ts',
 );
 
 describe('notification normalize regression guard', () => {

@@ -1,6 +1,6 @@
 // ============================================================================
 // Living Will Workflow Tests — Patient Portal
-// Based on: Processes/Living_Will_Processes.md & Living_Will_Implementation_Plan.md
+// Based on: Processes/Living_Will_Processes.md
 // Tests: PDPA-compliant Living Will creation, sharing, proxy designation
 // ============================================================================
 

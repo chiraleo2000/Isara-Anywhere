@@ -57,11 +57,12 @@ function renderEnv(title, rows) {
 }
 
 function writeEnv(relPath, content) {
-  const full = path.join(repoRoot, relPath);
+  const full = path.resolve(repoRoot, relPath);
   if (dryRun) {
     console.log(`[dry-run] Would write ${relPath} (${content.split('\n').length} lines)`);
     return;
   }
+  fs.mkdirSync(path.dirname(full), { recursive: true });
   fs.writeFileSync(full, content, 'utf8');
   console.log(`✅ ${relPath}`);
 }
@@ -123,6 +124,7 @@ const doctorEnv = renderEnv('Izara Doctor Portal — npm dev (Vite :3010, auth :
   WEBSOCKET_URL: 'ws://localhost:3011/ws',
   MEETING_SERVER_URL: 'http://localhost:3020',
   MEETING_PUBLIC_URL: 'http://localhost:3020',
+  UPLOADS_DIR: './uploads',
   CORS_ORIGINS:
     'http://localhost:3010,http://localhost:3005,http://localhost:3011,http://localhost:3020',
   ...sharedDb,
@@ -138,6 +140,13 @@ const doctorEnv = renderEnv('Izara Doctor Portal — npm dev (Vite :3010, auth :
   JITSI_DOMAIN: get(src, 'JITSI_DOMAIN', 'VITE_JITSI_DOMAIN') || 'meet.jit.si',
   JITSI_APP_ID: get(src, 'JITSI_APP_ID', null) || 'izara-telemedicine',
   JWT_SECRET: jwt,
+  DEMO_AUTO_LOGIN: get(src, 'DEMO_AUTO_LOGIN', null) || '1',
+  DEMO_AUTO_MEETING: get(src, 'DEMO_AUTO_MEETING', null) || '1',
+  DEMO_DOCTOR_EMAIL: get(src, 'DEMO_DOCTOR_EMAIL', null) || 'doctor.test@izara.com',
+  DEMO_DOCTOR_PASSWORD: get(src, 'DEMO_DOCTOR_PASSWORD', null) || 'IzaraDoctor@2024',
+  // Keep concurrent GATE0 / E2E / unit logins from invalidating each other's sessions
+  E2E_ALLOW_PARALLEL_SESSIONS:
+    get(src, 'E2E_ALLOW_PARALLEL_SESSIONS', null) || '1',
 });
 
 const meetingEnv = renderEnv('Izara Meeting Server — npm dev (:3020)', {
@@ -179,11 +188,14 @@ const rootEnv = renderEnv('Isara Anywhere root — Vitest / Playwright / gate sc
   MEETING_SERVER_URL: meetingServer,
   MEETING_PUBLIC_URL: meetingPublic,
   TEST_ENV: 'local',
+  // Preserve cloud DB password for cleanup:cloud-test-only / db-tool --target cloud
+  CLOUD_DB_PASSWORD: get(src, 'CLOUD_DB_PASSWORD', null) || '',
 });
 
 console.log(`\n📋 Sync portal .env from ${path.relative(repoRoot, sourceFile)}\n`);
-writeEnv('Isara-patient-portal/.env', patientEnv);
-writeEnv('Isara-doctor-portal/.env', doctorEnv);
-writeEnv('Izara-jitsi-server/.env', meetingEnv);
+// Sibling layout (New-Isara-Anywhere): issara-workspace + ../issara-{patient,doctor,jitsi}
+writeEnv('../issara-patient/.env', patientEnv);
+writeEnv('../issara-doctor/.env', doctorEnv);
+writeEnv('../issara-jitsi/.env', meetingEnv);
 writeEnv('.env', rootEnv);
-console.log(dryRun ? '\n(dry-run — no files written)\n' : '\nDone. Start npm dev in each portal folder.\n');
+console.log(dryRun ? '\n(dry-run — no files written)\n' : '\nDone. Start npm run dev from issara-workspace.\n');

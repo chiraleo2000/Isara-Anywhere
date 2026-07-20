@@ -32,7 +32,16 @@
 3. **ผลลัพธ์ที่คาดหวัง** — สถานะระบบ / API / ฐานข้อมูลหลังจบขั้นตอน
 
 ---
+## UI Controls Inventory
 
+| # | Control | testid | Action | Expected | Screenshot |
+|---|---------|--------|--------|----------|------------|
+| 1 | Data Testid | `data-testid` | click | Documented control | U-data-testid |
+| 2 | Confirmed | `confirmed` | click | Documented control | U-confirmed |
+| 3 | Register Submit | `register-submit` | click | Documented control | U-register-submit |
+| 4 | Appointmentid | `appointmentId` | click | Documented control | U-appointmentId |
+| 5 | Meetingid | `meetingId` | click | Documented control | U-meetingId |
+| 6 | Registerroute | `registerRoute` | click | Documented control | U-registerRoute |
 
 ## 1. Purpose
 
@@ -358,11 +367,11 @@ Step 9: Failure → Error message (e.g., "Email already registered")
 
 | Field | Value |
 |-------|-------|
-| **Status** | partial |
+| **Status** | covered |
 | **Unit tests** | `registerRoute` |
 | **UI (Playwright)** | Group B |
 | **data-testid** | See [tests/SELECTORS.md](../../tests/SELECTORS.md) |
-| **Last verified** | 2026-05-22 |
+P26-07-13 |
 
 **Run locally**
 

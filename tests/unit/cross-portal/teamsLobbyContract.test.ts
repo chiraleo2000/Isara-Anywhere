@@ -6,7 +6,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 const meetingRoom = fs.readFileSync(
-  path.resolve(__dirname, '../../../Isara-doctor-portal/frontend/pages/meetings/MeetingRoom.tsx'),
+  path.resolve(__dirname, '../../../issara-doctor/frontend/pages/meetings/MeetingRoom.tsx'),
   'utf8',
 );
 
@@ -19,7 +19,7 @@ describe('teamsLobbyContract — Teams-like manual admit default', () => {
 
   it('TM-01 — notifyHostPresent only after videoConferenceJoined (in Jitsi), not on joinMeeting click', () => {
     const jitsiCfg = fs.readFileSync(
-      path.resolve(__dirname, '../../../Isara-doctor-portal/frontend/utils/jitsiMeetingConfig.ts'),
+      path.resolve(__dirname, '../../../issara-doctor/frontend/utils/jitsiMeetingConfig.ts'),
       'utf8',
     );
     expect(meetingRoom).toMatch(/const joinMeeting = useCallback/);

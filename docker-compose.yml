@@ -1,339 +1,262 @@
-# ============================================================================
-# IZARA TELEMEDICINE - COMPLETE DOCKER COMPOSE
-# Version: 1.7.3
-# Updated: 2026-05-18
-# ============================================================================
+# =============================================================================
+# IZARA Telemedicine Platform - Docker Compose
+# Deploys: issara-jitsi + issara-patient + issara-doctor
+# Uses EXISTING PostgreSQL on host machine (not containerized)
+# =============================================================================
+# Usage:
+#   docker-compose up --build        (build & run all services)
+#   docker-compose up -d             (run in background)
+#   docker-compose down              (stop all services)
 #
-# This docker-compose provides:
-# - PostgreSQL 18 with pgvector for primary database
-# - pgAdmin for database management
-# - Patient Portal (unified frontend + backend on port 3005)
-# - Doctor Portal (unified frontend + backend on port 3010)
-# - Meeting Server (transcription + AI on port 3020)
-#
-# ALL SERVICES USE FREE TIER:
-#   - Video: Jitsi Meet (meet.jit.si) - FREE
-#   - Transcription: Web Speech API (browser-native) - FREE
-#   - AI: Gemini 2.5 Flash Lite - FREE
-#   - Database: PostgreSQL + pgvector - FREE
-#
-# Run: docker compose up -d --build
-# Access (direct on server):
-#   - Patient Portal: http://localhost:3005
-#   - Doctor Portal:  http://localhost:3010
-#   - Meeting Server: http://localhost:3020
-#   - pgAdmin:        http://localhost:5050
-# LAN via Nginx: see deploy/nginx/DEPLOYMENT.md
-#   patient.isara.local | doctor.isara.local | meeting.isara.local | dbadmin.isara.local
-# ============================================================================
+# All services connect to the host PostgreSQL via DB_HOST / DB_PORT in .env
+# =============================================================================
 
 services:
-  # ==========================================================================
-  # PostgreSQL Database with pgvector
-  # ==========================================================================
-  postgres:
-    profiles: ["full", "default", "external-db"]
-    image: pgvector/pgvector:pg18
-    container_name: izara-postgres
-    restart: unless-stopped
-    env_file:
-      - .env.docker
-    environment:
-      POSTGRES_USER: ${POSTGRES_USER:?POSTGRES_USER is required}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
-      POSTGRES_DB: ${POSTGRES_DB:?POSTGRES_DB is required}
-      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=C"
-    ports:
-      # Default 127.0.0.1:5433 (localhost only). For pgAdmin 4 desktop from another PC on LAN set:
-      #   POSTGRES_PUBLISH=5433   in .env.docker  →  listens on 0.0.0.0:5433
-      - "${POSTGRES_PUBLISH:-127.0.0.1:5433}:5432"
-    volumes:
-      # Bind mount: set POSTGRES_DATA_DIR in .env.docker (e.g. ./data/postgres or /var/lib/izara/postgres).
-      # Omit POSTGRES_DATA_DIR to keep the named volume postgres_data below.
-      - ${POSTGRES_DATA_DIR:-postgres_data}:/var/lib/postgresql
-      - ./scripts/database/izara-database.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
-      - ./scripts/database/migrations/v2.0.0-phase2-tables.sql:/docker-entrypoint-initdb.d/02-phase2.sql:ro
-      - ./scripts/database/migrations/v2.1.0-phase2-ai-his.sql:/docker-entrypoint-initdb.d/03-phase2-ai-his.sql:ro
-      - ./scripts/database/v2.2.0-notify-triggers.sql:/docker-entrypoint-initdb.d/04-notify-triggers.sql:ro
-      - ./scripts/database/seed-dev-data.sql:/docker-entrypoint-initdb.d/05-seed-dev.sql:ro
-      - ./scripts/database/migrations/2025-add-google-sub.sql:/docker-entrypoint-initdb.d/06-google-sub.sql:ro
-      - ./scripts/database/migrations/2025-ensure-appointment-columns.sql:/docker-entrypoint-initdb.d/07-appointment-columns.sql:ro
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d izara_phase1"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 30s
-    networks:
-      - izara-network
-
-  # ==========================================================================
-  # pgAdmin for Database Management
-  # ==========================================================================
-  pgadmin:
-    profiles: ["full", "default"]
-    image: dpage/pgadmin4:latest
-    container_name: izara-pgadmin
-    restart: unless-stopped
-    environment:
-      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL:-admin@izara.com}
-      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD:-IzaraAdmin@2024}
-      PGADMIN_LISTEN_PORT: 80
-    ports:
-      - "127.0.0.1:5050:80"
-    volumes:
-      - pgadmin_data:/var/lib/pgadmin
-    depends_on:
-      postgres:
-        condition: service_healthy
-    networks:
-      - izara-network
-
-  # ==========================================================================
-  # Patient Portal - Unified (Frontend + Backend on port 3005)
-  # ==========================================================================
-  patient-portal:
-    profiles: ["full", "default"]
+  # ===========================================================================
+  # issara-jitsi — Meeting/Video Server (port 3020)
+  # Contract alias: meeting-server (same service; docs/tests may say meeting-server)
+  # ===========================================================================
+  issara-jitsi:
+    profiles: ['full']
     build:
-      context: ./Isara-patient-portal
-      dockerfile: Dockerfile.unified
+      context: ../issara-jitsi
+      dockerfile: Dockerfile.local
+    container_name: izara-jitsi-server
+    restart: unless-stopped
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    ports:
+      - "3020:3020"
+    environment:
+      NODE_ENV: production
+      # Local E2E: enable /api/meetings/:id/dev/reset-lobby and related test hooks
+      IZARA_DEV_TESTING: ${IZARA_DEV_TESTING:-1}
+      PORT: 3020
+      # Database (shared Docker network). Use COMPOSE_DB_HOST so host .env DB_HOST=localhost
+      # does not break in-container DNS (container name: izara-postgres).
+      DATABASE_URL: postgresql://${DB_USER:-postgres}:${DB_PASSWORD:-IzaraDb2024}@${COMPOSE_DB_HOST:-izara-postgres}:${DB_INTERNAL_PORT:-5432}/${DB_NAME:-izara_phase1}
+      DB_HOST: ${COMPOSE_DB_HOST:-izara-postgres}
+      DB_PORT: ${DB_INTERNAL_PORT:-5432}
+      DB_NAME: ${DB_NAME:-izara_phase1}
+      DB_USER: ${DB_USER:-postgres}
+      DB_PASSWORD: ${DB_PASSWORD:-IzaraDb2024}
+      # Jitsi
+      JITSI_DOMAIN: ${JITSI_DOMAIN:-meet.demotoday.net}
+      JITSI_XMPP_DOMAIN: ${JITSI_XMPP_DOMAIN:-meet.jitsi}
+      JITSI_APP_ID: ${JITSI_APP_ID:-izara-telemedicine}
+      JITSI_JWT_SECRET: ${JITSI_JWT_SECRET:-21toTKg9Q7auYZF6h0wXd4Y0nBfj4T40zCA9DdHTSm4=}
+      JITSI_JWT_AUDIENCE: ${JITSI_JWT_AUDIENCE:-izara-telemedicine}
+      JITSI_JWT_ISSUER: ${JITSI_JWT_ISSUER:-izara-telemedicine}
+      # Gemini AI
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-3.1-flash-lite}
+      # JWT
+      JWT_SECRET: ${JWT_SECRET:-izara-jwt-secret-key-phase1-2026}
+      JWT_EXPIRES_IN: 24h
+      # CORS (allow patient & doctor portals)
+      CORS_ORIGINS: http://localhost:3005,http://localhost:3010,http://${SERVER_IP:-192.168.10.239}:3005,http://${SERVER_IP:-192.168.10.239}:3010,http://issara-patient:3005,http://issara-doctor:3010
+      # Recordings — ใช้ค่า RECORDINGS_DIR จาก .env เป็น host path, mount เข้า /app/recordings
+      RECORDINGS_DIR: /app/recordings
+      RECORDING_ENCRYPTION_KEY: ${RECORDING_ENCRYPTION_KEY:-izara-recording-encryption-key-2026}
+      JIBRI_WEBHOOK_SECRET: ${JIBRI_WEBHOOK_SECRET:-izara-jibri-webhook-secret-2026}
+      # Google Speech
+      GOOGLE_SPEECH_API_KEY: ${GOOGLE_SPEECH_API_KEY:-}
+      GOOGLE_STT_ENABLED: ${GOOGLE_STT_ENABLED:-true}
+      GOOGLE_STT_LANGUAGE: th-TH
+      # OpenAI (Whisper transcription for post-meeting pipeline)
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      # Logging
+      LOG_LEVEL: info
+    volumes:
+      - ${RECORDINGS_DIR:-./data/recordings}:/app/recordings
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3020/health"]
+      interval: 30s
+      timeout: 10s
+      start_period: 30s
+      retries: 3
+    networks:
+      - izara-shared
+
+  # ===========================================================================
+  # issara-patient — Patient Portal (port 3005)
+  # Frontend (Vite/React) + Backend (Express/tsx) unified container
+  # ===========================================================================
+  issara-patient:
+    profiles: ['full']
+    build:
+      context: ../issara-patient
+      dockerfile: Dockerfile.compose
       args:
-        VITE_API_URL: ""
-        VITE_APP_NAME: Izara Patient Portal
-        VITE_APP_VERSION: 1.7.3
-        VITE_APP_ENV: production
-        VITE_USE_POSTGRESQL: ${USE_POSTGRESQL:-true}
-        VITE_MEETING_SERVER_URL: ${MEETING_PUBLIC_URL:-http://localhost:3020}
+        VITE_APP_NAME: "Izara Patient Portal"
+        VITE_APP_VERSION: "2.0.0"
+        VITE_API_URL: ${PATIENT_API_URL:-http://localhost:3005}
+        VITE_MEETING_SERVER_URL: ${MEETING_PUBLIC_URL:-http://127.0.0.1:3020}
+        VITE_JITSI_DOMAIN: ${JITSI_DOMAIN:-meet.demotoday.net}
+        VITE_JITSI_APP_ID: ${JITSI_APP_ID:-izara-telemedicine}
         VITE_GCP_PROJECT_ID: ${GCP_PROJECT_ID:-izara-telemedicine}
-        GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+        VITE_GCP_REGION: ${GCP_REGION:-asia-southeast1}
+        VITE_GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-724889190329-svf2733fjqklfic9tet9d2qkmhkgmu0l.apps.googleusercontent.com}
         VITE_GOOGLE_MAPS_API_KEY: ${GOOGLE_MAPS_API_KEY:-}
-        GOOGLE_MAPS_MAP_ID: ${GOOGLE_MAPS_MAP_ID:-}
-        VITE_GEMINI_API_KEY: ${GEMINI_API_KEY:-xxxxx}
+        VITE_GOOGLE_MAPS_MAP_ID: ${GOOGLE_MAPS_MAP_ID:-}
+        VITE_GEMINI_API_KEY: ${GEMINI_API_KEY:-}
         VITE_GEMINI_MODEL: ${GEMINI_MODEL:-gemini-3.1-flash-lite}
-        JITSI_DOMAIN: ${JITSI_DOMAIN:-meet.jit.si}
-        VITE_JITSI_DOMAIN: ${JITSI_DOMAIN:-meet.jit.si}
+        VITE_PDPA_ENABLED: "true"
+        VITE_AUDIT_LOGGING_ENABLED: "true"
     container_name: izara-patient-portal
     restart: unless-stopped
-    env_file:
-      - .env.docker
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      issara-jitsi:
+        condition: service_healthy
+    ports:
+      - "3005:3005"
     environment:
-      # Server Configuration
       NODE_ENV: production
       PORT: 3005
-
-      # Rate limit — tune per environment (no infinity default)
-      RATE_LIMIT_MAX: ${RATE_LIMIT_MAX:-2000}
-
-      # Database Configuration - Docker internal network
-      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD required in .env}@postgres:5432/${POSTGRES_DB:-izara_phase1}
-      DB_HOST: postgres
-      DB_PORT: 5432
-      DB_NAME: izara_phase1
-      DB_USER: postgres
-      DB_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD required in .env}
-      DB_SSL: "false"
+      # Database (shared Docker network) — COMPOSE_DB_HOST, not host .env DB_HOST
+      USE_EMBEDDED_PG: "false"
       USE_POSTGRESQL: "true"
-      GCP_PROJECT_ID: ${GCP_PROJECT_ID:-izara-telemedicine}
-      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
-
-      # JWT Secret — must be set in .env (openssl rand -hex 32)
-      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET required in .env (generate with openssl rand -hex 32)}
-
-      # Meeting Server URL
-      MEETING_SERVER_URL: http://meeting-server:3020
-      MEETING_PUBLIC_URL: ${MEETING_PUBLIC_URL:-http://localhost:3020}
-      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3005,http://localhost:3010,http://localhost:3020,http://patient.isara.local,http://doctor.isara.local,http://meeting.isara.local}
-      JITSI_DOMAIN: ${JITSI_DOMAIN:-meet.jit.si}
-
-      # Google Maps server-side API key
-      GOOGLE_MAPS_API_KEY: ${GOOGLE_MAPS_API_KEY:-}
-      GEMINI_API_KEY: ${GEMINI_API_KEY:-xxxxx}
-      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-3.1-flash-lite}
-
-      # Local file storage (no GCS)
-      UPLOAD_DIR: /app/uploads
+      DATABASE_URL: postgresql://${DB_USER:-postgres}:${DB_PASSWORD:-IzaraDb2024}@${COMPOSE_DB_HOST:-izara-postgres}:${DB_INTERNAL_PORT:-5432}/${DB_NAME:-izara_phase1}
+      DB_HOST: ${COMPOSE_DB_HOST:-izara-postgres}
+      DB_PORT: ${DB_INTERNAL_PORT:-5432}
+      DB_NAME: ${DB_NAME:-izara_phase1}
+      DB_USER: ${DB_USER:-postgres}
+      DB_PASSWORD: ${DB_PASSWORD:-IzaraDb2024}
+      # Runtime URLs
+      VITE_API_URL: ${PATIENT_API_URL:-http://localhost:3005}
+      VITE_MEETING_SERVER_URL: ${MEETING_PUBLIC_URL:-http://127.0.0.1:3020}
+      MEETING_SERVER_URL: http://issara-jitsi:3020
+      # Auth
+      JWT_SECRET: ${JWT_SECRET:-izara-jwt-secret-key-phase1-2026}
       E2E_ALLOW_PARALLEL_SESSIONS: ${E2E_ALLOW_PARALLEL_SESSIONS:-1}
-
-      # E2E / dev: Google SSO fixture tokens (Group N Playwright)
-      IZARA_DEV_TESTING: "1"
-      GOOGLE_TOKEN_VERIFIER_FIXTURE: "1"
-    volumes:
-      - izara_uploads:/app/uploads
-      - ./scripts/env:/scripts/env:ro
-    ports:
-      - "127.0.0.1:3005:3005"
-    depends_on:
-      postgres:
-        condition: service_healthy
-    networks:
-      - izara-network
+      SESSION_EXPIRES_MINUTES: ${SESSION_EXPIRES_MINUTES:-120}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-724889190329-svf2733fjqklfic9tet9d2qkmhkgmu0l.apps.googleusercontent.com}
+      # Gemini AI
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-3.1-flash-lite}
+      # Jitsi
+      JITSI_DOMAIN: ${JITSI_DOMAIN:-meet.demotoday.net}
+      # Portal URLs (used for meeting links & notifications)
+      PATIENT_PORTAL_URL: ${PATIENT_API_URL:-http://localhost:3005}
+      APP_URL: ${PATIENT_API_URL:-http://localhost:3005}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@izara.com}
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3005/health"]
       interval: 30s
-      timeout: 10s
+      timeout: 3s
+      start_period: 30s
       retries: 3
-      start_period: 40s
+    networks:
+      - izara-shared
 
-  # ==========================================================================
-  # Doctor Portal - Unified (Frontend + Backend on port 3010)
-  # ==========================================================================
-  doctor-portal:
-    profiles: ["full", "default"]
+  # ===========================================================================
+  # issara-doctor — Doctor Portal (port 3010)
+  # Frontend (Nginx) + Backend (authServer:3011, mainApiServer:3009) unified
+  # ===========================================================================
+  issara-doctor:
+    profiles: ['full']
     build:
-      context: ./Isara-doctor-portal
-      dockerfile: Dockerfile.unified
+      context: ../issara-doctor
+      dockerfile: Dockerfile.compose
       args:
-        VITE_API_URL: ""
-        VITE_AUTH_URL: ${VITE_AUTH_URL:-}
-        VITE_APP_NAME: Izara Doctor Portal
-        VITE_APP_VERSION: 1.7.3
-        VITE_APP_ENV: production
-        VITE_USE_POSTGRESQL: ${USE_POSTGRESQL:-true}
-        VITE_MEETING_SERVER_URL: ${MEETING_PUBLIC_URL:-http://localhost:3020}
+        VITE_APP_NAME: "Izara Doctor Portal"
+        VITE_APP_VERSION: "2.0.0"
+        VITE_APP_ENV: "production"
+        VITE_API_URL: ${DOCTOR_API_URL:-http://localhost:3010}
+        VITE_AUTH_URL: ${DOCTOR_AUTH_URL:-http://localhost:3010/auth}
+        VITE_DOCTOR_URL: ${DOCTOR_API_URL:-http://localhost:3010}
+        VITE_WEBSOCKET_URL: ${DOCTOR_WS_URL:-ws://localhost:3010/ws}
+        VITE_MEETING_SERVER_URL: ${MEETING_PUBLIC_URL:-http://127.0.0.1:3020}
+        VITE_JITSI_DOMAIN: ${JITSI_DOMAIN:-meet.demotoday.net}
+        VITE_JITSI_APP_ID: ${JITSI_APP_ID:-izara-telemedicine}
         VITE_GCP_PROJECT_ID: ${GCP_PROJECT_ID:-izara-telemedicine}
-        GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
-        VITE_GEMINI_API_KEY: ${GEMINI_API_KEY:-xxxxx}
+        VITE_GCP_REGION: ${GCP_REGION:-asia-southeast1}
+        VITE_GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-724889190329-svf2733fjqklfic9tet9d2qkmhkgmu0l.apps.googleusercontent.com}
+        VITE_GEMINI_API_KEY: ${GEMINI_API_KEY:-}
         VITE_GEMINI_MODEL: ${GEMINI_MODEL:-gemini-3.1-flash-lite}
-        JITSI_DOMAIN: ${JITSI_DOMAIN:-meet.jit.si}
-        VITE_JITSI_DOMAIN: ${JITSI_DOMAIN:-meet.jit.si}
+        VITE_PATIENT_PORTAL_URL: ${PATIENT_API_URL:-http://localhost:3005}
+        VITE_PDPA_ENABLED: "true"
+        VITE_AUDIT_LOGGING_ENABLED: "true"
     container_name: izara-doctor-portal
     restart: unless-stopped
-    env_file:
-      - .env.docker
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      issara-jitsi:
+        condition: service_healthy
+    ports:
+      - "3010:3010"
     environment:
-      # Server Configuration
       NODE_ENV: production
-      PORT: 3010
-      AUTH_PORT: 3010
-
-      # Rate limit — tune per environment
-      RATE_LIMIT_MAX: ${RATE_LIMIT_MAX:-2000}
-
-      # Database Configuration - Docker internal network
-      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD required in .env}@postgres:5432/${POSTGRES_DB:-izara_phase1}
-      DB_HOST: postgres
-      DB_PORT: 5432
-      DB_NAME: izara_phase1
-      DB_USER: postgres
-      DB_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD required in .env}
-      DB_SSL: "false"
+      # Database (shared Docker network) — COMPOSE_DB_HOST, not host .env DB_HOST
+      USE_EMBEDDED_PG: "false"
       USE_POSTGRESQL: "true"
-      GCP_PROJECT_ID: ${GCP_PROJECT_ID:-izara-telemedicine}
-      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
-      GEMINI_API_KEY: ${GEMINI_API_KEY:-xxxxx}
-      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-3.1-flash-lite}
-
-      # JWT Secret — must be set in .env
-      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET required in .env (generate with openssl rand -hex 32)}
-
-      # Meeting Server URL
-      MEETING_SERVER_URL: http://meeting-server:3020
-      MEETING_PUBLIC_URL: ${MEETING_PUBLIC_URL:-http://localhost:3020}
-      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3005,http://localhost:3010,http://localhost:3020,http://patient.isara.local,http://doctor.isara.local,http://meeting.isara.local}
-      JITSI_DOMAIN: ${JITSI_DOMAIN:-meet.jit.si}
-
-      # Local file storage (no GCS)
-      UPLOAD_DIR: /app/uploads
-
-      # E2E / dev: Google SSO fixture tokens (Group N Playwright)
-      IZARA_DEV_TESTING: "1"
-      GOOGLE_TOKEN_VERIFIER_FIXTURE: "1"
+      DATABASE_URL: postgresql://${DB_USER:-postgres}:${DB_PASSWORD:-IzaraDb2024}@${COMPOSE_DB_HOST:-izara-postgres}:${DB_INTERNAL_PORT:-5432}/${DB_NAME:-izara_phase1}
+      DB_HOST: ${COMPOSE_DB_HOST:-izara-postgres}
+      DB_PORT: ${DB_INTERNAL_PORT:-5432}
+      DB_NAME: ${DB_NAME:-izara_phase1}
+      DB_USER: ${DB_USER:-postgres}
+      DB_PASSWORD: ${DB_PASSWORD:-IzaraDb2024}
+      # Ports
+      AUTH_PORT: 3011
+      MAIN_API_PORT: 3009
+      # Runtime URLs
+      VITE_API_URL: ${DOCTOR_API_URL:-http://localhost:3010}
+      VITE_AUTH_URL: http://localhost:3011/auth
+      VITE_DOCTOR_URL: ${DOCTOR_API_URL:-http://localhost:3010}
+      VITE_WEBSOCKET_URL: ${DOCTOR_WS_URL:-ws://localhost:3010/ws}
+      VITE_MEETING_SERVER_URL: ${MEETING_PUBLIC_URL:-http://127.0.0.1:3020}
+      MEETING_SERVER_URL: http://issara-jitsi:3020
+      # Auth
+      JWT_SECRET: ${JWT_SECRET:-izara-jwt-secret-key-phase1-2026}
       E2E_ALLOW_PARALLEL_SESSIONS: ${E2E_ALLOW_PARALLEL_SESSIONS:-1}
-    volumes:
-      - izara_uploads:/app/uploads
-      - ./scripts/env:/scripts/env:ro
-    ports:
-      - "127.0.0.1:3010:8080"
-    depends_on:
-      postgres:
-        condition: service_healthy
-    networks:
-      - izara-network
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
-
-  # ==========================================================================
-  # Jitsi Meeting Server - Transcription & AI Summary (port 3020)
-  # ==========================================================================
-  meeting-server:
-    profiles: ["full", "default"]
-    build:
-      context: ./Izara-jitsi-server
-      dockerfile: Dockerfile
-    container_name: izara-meeting-server
-    restart: unless-stopped
-    env_file:
-      - .env.docker
-    environment:
-      # Server Configuration
-      NODE_ENV: production
-      PORT: 3020
-
-      # Rate limit — tune per environment
-      RATE_LIMIT_MAX: ${RATE_LIMIT_MAX:-2000}
-
-      # Database Configuration - Docker internal network
-      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD required in .env}@postgres:5432/${POSTGRES_DB:-izara_phase1}
-      DB_HOST: postgres
-      DB_PORT: 5432
-      DB_NAME: ${POSTGRES_DB:-izara_phase1}
-      DB_USER: ${POSTGRES_USER:-postgres}
-      DB_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD required in .env}
-
-      # Jitsi Configuration - loaded from .env.docker
-      JITSI_DOMAIN: ${JITSI_DOMAIN:-meet.jit.si}
-
-      # JWT Secret — must be set in .env
-      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET required in .env (generate with openssl rand -hex 32)}
-
-      # Gemini AI Configuration - loaded from .env.docker
-      GEMINI_API_KEY: ${GEMINI_API_KEY:?GEMINI_API_KEY required in .env}
+      SESSION_EXPIRES_MINUTES: ${SESSION_EXPIRES_MINUTES:-120}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-724889190329-svf2733fjqklfic9tet9d2qkmhkgmu0l.apps.googleusercontent.com}
+      # Gemini AI
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
       GEMINI_MODEL: ${GEMINI_MODEL:-gemini-3.1-flash-lite}
-
-      # Transcription: Web Speech API (browser-native, FREE - no API key needed)
-
-      # CORS — extend via .env.docker (include LAN subdomains when using Nginx)
-      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3005,http://localhost:3010,http://localhost:3020,http://127.0.0.1:3005,http://127.0.0.1:3010,http://127.0.0.1:3020,http://patient.isara.local,http://doctor.isara.local,http://meeting.isara.local}
-      RECORDINGS_DIR: /app/recordings
-      UPLOAD_DIR: /app/uploads
-      IZARA_DEV_TESTING: "1"
-      JIBRI_WEBHOOK_SECRET: ${JIBRI_WEBHOOK_SECRET:-izara-jibri-dev-secret}
+      # Google APIs
+      GOOGLE_SPEECH_API_KEY: ${GOOGLE_SPEECH_API_KEY:-}
+      # Jitsi
+      JITSI_DOMAIN: ${JITSI_DOMAIN:-meet.demotoday.net}
+      JITSI_APP_ID: ${JITSI_APP_ID:-izara-telemedicine}
+      JITSI_JWT_SECRET: ${JITSI_JWT_SECRET:-21toTKg9Q7auYZF6h0wXd4Y0nBfj4T40zCA9DdHTSm4=}
+      # SMTP Email (appointment confirmation/decline emails)
+      SMTP_PROVIDER: ${SMTP_PROVIDER:-}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_SECURE: ${SMTP_SECURE:-false}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      SMTP_FROM_EMAIL: ${SMTP_FROM_EMAIL:-noreply@izara.com}
+      SMTP_FROM_NAME: ${SMTP_FROM_NAME:-Izara Telemedicine}
+      # App URL (used in email links)
+      APP_URL: ${DOCTOR_API_URL:-http://localhost:3010}
+      # Patient portal URL (used for meeting links in confirmation emails)
+      PATIENT_PORTAL_URL: ${PATIENT_API_URL:-http://localhost:3005}
+      VITE_PATIENT_PORTAL_URL: ${PATIENT_API_URL:-http://localhost:3005}
+      # File uploads — ใช้ค่า UPLOADS_DIR จาก .env เป็น host path, mount เข้า /app/uploads
+      UPLOADS_DIR: /app/uploads
+      # CORS
+      CORS_ORIGINS: http://localhost:3010,http://localhost:3005,http://localhost:3020,http://${SERVER_IP:-192.168.10.239}:3010,http://${SERVER_IP:-192.168.10.239}:3005,http://${SERVER_IP:-192.168.10.239}:3020
     volumes:
-      - izara_recordings:/app/recordings
-      - izara_uploads:/app/uploads
-      - ./scripts/env:/scripts/env:ro
-    ports:
-      - "127.0.0.1:3020:3020"
-    depends_on:
-      postgres:
-        condition: service_healthy
-    networks:
-      - izara-network
+      - ${UPLOADS_DIR:-./data/uploads}:/app/uploads
     healthcheck:
-      test:
-        [
-          "CMD-SHELL",
-          "node -e \"const http=require('http');http.get('http://localhost:3020/health',(r)=>{process.exit(r.statusCode===200?0:1)}).on('error',()=>process.exit(1))\"",
-        ]
+      # Probe mainApi via nginx /api/ — nginx /health alone masks a dead :3009
+      test: ["CMD", "curl", "-f", "http://localhost:3010/api/health"]
       interval: 30s
-      timeout: 10s
+      timeout: 5s
+      start_period: 45s
       retries: 3
-      start_period: 30s
+    networks:
+      - izara-shared
 
-volumes:
-  postgres_data:
-    driver: local
-  pgadmin_data:
-    driver: local
-  izara_recordings:
-    driver: local
-  izara_uploads:
-    driver: local
-
+# =============================================================================
+# Networks
+# =============================================================================
 networks:
-  izara-network:
-    driver: bridge
+  izara-shared:
+    external: true
+    name: isara-anywhere_izara-network

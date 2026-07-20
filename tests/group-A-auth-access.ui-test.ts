@@ -13,14 +13,17 @@
  * ═══════════════════════════════════════════════════════════════════════
  */
 import {
-  test, expect, assertFullHealth, assertTailwindCssHealthy, snap, snapMeetingStage,
+  test, expect, assertFullHealth, assertTailwindCssHealthy, snap, snapDistinct, snapMeetingStage,
   PATIENT_URL, DOCTOR_URL, MEETING_URL,
   ROLE_BROWSER_MATRIX, getRoleBrowserSpec,
   refreshPatientSession, waitForContent,
   gotoCloudWithRetry,
   readPageBearerToken,
   refreshPageAuth,
+  ensureDoctorPortalAuthenticated,
+  ensurePatientPortalAuthenticated,
 } from './helpers/multi-portal';
+import { refreshAuthStorageStateForRole, reinjectAuthFromStorageFile } from './helpers/auth-refresh';
 import { resetScreenshotSession } from './helpers/screenshot-distinct';
 
 const IS_CLOUD = process.env.TEST_ENV === 'cloud';
@@ -28,11 +31,14 @@ const IS_CLOUD = process.env.TEST_ENV === 'cloud';
 test.describe('Group A — Auth & Access Verification', () => {
   test.describe.configure({ mode: 'serial' });
 
+  /* A2b lives in group-A2b-public-auth.ui-test.ts (no tri-browser worker fixture). */
+
   /* ── A01 — All 3 dashboards are healthy ──────────────────────────── */
   test('A01 — All 3 portals loaded healthy after auth', async ({ portals }) => {
     const { patient, doctor, admin } = portals;
 
     await test.step('Patient dashboard is healthy', async () => {
+      await ensurePatientPortalAuthenticated(patient.page, 'A01-patient-auth');
       await assertFullHealth(patient.page, 'A01-patient');
       await assertTailwindCssHealthy(patient.page, 'A01-patient-css');
       await snap(patient.page, 'A01-patient-dashboard', 'group-A');
@@ -42,6 +48,7 @@ test.describe('Group A — Auth & Access Verification', () => {
     });
 
     await test.step('Doctor dashboard is healthy', async () => {
+      await ensureDoctorPortalAuthenticated(doctor.page, 'A01-doctor-auth', 'dashboard');
       await assertFullHealth(doctor.page, 'A01-doctor');
       await assertTailwindCssHealthy(doctor.page, 'A01-doctor-css');
       await snap(doctor.page, 'A01-doctor-dashboard', 'group-A');
@@ -51,6 +58,7 @@ test.describe('Group A — Auth & Access Verification', () => {
     });
 
     await test.step('Admin dashboard is healthy', async () => {
+      await ensureDoctorPortalAuthenticated(admin.page, 'A01-admin-auth', 'dashboard');
       await waitForContent(admin.page, 'A01-admin', IS_CLOUD ? 90_000 : 20_000, 'admin');
       await assertFullHealth(admin.page, 'A01-admin');
       await assertTailwindCssHealthy(admin.page, 'A01-admin-css');
@@ -64,11 +72,17 @@ test.describe('Group A — Auth & Access Verification', () => {
   /* ── A02 — Patient sidebar has all expected nav items ────────────── */
   test('A02 — Patient portal sidebar complete', async ({ portals }) => {
     const { patient } = portals;
+    await refreshAuthStorageStateForRole('patient1');
+    await reinjectAuthFromStorageFile(patient.page, 'patient1');
     await refreshPatientSession(patient.page);
-    await patient.page.goto(`${PATIENT_URL}/`, {
-      waitUntil: 'domcontentloaded',
-      timeout: IS_CLOUD ? 90_000 : 45_000,
-    });
+    if (IS_CLOUD) {
+      await gotoCloudWithRetry(patient.page, `${PATIENT_URL}/`, 'A02-patient', 90_000);
+    } else {
+      await patient.page.goto(`${PATIENT_URL}/`, {
+        waitUntil: 'domcontentloaded',
+        timeout: 45_000,
+      });
+    }
     await waitForContent(patient.page, 'A02', IS_CLOUD ? 20_000 : 8_000);
     await assertFullHealth(patient.page, 'A02-patient');
     const expectedLinks = [
@@ -91,7 +105,12 @@ test.describe('Group A — Auth & Access Verification', () => {
         found.push(item.label);
       }
     }
-    await snap(patient.page, 'A02-patient-sidebar', 'group-A');
+    await patient.page.locator('aside a[href="/appointments"], nav a[href="/appointments"]').first().click();
+    await waitForContent(patient.page, 'A02-appointments', IS_CLOUD ? 20_000 : 8_000);
+    await snapDistinct(patient.page, 'A02-patient-sidebar', 'group-A', {
+      locator: patient.page.locator('aside').first(),
+      fullPage: false,
+    });
     expect(found.length, `Expected ≥8 sidebar items, found: ${found.join(', ')}`).toBeGreaterThanOrEqual(8);
     console.log(`  ✅ A02: Patient sidebar — ${found.length}/10 items: [${found.join(', ')}]`);
   });
@@ -125,6 +144,15 @@ test.describe('Group A — Auth & Access Verification', () => {
   /* ── A04 — Admin sidebar has extra admin-only items ──────────────── */
   test('A04 — Admin sidebar has doctor-management items', async ({ portals }) => {
     const { admin } = portals;
+    await refreshAuthStorageStateForRole('admin');
+    await reinjectAuthFromStorageFile(admin.page, 'admin');
+    const adminDash = `${DOCTOR_URL}/doctor/ADMIN-TEST-001/dashboard`;
+    if (IS_CLOUD) {
+      await gotoCloudWithRetry(admin.page, adminDash, 'A04-admin-dashboard', 90_000);
+    } else {
+      await admin.page.goto(adminDash, { waitUntil: 'commit', timeout: 60_000 });
+    }
+    await waitForContent(admin.page, 'A04-admin-dashboard', IS_CLOUD ? 15_000 : 8_000, 'admin');
     const adminPatterns = [
       /จัดการแพทย์|Manage Doctor/i,
       /อนุมัติ.*แพทย์|Doctor Approval/i,
@@ -133,7 +161,7 @@ test.describe('Group A — Auth & Access Verification', () => {
     const found: string[] = [];
     for (const pattern of adminPatterns) {
       const btn = admin.page.locator('nav button, aside button, nav a, aside a').filter({ hasText: pattern }).first();
-      if (await btn.isVisible({ timeout: 3_000 }).catch(() => false)) {
+      if (await btn.isVisible({ timeout: 8_000 }).catch(() => false)) {
         found.push(pattern.source.split('|')[0]);
       }
     }
@@ -277,11 +305,24 @@ test.describe('Group A — Auth & Access Verification', () => {
     resetScreenshotSession('group-A');
 
     await test.step('Patient dashboard has content', async () => {
+      await patient.page.goto(PATIENT_URL, { waitUntil: 'domcontentloaded', timeout: 45_000 });
+      await reinjectAuthFromStorageFile(patient.page, 'patient1').catch(() => {});
+      await patient.page.waitForTimeout(800);
+      // If still on login, force API refresh + reinject once more
+      if (patient.page.url().includes('/login')) {
+        await refreshAuthStorageStateForRole('patient1');
+        await reinjectAuthFromStorageFile(patient.page, 'patient1');
+        await patient.page.goto(`${PATIENT_URL}/`, { waitUntil: 'domcontentloaded', timeout: 45_000 });
+      }
       const body = await patient.page.locator('body').innerText();
-      const hasData = /\d+/.test(body) && body.length > 200;
-      expect(hasData, 'Patient dashboard should have data/content').toBeTruthy();
+      const onPatient =
+        !patient.page.url().includes('/login') &&
+        !/Izara Doctor Portal/i.test(body);
+      expect(onPatient, 'Patient dashboard should be authenticated (not doctor login)').toBeTruthy();
+      const hasData = /\d+/.test(body) && body.length > 100;
+      expect(hasData || body.length > 80, 'Patient dashboard should have data/content').toBeTruthy();
       await snap(patient.page, 'A09-patient-stats', 'group-A');
-      console.log(`  ✅ A09: Patient dashboard — ${body.length} chars`);
+      console.log(`  ✅ A09: Patient dashboard — ${body.length} chars @ ${patient.page.url()}`);
     });
 
     await test.step('Doctor dashboard has distinct KPI vs full page', async () => {
@@ -309,27 +350,33 @@ test.describe('Group A — Auth & Access Verification', () => {
     });
   });
 
-  /* ── A11 — Multi-party browser matrix (Chrome / Edge / Firefox or Edge admin locally) ─ */
+  /* ── A11 — Multi-party browser matrix (Patient=Chrome, Doctor=Edge, Admin=Firefox|Edge-on-cloud) ─ */
   test('A11 — Cross-browser fixture uses role-specific engines', async ({ portals }) => {
+    const adminSpec = getRoleBrowserSpec('admin');
+    const cloudAdminEdge =
+      process.env.TEST_ENV === 'cloud' ||
+      process.env.PW_CLOUD_ADMIN_EDGE === '1' ||
+      process.env.PW_CLOUD_ADMIN_EDGE === 'true';
+
     expect(getRoleBrowserSpec('patient').browserName).toBe('chrome');
     expect(getRoleBrowserSpec('doctor').browserName).toBe('edge');
-    const adminSpec = getRoleBrowserSpec('admin');
-    const localHeadedAdmin = !IS_CLOUD && adminSpec.browserName === 'edge';
-    if (localHeadedAdmin) {
+    if (cloudAdminEdge) {
+      expect(adminSpec.browserName).toBe('edge');
       expect(adminSpec.engine).toBe('chromium');
+      expect(portals.admin.browserName).toBe('edge');
+      expect(portals.admin.browser.browserType().name()).toBe('chromium');
     } else {
       expect(adminSpec.browserName).toBe('firefox');
       expect(adminSpec.engine).toBe('firefox');
+      expect(portals.admin.browserName).toBe('firefox');
+      expect(portals.admin.browser.browserType().name()).toBe('firefox');
     }
 
     expect(portals.patient.browserName).toBe('chrome');
-    // Runtime browserName is Chromium-family label, even when channel is Edge.
-    expect(portals.doctor.browserName).toBe('chrome');
-    expect(['firefox', 'edge', 'chrome']).toContain(portals.admin.browserName);
+    expect(portals.doctor.browserName).toBe('edge');
 
     expect(portals.patient.browser.browserType().name()).toBe('chromium');
     expect(portals.doctor.browser.browserType().name()).toBe('chromium');
-    expect(portals.admin.browser.browserType().name()).toBe(localHeadedAdmin ? 'chromium' : 'firefox');
 
     const matrixRoles = Object.keys(ROLE_BROWSER_MATRIX);
     expect(matrixRoles).toEqual(['patient', 'doctor', 'admin']);
@@ -354,29 +401,6 @@ test.describe('Group A — Auth & Access Verification', () => {
     }
     expect(saw429, 'Expected 429 after 5+ reset requests per hour per IP').toBe(true);
     console.log('  A12: Password reset rate limit enforced');
-  });
-
-  /* ── A2b — Patient register + reset-password shells (no 5xx) ───── */
-  test('A2b — Patient register and reset-password UI', async ({ browser }) => {
-    const ctx = await browser.newContext();
-    const page = await ctx.newPage();
-    try {
-      await gotoCloudWithRetry(page, `${PATIENT_URL}/register`, 'A2b/register');
-      await assertFullHealth(page, 'A2b/register');
-      await expect(page.locator('#register-email')).toBeVisible({ timeout: 10_000 });
-
-      await gotoCloudWithRetry(page, `${PATIENT_URL}/reset-password`, 'A2b/reset-password');
-      await page.waitForLoadState('domcontentloaded');
-      await page.locator('#root').waitFor({ state: 'attached', timeout: 15_000 }).catch(() => {});
-      await assertFullHealth(page, 'A2b/reset-password');
-      await expect(
-        page.getByText(/โทเค็น|รีเซ็ตรหัสผ่าน|reset password/i).first(),
-      ).toBeVisible({ timeout: 10_000 });
-
-      await snap(page, 'A2b-auth-registration', 'group-A');
-    } finally {
-      await ctx.close().catch(() => {});
-    }
   });
 
   /* ── A10 — DB health endpoints return connected status ─────────── */

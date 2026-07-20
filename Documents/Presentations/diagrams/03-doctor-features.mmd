@@ -55,6 +55,12 @@ flowchart TB
             F2["🔬 Imaging Orders"]
             F3["📊 Result Review"]
             F4["🤖 AI Analysis"]
+            F5["📁 patient_documents delivery"]
+        end
+        
+        subgraph MESSAGES["💬 Patient Messaging"]
+            H1["✉️ Email / Message Patient"]
+            H2["patient_doctor_messages"]
         end
         
         subgraph ADMIN["🔧 Admin Panel"]
@@ -71,6 +77,8 @@ flowchart TB
     D1 --> D3 --> D4
     D1 --> E1 --> E2 --> E3 --> E4
     D1 --> F1
+    D4 --> H1 --> H2
+    F3 --> F5
     A1 --> G1
 
     classDef authStyle fill:#FFEBEE,stroke:#E53935,stroke-width:2px,color:#B71C1C
@@ -86,5 +94,6 @@ flowchart TB
     class C1,C2,C3,C4 consultStyle
     class D1,D2,D3,D4 emrStyle
     class E1,E2,E3,E4 rxStyle
-    class F1,F2,F3,F4 orderStyle
+    class F1,F2,F3,F4,F5 orderStyle
+    class H1,H2 queueStyle
     class G1,G2,G3,G4 adminStyle

@@ -1,0 +1,10 @@
+{
+  "appointmentId": "APT-1784270580312-7486121F",
+  "patientId": "PATIENT-DEMO",
+  "doctorId": "DOC-TEST-001",
+  "offlineAppointmentId": "APT-1784270590028-33368DFD",
+  "meetingId": "c60aacde-7e81-4bb1-835a-1bddc050464b",
+  "roomName": "izara-APT-17842705-mrokpr9w-jh768e",
+  "labOrderId": "LAB-1784270786089",
+  "recordingUrl": "/api/recordings/meetings/DOC-TEST-001/c60aacde-7e81-4bb1-835a-1bddc050464b/video.webm"
+}

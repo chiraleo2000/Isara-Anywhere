@@ -6,7 +6,7 @@ import {
   buildIzaraCorsPolicy,
   isIzaraOriginAllowed,
   createIzaraCorsOriginCallback,
-} from '../../../shared/corsPolicy.cjs';
+} from '../../../../issara-doctor/shared/corsPolicy.cjs';
 
 describe('izaraCorsPolicy', () => {
   const prevCors = process.env.CORS_ORIGINS;

@@ -4,11 +4,11 @@ import path from 'node:path';
 
 const dashboardPath = path.resolve(
   __dirname,
-  '../../../Isara-doctor-portal/frontend/pages/DoctorDashboard.tsx',
+  '../../../issara-doctor/frontend/pages/DoctorDashboard.tsx',
 );
 const meetingRoomPath = path.resolve(
   __dirname,
-  '../../../Isara-doctor-portal/frontend/pages/meetings/MeetingRoom.tsx',
+  '../../../issara-doctor/frontend/pages/meetings/MeetingRoom.tsx',
 );
 
 describe('meeting lobby route regression guard', () => {

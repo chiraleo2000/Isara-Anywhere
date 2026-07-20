@@ -8,7 +8,7 @@ import path from 'node:path';
 const root = path.resolve(__dirname, '../../..');
 
 function readPortalUtil(portal: 'doctor' | 'patient', file: string): string {
-  const dir = portal === 'doctor' ? 'Isara-doctor-portal' : 'Isara-patient-portal';
+  const dir = portal === 'doctor' ? 'issara-doctor' : 'issara-patient';
   return fs.readFileSync(path.join(root, dir, 'frontend/utils', file), 'utf8');
 }
 
@@ -53,7 +53,7 @@ describe('resolveMeetingServerUrl — runtime behavior', () => {
 
   beforeEach(async () => {
     const { resolveMeetingServerUrl } = await import(
-      '../../../Isara-doctor-portal/frontend/utils/resolveMeetingServerUrl.ts'
+      '../../../issara-doctor/frontend/utils/resolveMeetingServerUrl.ts'
     );
     (globalThis as { __resolveTest?: typeof resolveMeetingServerUrl }).__resolveTest = resolveMeetingServerUrl;
   });
@@ -61,6 +61,13 @@ describe('resolveMeetingServerUrl — runtime behavior', () => {
   it('ENV-MEET-04 — localhost browser defaults to :3020', async () => {
     delete process.env.MEETING_SERVER_URL;
     delete process.env.VITE_MEETING_SERVER_URL;
+    delete process.env.MEETING_PUBLIC_URL;
+    delete process.env.VITE_MEETING_PUBLIC_URL;
+    (globalThis as { ENV?: Record<string, string> }).ENV = {};
+    vi.stubEnv('MEETING_SERVER_URL', '');
+    vi.stubEnv('VITE_MEETING_SERVER_URL', '');
+    vi.stubEnv('MEETING_PUBLIC_URL', '');
+    vi.stubEnv('VITE_MEETING_PUBLIC_URL', '');
     vi.resetModules();
     Object.defineProperty(globalThis, 'location', {
       value: { hostname: 'localhost', protocol: 'http:' },
@@ -68,8 +75,9 @@ describe('resolveMeetingServerUrl — runtime behavior', () => {
       writable: true,
     });
     const { resolveMeetingServerUrl } = await import(
-      '../../../Isara-doctor-portal/frontend/utils/resolveMeetingServerUrl.ts'
+      '../../../issara-doctor/frontend/utils/resolveMeetingServerUrl.ts'
     );
     expect(resolveMeetingServerUrl()).toBe('http://localhost:3020');
+    vi.unstubAllEnvs();
   });
 });

@@ -37,14 +37,26 @@ async function fetchJson(url, options = {}) {
 }
 
 async function loginPortal(baseUrl, email, password) {
-  for (const authPath of ['/api/auth/login', '/auth/login']) {
-    const { ok, body } = await fetchJson(`${baseUrl}${authPath}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password }),
-    });
-    const token = body?.token || body?.accessToken || body?.data?.token;
-    if (ok && token) return token;
+  const deadline = Date.now() + 30_000;
+  let attempt = 0;
+  while (Date.now() < deadline) {
+    attempt += 1;
+    for (const authPath of ['/api/auth/login', '/auth/login']) {
+      const { ok, body } = await fetchJson(`${baseUrl}${authPath}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email,
+          password,
+          // doctor portal auth accepts these and it improves parity with real clients
+          deviceId: `smoke-${attempt}`,
+          userAgent: 'meeting-api-smoke',
+        }),
+      });
+      const token = body?.token || body?.accessToken || body?.data?.token;
+      if (ok && token) return token;
+    }
+    await new Promise((r) => setTimeout(r, 1500));
   }
   return null;
 }

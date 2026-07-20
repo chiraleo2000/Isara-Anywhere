@@ -4,11 +4,11 @@ import path from 'node:path';
 
 const dashboardPath = path.resolve(
   __dirname,
-  '../../../Isara-doctor-portal/frontend/pages/DoctorDashboard.tsx',
+  '../../../issara-doctor/frontend/pages/DoctorDashboard.tsx',
 );
 const schedulePath = path.resolve(
   __dirname,
-  '../../../Isara-doctor-portal/frontend/pages/schedule/CompleteSchedule.tsx',
+  '../../../issara-doctor/frontend/pages/schedule/CompleteSchedule.tsx',
 );
 
 const DASHBOARD_ACTIVE_STATUSES = [

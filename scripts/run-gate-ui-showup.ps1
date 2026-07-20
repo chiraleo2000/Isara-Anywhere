@@ -1,6 +1,7 @@
 #!/usr/bin/env pwsh
 <#
-  Headed cloud UI showup for gate phases (A-auth + S-responsive viewports).
+  Headed cloud UI showup for gate phases (A-auth, B-patient-portal, C-doctor-portal + S-responsive viewports).
+  Matches local test:e2e:ui-showup breadth plus S-phone/tablet projects.
   Screenshots: test-results/pre-debug/ when BASELINE_VISUAL=1
 #>
 $ErrorActionPreference = "Stop"
@@ -23,16 +24,13 @@ if (-not $env:CLOUD_MEETING_URL) {
   $env:CLOUD_MEETING_URL = "https://izara-meeting-server-dev-testing-724889190329.asia-southeast1.run.app"
 }
 
-Write-Host "Gate UI showup (headed, cloud) - screenshots -> test-results/pre-debug/" -ForegroundColor Cyan
+Write-Host "Gate UI showup (headed, cloud) - A/B/C + S-responsive/S-phone-sm; screenshots -> test-results/pre-debug/" -ForegroundColor Cyan
 npx playwright test `
   --project=A-auth `
-  --project=S-phone-xs `
+  --project=B-patient-portal `
+  --project=C-doctor-portal `
+  --project=S-responsive `
   --project=S-phone-sm `
-  --project=S-phone-md `
-  --project=S-phone-lg `
-  --project=S-tablet-sm `
-  --project=S-tablet-md `
-  --project=S-tablet-lg `
   --headed `
   --workers=1
 exit $LASTEXITCODE

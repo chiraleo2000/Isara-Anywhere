@@ -1,53 +1,16 @@
-# Cloud Run Database Scripts
+# Cloud Run helpers
 
-This folder contains Docker configurations for PostgreSQL deployments.
+Legacy per-service Cloud Build YAMLs and Dockerfiles were removed. Use the **root** orchestrator instead:
 
-
-## 📁 Structure
-
-```text
-scripts/cloud-run/
-├── README.md                    # This file
-├── Dockerfile.pgadmin          # pgAdmin container config
-├── Dockerfile.postgres         # PostgreSQL container config
-├── servers.json                # pgAdmin server connections
-└── init-scripts/
-    └── 01-init.sql             # Copy of master schema (optional)
+```powershell
+npm run cloud:deploy -- -Tag v1.7.60
+# or: scripts/deploy-cloud-from-env.ps1 -Tag v1.7.60
 ```
 
+## Active script
 
-## 🚀 Database Initialization
+| Script | npm |
+| ------ | --- |
+| `sync-meeting-ai-secrets.ps1` | `npm run cloud:sync-meeting-secrets` |
 
-The database schema is now centralized in `scripts/database/izara-database.sql`.
-
-
-### For Cloud SQL Deployment
-
-```bash
-
-# Connect and initialize
-gcloud sql connect izara-instance --user=postgres --database=izara_phase1 < scripts/database/izara-database.sql
-```
-
-
-### For Docker (Cloud Run Emulation)
-
-```bash
-
-# Build and run PostgreSQL
-docker build -f scripts/cloud-run/Dockerfile.postgres -t izara-postgres .
-
-
-# Initialize database
-docker exec -i izara-postgres psql -U postgres -d izara_phase1 < scripts/database/izara-database.sql
-```
-
-
-## 📝 Notes
-
-
-- Schema source of truth: `scripts/database/izara-database.sql`
-
-- All new changes should be made to `scripts/database/izara-database.sql`
-
-- See `scripts/database/README.md` and `Processes/DATABASE_TABLES_REFERENCE.md` for complete documentation
+Syncs Google Speech / service-account secrets to the meeting server on Cloud Run after deploy.

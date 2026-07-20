@@ -39,13 +39,13 @@ describe('postMeetingWorkflow — status machine', () => {
   });
 
   it('PMW07 — postMeetingPipeline module persists summary fields', () => {
-    const pipeline = path.resolve(__dirname, '../../../Izara-jitsi-server/backend/services/postMeetingPipeline.js');
+    const pipeline = path.resolve(__dirname, '../../../issara-jitsi/backend/services/postMeetingPipeline.js');
     const src = fs.readFileSync(pipeline, 'utf8');
     expect(src).toMatch(/summary|transcript|persist/i);
   });
 
   it('PMW08 — meeting end route requests generateSummary in server index', () => {
-    const index = path.resolve(__dirname, '../../../Izara-jitsi-server/backend/index.js');
+    const index = path.resolve(__dirname, '../../../issara-jitsi/backend/index.js');
     expect(fs.readFileSync(index, 'utf8')).toMatch(/generateSummary|generate-summary/i);
   });
 

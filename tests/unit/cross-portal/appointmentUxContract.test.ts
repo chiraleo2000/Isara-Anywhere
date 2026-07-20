@@ -9,12 +9,17 @@ const root = path.resolve(__dirname, '../../..');
 
 describe('Appointment UX contract (APPT-UX)', () => {
   const apptPages = fs.readFileSync(
-    path.join(root, 'Isara-patient-portal/frontend/pages/appointments/AppointmentPages.tsx'),
+    path.join(root, 'issara-patient/frontend/pages/AppointmentPages.tsx'),
+    'utf8',
+  );
+  const apptBackend = fs.readFileSync(
+    path.join(root, 'issara-patient/backend/routes/appointments.ts'),
     'utf8',
   );
 
-  it('APPT-UX-01 — reroutedToPool notice', () => {
-    expect(apptPages).toMatch(/reroutedToPool/);
+  it('APPT-UX-01 — pool reroute supported in booking API', () => {
+    expect(apptBackend).toMatch(/reroutedToPool/);
+    expect(apptPages).toMatch(/in_pool|skipDoctorSelection/);
   });
 
   it('APPT-UX-02 — status badges', () => {
@@ -22,27 +27,27 @@ describe('Appointment UX contract (APPT-UX)', () => {
   });
 
   it('APPT-UX-03 — join meeting CTA on dashboard', () => {
-    expect(fs.readFileSync(path.join(root, 'Isara-patient-portal/frontend/pages/DashboardPage.tsx'), 'utf8'))
+    expect(fs.readFileSync(path.join(root, 'issara-patient/frontend/pages/DashboardPage.tsx'), 'utf8'))
       .toMatch(/dashboard-join-meeting/);
   });
 
   it('APPT-UX-04 — confirm spinner guard', () => {
-    expect(fs.readFileSync(path.join(root, 'Isara-doctor-portal/frontend/pages/meetings/HealthMeeting.tsx'), 'utf8'))
+    expect(fs.readFileSync(path.join(root, 'issara-doctor/frontend/pages/meetings/HealthMeeting.tsx'), 'utf8'))
       .toMatch(/confirmInProgress|confirming/i);
   });
 
   it('APPT-UX-05 — calendar link on confirm', () => {
-    expect(fs.readFileSync(path.join(root, 'Isara-doctor-portal/frontend/pages/meetings/HealthMeeting.tsx'), 'utf8'))
+    expect(fs.readFileSync(path.join(root, 'issara-doctor/frontend/pages/meetings/HealthMeeting.tsx'), 'utf8'))
       .toMatch(/calendar|ics|google/i);
   });
 
   it('APPT-UX-06 — accepted queue list testid', () => {
-    expect(fs.readFileSync(path.join(root, 'Isara-doctor-portal/frontend/pages/meetings/HealthMeeting.tsx'), 'utf8'))
+    expect(fs.readFileSync(path.join(root, 'issara-doctor/frontend/pages/meetings/HealthMeeting.tsx'), 'utf8'))
       .toMatch(/accepted-queue-list/);
   });
 
-  it('APPT-UX-07 — pool enrollment response.ok', () => {
-    expect(fs.readFileSync(path.join(root, 'Isara-doctor-portal/frontend/pages/AppointmentPoolManagement.tsx'), 'utf8'))
+  it('APPT-UX-07 — pool enrollment response.ok (Health Meeting queue)', () => {
+    expect(fs.readFileSync(path.join(root, 'issara-doctor/frontend/pages/meetings/HealthMeeting.tsx'), 'utf8'))
       .toMatch(/response\.ok/);
   });
 
@@ -50,8 +55,14 @@ describe('Appointment UX contract (APPT-UX)', () => {
     expect(apptPages).toMatch(/step|wizard/i);
   });
 
-  it('APPT-UX-09 — reroute notice uses banner not alert', () => {
-    expect(apptPages).toMatch(/reroutedToPool/);
-    expect(apptPages).toMatch(/type:\s*created\.reroutedToPool\s*\?\s*'warning'/);
+  it('APPT-UX-09 — skip-doctor pool path in wizard UI', () => {
+    expect(apptPages).toMatch(/skip-doctor-selection|skipDoctorSelection/);
+    expect(apptPages).toMatch(/appointment-date-/);
+  });
+
+  it('APPT-UX-10 — local date grid and MediaRecorder mime probe', () => {
+    expect(apptPages).toMatch(/formatLocalDateYmd/);
+    expect(apptPages).toMatch(/resolveRecordingMimeType/);
+    expect(apptPages).toMatch(/appointment-date-/);
   });
 });

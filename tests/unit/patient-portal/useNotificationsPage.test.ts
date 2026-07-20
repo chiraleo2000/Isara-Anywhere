@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   getNotificationsPageLabels,
   notificationRowClass,
-} from '../../../Isara-patient-portal/frontend/hooks/useNotificationsPageHelpers';
+} from '../../../../issara-patient/frontend/hooks/useNotificationsPageHelpers';
 
 describe('useNotificationsPage helpers (G1)', () => {
   it('returns English labels when language is en', () => {

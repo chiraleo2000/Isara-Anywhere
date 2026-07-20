@@ -15,7 +15,7 @@
 3. [User Roles & Permissions](#3-user-roles--permissions)
 4. [Workflow Steps](#4-workflow-steps)
 5. [Data Structures](#5-data-structures)
-6. [GCS Storage Structure](#6-gcs-storage-structure)
+6. [PostgreSQL Storage Structure](#6-postgresql-storage-structure-canonical)
 7. [Cross-Portal Data Synchronization](#7-cross-portal-data-synchronization)
 8. [API Endpoints](#8-api-endpoints)
 9. [Content Categories](#9-content-categories)
@@ -567,31 +567,23 @@ interface ContentAuditLog {
 ---
 
 
-## 6. GCS Storage Structure
+## 6. PostgreSQL Storage Structure (canonical)
+
+> **Deprecated:** Section formerly titled "GCS Storage Structure" described legacy bucket layout. **Current implementation** uses PostgreSQL only.
 
 ```text
-izara-meta-data/                          # GCS Bucket
-│
-├── medical-content/                       # Patient-facing content
-│   ├── articles.json                      # All MedicalContentArticle[]
-│   ├── tags.json                          # ContentTag[]
-│   ├── categories.json                    # Fixed categories reference
-│   └── audit-logs/
-│       └── audit-log-YYYY-MM.json         # Monthly audit logs
-│
-├── clinical-resources/                    # Doctor-only content
-│   ├── resources.json                     # All ClinicalResourceItem[]
-│   ├── pending-approvals.json             # IDs awaiting approval
-│   ├── tags.json                          # ContentTag[]
-│   ├── categories.json                    # Fixed categories reference
-│   └── audit-logs/
-│       └── audit-log-YYYY-MM.json         # Monthly audit logs
-│
-└── content-assets/                        # Uploaded media
-    ├── thumbnails/
-    ├── attachments/
-    └── videos/
+izara_phase1.medical_content          # Patient-facing articles (status, Thai/EN content, tags JSONB)
+izara_phase1.clinical_resources       # Doctor-only guidelines
+izara_phase1.knowledge_base           # pgvector embeddings for RAG search
 ```
+
+| Table | Audience | Key columns |
+| ----- | -------- | ----------- |
+| `medical_content` | Patient library | `title_thai`, `content_thai`, `status`, `author_id`, `category` |
+| `clinical_resources` | Doctor portal | `title_thai`, `content_thai`, `status`, `specialty` |
+| `knowledge_base` | AI search | `content`, `embedding` (vector) |
+
+Sync: PostgreSQL NOTIFY + API reads — no cross-bucket sync. See [Data_Sync_Documentation.md](Data_Sync_Documentation.md).
 
 
 ### Storage Schema Examples

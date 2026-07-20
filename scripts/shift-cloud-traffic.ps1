@@ -35,4 +35,5 @@ function Shift-LatestTraffic {
 
 Shift-LatestTraffic "izara-doctor-portal-dev-testing"
 Shift-LatestTraffic "izara-patient-portal-dev-testing"
+Shift-LatestTraffic "izara-meeting-server-dev-testing"
 Write-Host "Traffic shift complete." -ForegroundColor Green

@@ -39,7 +39,47 @@
 3. **ผลลัพธ์ที่คาดหวัง** — สถานะระบบ / API / ฐานข้อมูลหลังจบขั้นตอน
 
 ---
+## UI Controls Inventory
 
+| # | Control | testid | Action | Expected | Screenshot |
+|---|---------|--------|--------|----------|------------|
+| 1 | Izara Meeting Server | `izara-meeting-server` | click | Documented control | U-izara-meeting-server |
+| 2 | Data Testid | `data-testid` | click | Documented control | U-data-testid |
+| 3 | Guest Invite | `guest-invite` | click | Documented control | U-guest-invite |
+| 4 | Share Link | `share-link` | click | Documented control | U-share-link |
+| 5 | Guestjoinurl | `guestJoinUrl` | click | Documented control | U-guestJoinUrl |
+| 6 | Guesttokenurl | `guestTokenUrl` | click | Documented control | U-guestTokenUrl |
+| 7 | Buildguestportalurls | `buildGuestPortalUrls` | click | Documented control | U-buildGuestPortalUrls |
+| 8 | Meetinglobbies | `meetingLobbies` | click | Documented control | U-meetingLobbies |
+| 9 | Join Meeting | `join-meeting` | click | Documented control | U-join-meeting |
+| 10 | Leave Meeting | `leave-meeting` | click | Documented control | U-leave-meeting |
+| 11 | Transcript Segment | `transcript-segment` | click | Documented control | U-transcript-segment |
+| 12 | Chat Message | `chat-message` | click | Documented control | U-chat-message |
+| 13 | Meeting Status | `meeting-status` | click | Documented control | U-meeting-status |
+| 14 | Participant Joined | `participant-joined` | click | Documented control | U-participant-joined |
+| 15 | Participant Left | `participant-left` | click | Documented control | U-participant-left |
+| 16 | Meeting Ended | `meeting-ended` | click | Documented control | U-meeting-ended |
+| 17 | Confirmed | `confirmed` | click | Documented control | U-confirmed |
+| 18 | Lobby Waiting Screen | `lobby-waiting-screen` | click | Documented control | U-lobby-waiting-screen |
+| 19 | Admit All Btn | `admit-all-btn` | click | Documented control | U-admit-all-btn |
+| 20 | Jitsi Doctor Container | `jitsi-doctor-container` | click | Documented control | U-jitsi-doctor-container |
+| 21 | Jitsi Guest Container | `jitsi-guest-container` | click | Documented control | U-jitsi-guest-container |
+| 22 | Insert Meeting Summary Emr Btn | `insert-meeting-summary-emr-btn` | click | Documented control | U-insert-meeting-summary-emr-btn |
+| 23 | Host Ready | `host-ready` | click | Documented control | U-host-ready |
+| 24 | Notifyhostpresent | `notifyHostPresent` | click | Documented control | U-notifyHostPresent |
+| 25 | Appointmentid | `appointmentId` | click | Documented control | U-appointmentId |
+| 26 | Meetingid | `meetingId` | click | Documented control | U-meetingId |
+| 27 | Guest Lobby Waiting | `guest-lobby-waiting` | click | Documented control | U-guest-lobby-waiting |
+| 28 | Frame Src | `frame-src` | click | Documented control | U-frame-src |
+| 29 | Connect Src | `connect-src` | click | Documented control | U-connect-src |
+| 30 | Guest Transcript Segment | `guest-transcript-segment` | click | Documented control | U-guest-transcript-segment |
+| 31 | Recordingurl | `recordingUrl` | click | Documented control | U-recordingUrl |
+| 32 | Meeting Summary Ready | `meeting-summary-ready` | click | Documented control | U-meeting-summary-ready |
+| 33 | End Meeting Btn | `end-meeting-btn` | click | Documented control | U-end-meeting-btn |
+| 34 | Recording Indicator | `recording-indicator` | click | Documented control | U-recording-indicator |
+| 35 | Meeting Results | `meeting-results` | click | Documented control | U-meeting-results |
+| 36 | Recording Player | `recording-player` | click | Documented control | U-recording-player |
+| 37 | Generate Summary Btn | `generate-summary-btn` | click | Documented control | U-generate-summary-btn |
 
 ## 1. Purpose
 
@@ -1077,11 +1117,11 @@ Production ใช้ `meet.jit.si` — บันทึกจากเบรา�
 
 | Field | Value |
 |-------|-------|
-| **Status** | partial |
-| **Unit tests** | `—` |
-| **UI (Playwright)** | Group — |
+| **Status** | covered |
+| **Unit tests** | `test:unit:meeting`, meeting-server:contract, meetingUxContract |
+| **UI (Playwright)** | Groups Q, Q2, R, U |
 | **data-testid** | `end-meeting-btn`, `recording-indicator`, `meeting-results`, `recording-player`, `generate-summary-btn` — [tests/SELECTORS.md](../../tests/SELECTORS.md) |
-| **Last verified** | 2026-05-22 |
+| **Last verified** | 2026-07-13 |
 
 **Run locally**
 

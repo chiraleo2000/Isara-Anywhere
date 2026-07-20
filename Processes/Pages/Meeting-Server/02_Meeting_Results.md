@@ -8,6 +8,8 @@
 
 Review AI-generated SOAP summary, degraded-mode badge when `PW_SKIP_LIVE_GEMINI=1`, validate summary, and navigate to EMR editor.
 
+Recording playback remains on this page (inline). The same `meeting_records.recording_url` is also listed for **download** in doctor PatientRecordViewer → **การประชุม** and patient Timeline → meeting events (`?download=1` / patient recording proxy). See [Clinical_Document_Delivery_Workflows.md](../../Clinical_Document_Delivery_Workflows.md) §7.
+
 ## Key testids
 
 | Element | testid |
@@ -228,4 +230,50 @@ Production ใช้ `meet.jit.si` — บันทึกจากเบรา�
 - ข้อมูลสุขภาพเป็นความละเอียดอ่อน — ปฏิบัติตาม PDPA และนโยบายโรงพยาบาล
 - อย่าแชร์ลิงก์ประชุมหรือ JWT ทางช่องทางไม่ปลอดภัย
 - ผลลัพธ์ AI ไม่ใช่การวินิจฉัย — แพทย์ต้องตรวจก่อนลง EMR
+
+
+## UI Controls Inventory
+
+| # | Control | testid | Action | Expected | Screenshot |
+|---|---------|--------|--------|----------|------------|
+| 1 | Generate summary | `generate-summary-btn` | click | UI responds; API optional | U-generate-summary-btn |
+| 2 | Results modal | `meeting-results` | type | UI responds; API optional | U-meeting-results |
+| 3 | Meeting Summary Degraded | `meeting-summary-degraded` | click | Documented control | U-meeting-summary-degraded |
+| 4 | Validate Summary Btn | `validate-summary-btn` | click | Documented control | U-validate-summary-btn |
+| 5 | Apply Summary Emr Btn | `apply-summary-emr-btn` | click | Documented control | U-apply-summary-emr-btn |
+| 6 | Data Testid | `data-testid` | click | Documented control | U-data-testid |
+| 7 | Confirmed | `confirmed` | click | Documented control | U-confirmed |
+| 8 | Lobby Waiting Screen | `lobby-waiting-screen` | click | Documented control | U-lobby-waiting-screen |
+| 9 | Admit All Btn | `admit-all-btn` | click | Documented control | U-admit-all-btn |
+| 10 | Jitsi Doctor Container | `jitsi-doctor-container` | click | Documented control | U-jitsi-doctor-container |
+| 11 | Jitsi Guest Container | `jitsi-guest-container` | click | Documented control | U-jitsi-guest-container |
+| 12 | Insert Meeting Summary Emr Btn | `insert-meeting-summary-emr-btn` | click | Documented control | U-insert-meeting-summary-emr-btn |
+| 13 | Host Ready | `host-ready` | click | Documented control | U-host-ready |
+| 14 | Notifyhostpresent | `notifyHostPresent` | click | Documented control | U-notifyHostPresent |
+| 15 | Appointmentid | `appointmentId` | click | Documented control | U-appointmentId |
+| 16 | Meetingid | `meetingId` | click | Documented control | U-meetingId |
+| 17 | Guestjoinurl | `guestJoinUrl` | click | Documented control | U-guestJoinUrl |
+| 18 | Share Link | `share-link` | click | Documented control | U-share-link |
+| 19 | Guest Invite | `guest-invite` | click | Documented control | U-guest-invite |
+| 20 | Guest Lobby Waiting | `guest-lobby-waiting` | click | Documented control | U-guest-lobby-waiting |
+| 21 | Frame Src | `frame-src` | click | Documented control | U-frame-src |
+| 22 | Connect Src | `connect-src` | click | Documented control | U-connect-src |
+| 23 | Guest Transcript Segment | `guest-transcript-segment` | click | Documented control | U-guest-transcript-segment |
+| 24 | Recordingurl | `recordingUrl` | click | Documented control | U-recordingUrl |
+| 25 | Meeting Summary Ready | `meeting-summary-ready` | click | Documented control | U-meeting-summary-ready |
+
+
+---
+
+## Automated verification
+
+| Field | Value |
+|-------|-------|
+| **Status** | covered — verified 2026-07-14 (Q2 + MITL validate publish + summary empty degraded badge) |
+| **Unit tests** | See tests/PROCESS_COVERAGE_MATRIX.md + processWorkflowRegistry |
+| **UI (Playwright)** | Groups D, Q, Q2, U |
+| **data-testid** | See tests/SELECTORS.md + UI Controls Inventory |
+| **Last verified** | 2026-07-14 |
+
+**Matrix:** tests/PROCESS_COVERAGE_MATRIX.md
 

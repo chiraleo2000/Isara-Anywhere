@@ -6,7 +6,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 const resultsSrc = fs.readFileSync(
-  path.resolve(__dirname, '../../../Isara-doctor-portal/frontend/pages/meetings/MeetingResults.tsx'),
+  path.resolve(__dirname, '../../../issara-doctor/frontend/pages/meetings/MeetingResults.tsx'),
   'utf8',
 );
 

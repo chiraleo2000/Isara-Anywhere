@@ -1,63 +1,23 @@
-# Ignore node_modules — dependencies are installed inside Docker
-
-**/node_modules/
-
-# Test artifacts — NOT part of any Docker build context
-
-tests/
-test-results/
-screenshots/
-playwright-report/
-playwright.config.ts
-cypress.config.*
-*.test.ts
-*.spec.ts
-.build-log.txt
-
-# Git history
-
-.git/
-
-# IDE / editor files
-
-.vscode/
-.idea/
-*.swp
-
-# Docker files not needed in build context
-
-docker-compose.yml
-
-# Documentation
-
-docs/
-Presentations/
-Processes/
-*.md
-!README.md
-
-# Scripts not needed for Docker build (but database scripts ARE needed for migrate builds).
-# NOTE: gitignore syntax forbids re-including children of an excluded directory, so we
-# exclude scripts/* (single-level glob) instead of scripts/, then re-include scripts/database/.
-scripts/*
-!scripts/database/
-fixtures/
-specs/
-
-# Credentials (NEVER upload)
-
-credentials/
-
-# OS junk
-
-Thumbs.db
-.DS_Store
-
-# Build artifacts
-
-**/dist/
-**/build/
-
-# Recordings
-
-Izara-jitsi-server/recordings/
+# Keep Cloud Build upload lean; junctions issara-* must remain included.
+.git
+.github
+node_modules
+**/node_modules
+tests/output
+tests/unit/node_modules
+playwright-report
+reports/playwright-html
+reports/headed-*.txt
+docs/screenshots
+Documents/docs/screenshots
+coverage
+dist
+build
+.vite
+*.log
+.env
+.env.*
+!.env.example
+agent-transcripts
+.cursor
+deploy/jitsi/docker-jitsi-meet

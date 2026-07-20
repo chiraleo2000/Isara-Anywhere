@@ -25,9 +25,10 @@ import {
 import type { Page } from '@playwright/test';
 import * as path from 'node:path';
 import * as fs from 'node:fs';
+import { fileURLToPath } from 'node:url';
 
 // ── Paths ─────────────────────────────────────────────────────────────
-const BASE_DIR  = path.join(__dirname, '..');
+const BASE_DIR  = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const WF_DIR    = path.join(BASE_DIR, 'screenshots', 'workflow');
 const DOCS_WF   = path.join(BASE_DIR, 'docs', 'screenshots', 'workflows');
 

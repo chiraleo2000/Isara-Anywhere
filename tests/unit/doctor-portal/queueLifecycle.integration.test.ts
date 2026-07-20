@@ -9,8 +9,8 @@ import {
   splitQueueSections,
   isWithinAcceptedWindow,
   PENDING_POOL_STATUSES,
-} from '../../../Isara-doctor-portal/backend/appointmentPoolQuery.cjs';
-import { buildTelehealthMeetingUrls } from '../../../Isara-doctor-portal/backend/jitsiMeetingLinks.cjs';
+} from '../../../../issara-doctor/backend/appointmentPoolQuery.cjs';
+import { buildTelehealthMeetingUrls } from '../../../../issara-doctor/backend/jitsiMeetingLinks.cjs';
 
 type PoolStatus = 'in_pool' | 'awaiting_doctor_response' | 'confirmed' | 'cancelled';
 
@@ -107,14 +107,17 @@ describe('queueLifecycle — state transitions', () => {
     expect(matchesPoolFilter(row, true)).toBe(true);
   });
 
-  it('QL09 — confirm meeting URLs disable prejoin and set display names', () => {
+  it('QL09 — confirm meeting URLs use portal paths and Jitsi hash fallbacks', () => {
     const urls = buildTelehealthMeetingUrls('apt-confirm-1', {
       patientName: 'Patient Demo',
       doctorName: 'Dr. Demo',
+      patientId: 'pat-ql09',
+      doctorId: 'doc-ql09',
     });
     expect(urls.roomName).toMatch(/^izara-apt-confirm/);
-    expect(urls.patientMeetingUrl).toContain('prejoinPageEnabled=false');
-    expect(urls.patientMeetingUrl).toContain('Patient');
-    expect(urls.doctorMeetingUrl).toContain('Dr.+Demo');
+    expect(urls.patientMeetingUrl).toContain('/patient/pat-ql09/meeting/apt-confirm-1');
+    expect(urls.jitsiPatientMeetingUrl).toContain('prejoinPageEnabled=false');
+    expect(urls.jitsiPatientMeetingUrl).toContain('Patient');
+    expect(urls.jitsiDoctorMeetingUrl).toContain('Dr.+Demo');
   });
 });

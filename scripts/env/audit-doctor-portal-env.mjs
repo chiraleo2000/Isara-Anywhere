@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Audit Isara-doctor-portal/.env against v5.2 required keys.
+ * Audit issara-doctor/.env against v5.2 required keys.
  * Exits 0 when all required keys present and forbidden keys absent.
  */
 import fs from 'node:fs';
@@ -8,7 +8,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
-const envPath = path.join(root, 'Isara-doctor-portal', '.env');
+const envPath = path.join(root, 'issara-doctor', '.env');
 
 const REQUIRED = [
   'MEETING_SERVER_URL',

@@ -14,11 +14,15 @@
  * ═══════════════════════════════════════════════════════════════════════
  */
 import {
-  test, expect, assertFullHealth, snap,
+  test, expect, assertFullHealth, snap, snapDistinct,
   navDoctor, navPatient, waitForContent, assertHasData,
   PATIENT_URL, DOCTOR_URL,
-  refreshPatientSession,
+  refreshPatientSession, refreshPageAuth,
+  gotoCloudWithRetry,
 } from './helpers/multi-portal';
+import { resetScreenshotSession } from './helpers/screenshot-distinct';
+
+const IS_CLOUD = process.env.TEST_ENV === 'cloud';
 
 test.describe('Group I — Admin, Users & Notifications', () => {
   test.describe.configure({ mode: 'serial' });
@@ -39,6 +43,10 @@ test.describe('Group I — Admin, Users & Notifications', () => {
      ═════════════════════════════════════════════════════════════════ */
   test('I1 — Admin doctor management workflow', async ({ portals }) => {
     const { admin } = portals;
+    resetScreenshotSession('group-I');
+
+    // Re-inject admin session before admin-only routes (long headed runs can drop isAdmin flags).
+    await refreshPageAuth(admin.page, DOCTOR_URL, 'admin');
 
     await test.step('I01 — Admin → Dashboard', async () => {
       await navDoctor(admin.page, 'dashboard', 'I01');
@@ -48,8 +56,12 @@ test.describe('Group I — Admin, Users & Notifications', () => {
     });
 
     await test.step('I02 — Admin → Manage Doctors', async () => {
-      await navDoctor(admin.page, 'doctors', 'I02');
+      await refreshPageAuth(admin.page, DOCTOR_URL, 'admin');
+      await navDoctor(admin.page, 'doctor-management', 'I02');
+      await expect(admin.page).toHaveURL(/\/doctor-management/, { timeout: 15_000 });
       await assertFullHealth(admin.page, 'I02');
+      const searchInput = admin.page.getByTestId('admin-doctor-search');
+      await expect(searchInput, 'I02 doctor-management search bar').toBeVisible({ timeout: 15_000 });
       await snap(admin.page, 'I02-manage-doctors', 'group-I');
       const body = await admin.page.locator('body').innerText();
       expect(/doctor|แพทย์|manage|จัดการ|approval|อนุมัติ/i.test(body)).toBeTruthy();
@@ -57,50 +69,51 @@ test.describe('Group I — Admin, Users & Notifications', () => {
     });
 
     await test.step('I03 — Search for doctor', async () => {
-      const searchInput = admin.page.locator(
-        'input[type="search"], input[type="text"], input[placeholder*="search" i], input[placeholder*="ค้นหา"]'
-      ).first();
-      if (await searchInput.isVisible({ timeout: 5_000 }).catch(() => false)) {
-        await searchInput.fill('demo');
-        await admin.page.waitForTimeout(500);
-        await snap(admin.page, 'I03-search-doctor', 'group-I');
-        console.log('  ✅ I03: Searched "demo"');
-      } else {
-        await snap(admin.page, 'I03-no-search', 'group-I');
-        console.log('  ✅ I03: No search input (list view)');
+      const searchInput = admin.page.getByTestId('admin-doctor-search');
+      if (!(await searchInput.isVisible({ timeout: 2_000 }).catch(() => false))) {
+        await refreshPageAuth(admin.page, DOCTOR_URL, 'admin');
+        await navDoctor(admin.page, 'doctor-management', 'I03-retry');
+        await expect(admin.page).toHaveURL(/\/doctor-management/, { timeout: 15_000 });
       }
+      await expect(searchInput).toBeVisible({ timeout: 10_000 });
+      await searchInput.fill('demo');
+      await admin.page.waitForTimeout(800);
+      // Firefox locator.screenshot can hang on input elements — use page crop via stabilize.
+      try {
+        await snapDistinct(admin.page, 'I03-search-doctor', 'group-I', {
+          locator: admin.page.getByTestId('admin-doctor-search'),
+          stabilize: true,
+        });
+      } catch {
+        await snap(admin.page, 'I03-search-doctor', 'group-I');
+      }
+      console.log('  ✅ I03: Searched "demo"');
     });
 
     await test.step('I04 — Click doctor profile', async () => {
-      // Use narrow selectors to avoid matching non-clickable header divs
-      const card = admin.page.locator(
-        'table tbody tr, [class*="card"]:not(nav *):not(header *), [class*="doctor-item"], [class*="list-item"]'
-      ).filter({
-        hasText: /doctor|แพทย์|demo/i,
-      }).first();
-      if (await card.isVisible({ timeout: 5_000 }).catch(() => false)) {
-        await card.evaluate((el) => (el as HTMLElement).click());
-        await admin.page.waitForTimeout(500);
-        await waitForContent(admin.page, 'I04-detail');
-        await snap(admin.page, 'I04-doctor-detail', 'group-I');
-        console.log('  ✅ I04: Doctor profile opened');
-      } else {
-        await snap(admin.page, 'I04-no-doctors', 'group-I');
-        console.log('  ✅ I04: No doctor cards (empty list)');
-      }
+      const searchInput = admin.page.getByTestId('admin-doctor-search');
+      await searchInput.fill('');
+      await admin.page.waitForTimeout(800);
+      await admin.page.getByTestId('admin-doctor-all-tab').evaluate((el) => (el as HTMLButtonElement).click());
+      await admin.page.waitForTimeout(800);
+      const card = admin.page.getByTestId('doctor-item').first();
+      await expect(card, 'I04 doctor list row').toBeVisible({ timeout: 15_000 });
+      await card.evaluate((el) => el.scrollIntoView({ block: 'center' }));
+      await admin.page.waitForTimeout(500);
+      await snapDistinct(admin.page, 'I04-doctor-detail', 'group-I', { fullPage: false });
+      console.log('  ✅ I04: Doctor list row visible');
     });
 
     await test.step('I05 — Check approve/reject buttons', async () => {
-      const approveBtn = admin.page.locator('button').filter({
-        hasText: /Approve|อนุมัติ|Accept|ยอมรับ/i,
-      }).first();
-      const rejectBtn = admin.page.locator('button').filter({
-        hasText: /Reject|ปฏิเสธ|Deny/i,
-      }).first();
-      const approveVisible = await approveBtn.isVisible({ timeout: 3_000 }).catch(() => false);
-      const rejectVisible = await rejectBtn.isVisible({ timeout: 3_000 }).catch(() => false);
-      await snap(admin.page, 'I05-approval-buttons', 'group-I');
-      console.log(`  ✅ I05: Approve=${approveVisible}, Reject=${rejectVisible}`);
+      await admin.page.getByTestId('admin-doctor-pending-tab').evaluate((el) => (el as HTMLButtonElement).click());
+      await expect(admin.page.locator('.animate-spin')).toHaveCount(0, { timeout: 15_000 });
+      const pendingPanel = admin.page.getByTestId('admin-doctor-pending-panel');
+      await expect(pendingPanel).toBeVisible({ timeout: 15_000 });
+      await snapDistinct(admin.page, 'I05-approval-buttons', 'group-I', {
+        locator: pendingPanel,
+        stabilize: true,
+      });
+      console.log('  ✅ I05: Pending approvals tab captured');
     });
 
     console.log('\n  🎉 I1 COMPLETE — Doctor management\n');
@@ -211,10 +224,27 @@ test.describe('Group I — Admin, Users & Notifications', () => {
 
     await test.step('I13 — All 3 portals authenticated', async () => {
       await refreshPatientSession(patient.page);
-      await patient.page.goto(PATIENT_URL, { waitUntil: 'domcontentloaded', timeout: 30_000 });
+      await gotoCloudWithRetry(patient.page, PATIENT_URL, 'I13/patient-root', 90_000);
+      await patient.page.waitForLoadState('domcontentloaded').catch(() => undefined);
 
-      const readToken = async (page: typeof patient.page, keys: string[]) =>
-        page.evaluate((k) => k.map((key) => localStorage.getItem(key)).find(Boolean) || null, keys);
+      const readToken = async (page: typeof patient.page, keys: string[]) => {
+        for (let attempt = 0; attempt < 3; attempt++) {
+          try {
+            await page.waitForLoadState('domcontentloaded').catch(() => undefined);
+            return await page.evaluate(
+              (k) => k.map((key) => localStorage.getItem(key)).find(Boolean) || null,
+              keys,
+            );
+          } catch (err) {
+            const msg = err instanceof Error ? err.message : String(err);
+            if (!/Execution context was destroyed|Target closed|navigation/i.test(msg) || attempt === 2) {
+              throw err;
+            }
+            await page.waitForTimeout(500);
+          }
+        }
+        return null;
+      };
 
       let pToken = await readToken(patient.page, ['auth_token', 'izara_auth_token', 'token']);
       let dToken = await readToken(doctor.page, ['token', 'izara_auth_token']);

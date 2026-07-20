@@ -3,7 +3,7 @@
  * Join-config contract: Izara lobby only, no Jitsi moderator gate on meet.jit.si
  */
 import { describe, it, expect } from 'vitest';
-import { buildJitsiHashParams, buildMeetingUrls, externalApiConfig } from '../../../Izara-jitsi-server/backend/jitsiConfig.js';
+import { buildJitsiHashParams, buildMeetingUrls, externalApiConfig } from '../../../../issara-jitsi/backend/jitsiConfig.js';
 
 describe('joinConfigAcceptance — jitsiConfig', () => {
   it('JC01 — doctor hash enables moderator and disables Jitsi lobby', () => {

@@ -4,7 +4,7 @@ import path from 'node:path';
 
 const servicesPath = path.resolve(
   __dirname,
-  '../../../Isara-patient-portal/frontend/lib/services.ts',
+  '../../../issara-patient/frontend/lib/services.ts',
 );
 
 describe('notification mark-all regression guard', () => {

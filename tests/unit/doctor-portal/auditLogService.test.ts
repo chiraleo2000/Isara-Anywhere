@@ -4,7 +4,7 @@
  * ═══════════════════════════════════════════════════════════════════════
  * Tests: AuditLog creation, compliance report generation,
  *        CSV export, patient data access logging, filtering
- * Source: Isara-doctor-portal/frontend/services/auditLogService.ts
+ * Source: issara-doctor/frontend/services/auditLogService.ts
  * ═══════════════════════════════════════════════════════════════════════
  */
 import { describe, it, expect } from 'vitest';

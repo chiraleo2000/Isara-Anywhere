@@ -4,7 +4,7 @@ import path from 'node:path';
 
 const aiPagePath = path.resolve(
   __dirname,
-  '../../../Isara-patient-portal/frontend/pages/health/AIDoctorPage.tsx',
+  '../../../issara-patient/frontend/pages/health/AIDoctorPage.tsx',
 );
 
 describe('AI new chat behavior (P1)', () => {

@@ -1,178 +1,81 @@
-# 📋 เอกสารขั้นตอนการทำงาน Izara Telemedicine (ภาษาไทย)
+# 📄 Izara Telemedicine — ขั้นตอนการทำงาน กระบวนการ และสถาปัตยกรรม
 
-**เวอร์ชัน:** 3.2.0
-**อัปเดตล่าสุด:** 4 กุมภาพันธ์ 2569
-**สถานะ:** ✅ Phase 1 เสร็จสมบูรณ์
+**เวอร์ชัน:** 1.7.55  
+**อัปเดตล่าสุด:** 9 กรกฎาคม 2569  
+**ขอบเขต:** เว็บแอป (พอร์ทัลผู้ป่วย + พอร์ทัลแพทย์ + Meeting Server)  
+**สถานะ:** ✅ Phase 1 เสร็จสมบูรณ์ — ดู [WORKFLOW_CONNECTIONS_TH.md](WORKFLOW_CONNECTIONS_TH.md)
 
----
-
-
-## 📁 รายการเอกสาร
-
-โฟลเดอร์นี้ประกอบด้วยเอกสารภาษาไทยสำหรับระบบ Izara Telemedicine:
-
-| เอกสาร | คำอธิบาย | สถานะ |
-| ------ | -------- | ------ |
-| [User_management_Workflows_TH.md](User_management_Workflows_TH.md) | ขั้นตอนการจัดการผู้ใช้งาน | ✅ |
-| [Appointment_Workflows_TH.md](Appointment_Workflows_TH.md) | ขั้นตอนการนัดหมาย | ✅ |
-| [Data_Sync_Documentation_TH.md](Data_Sync_Documentation_TH.md) | โครงสร้างข้อมูลและฐานข้อมูล | ✅ |
-| [Health_Records_Processes_TH.md](Health_Records_Processes_TH.md) | ขั้นตอน PHR และ EMR | ✅ |
-| [Video_Meeting_TH.md](Video_Meeting_TH.md) | การประชุมวิดีโอ Jitsi + AI | ✅ |
-| [Notification_Workflows_TH.md](Notification_Workflows_TH.md) | ระบบแจ้งเตือน | ✅ |
-
-
+> **ศูนย์กลาง:** [WORKFLOW_CONNECTIONS_TH.md](WORKFLOW_CONNECTIONS_TH.md) · [Combined_Workflows_TH](Combined_Workflows_And_Actions_TH.md) · [Pages/](Pages/)
 
 ---
 
+## สารบัญด่วน
 
-## 🏥 ภาพรวมระบบ
-
-
-### พอร์ทัล
-
-| พอร์ทัล | URL | ผู้ใช้ |
-| ------- | --- | ----- |
-| พอร์ทัลผู้ป่วย | localhost:3005 | ผู้ป่วย |
-| พอร์ทัลแพทย์ | localhost:3010 | แพทย์, ผู้ดูแลระบบ |
-
-
-
-
-### บริการ Docker
-
-| บริการ | พอร์ต | วัตถุประสงค์ |
-| ------ | ---- | ---------- |
-| PostgreSQL | 5433 | ฐานข้อมูลหลัก |
-| พอร์ทัลผู้ป่วย | 3005 | Frontend + Backend ผู้ป่วย |
-| พอร์ทัลแพทย์ | 3010 | Frontend + Backend แพทย์ |
-| Meeting Server | 3020 | Jitsi + AI |
-| pgAdmin | 5050 | จัดการฐานข้อมูล |
-
-
+| หัวข้อ | เอกสารภาษาไทย | ต้นฉบับ EN |
+| ------ | ------------- | ---------- |
+| แผนที่แพลตฟอร์ม + แผนภาพ | [WORKFLOW_CONNECTIONS_TH.md](WORKFLOW_CONNECTIONS_TH.md) | [WORKFLOW_CONNECTIONS.md](../WORKFLOW_CONNECTIONS.md) |
+| นัดหมาย → ประชุม → EMR | [Appointment_Workflows_TH.md](Appointment_Workflows_TH.md) | [Appointment_Workflows.md](../Appointment_Workflows.md) |
+| ประชุมวิดีโอ + AI | [Video_Meeting_TH.md](Video_Meeting_TH.md) | [VIDEO_MEETING_JITSI_GEMINI.md](../VIDEO_MEETING_JITSI_GEMINI.md) |
+| หลังประชุม | [POST_MEETING_WORKFLOW_TH.md](POST_MEETING_WORKFLOW_TH.md) | [POST_MEETING_WORKFLOW.md](../POST_MEETING_WORKFLOW.md) |
+| เวชระเบียน PHR/EMR | [Health_Records_Processes_TH.md](Health_Records_Processes_TH.md) | [Health_Records_Processes.md](../Health_Records_Processes.md) |
+| ส่งมอบเอกสารคลินิก | [Clinical_Document_Delivery_Workflows_TH.md](Clinical_Document_Delivery_Workflows_TH.md) | [Clinical_Document_Delivery_Workflows.md](../Clinical_Document_Delivery_Workflows.md) |
+| ผู้ใช้และสิทธิ์ | [User_management_Workflows_TH.md](User_management_Workflows_TH.md) | [User_management_Workflows.md](../User_management_Workflows.md) |
+| แจ้งเตือน | [Notification_Workflows_TH.md](Notification_Workflows_TH.md) | [Notification_Workflows.md](../Notification_Workflows.md) |
+| ซิงค์ข้อมูล | [Data_Sync_Documentation_TH.md](Data_Sync_Documentation_TH.md) | [Data_Sync_Documentation.md](../Data_Sync_Documentation.md) |
+| หนังสือแสดงเจตจำนอง | [Living_Will_Processes_TH.md](Living_Will_Processes_TH.md) | [Living_Will_Processes.md](../Living_Will_Processes.md) |
+| คลังความรู้ / แหล่งคลินิก | [Medicine_Content_Processes_TH.md](Medicine_Content_Processes_TH.md) | [Medicine_Content_Processes.md](../Medicine_Content_Processes.md) |
+| สเปกหน้าจอ | [Pages/](Pages/) | [Pages/](../Pages/) |
 
 ---
 
-
-## 👥 บทบาทผู้ใช้
-
-
-### ผู้ป่วย
-
-
-- ลงทะเบียนและเข้าสู่ระบบ
-
-- จองนัดหมาย
-
-- เข้าร่วมประชุมวิดีโอ
-
-- ดูประวัติสุขภาพ (PHR)
-
-- ดูคำแนะนำจากแพทย์
-
-
-### แพทย์
-
-
-- เข้าสู่ระบบ (ต้องได้รับการอนุมัติ)
-
-- ยืนยัน/ปฏิเสธนัดหมาย
-
-- เริ่มและควบคุมประชุมวิดีโอ
-
-- สร้างและลงนาม EMR
-
-- ใช้ AI ช่วยเหลือ
-
-- ตรวจสอบและอนุมัติเนื้อหา AI
-
-
-### ผู้ดูแลระบบ
-
-
-- สิทธิ์ทั้งหมดของแพทย์
-
-- อนุมัติ/ปฏิเสธการลงทะเบียนแพทย์
-
-- จัดการบทบาทผู้ใช้
-
-- ดูสถิติและรายงาน
-
-- จัดการเนื้อหาทางการแพทย์
-
----
-
-
-## 🔄 ขั้นตอนหลัก
-
-
-### 1. การลงทะเบียน
+## ลำดับการทำงานหลัก (12 ขั้นตอน)
 
 ```text
-ผู้ป่วย → ลงทะเบียน → ใช้งานได้ทันที
-แพทย์ → ลงทะเบียน → รอการอนุมัติ → ผู้ดูแลอนุมัติ → ใช้งานได้
+ 1. ผู้ป่วยจองนัด          → appointments (pending / in_pool)
+ 2. แอดมินมอบหมาย / แพทย์ยืนยัน → confirmed + ลิงก์ Jitsi
+ 3. แพทย์เริ่มประชุม (HOST) → meeting_records
+ 4. ผู้ป่วย/แขก lobby → เข้าห้อง → ถอดเสียง + แชท
+ 5. แพทย์จบประชุม
+ 6. Gemini สรุป SOAP
+ 7. แพทย์ตรวจสอบ AI (Man-in-the-Loop)
+ 8. ลงนาม EMR
+ 9. สั่งยา / แล็บ / ภาพรวม (ถ้ามี)
+10. DocumentDeliveryService → patient_documents
+11. แจ้งเตือนผู้ป่วย
+12. ผู้ป่วยดูผลใน PHR
 ```
 
-
-### 2. การนัดหมาย
-
-```text
-ผู้ป่วยจอง → แพทย์ยืนยัน → สร้างลิงก์ประชุม → แจ้งเตือน
-```
-
-
-### 3. การประชุมวิดีโอ
-
-```text
-แพทย์เริ่ม → ผู้ป่วยเข้าห้องรอ → แพทย์อนุมัติ → ประชุม → ถอดเสียง
-```
-
-
-### 4. EMR และ AI
-
-```text
-ประชุมจบ → AI สรุป → แพทย์ตรวจสอบ (Man-in-the-Loop) → อนุมัติ → ส่งผู้ป่วย
-```
+รายละเอียดแผนภาพ: [WORKFLOW_CONNECTIONS_TH.md](WORKFLOW_CONNECTIONS_TH.md)
 
 ---
 
+## บริการและพอร์ต
 
-## 📧 บัญชีทดสอบ
-
-| บทบาท | อีเมล | รหัสผ่าน |
-| ----- | ----- | ------- |
-| ผู้ดูแลระบบ | <admin.test@izara.com> | YOUR_TEST_ADMIN_PASSWORD |
-| แพทย์ | <doctor.test@izara.com> | YOUR_TEST_DOCTOR_PASSWORD |
-| ผู้ป่วย | <demo.test@gmail.com> | YOUR_TEST_PASSWORD |
-
-
+| บริการ | พอร์ต (Local) | บทบาท |
+| ------ | ------------- | ----- |
+| พอร์ทัลผู้ป่วย | 3005 | UI + API ผู้ป่วย |
+| พอร์ทัลแพทย์ | 3010 | UI + API แพทย์/แอดมิน |
+| Meeting Server | 3020 | Jitsi, ถอดเสียง, AI |
+| PostgreSQL | 5433 | ฐานข้อมูล izara_phase1 |
 
 ---
 
+## เอกสารที่เลิกใช้ (อย่าต่อยอด)
 
-## 🛠️ เทคโนโลยี
-
-
-- **Frontend**: React + TypeScript + Vite
-
-- **Backend**: Node.js + Express
-
-- **Database**: PostgreSQL + pgvector
-
-- **Video**: Jitsi Meet
-
-- **AI**: Gemini 2.5 Flash
-
-- **Speech-to-Text**: Web Speech API
-
-- **Container**: Docker + Docker Compose
+| แทนที่ด้วย | ไฟล์เดิม |
+| ---------- | -------- |
+| `Pages/` | UI_Pages_Workflows.md |
+| `Living_Will_Processes.md` | *(removed)* `Living_Will_Implementation_Plan.md` |
+| FULL_WORKFLOW_CONTRACT.md | PHASE1_BASELINE_WORKFLOW_CONTRACT.md |
+| Meeting-Server/01_Meeting_Room | 07_Virtual_Meeting.md |
 
 ---
 
+## การสร้างเอกสารใหม่
 
-## 📞 ติดต่อ
+```bash
+python scripts/enrich-process-pages.py --force-steps
+python scripts/sync-processes-thai.py
+```
 
-สำหรับคำถามหรือปัญหาเกี่ยวกับเอกสารนี้ กรุณาติดต่อทีมพัฒนา Izara Telemedicine
-
----
-
-เอกสารเหล่านี้สะท้อนการใช้งานปัจจุบันของ Izara Telemedicine (Phase 1 เสร็จสมบูรณ์)
+**ต้นฉบับภาษาอังกฤษ:** [Processes/README.md](../README.md)

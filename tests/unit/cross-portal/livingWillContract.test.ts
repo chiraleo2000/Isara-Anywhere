@@ -17,12 +17,12 @@ describe('Living will contract (LWL)', () => {
   });
 
   it('LWL-03 — living will API on pdpa/phr routes', () => {
-    const pdpa = fs.readFileSync(path.join(root, 'Isara-patient-portal/backend/routes/pdpa.ts'), 'utf8');
+    const pdpa = fs.readFileSync(path.join(root, 'issara-patient/backend/routes/pdpa.ts'), 'utf8');
     expect(pdpa).toMatch(/living-will/);
   });
 
   it('LWL-04 — living will page component', () => {
-    const page = path.join(root, 'Isara-patient-portal/frontend/pages/LivingWillPage.tsx');
+    const page = path.join(root, 'issara-patient/frontend/pages/LivingWillPage.tsx');
     expect(fs.existsSync(page)).toBe(true);
   });
 

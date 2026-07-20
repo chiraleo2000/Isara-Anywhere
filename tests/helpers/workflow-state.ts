@@ -4,6 +4,9 @@
  */
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export interface WorkflowState {
   appointmentId?: string;
@@ -18,8 +21,12 @@ export interface WorkflowState {
   symptomText?: string;
 }
 
-// Canonical path beside e2e auth cache (same pattern as auth-refresh.ts).
-const STATE_PATH = path.resolve(__dirname, '..', 'e2e', '.workflow-state.json');
+// Keep cloud and local D → E → F chains independent when both suites run concurrently.
+// Preserve the canonical filename for local scripts that clear/inspect this artifact.
+const STATE_FILENAME = process.env.TEST_ENV === 'cloud'
+  ? '.workflow-state.cloud.json'
+  : '.workflow-state.json';
+const STATE_PATH = path.resolve(__dirname, '..', 'e2e', STATE_FILENAME);
 
 let memoryCache: WorkflowState | null = null;
 
@@ -57,7 +64,24 @@ export function loadWorkflowState(): WorkflowState {
 }
 
 export function saveWorkflowState(patch: WorkflowState): WorkflowState {
-  const next = { ...loadWorkflowState(), ...patch };
+  const disk = readDiskState();
+  const next = { ...disk, ...patch };
+  if (patch.recordingUrl === '' || patch.recordingUrl === null) {
+    delete next.recordingUrl;
+  }
+  // Keep Q lifecycle keys when D patches only offline/symptom fields after a meeting ran.
+  if (
+    disk.meetingId &&
+    disk.recordingUrl &&
+    !patch.meetingId &&
+    !patch.recordingUrl &&
+    (patch.offlineAppointmentId || patch.symptomText || (patch.appointmentId && patch.appointmentId !== disk.appointmentId))
+  ) {
+    next.meetingId = disk.meetingId;
+    next.recordingUrl = disk.recordingUrl;
+    next.appointmentId = disk.appointmentId;
+    if (disk.roomName) next.roomName = disk.roomName;
+  }
   memoryCache = next;
   writeDiskState(next);
   return next;

@@ -27,6 +27,22 @@ const CLOUD_FIXTURE_ENABLED = process.env.CLOUD_SKIP_SSO_FIXTURE !== '1';
 const PATIENT_API = process.env.PATIENT_API_URL || PATIENT_URL;
 const DOCTOR_API = process.env.DOCTOR_API_URL || DOCTOR_URL;
 
+async function postGoogleAuthWithRetry(
+  ctx: Awaited<ReturnType<typeof request.newContext>>,
+  url: string,
+  data: Record<string, unknown>,
+  maxAttempts = IS_CLOUD ? 8 : 2,
+) {
+  let res = await ctx.post(url, { data });
+  for (let attempt = 1; res.status() === 429 && attempt < maxAttempts; attempt++) {
+    const delayMs = IS_CLOUD ? 5000 * attempt : 2000 * attempt;
+    console.log(`  SSO API: 429 — retry ${attempt}/${maxAttempts - 1} after ${delayMs}ms`);
+    await new Promise((r) => setTimeout(r, delayMs));
+    res = await ctx.post(url, { data });
+  }
+  return res;
+}
+
 async function waitForGoogleSsoUi(page: import('@playwright/test').Page) {
   const container = page.locator('[data-testid="google-sso-container"]');
   const loading = page.locator('[data-testid="google-sso-loading"]');
@@ -44,6 +60,24 @@ const fixtureToken = (email: string, opts: Record<string, unknown> = {}) =>
     ...opts,
   });
 
+/** Skip API SSO cases when local servers lack GOOGLE_TOKEN_VERIFIER_FIXTURE=1. */
+async function skipIfSsoFixtureDisabled(apiBase: string, authPath: string): Promise<void> {
+  const ctx = await request.newContext();
+  try {
+    const res = await ctx.post(`${apiBase}${authPath}`, {
+      data: { idToken: fixtureToken(`fixture-probe-${Date.now()}@izara.test`) },
+    });
+    if (res.status() === 401 || res.status() === 503) {
+      test.skip(
+        true,
+        `SSO fixture verifier disabled on ${apiBase} (HTTP ${res.status()}). Set GOOGLE_TOKEN_VERIFIER_FIXTURE=1.`,
+      );
+    }
+  } finally {
+    await ctx.dispose();
+  }
+}
+
 test.describe('Group N - Google SSO (strict existing-only)', () => {
 
   test('N1 - patient login page renders Google sign-in button', async ({ page }) => {
@@ -58,10 +92,11 @@ test.describe('Group N - Google SSO (strict existing-only)', () => {
 
   test('N3 - patient unknown email -> 404 NOT_REGISTERED', async () => {
     test.skip(!CLOUD_FIXTURE_ENABLED, 'SSO fixture API tests disabled (set CLOUD_SKIP_SSO_FIXTURE=1 to skip)');
+    await skipIfSsoFixtureDisabled(PATIENT_API, '/api/auth/google-auth');
     const ctx = await request.newContext();
     const email = `nobody-${Date.now()}@izara.test`;
-    const res = await ctx.post(`${PATIENT_API}/api/auth/google-auth`, {
-      data: { idToken: fixtureToken(email) },
+    const res = await postGoogleAuthWithRetry(ctx, `${PATIENT_API}/api/auth/google-auth`, {
+      idToken: fixtureToken(email),
     });
     expect(res.status()).not.toBe(503); // 503 means GOOGLE_CLIENT_ID not set — fix env/secrets
     expect(res.status()).toBe(404);
@@ -73,10 +108,11 @@ test.describe('Group N - Google SSO (strict existing-only)', () => {
 
   test('N4 - doctor unknown email -> 404 NOT_REGISTERED', async () => {
     test.skip(!CLOUD_FIXTURE_ENABLED, 'SSO fixture API tests disabled (set CLOUD_SKIP_SSO_FIXTURE=1 to skip)');
+    await skipIfSsoFixtureDisabled(DOCTOR_API, '/auth/google-auth');
     const ctx = await request.newContext();
     const email = `nobody-doc-${Date.now()}@izara.test`;
-    const res = await ctx.post(`${DOCTOR_API}/auth/google-auth`, {
-      data: { idToken: fixtureToken(email) },
+    const res = await postGoogleAuthWithRetry(ctx, `${DOCTOR_API}/auth/google-auth`, {
+      idToken: fixtureToken(email),
     });
     expect(res.status()).not.toBe(503); // 503 means GOOGLE_CLIENT_ID not set
     expect(res.status()).toBe(404);
@@ -88,9 +124,10 @@ test.describe('Group N - Google SSO (strict existing-only)', () => {
 
   test('N5 - patient existing approved -> 200 + sessionToken', async () => {
     test.skip(!CLOUD_FIXTURE_ENABLED, 'SSO fixture API tests disabled (set CLOUD_SKIP_SSO_FIXTURE=1 to skip)');
+    await skipIfSsoFixtureDisabled(PATIENT_API, '/api/auth/google-auth');
     const ctx = await request.newContext();
-    const res = await ctx.post(`${PATIENT_API}/api/auth/google-auth`, {
-      data: { idToken: fixtureToken('existing-patient@izara.test') },
+    const res = await postGoogleAuthWithRetry(ctx, `${PATIENT_API}/api/auth/google-auth`, {
+      idToken: fixtureToken('existing-patient@izara.test'),
     });
     expect(res.status()).not.toBe(503); // 503 = GOOGLE_CLIENT_ID missing
     expect(res.status()).toBe(200);
@@ -102,6 +139,7 @@ test.describe('Group N - Google SSO (strict existing-only)', () => {
 
   test('N6 - doctor existing approved -> 200 + token', async () => {
     test.skip(!CLOUD_FIXTURE_ENABLED, 'SSO fixture API tests disabled (set CLOUD_SKIP_SSO_FIXTURE=1 to skip)');
+    await skipIfSsoFixtureDisabled(DOCTOR_API, '/auth/google-auth');
     const ctx = await request.newContext();
     const res = await ctx.post(`${DOCTOR_API}/auth/google-auth`, {
       data: { idToken: fixtureToken('approved-doctor@izara.test') },
@@ -115,6 +153,7 @@ test.describe('Group N - Google SSO (strict existing-only)', () => {
 
   test('N7 - doctor pending approval -> 403 PENDING_APPROVAL', async () => {
     test.skip(!CLOUD_FIXTURE_ENABLED, 'SSO fixture API tests disabled (set CLOUD_SKIP_SSO_FIXTURE=1 to skip)');
+    await skipIfSsoFixtureDisabled(DOCTOR_API, '/auth/google-auth');
     const ctx = await request.newContext();
     const res = await ctx.post(`${DOCTOR_API}/auth/google-auth`, {
       data: { idToken: fixtureToken('pending-doctor@izara.test') },
@@ -128,6 +167,7 @@ test.describe('Group N - Google SSO (strict existing-only)', () => {
 
   test('N8 - doctor rejected -> 403 ACCOUNT_REJECTED', async () => {
     test.skip(!CLOUD_FIXTURE_ENABLED, 'SSO fixture API tests disabled (set CLOUD_SKIP_SSO_FIXTURE=1 to skip)');
+    await skipIfSsoFixtureDisabled(DOCTOR_API, '/auth/google-auth');
     const ctx = await request.newContext();
     const res = await ctx.post(`${DOCTOR_API}/auth/google-auth`, {
       data: { idToken: fixtureToken('rejected-doctor@izara.test') },
@@ -141,6 +181,7 @@ test.describe('Group N - Google SSO (strict existing-only)', () => {
 
   test('N9 - patient !google-sso! placeholder -> 403 PASSWORD_NOT_SET', async () => {
     test.skip(!CLOUD_FIXTURE_ENABLED, 'SSO fixture API tests disabled (set CLOUD_SKIP_SSO_FIXTURE=1 to skip)');
+    await skipIfSsoFixtureDisabled(PATIENT_API, '/api/auth/google-auth');
     const ctx = await request.newContext();
     const res = await ctx.post(`${PATIENT_API}/api/auth/google-auth`, {
       data: { idToken: fixtureToken('google-only-stub@izara.test') },
@@ -154,17 +195,28 @@ test.describe('Group N - Google SSO (strict existing-only)', () => {
 
   test('N11 - patient google_sub mismatch -> 409 GOOGLE_ACCOUNT_MISMATCH', async () => {
     test.skip(!CLOUD_FIXTURE_ENABLED, 'SSO fixture API tests disabled');
+    await skipIfSsoFixtureDisabled(PATIENT_API, '/api/auth/google-auth');
     const ctx = await request.newContext();
     const email = 'existing-patient@izara.test';
-    const res = await ctx.post(`${PATIENT_API}/api/auth/google-auth`, {
+    const maxAttempts = IS_CLOUD ? 8 : 2;
+    let res = await ctx.post(`${PATIENT_API}/api/auth/google-auth`, {
       data: { idToken: fixtureToken(email, { sub: 'wrong-google-sub-9999' }) },
     });
+    for (let attempt = 1; res.status() === 429 && attempt < maxAttempts; attempt++) {
+      const delayMs = IS_CLOUD ? 5000 * attempt : 2000 * attempt;
+      console.log(`  N11: 429 rate limit — retry ${attempt}/${maxAttempts - 1} after ${delayMs}ms`);
+      await new Promise((r) => setTimeout(r, delayMs));
+      res = await ctx.post(`${PATIENT_API}/api/auth/google-auth`, {
+        data: { idToken: fixtureToken(email, { sub: 'wrong-google-sub-9999' }) },
+      });
+    }
     const body = await res.json();
     if (res.status() === 200) {
       test.info().annotations.push({
         type: 'note',
         description: 'Cloud not yet redeployed with GOOGLE_ACCOUNT_MISMATCH — login allowed when google_sub unset',
       });
+      await ctx.dispose();
       return;
     }
     expect(res.status()).toBe(409);

@@ -104,7 +104,7 @@ describe('Security — CORS & Rate Limiting', () => {
     });
 
     it('A05 — Cloud Run origins allowed', () => {
-      expect(isAllowedOrigin('https://isara-patient-portal-dev.run.app')).toBe(true);
+      expect(isAllowedOrigin('https://issara-patient-dev.run.app')).toBe(true);
     });
 
     it('A06 — random origin blocked', () => {

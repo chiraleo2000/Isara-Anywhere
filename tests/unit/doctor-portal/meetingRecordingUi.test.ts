@@ -5,7 +5,7 @@ import { describe, it, expect } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
 
-const meetingRoom = path.resolve(__dirname, '../../../Isara-doctor-portal/frontend/pages/meetings/MeetingRoom.tsx');
+const meetingRoom = path.resolve(__dirname, '../../../issara-doctor/frontend/pages/meetings/MeetingRoom.tsx');
 
 describe('meetingRecordingUi — host recording UX', () => {
   const src = fs.readFileSync(meetingRoom, 'utf8');
@@ -14,15 +14,18 @@ describe('meetingRecordingUi — host recording UX', () => {
     expect(src).toMatch(/data-testid="recording-indicator"/);
   });
 
-  it('MRI-02 — auto-record called on conference join for host', () => {
-    expect(src).toMatch(/videoConferenceJoined.*handleConferenceJoined|handleConferenceJoined/s);
+  it('MRI-02 — auto-record only when doctor toggles recording (not on conference join)', () => {
+    expect(src).toMatch(/toggleRecording/);
     expect(src).toMatch(/auto-record/);
-    expect(src).toMatch(/setIsRecording\(true\)/);
+    const joinHandlerRe = /const handleConferenceJoined[\s\S]*?}, \[appointmentId/;
+    const joinHandler = joinHandlerRe.exec(src)?.[0] || '';
+    expect(joinHandler).not.toMatch(/auto-record/);
+    expect(joinHandler).not.toMatch(/setIsRecording\(true\)/);
   });
 
   it('MRI-03 — notifyHostPresent on conference joined only (inJitsi), host-absent on leave', () => {
     const jitsiCfg = fs.readFileSync(
-      path.resolve(__dirname, '../../../Isara-doctor-portal/frontend/utils/jitsiMeetingConfig.ts'),
+      path.resolve(__dirname, '../../../issara-doctor/frontend/utils/jitsiMeetingConfig.ts'),
       'utf8',
     );
     expect(src).toMatch(/notifyHostPresent/);

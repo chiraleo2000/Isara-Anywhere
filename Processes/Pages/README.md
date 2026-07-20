@@ -124,7 +124,6 @@ Pages/
 │   ├── 04_Schedule_Page.md                      ← Appointment schedule/calendar
 │   ├── 05_Patient_Management_Page.md            ← Patient list & records
 │   ├── 06_Health_Meeting_Page.md                ← Patient queue & meeting management
-│   ├── 07_Virtual_Meeting.md                    ← Video consultation (Jitsi)
 │   ├── 08_EMR_Editor.md                         ← Electronic Medical Record editor
 │   ├── 09_Prescribing.md                        ← E-Prescribing system
 │   ├── 10_Lab_Orders.md                         ← Lab & imaging orders
@@ -168,7 +167,7 @@ Pages/
 | Process Document | Related Page Docs | Meeting Workflow Role |
 | ---------------- | ----------------- | --------------------- |
 | `Appointment_Workflows.md` | Patient: 05, Doctor: 04, 06, 07, 17, 20 | 🎯 **Core** — Full appointment-to-delivery lifecycle |
-| `VIDEO_MEETING_JITSI_GEMINI.md` | Patient: 05, Doctor: 06, 07, 08, Meeting Server | 🎯 **Core** — Meeting implementation details |
+| `VIDEO_MEETING_JITSI_GEMINI.md` | Patient: 05, Doctor: 06, Meeting Server: 01–03 | 🎯 **Core** — Meeting implementation details |
 | `PHASE1_REQUIREMENTS.md` | All meeting-related pages | 🎯 **Core** — Stakeholder requirements & testing |
 | `Health_Records_Processes.md` | Patient: 06, 14, Doctor: 08, 09, 10, 11 | EMR/PHR data flow |
 | `User_management_Workflows.md` | Patient: 01-03, 12, Doctor: 01-02, 16, 18-19 | User authentication |
@@ -206,7 +205,7 @@ All page documentation now includes a **PostgreSQL Database Integration** sectio
 | ------ | ----- | ----------------- | -------------- |
 | **Doctor Portal** | 22 pages | users, doctor_profiles, appointments, meeting_records, emr, prescriptions, lab_orders, ai_chat_history, medical_content, clinical_resources, consultants, drugs, cds_logs | Login → Dashboard → Schedule → Meeting → EMR → Prescribe → Lab Orders |
 | **Patient Portal** | 16 pages | users, patient_profiles, appointments, phr, vital_signs, living_wills, ai_chat_history, medical_content, notifications, patient_consents, push_subscriptions | Login → Register → Dashboard → Book Appointment → Join Meeting → View EMR/PHR |
-| **Meeting Server** | 1 page | meeting_records, meeting_transcripts, transcriptions_embeddings, appointments, emr, ai_validations, ai_chat_history, ai_chat_memory | Start Meeting → Transcribe → AI Summary → Man-in-the-Loop → EMR |
+| **Meeting Server** | 4 pages | meeting_records, meeting_transcripts, transcriptions_embeddings, appointments, emr, ai_validations, ai_chat_history, ai_chat_memory | Start Meeting → Transcribe → AI Summary → Man-in-the-Loop → EMR |
 
 
 

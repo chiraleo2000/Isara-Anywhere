@@ -1,10 +1,11 @@
-import { test, expect, navPatient, assertFullHealth, snap } from './helpers/multi-portal';
+import { test, expect, navPatient, assertFullHealth, snap, ensurePatientPortalAuthenticated } from './helpers/multi-portal';
 
 test.describe('Defect — AI new chat and language', () => {
   test.describe.configure({ mode: 'serial' });
 
   test('DA1 — new chat clears visible history after reload', async ({ portals }) => {
     const { patient } = portals;
+    await ensurePatientPortalAuthenticated(patient.page, 'DA1-auth');
     await navPatient(patient.page, '/ai-doctor', 'DA1');
     await assertFullHealth(patient.page, 'DA1');
 
@@ -30,7 +31,15 @@ test.describe('Defect — AI new chat and language', () => {
     await expect(newChatBtn, 'New Chat control must be available on AI doctor page').toBeVisible({ timeout: 15_000 });
     await newChatBtn.click();
     await patient.page.waitForTimeout(2000);
-    await patient.page.reload({ waitUntil: 'domcontentloaded' });
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        await patient.page.reload({ waitUntil: 'domcontentloaded', timeout: 30_000 });
+        break;
+      } catch {
+        await patient.page.goto(`${patient.url}/ai-doctor`, { waitUntil: 'domcontentloaded', timeout: 30_000 });
+        if (attempt === 2) throw new Error('DA1: patient AI page reload failed after new chat');
+      }
+    }
     await patient.page.waitForTimeout(2000);
 
     const bodyAfter = await patient.page.locator('body').innerText();
@@ -41,6 +50,7 @@ test.describe('Defect — AI new chat and language', () => {
 
   test('DA2 — English setting yields Latin script in AI reply area', async ({ portals }) => {
     const { patient } = portals;
+    await ensurePatientPortalAuthenticated(patient.page, 'DA2-auth');
     await navPatient(patient.page, '/settings', 'DA2');
     await assertFullHealth(patient.page, 'DA2-setup');
 
@@ -64,9 +74,13 @@ test.describe('Defect — AI new chat and language', () => {
     } else {
       await chatInput.press('Enter');
     }
-    await patient.page.waitForTimeout(8000);
-
-    const body = await patient.page.locator('body').innerText();
+    const deadline = Date.now() + 30_000;
+    let body = '';
+    while (Date.now() < deadline) {
+      body = await patient.page.locator('body').innerText().catch(() => '');
+      if (/[a-zA-Z]{4,}/.test(body)) break;
+      await patient.page.waitForTimeout(1_500);
+    }
     await snap(patient.page, 'DA2-english-reply', 'group-defect');
     expect(/[a-zA-Z]{4,}/.test(body)).toBe(true);
   });

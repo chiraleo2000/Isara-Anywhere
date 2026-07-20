@@ -41,7 +41,13 @@
 ├── emr_signed               - แพทย์ลงนามเวชระเบียนแล้ว
 ├── emr_ready_for_review     - เวชระเบียนพร้อมให้ตรวจสอบ
 ├── prescription_ready       - ใบสั่งยาพร้อม
-└── lab_results_ready        - ผลแล็บพร้อมดู
+├── lab_results_ready        - ผลแล็บพร้อมดู
+├── imaging_results          - ผลภาพถ่ายพร้อมดู
+└── document_delivered       - เอกสารคลินิกส่งถึง patient_documents แล้ว
+
+💬 Doctor Messaging (ข้อความจากแพทย์)
+├── doctor_message           - แพทย์ส่งข้อความ/อีเมลถึงผู้ป่วย (patient_doctor_messages)
+└── doctor_message_reply     - ผู้ป่วยตอบกลับ (future)
 
 🔔 System (ระบบ)
 ├── account_verified         - บัญชีได้รับการยืนยัน
@@ -129,15 +135,15 @@ interface Notification {
 }
 ```
 
-### 3.2 GCS Storage Paths
+### 3.2 PostgreSQL Storage (canonical)
 
 ```text
-izara-meta-data/
-├── notifications.json           # Global notifications log
-└── users/
-    └── {userId}/
-        └── notifications.json   # User-specific notifications (max 100)
+izara_phase1.notifications          # All in-app notifications (NOTIFY trigger → Socket.IO)
+izara_phase1.notification_preferences
+izara_phase1.push_subscriptions
 ```
+
+> **Deprecated:** Legacy GCS paths (`izara-meta-data/notifications.json`) are **not used** when `USE_POSTGRESQL=true`.
 
 ### 3.3 Notification Service Methods
 
@@ -436,9 +442,9 @@ Admin:    admin.test@izara.com    / YOUR_TEST_ADMIN_PASSWORD
 | DoctorNotificationBell | ✅ Done | Fixed: uses real API, no mock data |
 | Jitsi Meeting Links | ✅ Done | Format: meet.jit.si/izara-{id}-{ts} |
 | Meeting Link on Confirm | ✅ Done | Auto-generated on confirmation |
-| GCS Notification Storage | ✅ Done | Path: notifications/{role}/{id}/ |
-| Notification API (Patient) | ✅ Done | Port 3004 |
-| Notification API (Doctor) | ✅ Done | Port 3012 (GCS Server) |
+| PostgreSQL `notifications` table | ✅ Done | NOTIFY → Socket.IO real-time |
+| Notification API (Patient) | ✅ Done | Port 3005 unified / 3004 dev |
+| Notification API (Doctor) | ✅ Done | `mainApiServer.cjs` `/api/notifications` |
 | Email Templates | ✅ Done | Thai templates ready |
 | E2E Test Coverage | ✅ Done | 100% pass rate |
 
@@ -449,7 +455,7 @@ Admin:    admin.test@izara.com    / YOUR_TEST_ADMIN_PASSWORD
 | --------- | -------- | ---------- |
 | Gmail API Integration | 🔄 Planned | High |
 | SMS Notifications | 📋 Future | Medium |
-| WebSocket Real-time | 📋 Future | Medium |
+| WebSocket Real-time | ✅ Done | PostgreSQL NOTIFY + Socket.IO `/ws` |
 | Line Official Account | 📋 Future | Low |
 | Push Notifications | 📋 Future | Low |
 
@@ -457,7 +463,7 @@ Admin:    admin.test@izara.com    / YOUR_TEST_ADMIN_PASSWORD
 ### 11.3 Recent Changes (January 2025)
 
 1. **DoctorNotificationBell.tsx** - Removed mock data fallback, now uses real API only
-2. **Notification API** - Verified working on ports 3004 (patient) and 3012 (doctor)
+2. **Notification API** - Patient + doctor portals read/write `notifications` table via Express
 3. **Jitsi Integration** - Meeting links successfully generated and accessible
 4. **E2E Tests** - All test suites passing with 100% rate
 
@@ -493,22 +499,24 @@ Key Methods:
 └── generateMeetingLink(appointmentId) - สร้างลิงก์ Jitsi
 ```
 
-### 13.2 Doctor Notification Endpoints (GCS Server)
+### 13.2 Doctor Notification Endpoints (Doctor Portal API)
 
 ```text
-File: Isara-doctor-portal/backend/gcsApiServer.cjs
-Port: 3012 (GCS API Server)
+File: Isara-doctor-portal/backend/mainApiServer.cjs
+Port: 3010 (unified) / internal API on 3009 (dev)
 
 Endpoints:
-├── GET  /api/notifications/doctor/:doctorId
-│        → Returns doctor's notifications
-├── PUT  /api/notifications/:notificationId/read
+├── GET  /api/notifications/:userId
+│        → Returns user's notifications from PostgreSQL
+├── PUT  /api/notifications/:id/read
 │        → Mark single as read
-├── PUT  /api/notifications/doctor/:doctorId/read-all
+├── PUT  /api/notifications/:userId/read-all
 │        → Mark all as read
-└── POST /api/notifications/doctor
-         → Create new notification
+└── INSERT via appointment/EMR handlers
+         → trg_notifications_notify → Socket.IO
 ```
+
+> **Deprecated:** `gcsApiServer.cjs` port 3012 — not used when `USE_POSTGRESQL=true`.
 
 ### 13.3 UI Components
 
@@ -522,8 +530,8 @@ Patient Portal:
 Doctor Portal:
 ├── frontend/components/notifications/DoctorNotificationBell.tsx
 │   - Same functionality for doctors
-│   - Uses GCS API (port 3012)
-│   - NO mock data fallback (fixed Jan 2025)
+│   - Reads PostgreSQL via `/api/notifications`
+│   - Socket.IO realtime via NOTIFY trigger
 ```
 
 ### 13.4 Jitsi Meeting Integration
@@ -536,8 +544,8 @@ Configuration:
 ├── JITSI_DOMAIN = 'meet.jit.si'
 ├── No account required
 ├── Supports Thai language (th-TH)
-├── Recording: Local + GCS upload
-├── Transcription: Google Cloud Speech-to-Text
+├── Recording: PostgreSQL BYTEA in `meeting_records` (+ optional filesystem volume)
+├── Transcription: Web Speech API (browser) → `meeting_transcripts`
 └── AI Summary: Gemini (gemini-3.1-flash-lite)
 
 Meeting Link Format:

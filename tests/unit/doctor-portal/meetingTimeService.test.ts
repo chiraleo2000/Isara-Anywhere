@@ -4,7 +4,7 @@
  * ═══════════════════════════════════════════════════════════════════════
  * Tests: checkMeetingWindow, getMeetingWindow, calculateNextWeekSlot,
  *        handleMissedMeeting, formatTimeRemaining, getWindowDisplayInfo
- * Source: Isara-doctor-portal/frontend/services/meetingTimeService.ts
+ * Source: issara-doctor/frontend/services/meetingTimeService.ts
  * ═══════════════════════════════════════════════════════════════════════
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';

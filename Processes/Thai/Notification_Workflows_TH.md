@@ -1,493 +1,238 @@
-# ขั้นตอนการแจ้งเตือน / Notification Workflows
+# Notification Workflows / ขั้นตอนการแจ้งเตือน
 
-**เวอร์ชัน:** 3.0.0
-**อัปเดตล่าสุด:** 21 มกราคม 2569
-**สถานะ:** ✅ PostgreSQL ใช้งานเสร็จสมบูรณ์
+> **เอกสารภาษาไทย** — สร้างอัตโนมัติจาก `Notification_Workflows.md`  
+> **ต้นฉบับภาษาอังกฤษ:** [`Notification_Workflows.md`](../Notification_Workflows.md)  
+> **อัปเดต:** 9 กรกฎาคม 2569 · รัน `python scripts/sync-processes-thai.py` เพื่อสร้างใหม่
+
+**เวอร์ชัน:** 1.7.51
+**อัปเดตล่าสุด:** June 8, 2026
+**สถานะ:** ✅ PostgreSQL Implementation Complete + Calendar sync on ยืนยัน (`calendarEventUrl`, `schedule_entry_ready`)
+
 
 ---
 
+## 1. ภาพรวมระบบแจ้งเตือน (Notification System ภาพรวม)
 
-## 1. ภาพรวมระบบแจ้งเตือน
+### 1.1 ช่องทางการแจ้งเตือน (Notification Channels)
 
-
-### 1.1 ช่องทางการแจ้งเตือน
-
-| ช่องทาง | ชื่อไทย | คำอธิบาย |
+| Channel | Thai | คำอธิบาย |
 | --------- | ------ | ------------- |
-| In-App | แจ้งเตือนในแอป | การแจ้งเตือนแบบ Real-time ภายในพอร์ทัล |
-| Email | อีเมล | การแจ้งเตือนผ่านอีเมล Gmail API |
-| Push | Push Notification | การแจ้งเตือน Browser/Mobile |
-| SMS | SMS | การแจ้งเตือน SMS (ฟีเจอร์อนาคต) |
+| In-App | แจ้งเตือนในแอป | Real-time การแจ้งเตือน within the portal |
+| Email | อีเมล | Email การแจ้งเตือน via Gmail API |
+| Push | Push Notification | Browser push การแจ้งเตือน |
+| SMS | SMS | SMS การแจ้งเตือน (future enhancement) |
 
 
-
-
-### 1.2 ประเภทการแจ้งเตือน
+### 1.2 ประเภทการแจ้งเตือน (Notification Types)
 
 ```text
-📅 นัดหมาย (Appointments)
+📅 Appointments (นัดหมาย)
 ├── appointment_requested    - ผู้ป่วยขอนัดหมายใหม่
-├── appointment_confirmed    - แพทย์ยืนยันนัดหมาย + ลิงก์ประชุม
+├── appointment_confirmed    - แพทย์ยืนยันนัดหมาย + ลิงก์ประชุม + calendarEventUrl
 ├── appointment_declined     - แพทย์ปฏิเสธ กำลังหาแพทย์ท่านอื่น
 ├── appointment_cancelled    - นัดหมายถูกยกเลิก
 ├── appointment_assigned     - ผู้ดูแลมอบหมายนัดหมายให้แพทย์
 ├── appointment_rescheduled  - นัดหมายถูกเลื่อน
-└── appointment_reminder     - แจ้งเตือนก่อนนัด 24 ชม./1 ชม.
+├── appointment_reminder     - แจ้งเตือนก่อนนัด 24 ชม./1 ชม.
+└── schedule_entry_ready     - แพทย์: นัดยืนยันแล้ว — ปรากฏบน /schedule + ลิงก์ปฏิทิน
 
-📹 การประชุมออนไลน์ (Video Meeting)
+📹 Video Meeting (การประชุมออนไลน์)
 ├── meeting_link_ready       - ลิงก์ประชุมพร้อมใช้งาน
 ├── meeting_link_failed      - สร้างลิงก์ไม่สำเร็จ
 ├── meeting_started          - แพทย์เริ่มห้องประชุม
 └── meeting_reminder         - แจ้งเตือน 15 นาทีก่อนประชุม
 
-📄 เวชระเบียน (Medical Records)
+📄 Medical Records (เวชระเบียน)
 ├── emr_signed               - แพทย์ลงนามเวชระเบียนแล้ว
 ├── emr_ready_for_review     - เวชระเบียนพร้อมให้ตรวจสอบ
 ├── prescription_ready       - ใบสั่งยาพร้อม
-└── lab_results_ready        - ผลแล็บพร้อมดู
+├── lab_results_ready        - ผลแล็บพร้อมดู
+├── imaging_results          - ผลภาพถ่ายพร้อมดู
+└── document_delivered       - เอกสารคลินิกส่งถึง patient_documents แล้ว
 
-🔔 ระบบ (System)
+💬 Doctor Messaging (ข้อความจากแพทย์)
+├── doctor_message           - แพทย์ส่งข้อความ/อีเมลถึงผู้ป่วย (patient_doctor_messages)
+└── doctor_message_reply     - ผู้ป่วยตอบกลับ (future)
+
+🔔 System (ระบบ)
 ├── account_verified         - บัญชีได้รับการยืนยัน
 ├── password_reset           - รีเซ็ตรหัสผ่าน
 └── system_maintenance       - แจ้งการบำรุงรักษาระบบ
-
-👨‍⚕️ สำหรับแพทย์ (Doctor-specific)
-├── doctor_approved          - การลงทะเบียนแพทย์ได้รับอนุมัติ
-├── doctor_rejected          - การลงทะเบียนแพทย์ถูกปฏิเสธ
-├── ai_document_ready        - เอกสาร AI พร้อมตรวจสอบ
-└── cds_alert                - แจ้งเตือน Clinical Decision Support
 ```
 
 ---
 
+## 2. Notification Flow Diagrams
 
-## 2. โครงสร้างข้อมูลการแจ้งเตือน
+### 2.1 Appointment Request Flow
 
+```mermaid
+flowchart TD
+    P[ผู้ป่วยขอนัดหมาย] --> S{เลือกแพทย์?}
+    S -->|เลือกแพทย์| D1[แจ้งเตือนแพทย์ที่เลือก]
+    S -->|ไม่ระบุ| P1[เข้า Pool รอการจับคู่]
 
-### 2.1 ตาราง notifications
+    D1 --> D2{แพทย์ตอบรับ?}
+    D2 -->|ยืนยัน| C1[สร้างลิงก์ประชุม Jitsi]
+    D2 -->|ปฏิเสธ| P1
 
-```sql
-CREATE TABLE notifications (
-    id VARCHAR(50) PRIMARY KEY,
-    user_id VARCHAR(50) REFERENCES users(id),
+    C1 --> N1[แจ้งเตือนผู้ป่วย + ลิงก์]
+    C1 --> N2[เพิ่มใน Google Calendar]
+    C1 --> N3[บันทึกในระบบ]
 
-    -- ข้อมูลการแจ้งเตือน
-    type VARCHAR(50) NOT NULL,
-    title VARCHAR(255) NOT NULL,
-    title_thai VARCHAR(255),
-    message TEXT NOT NULL,
-    message_thai TEXT,
-
-    -- ข้อมูลเพิ่มเติม
-    data JSONB DEFAULT '{}',
-    link TEXT,
-    icon VARCHAR(50),
-    priority VARCHAR(20) DEFAULT 'normal',
-
-    -- สถานะ
-    is_read BOOLEAN DEFAULT false,
-    read_at TIMESTAMP WITH TIME ZONE,
-
-    -- ช่องทาง
-    channels TEXT[] DEFAULT ARRAY['in_app'],
-    email_sent BOOLEAN DEFAULT false,
-    push_sent BOOLEAN DEFAULT false,
-
-    -- Timestamps
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    expires_at TIMESTAMP WITH TIME ZONE
-);
-
--- Index สำหรับค้นหาเร็ว
-CREATE INDEX idx_notifications_user_id ON notifications(user_id);
-CREATE INDEX idx_notifications_type ON notifications(type);
-CREATE INDEX idx_notifications_is_read ON notifications(is_read);
-CREATE INDEX idx_notifications_created_at ON notifications(created_at DESC);
+    P1 --> A[Admin/ระบบจับคู่แพทย์]
+    A --> A1[แจ้งเตือนแพทย์ใหม่]
+    A1 --> D2
 ```
 
+### 2.2 Meeting Link ขั้นตอนการทำงาน
 
-### 2.2 Interface TypeScript
+```mermaid
+flowchart TD
+    A[แพทย์ยืนยันนัดหมาย] --> B[สร้าง Jitsi Meet Link]
+    B --> C{สร้างสำเร็จ?}
+
+    C -->|สำเร็จ| D[บันทึกลิงก์ในระบบ]
+    D --> E[แจ้งเตือนผู้ป่วย]
+    E --> F[แจ้งเตือนแพทย์]
+
+    C -->|ไม่สำเร็จ| G[แจ้งเตือน Fallback]
+    G --> H[Admin ดำเนินการแก้ไข]
+    H --> B
+
+    E --> I[ส่งอีเมลพร้อมลิงก์]
+    E --> J[แจ้งเตือนในแอป]
+    E --> K[เพิ่มใน Calendar]
+```
+
+---
+
+## 3. Implementation Details
+
+### 3.1 In-App Notification Structure
 
 ```typescript
 interface Notification {
   id: string;
-  userId: string;
   type: NotificationType;
-
-  // เนื้อหา
-  title: string;
-  titleThai?: string;
-  message: string;
-  messageThai?: string;
-
-  // ข้อมูลเพิ่มเติม
+  recipientId: string;
+  recipientEmail: string;
+  recipientRole: 'patient' | 'doctor' | 'admin';
+  title: string;           // Thai title
+  message: string;         // Thai message
+  titleEn?: string;        // English title (optional)
+  messageEn?: string;      // English message (optional)
   data?: {
     appointmentId?: string;
-    patientId?: string;
-    doctorId?: string;
     meetingLink?: string;
+    calendarEventUrl?: string;
     emrId?: string;
+    doctorName?: string;
+    patientName?: string;
+    appointmentDate?: string;
+    appointmentTime?: string;
   };
-  link?: string;
-  icon?: string;
-  priority: 'low' | 'normal' | 'high' | 'urgent';
-
-  // สถานะ
+  channels: ('email' | 'in-app' | 'push')[];
   isRead: boolean;
-  readAt?: string;
-
-  // ช่องทาง
-  channels: ('in_app' | 'email' | 'push' | 'sms')[];
-  emailSent: boolean;
-  pushSent: boolean;
-
-  // Timestamps
+  status: 'pending' | 'sent' | 'failed';
   createdAt: string;
-  expiresAt?: string;
+  readAt?: string;
 }
+```
 
-type NotificationType =
-  | 'appointment_requested'
-  | 'appointment_confirmed'
-  | 'appointment_declined'
-  | 'appointment_cancelled'
-  | 'appointment_reminder'
-  | 'meeting_link_ready'
-  | 'meeting_started'
-  | 'meeting_reminder'
-  | 'emr_signed'
-  | 'prescription_ready'
-  | 'lab_results_ready'
-  | 'doctor_approved'
-  | 'doctor_rejected'
-  | 'ai_document_ready'
-  | 'cds_alert';
+### 3.2 PostgreSQL Storage (canonical)
+
+```text
+izara_phase1.notifications          # All in-app notifications (NOTIFY trigger → Socket.IO)
+izara_phase1.notification_preferences
+izara_phase1.push_subscriptions
+```
+
+> **Deprecated:** Legacy GCS paths (`izara-meta-data/notifications.json`) are **not used** when `USE_POSTGRESQL=true`.
+
+### 3.3 Notification Service Methods
+
+```typescript
+// สร้างและส่งการแจ้งเตือน
+notificationService.notifyAppointmentRequested(data)    // ผู้ป่วยขอนัดหมาย
+notificationService.notifyAppointmentConfirmed(data)    // แพทย์ยืนยัน + ลิงก์ประชุม
+notificationService.notifyAppointmentDeclined(data)     // แพทย์ปฏิเสธ
+notificationService.notifyAppointmentCancelled(data)    // ยกเลิกนัดหมาย
+notificationService.notifyMeetingLinkReady(data)        // ลิงก์พร้อม
+notificationService.notifyEMRSigned(data)               // เวชระเบียนพร้อม
+
+// จัดการการแจ้งเตือน
+notificationService.getUserNotifications(userId)        // ดึงการแจ้งเตือน
+notificationService.markAsRead(userId, notificationId)  // อ่านแล้ว
+notificationService.markAllAsRead(userId)               // อ่านทั้งหมด
+```
+
+### 3.4 Confirm appointment — notification payloads (v1.7.51)
+
+When `POST /api/appointments/:id/confirm` succeeds in `mainApiServer.cjs`, the server inserts **three** in-app การแจ้งเตือน (email optional via existing templates):
+
+| # | Recipient | `type` | `data` fields (JSON) | UI consumer |
+|---|-----------|--------|------------------------|-------------|
+| 1 | ผู้ป่วย | `appointment_confirmed` | `appointmentId`, `meetingLink`, `calendarEventUrl`, `confirmedDate`, `confirmedTime`, `doctorName` | Notification bell; `AppointmentPages.tsx` reads `calendarEventUrl` for **Add to Calendar** |
+| 2 | ผู้ป่วย | `meeting_link_ready` | Same + `meet_link` alias | Redundant channel for meeting-centric UX |
+| 3 | Doctor | `schedule_entry_ready` | `appointmentId`, `patientId`, `patientName`, `calendarEventUrl`, `meetingLink`, `confirmedDate`, `confirmedTime` | Doctor bell; links to `/schedule` |
+
+**`calendarEventUrl` format** (built by `calendarEventLinks.cjs`):
+
+```text
+https://calendar.google.com/calendar/render?action=TEMPLATE
+  &text=Izara+Telehealth+—+{patientName}
+  &dates={YYYYMMDDTHHmmss}/{YYYYMMDDTHHmmss}   (Asia/Bangkok, +30 min)
+  &details=Meeting+link%3A+{meetingLink}
+  &location=Izara+Video+Meeting
+```
+
+**ผู้ป่วย fallback:** If notification payload is missing (older rows), `buildCalendarEventUrl.ts` rebuilds the same TEMPLATE URL from นัดหมาย fields on the detail page (`data-testid="appointment-calendar-link"`).
+
+**E2E proof:** Playwright **D4cal** — `GET /api/notifications?userId={patientId}` → find `appointment_confirmed` → assert `data.calendarEventUrl` matches `/calendar\.google\.com/`.
+
+```mermaid
+sequenceDiagram
+  participant API as mainApiServer.cjs
+  participant PG as notifications table
+  participant Patient as Patient Portal
+  participant Doctor as Doctor Portal
+
+  API->>PG: INSERT appointment_confirmed (patient)
+  API->>PG: INSERT meeting_link_ready (patient)
+  API->>PG: INSERT schedule_entry_ready (doctor)
+  Patient->>Patient: MiniCalendar dots + detail calendar link
+  Doctor->>Doctor: /schedule row + optional bell tap
 ```
 
 ---
 
+## 4. Notification UI Components
 
-## 3. ขั้นตอนการแจ้งเตือนหลัก
+### 4.1 Patient Portal (พอร์ทัลผู้ป่วย)
 
-
-### 3.1 การยืนยันนัดหมาย
-
-```text
-┌─────────────────────────────────────────────────────────────────┐
-│                  การแจ้งเตือนยืนยันนัดหมาย                        │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                  │
-│  [แพทย์คลิก "ยืนยัน" นัดหมาย]                                     │
-│               ↓                                                  │
-│  ┌─────────────────────────────┐                                │
-│  │ สร้าง Jitsi Meeting Link    │                                │
-│  └─────────────────────────────┘                                │
-│               ↓                                                  │
-│  ┌─────────────────────────────┐                                │
-│  │ INSERT INTO notifications   │                                │
-│  │ (user_id = patient_id,      │                                │
-│  │  type = 'appointment_confirmed', │                           │
-│  │  title = 'นัดหมายได้รับการยืนยัน', │                           │
-│  │  data = {                   │                                │
-│  │    appointmentId,           │                                │
-│  │    meetingLink,             │                                │
-│  │    doctorName               │                                │
-│  │  })                         │                                │
-│  └─────────────────────────────┘                                │
-│               ↓                                                  │
-│  ┌─────────────────────────────────────────┐                    │
-│  │ ส่งอีเมล:                                │                    │
-│  │                                         │                    │
-│  │ Subject: ✅ นัดหมายได้รับการยืนยัน       │                    │
-│  │                                         │                    │
-│  │ สวัสดีคุณ [ชื่อผู้ป่วย],                  │                    │
-│  │                                         │                    │
-│  │ นัดหมายของคุณได้รับการยืนยันจาก          │                    │
-│  │ [ชื่อแพทย์] แล้ว                         │                    │
-│  │                                         │                    │
-│  │ 📅 วันที่: [วันที่]                       │                    │
-│  │ 🕐 เวลา: [เวลา]                          │                    │
-│  │ 👨‍⚕️ แพทย์: [ชื่อแพทย์]                   │                    │
-│  │                                         │                    │
-│  │ 🔗 ลิงก์เข้าประชุม:                       │                    │
-│  │ [MEETING_LINK]                          │                    │
-│  │                                         │                    │
-│  │ [➕ เพิ่มในปฏิทิน] [📋 ดูนัดหมาย]          │                    │
-│  └─────────────────────────────────────────┘                    │
-│               ↓                                                  │
-│  [UPDATE notifications SET email_sent = true]                    │
-│                                                                  │
-└─────────────────────────────────────────────────────────────────┘
-```
-
-
-### 3.2 การแจ้งเตือนก่อนนัดหมาย
-
-```text
-┌─────────────────────────────────────────────────────────────────┐
-│                  การแจ้งเตือนก่อนนัดหมาย                          │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                  │
-│  [Scheduler ตรวจสอบนัดหมายที่ใกล้ถึง]                              │
-│               ↓                                                  │
-│  ┌─────────────────────────────┐                                │
-│  │ SELECT * FROM appointments  │                                │
-│  │ WHERE scheduled_date = TODAY │                               │
-│  │ AND scheduled_time BETWEEN   │                               │
-│  │     NOW() AND NOW() + 1 hour │                               │
-│  │ AND status = 'confirmed'     │                               │
-│  └─────────────────────────────┘                                │
-│               ↓                                                  │
-│  [สำหรับแต่ละนัดหมาย]                                             │
-│               ↓                                                  │
-│  ┌─────────────────────────────┐                                │
-│  │ แจ้งเตือนผู้ป่วย:            │                                │
-│  │ "นัดหมายของคุณจะเริ่มในอีก   │                                │
-│  │  1 ชั่วโมง"                  │                                │
-│  └─────────────────────────────┘                                │
-│               ↓                                                  │
-│  ┌─────────────────────────────┐                                │
-│  │ แจ้งเตือนแพทย์:             │                                │
-│  │ "มีนัดหมายในอีก 1 ชั่วโมง    │                                │
-│  │  กับ [ชื่อผู้ป่วย]"          │                                │
-│  └─────────────────────────────┘                                │
-│                                                                  │
-└─────────────────────────────────────────────────────────────────┘
-```
-
-
-### 3.3 การแจ้งเตือนแพทย์เริ่มประชุม
-
-```text
-┌─────────────────────────────────────────────────────────────────┐
-│                  การแจ้งเตือนแพทย์เริ่มประชุม                      │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                  │
-│  [แพทย์คลิก "เริ่มประชุม"]                                        │
-│               ↓                                                  │
-│  ┌─────────────────────────────┐                                │
-│  │ เปิด Jitsi Room             │                                │
-│  └─────────────────────────────┘                                │
-│               ↓                                                  │
-│  ┌─────────────────────────────┐                                │
-│  │ INSERT INTO notifications   │                                │
-│  │ (user_id = patient_id,      │                                │
-│  │  type = 'meeting_started',  │                                │
-│  │  title = 'แพทย์เริ่มห้องประชุมแล้ว', │                         │
-│  │  message = 'คลิกเพื่อเข้าร่วมประชุม', │                        │
-│  │  link = meeting_link,       │                                │
-│  │  priority = 'high')         │                                │
-│  └─────────────────────────────┘                                │
-│               ↓                                                  │
-│  [แสดง Toast Notification บนหน้าจอผู้ป่วย]                        │
-│               ↓                                                  │
-│  ┌─────────────────────────────────────────┐                    │
-│  │  🔔 แพทย์เริ่มห้องประชุมแล้ว              │                    │
-│  │                                         │                    │
-│  │  นพ.ทดสอบ ระบบ รอคุณอยู่                 │                    │
-│  │                                         │                    │
-│  │  [เข้าร่วมประชุม]                        │                    │
-│  └─────────────────────────────────────────┘                    │
-│                                                                  │
-└─────────────────────────────────────────────────────────────────┘
-```
-
-
-### 3.4 การแจ้งเตือน EMR พร้อม
-
-```text
-┌─────────────────────────────────────────────────────────────────┐
-│                  การแจ้งเตือน EMR พร้อม                          │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                  │
-│  [แพทย์ลงนาม EMR]                                                │
-│               ↓                                                  │
-│  ┌─────────────────────────────┐                                │
-│  │ UPDATE emr                  │                                │
-│  │ SET signed_at = NOW(),      │                                │
-│  │     signed_by = doctor_id,  │                                │
-│  │     status = 'signed'       │                                │
-│  │ WHERE id = ?                │                                │
-│  └─────────────────────────────┘                                │
-│               ↓                                                  │
-│  ┌─────────────────────────────┐                                │
-│  │ INSERT INTO notifications   │                                │
-│  │ (user_id = patient_id,      │                                │
-│  │  type = 'emr_signed',       │                                │
-│  │  title = 'สรุปการพบแพทย์พร้อมแล้ว', │                          │
-│  │  link = '/health-records/[appointmentId]') │                 │
-│  └─────────────────────────────┘                                │
-│               ↓                                                  │
-│  [ส่งอีเมลพร้อมสรุปย่อ]                                           │
-│               ↓                                                  │
-│  ┌─────────────────────────────────────────┐                    │
-│  │ Subject: 📋 สรุปการพบแพทย์ - [วันที่]     │                    │
-│  │                                         │                    │
-│  │ สวัสดีคุณ [ชื่อผู้ป่วย],                  │                    │
-│  │                                         │                    │
-│  │ สรุปการพบแพทย์ของคุณพร้อมดูแล้ว         │                    │
-│  │                                         │                    │
-│  │ 📅 วันที่พบแพทย์: [วันที่]                │                    │
-│  │ 👨‍⚕️ แพทย์: [ชื่อแพทย์]                   │                    │
-│  │                                         │                    │
-│  │ คลิกที่นี่เพื่อดูรายละเอียด:             │                    │
-│  │ [ดูสรุปการพบแพทย์]                       │                    │
-│  └─────────────────────────────────────────┘                    │
-│                                                                  │
-└─────────────────────────────────────────────────────────────────┘
-```
-
-
-### 3.5 การแจ้งเตือน AI รอตรวจสอบ (สำหรับแพทย์)
-
-```text
-┌─────────────────────────────────────────────────────────────────┐
-│                การแจ้งเตือน AI รอตรวจสอบ                          │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                  │
-│  [AI สร้างเอกสารเสร็จหลังประชุม]                                  │
-│               ↓                                                  │
-│  ┌─────────────────────────────┐                                │
-│  │ INSERT INTO meeting_summaries │                              │
-│  │ (validated = false)         │                                │
-│  └─────────────────────────────┘                                │
-│               ↓                                                  │
-│  ┌─────────────────────────────┐                                │
-│  │ INSERT INTO notifications   │                                │
-│  │ (user_id = doctor_id,       │                                │
-│  │  type = 'ai_document_ready',│                                │
-│  │  title = 'เอกสาร AI พร้อมตรวจสอบ', │                           │
-│  │  message = 'EMR Draft และคำแนะนำ │                            │
-│  │            ผู้ป่วยพร้อมให้ตรวจสอบ', │                           │
-│  │  link = '/ai-review/[meetingId]', │                          │
-│  │  priority = 'high')         │                                │
-│  └─────────────────────────────┘                                │
-│               ↓                                                  │
-│  [แสดง Badge บนเมนู "เอกสารรอตรวจสอบ"]                            │
-│                                                                  │
-└─────────────────────────────────────────────────────────────────┘
-```
-
----
-
-
-## 4. UI Components
-
-
-### 4.1 พอร์ทัลผู้ป่วย
-
-| Component | ตำแหน่ง | ชื่อภาษาไทย |
+| Component | Location | Thai Label |
 | ----------- | ---------- | ------------ |
 | NotificationBell | MainLayout Header | 🔔 การแจ้งเตือน |
 | NotificationDropdown | Header Dropdown | รายการแจ้งเตือน |
-| NotificationPage | /notifications | ประวัติการแจ้งเตือน |
+| NotificationPage | /การแจ้งเตือน | ประวัติการแจ้งเตือน |
 | ToastNotification | Global | แจ้งเตือนแบบ popup |
 
 
+### 4.2 Doctor Portal (พอร์ทัลแพทย์)
 
-
-### 4.2 พอร์ทัลแพทย์
-
-| Component | ตำแหน่ง | ชื่อภาษาไทย |
+| Component | Location | Thai Label |
 | ----------- | ---------- | ------------ |
 | NotificationBell | ResponsiveLayout | 🔔 การแจ้งเตือน |
 | AppointmentAlert | Dashboard | นัดหมายรอดำเนินการ |
 | PatientRequestBadge | Queue | คำขอนัดหมายใหม่ |
-| AIReviewBadge | Sidebar | เอกสารรอตรวจสอบ |
 
-
-
-
-### 4.3 Toast Notification
-
-```text
-┌─────────────────────────────────────────┐
-│  🔔 [ชื่อเรื่อง]                         │
-│                                         │
-│  [ข้อความ]                               │
-│                                         │
-│  [ปิด]              [ดูรายละเอียด]       │
-└─────────────────────────────────────────┘
-```
-
-
-### 4.4 Notification Bell
-
-```text
-┌──────────────────────────────────────────────────────────────┐
-│  🔔 การแจ้งเตือน                                    (5 ใหม่) │
-├──────────────────────────────────────────────────────────────┤
-│                                                              │
-│  ┌──────────────────────────────────────────────────────┐   │
-│  │ 🟢 นัดหมายได้รับการยืนยัน                    5 นาทีที่แล้ว │   │
-│  │    นัดหมายวันที่ 21 ม.ค. เวลา 10:00 กับ นพ.ทดสอบ     │   │
-│  └──────────────────────────────────────────────────────┘   │
-│                                                              │
-│  ┌──────────────────────────────────────────────────────┐   │
-│  │ 📋 สรุปการพบแพทย์พร้อมแล้ว                    2 ชม.ที่แล้ว │   │
-│  │    คลิกเพื่อดูสรุปการพบแพทย์                          │   │
-│  └──────────────────────────────────────────────────────┘   │
-│                                                              │
-│  ┌──────────────────────────────────────────────────────┐   │
-│  │ 💊 ใบสั่งยาพร้อม                              1 วันที่แล้ว │   │
-│  │    มีใบสั่งยาใหม่จากการพบแพทย์ครั้งล่าสุด             │   │
-│  └──────────────────────────────────────────────────────┘   │
-│                                                              │
-│                          [ดูทั้งหมด] [อ่านทั้งหมดแล้ว]         │
-└──────────────────────────────────────────────────────────────┘
-```
 
 ---
 
+## 5. Email Templates (Thai)
 
-## 5. API Endpoints
-
-
-### 5.1 Notification APIs
-
-| Method | Endpoint | คำอธิบาย |
-| ------ | -------- | -------- |
-| GET | `/api/notifications` | ดูรายการแจ้งเตือน |
-| GET | `/api/notifications/unread-count` | จำนวนที่ยังไม่อ่าน |
-| PUT | `/api/notifications/:id/read` | อ่านแล้ว |
-| PUT | `/api/notifications/read-all` | อ่านทั้งหมดแล้ว |
-| DELETE | `/api/notifications/:id` | ลบการแจ้งเตือน |
-| GET | `/api/notifications/settings` | ดูการตั้งค่า |
-| PUT | `/api/notifications/settings` | อัปเดตการตั้งค่า |
-
-
-
-
-### 5.2 การตั้งค่าการแจ้งเตือน
-
-```typescript
-interface NotificationSettings {
-  email: {
-    enabled: boolean;
-    appointmentConfirmed: boolean;
-    appointmentReminder: boolean;
-    emrReady: boolean;
-    prescriptionReady: boolean;
-  };
-  push: {
-    enabled: boolean;
-    meetingStarted: boolean;
-    appointmentReminder: boolean;
-  };
-  inApp: {
-    enabled: boolean;
-    sound: boolean;
-  };
-}
-```
-
----
-
-
-## 6. Email Templates
-
-
-### 6.1 การยืนยันนัดหมาย
+### 5.1 การยืนยันนัดหมาย (Appointment Confirmed)
 
 ```text
 Subject: ✅ นัดหมายได้รับการยืนยัน - [วันที่]
@@ -511,126 +256,437 @@ Subject: ✅ นัดหมายได้รับการยืนยัน 
 - กรุณารอให้แพทย์เริ่มห้องประชุมก่อน
 
 [➕ เพิ่มในปฏิทิน] [📋 ดูนัดหมาย]
-
----
-ทีมงาน Izara Telemedicine
 ```
 
-
-### 6.2 แพทย์เริ่มประชุม
+### 5.2 การแจ้งเตือนลิงก์ประชุม (Meeting Link Ready)
 
 ```text
-Subject: 📹 แพทย์รอคุณในห้องประชุมแล้ว
+Subject: 🔗 ลิงก์ประชุมพร้อมแล้ว - นัดหมาย [วันที่]
 
 สวัสดีคุณ [ชื่อผู้ป่วย],
 
-[ชื่อแพทย์] เริ่มห้องประชุมแล้ว กรุณาคลิกลิงก์ด้านล่างเพื่อเข้าร่วม
+ลิงก์สำหรับพบแพทย์ออนไลน์พร้อมแล้ว
 
-🔗 เข้าร่วมประชุม:
+📹 ลิงก์เข้าประชุม:
 [MEETING_LINK]
 
-💡 หมายเหตุ:
+⏰ วันที่นัดหมาย: [วันที่] เวลา [เวลา]
+👨‍⚕️ พบแพทย์: [ชื่อแพทย์]
 
-- ตรวจสอบให้แน่ใจว่ากล้องและไมโครโฟนทำงานปกติ
+📱 วิธีเข้าร่วม:
+1. คลิกลิงก์ด้านบน
+2. อนุญาตการเข้าถึงกล้องและไมโครโฟน
+3. กรอกชื่อของคุณ
+4. รอแพทย์อนุมัติให้เข้าห้อง
 
-- คุณจะเข้าสู่ห้องรอก่อน แพทย์จะอนุมัติให้เข้าร่วม
-
-[เข้าร่วมประชุม]
-
----
-ทีมงาน Izara Telemedicine
+หากมีข้อสงสัย กรุณาติดต่อ support@izara-telemedicine.com
 ```
 
+---
 
-### 6.3 สรุปการพบแพทย์พร้อม
+## 6. Meeting Link Integration (Jitsi Meet)
+
+### 6.1 ทำไมใช้ Jitsi Meet
+
+- ✅ ฟรี ไม่มีค่าใช้จ่าย
+
+- ✅ ไม่ต้องสมัครสมาชิก ไม่ต้องมี Google Account
+
+- ✅ เข้าได้ทันทีผ่าน Browser
+
+- ✅ รองรับการบันทึกวิดีโอ
+
+- ✅ มีความปลอดภัยสูง (E2E Encryption)
+
+### 6.2 Meeting Link Format
 
 ```text
-Subject: 📋 สรุปการพบแพทย์ - [วันที่]
+<https://meet.jit.si/Izara-{appointmentId}-{timestamp}-{random}>
 
-สวัสดีคุณ [ชื่อผู้ป่วย],
+ตัวอย่าง:
+<https://meet.jit.si/Izara-apt12345-lxyz-abc123>
+```
 
-สรุปการพบแพทย์ของคุณพร้อมดูแล้ว
+### 6.3 Meeting Configuration
 
-📅 วันที่พบแพทย์: [วันที่]
-👨‍⚕️ แพทย์: [ชื่อแพทย์]
-
-สรุปสั้นๆ:
------------------
-🩺 การวินิจฉัย: [การวินิจฉัย]
-💊 ยาที่ได้รับ: [รายการยา]
-📅 นัดครั้งหน้า: [วันที่นัดหมาย]
-
-คลิกที่นี่เพื่อดูรายละเอียดทั้งหมด:
-[ดูสรุปการพบแพทย์]
-
-หากมีคำถามหรือข้อสงสัย กรุณาติดต่อเราได้ตลอดเวลา
-
----
-ทีมงาน Izara Telemedicine
+```typescript
+const config = {
+  prejoinPageEnabled: true,       // หน้ารอก่อนเข้า
+  startWithAudioMuted: false,     // เปิดเสียงอัตโนมัติ
+  startWithVideoMuted: false,     // เปิดกล้องอัตโนมัติ
+  enableClosePage: true,          // หน้าสรุปหลังออก
+  disableDeepLinking: true,       // ใช้ Browser เท่านั้น
+};
 ```
 
 ---
 
+## 7. Notification Schedule
 
-## 7. การจัดการ Real-time Notifications
+### 7.1 ตารางการแจ้งเตือนอัตโนมัติ
 
-
-### 7.1 WebSocket Connection
-
-```typescript
-// เชื่อมต่อ WebSocket
-const socket = io('wss://api.izara.com/notifications', {
-  auth: { token: sessionToken }
-});
-
-// รับการแจ้งเตือนใหม่
-socket.on('notification', (notification) => {
-  // แสดง Toast
-  showToast(notification);
-
-  // อัปเดต Badge
-  updateNotificationCount();
-
-  // เล่นเสียง (ถ้าเปิดใช้งาน)
-  if (settings.inApp.sound) {
-    playNotificationSound();
-  }
-});
-```
+| Event | Timing | Channel | Thai Message |
+| ------- | -------- | --------- | -------------- |
+| นัดหมาย Reminder | 24 ชม. ก่อน | Email + In-App | พรุ่งนี้คุณมีนัดพบแพทย์ |
+| นัดหมาย Reminder | 1 ชม. ก่อน | Push + In-App | อีก 1 ชั่วโมง ถึงเวลานัดหมาย |
+| Meeting Ready | 15 นาที ก่อน | Push + In-App | เตรียมพร้อม! ลิงก์ประชุมพร้อมแล้ว |
+| แพทย์ Started | Real-time | Push | แพทย์เริ่มห้องประชุมแล้ว คลิกเข้าร่วม |
 
 
-### 7.2 การแสดง Toast
+### 7.2 Polling Interval
+
+- In-App การแจ้งเตือน: Poll ทุก 30 วินาที
+
+- Real-time Events: WebSocket (future enhancement)
+
+---
+
+## 8. Error Handling
+
+### 8.1 Notification Failures
 
 ```typescript
-function showToast(notification: Notification) {
-  toast({
-    title: notification.titleThai || notification.title,
-    description: notification.messageThai || notification.message,
-    action: notification.link ? (
-      <Button onClick={() => navigate(notification.link)}>
-        ดูรายละเอียด
-      </Button>
-    ) : undefined,
-    duration: notification.priority === 'urgent' ? 0 : 5000
+try {
+  await notificationService.sendNotification(data);
+} catch (error) {
+  // Log error but don't fail the main operation
+  console.error('Notification failed:', error);
+
+  // Queue for retry
+  await notificationQueue.add({
+    ...data,
+    retryCount: (data.retryCount || 0) + 1,
+    lastError: error.message
   });
+}
+```
+
+### 8.2 Meeting Link Fallback
+
+```text
+ถ้าสร้างลิงก์ไม่สำเร็จ:
+1. แจ้งเตือน Admin
+2. สร้างลิงก์ใหม่อัตโนมัติ
+3. แจ้งผู้ป่วยเมื่อพร้อม
+```
+
+---
+
+## 9. User Preferences (การตั้งค่าการแจ้งเตือน)
+
+### 9.1 Settings in Patient Portal
+
+```typescript
+interface NotificationPreferences {
+  appointmentReminders: boolean;    // แจ้งเตือนนัดหมาย
+  medicationReminders: boolean;     // แจ้งเตือนยา
+  healthTips: boolean;              // เคล็ดลับสุขภาพ
+  emailNotifications: boolean;      // รับทางอีเมล
+  pushNotifications: boolean;       // รับแบบ Push
+}
+```
+
+### 9.2 Settings in Doctor Portal
+
+```typescript
+interface DoctorNotificationPreferences {
+  newAppointmentRequests: boolean;  // คำขอนัดหมายใหม่
+  appointmentUpdates: boolean;      // อัปเดตนัดหมาย
+  patientMessages: boolean;         // ข้อความจากผู้ป่วย
+  systemAlerts: boolean;            // แจ้งเตือนระบบ
 }
 ```
 
 ---
 
+## 10. Testing Checklist
 
-## สรุป
+### 10.1 Notification Flow Tests (✅ Verified January 2025)
 
-| ฟีเจอร์ | สถานะ | คำอธิบาย |
-| ------ | ----- | -------- |
-| In-App Notifications | ✅ | การแจ้งเตือนภายในพอร์ทัล |
-| Email Notifications | ✅ | ส่งอีเมลอัตโนมัติ |
-| Real-time Updates | ✅ | WebSocket |
-| Toast Notifications | ✅ | แจ้งเตือนแบบ popup |
-| Notification Settings | ✅ | ผู้ใช้ปรับแต่งได้ |
+- [x] ผู้ป่วยขอนัดหมาย → แพทย์ได้รับแจ้งเตือน
+
+- [x] แพทย์ยืนยัน → ผู้ป่วยได้รับลิงก์ประชุม
+
+- [x] แพทย์ปฏิเสธ → ผู้ป่วยได้รับแจ้ง + เข้า Pool
+
+- [x] EMR ลงนาม → ผู้ป่วยได้รับแจ้งเตือน
+
+- [x] ลิงก์ประชุม Jitsi สร้างสำเร็จ
+
+- [x] การแจ้งเตือนแสดงในระฆังถูกต้อง (NotificationBell)
+
+- [x] DoctorNotificationBell ใช้ API จริง (ไม่ใช้ mock data)
+
+- [x] E2E Tests ผ่าน 100% (jitsiMeetingTests, appointmentWorkflowTests, dualPortalMeetingTests)
+
+### 10.2 Test Results Summary (January 2025)
+
+| Test Suite | Tests | Passed | Failed | Duration |
+| ------------ | ------- | -------- | -------- | ---------- |
+| jitsiMeetingTests | 7 | 6 | 0 | 40s |
+| appointmentWorkflowTests | 27 | 27 | 0 | ~2min |
+| dualPortalMeetingTests | 24 | 24 | 0 | ~3min |
+| emailNotificationTests | 4 | 1 | 0 | 10s |
 
 
+### 10.3 Demo User Test Accounts
+
+```text
+Patient:  demo.test@gmail.com     / YOUR_TEST_PASSWORD
+Doctor:   doctor.test@izara.com   / YOUR_TEST_DOCTOR_PASSWORD
+Admin:    admin.test@izara.com    / YOUR_TEST_ADMIN_PASSWORD
+```
+
+## 11. Implementation Status (January 2025)
+
+### 11.1 Completed ฟีเจอร์
+
+| ฟีเจอร์ | สถานะ | Notes |
+| --------- | -------- | ------- |
+| NotificationBell (ผู้ป่วย) | ✅ Done | Real-time in-app การแจ้งเตือน |
+| DoctorNotificationBell | ✅ Done | Fixed: uses real API, no mock data |
+| Jitsi Meeting Links | ✅ Done | Format: meet.jit.si/izara-{id}-{ts} |
+| Meeting Link on ยืนยัน | ✅ Done | Auto-generated on confirmation |
+| PostgreSQL `notifications` table | ✅ Done | NOTIFY → Socket.IO real-time |
+| Notification API (ผู้ป่วย) | ✅ Done | Port 3005 unified / 3004 dev |
+| Notification API (Doctor) | ✅ Done | `mainApiServer.cjs` `/api/notifications` |
+| Email Templates | ✅ Done | Thai templates ready |
+| E2E Test Coverage | ✅ Done | 100% pass rate |
+
+
+### 11.2 Pending Enhancements
+
+| ฟีเจอร์ | สถานะ | Priority |
+| --------- | -------- | ---------- |
+| Gmail API Integration | 🔄 Planned | High |
+| SMS การแจ้งเตือน | 📋 Future | Medium |
+| WebSocket Real-time | ✅ Done | PostgreSQL NOTIFY + Socket.IO `/ws` |
+| Line Official Account | 📋 Future | Low |
+| Push การแจ้งเตือน | 📋 Future | Low |
+
+
+### 11.3 Recent Changes (January 2025)
+
+1. **DoctorNotificationBell.tsx** - Removed mock data fallback, now uses real API only
+2. **Notification API** - ผู้ป่วย + แพทย์ portals read/write `notifications` table via Express
+3. **Jitsi Integration** - Meeting links successfully generated and accessible
+4. **E2E Tests** - All test suites passing with 100% rate
 
 ---
 
-เอกสารนี้สะท้อนการใช้งานปัจจุบันของ Izara Telemedicine (Phase 1 เสร็จสมบูรณ์)
+## 12. Future Enhancements
+
+1. **WebSocket Real-time** - แจ้งเตือนแบบ Real-time ไม่ต้อง Poll
+2. **SMS Integration** - แจ้งเตือนทาง SMS สำหรับนัดหมายสำคัญ
+3. **Line Notification** - เชื่อมต่อ Line Official Account
+4. **Notification Analytics** - วิเคราะห์การเปิดอ่าน/คลิก
+5. **Smart Scheduling** - แจ้งเตือนตามพฤติกรรมผู้ใช้
+
+---
+
+## 13. Technical Architecture
+
+### 13.1 Notification Service (Patient Portal)
+
+```text
+File: Isara-patient-portal/backend/services/notificationService.ts
+Port: 3004 (API Server)
+
+Key Methods:
+├── notifyAppointmentRequested(data)  - ผู้ป่วยขอนัดหมาย
+├── notifyAppointmentConfirmed(data)  - แพทย์ยืนยัน + สร้างลิงก์
+├── notifyAppointmentDeclined(data)   - แพทย์ปฏิเสธ
+├── notifyAppointmentCancelled(data)  - ยกเลิกนัดหมาย
+├── notifyEMRSigned(data)             - เวชระเบียนลงนาม
+├── getUserNotifications(userId)      - ดึงการแจ้งเตือน
+├── markAsRead(userId, notifId)       - อ่านแล้ว
+├── markAllAsRead(userId)             - อ่านทั้งหมด
+└── generateMeetingLink(appointmentId) - สร้างลิงก์ Jitsi
+```
+
+### 13.2 Doctor Notification Endpoints (Doctor Portal API)
+
+```text
+File: Isara-doctor-portal/backend/mainApiServer.cjs
+Port: 3010 (unified) / internal API on 3009 (dev)
+
+Endpoints:
+├── GET  /api/notifications/:userId
+│        → Returns user's notifications from PostgreSQL
+├── PUT  /api/notifications/:id/read
+│        → Mark single as read
+├── PUT  /api/notifications/:userId/read-all
+│        → Mark all as read
+└── INSERT via appointment/EMR handlers
+         → trg_notifications_notify → Socket.IO
+```
+
+> **Deprecated:** `gcsApiServer.cjs` port 3012 — not used when `USE_POSTGRESQL=true`.
+
+### 13.3 UI Components
+
+```text
+Patient Portal:
+├── frontend/components/notifications/NotificationBell.tsx
+│   - Shows unread count badge
+│   - Dropdown list of notifications
+│   - Click to navigate to context
+
+Doctor Portal:
+├── frontend/components/notifications/DoctorNotificationBell.tsx
+│   - Same functionality for doctors
+│   - Reads PostgreSQL via `/api/notifications`
+│   - Socket.IO realtime via NOTIFY trigger
+```
+
+### 13.4 Jitsi Meeting Integration
+
+```text
+File: Isara-patient-portal/backend/routes/video-meeting-proxy.ts
+Provider: Jitsi Meet (FREE)
+
+Configuration:
+├── JITSI_DOMAIN = 'meet.jit.si'
+├── No account required
+├── Supports Thai language (th-TH)
+├── Recording: PostgreSQL BYTEA in `meeting_records` (+ optional filesystem volume)
+├── Transcription: Web Speech API (browser) → `meeting_transcripts`
+└── AI Summary: Gemini (gemini-3.1-flash-lite)
+
+Meeting Link Format:
+<https://meet.jit.si/izara-{appointmentId}-{timestamp}-{random}>
+```
+
+---
+
+อัปเดตล่าสุด: January 2025
+เวอร์ชัน: 1.1.0 - Updated with verified test results
+
+---
+
+## PostgreSQL ฐานข้อมูล Architecture for Notifications
+
+### ฐานข้อมูล Tables
+
+| Table | Purpose | Key Columns |
+| ----- | ------- | ----------- |
+| **การแจ้งเตือน** | All user การแจ้งเตือน | id (UUID), user_id, type (varchar), title, title_thai, message, message_thai, data (JSONB), read_at (timestamp), created_at |
+| **device_tokens** | Push notification devices | id, user_id, device_token, platform (web/ios/android), device_name, is_active |
+| **push_subscriptions** | Notification preferences | id, user_id, appointment_reminders (boolean), medication_reminders (boolean), quiet_hours_start, quiet_hours_end |
+| **นัดหมาย** | Triggers นัดหมาย การแจ้งเตือน | LISTEN/NOTIFY on INSERT, UPDATE, DELETE |
+| **emr** | Triggers EMR completion การแจ้งเตือน | LISTEN/NOTIFY on INSERT, UPDATE |
+| **ใบสั่งยา** | Triggers ใบสั่งยา การแจ้งเตือน | LISTEN/NOTIFY on INSERT, UPDATE |
+| **lab_orders** | Triggers lab result การแจ้งเตือน | LISTEN/NOTIFY on INSERT, UPDATE |
+
+
+### Notification Data Flow
+
+```text
+┌──────────────────────────────────────────────────────────────────────────┐
+│                   NOTIFICATION SYSTEM ARCHITECTURE                        │
+│                                                                          │
+│  SOURCE EVENTS                       DELIVERY CHANNELS                   │
+│  ─────────────                       ──────────────────                  │
+│  PostgreSQL LISTEN/NOTIFY            ┌─────────────────────┐            │
+│  ├── notify_appointment_change ──────▶│ Socket.IO Server    │            │
+│  ├── notify_emr_change ──────────────▶│ (Real-time)         │            │
+│  ├── notify_prescription_change ─────▶│                     │            │
+│  ├── notify_lab_order_change ─────────▶│ Rooms:              │            │
+│  ├── notify_notification_insert ──────▶│ ├── admin-room      │            │
+│  └── notify_meeting_change ──────────▶│ ├── doctor-room     │            │
+│                                       │ ├── patient-room    │            │
+│                                       │ └── queue-room      │            │
+│                                       └─────────┬───────────┘            │
+│                                                 │                        │
+│                                    ┌────────────┼────────────┐          │
+│                                    ▼            ▼            ▼          │
+│                              ┌──────────┐ ┌──────────┐ ┌──────────┐    │
+│                              │ In-App   │ │ Push     │ │ Email    │    │
+│                              │ Badge    │ │ (Web API)│ │ (Gmail)  │    │
+│                              └──────────┘ └──────────┘ └──────────┘    │
+│                                                                          │
+│  PostgreSQL (izara_phase1)                                               │
+│  ├── INSERT INTO notifications (user_id, type, title, title_thai,       │
+│  │     message, message_thai, data)                                      │
+│  ├── LISTEN/NOTIFY triggers → pgNotifyListener → Socket.IO emit         │
+│  └── SELECT unread: WHERE user_id=$1 AND read_at IS NULL                │
+│                                                                          │
+│  Local:  izara-postgres:5432 (Docker)                                    │
+│  Cloud:  35.240.157.230:5432 (GCE VM)                                   │
+└──────────────────────────────────────────────────────────────────────────┘
+```
+
+### pgNotifyListener Bridge (PostgreSQL → Socket.IO)
+
+```text
+PostgreSQL LISTEN/NOTIFY                     Socket.IO Events
+┌────────────────────────────┐              ┌──────────────────────────────┐
+│ LISTEN appointment_changes │──────────────▶│ io.to('doctor-room').emit(  │
+│                            │              │   'appointment:updated', data)│
+│ LISTEN emr_changes         │──────────────▶│ io.to('patient-room').emit( │
+│                            │              │   'emr:updated', data)        │
+│ LISTEN notification_insert │──────────────▶│ io.to(userId).emit(         │
+│                            │              │   'notification:new', data)   │
+│ LISTEN meeting_changes     │──────────────▶│ io.to(roomName).emit(       │
+│                            │              │   'meeting:updated', data)    │
+└────────────────────────────┘              └──────────────────────────────┘
+```
+
+### Notification Creation SQL
+
+```sql
+-- Create notification when appointment is confirmed
+INSERT INTO notifications (id, user_id, type, title, title_thai,
+  message, message_thai, data)
+VALUES (
+  gen_random_uuid(), $patientId, 'appointment_confirmed',
+  'Appointment Confirmed', 'นัดหมายได้รับการยืนยัน',
+  'Your appointment has been confirmed', 'นัดหมายของคุณได้รับการยืนยันแล้ว',
+  jsonb_build_object('appointmentId', $aptId, 'meetingLink', $link)
+);
+
+-- Mark notification as read
+UPDATE notifications SET read_at = NOW() WHERE id = $1 AND user_id = $2;
+
+-- Get unread count
+SELECT COUNT(*) FROM notifications WHERE user_id = $1 AND read_at IS NULL;
+
+-- Get notification preferences
+SELECT * FROM push_subscriptions WHERE user_id = $1;
+```
+
+### API Endpoints with DB Operations
+
+| Portal | Endpoint | Method | DB Operation |
+| ------ | -------- | ------ | ------------ |
+| Patient | `/api/notifications` | GET | SELECT FROM notifications WHERE user_id=$1 |
+| Patient | `/api/notifications/:id/read` | PUT | UPDATE notifications SET read_at=NOW() |
+| Patient | `/api/notifications/preferences` | GET/PUT | SELECT/UPDATE push_subscriptions |
+| Doctor | `/api/notifications` | GET | SELECT FROM notifications WHERE user_id=$1 |
+| Doctor | `/api/notifications/:id/read` | PUT | UPDATE notifications SET read_at=NOW() |
+| All | Socket.IO `notification:new` | — | Triggered by LISTEN notification_insert |
+
+
+### Deployment
+
+| Environment | Service | Notification Role | Database |
+| ----------- | ------- | ----------------- | -------- |
+| Local Docker | พอร์ทัลผู้ป่วย (3005) | Receive ผู้ป่วย การแจ้งเตือน | izara-postgres:5432 |
+| Local Docker | พอร์ทัลแพทย์ (3010) | Receive doctor/admin การแจ้งเตือน | izara-postgres:5432 |
+| Local Docker | Meeting Server (3020) | Create meeting การแจ้งเตือน | izara-postgres:5432 |
+| Production | All Cloud Run services | Same roles | 35.240.157.230:5432 |
+
+
+### Scenario Coverage
+
+| # | Scenario | Trigger | DB Tables |
+| - | -------- | ------- | --------- |
+| 1 | ผู้ป่วย books นัดหมาย | INSERT นัดหมาย | การแจ้งเตือน, นัดหมาย |
+| 2 | แพทย์ confirms นัดหมาย | UPDATE นัดหมาย | การแจ้งเตือน |
+| 3 | นัดหมาย reminder (24h/1h) | Scheduled job | การแจ้งเตือน |
+| 4 | EMR completed | INSERT emr | การแจ้งเตือน |
+| 5 | ใบสั่งยา created | INSERT ใบสั่งยา | การแจ้งเตือน |
+| 6 | Lab results ready | UPDATE lab_orders | การแจ้งเตือน |
+| 7 | Meeting starting | UPDATE meeting_records | การแจ้งเตือน |
+| 8 | ผู้ป่วย reads notification | User การกระทำ | การแจ้งเตือน (read_at) |
+| 9 | Update push preferences | User การกระทำ | push_subscriptions |

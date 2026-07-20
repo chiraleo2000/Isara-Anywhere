@@ -9,11 +9,11 @@ const root = path.resolve(__dirname, '../../..');
 
 describe('Meeting BFF proxy contracts', () => {
   const doctorProxy = fs.readFileSync(
-    path.join(root, 'Isara-doctor-portal/backend/routes/meetings.cjs'),
+    path.join(root, 'issara-doctor/backend/routes/meetings.cjs'),
     'utf8',
   );
   const patientProxy = fs.readFileSync(
-    path.join(root, 'Isara-patient-portal/backend/routes/video-meeting-proxy.ts'),
+    path.join(root, 'issara-patient/backend/routes/video-meeting-proxy.ts'),
     'utf8',
   );
 
@@ -55,24 +55,24 @@ describe('Meeting BFF proxy contracts', () => {
   });
 
   it('BFF-03 — patient proxy mounted at /api/video-meeting in backend index', () => {
-    const index = fs.readFileSync(path.join(root, 'Isara-patient-portal/backend/index.ts'), 'utf8');
+    const index = fs.readFileSync(path.join(root, 'issara-patient/backend/index.ts'), 'utf8');
     expect(index).toMatch(/video-meeting-proxy/);
     expect(index).toMatch(/\/api\/video-meeting/);
   });
 
   it('BFF-04 — doctor meetings proxy registered in mainApiServer', () => {
-    const main = fs.readFileSync(path.join(root, 'Isara-doctor-portal/backend/mainApiServer.cjs'), 'utf8');
+    const main = fs.readFileSync(path.join(root, 'issara-doctor/backend/mainApiServer.cjs'), 'utf8');
     expect(main).toMatch(/meetings\.cjs|registerMeetingProxyRoutes/);
   });
 
   it('BFF-05 — patient portal runtime env-config injection for LAN', () => {
-    const dockerfile = fs.readFileSync(path.join(root, 'Isara-patient-portal/Dockerfile.unified'), 'utf8');
-    const entrypoint = fs.readFileSync(path.join(root, 'Isara-patient-portal/docker-entrypoint.sh'), 'utf8');
-    const indexHtml = fs.readFileSync(path.join(root, 'Isara-patient-portal/frontend/index.html'), 'utf8');
+    const dockerfile = fs.readFileSync(path.join(root, 'issara-patient/Dockerfile.unified'), 'utf8');
+    const entrypoint = fs.readFileSync(path.join(root, 'issara-patient/docker-entrypoint.sh'), 'utf8');
+    const indexHtml = fs.readFileSync(path.join(root, 'issara-patient/frontend/index.html'), 'utf8');
     expect(dockerfile).toMatch(/docker-entrypoint\.sh/);
     expect(entrypoint).toMatch(/env-config\.template\.js/);
     expect(entrypoint).toMatch(/envsubst/);
     expect(indexHtml).toMatch(/env-config\.js/);
-    expect(fs.existsSync(path.join(root, 'Isara-patient-portal/public/env-config.template.js'))).toBe(true);
+    expect(fs.existsSync(path.join(root, 'issara-patient/public/env-config.template.js'))).toBe(true);
   });
 });

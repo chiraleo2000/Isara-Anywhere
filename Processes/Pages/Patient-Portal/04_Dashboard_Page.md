@@ -33,7 +33,28 @@
 3. **ผลลัพธ์ที่คาดหวัง** — สถานะระบบ / API / ฐานข้อมูลหลังจบขั้นตอน
 
 ---
+## UI Controls Inventory
 
+| # | Control | testid | Action | Expected | Screenshot |
+|---|---------|--------|--------|----------|------------|
+| 1 | Data Testid | `data-testid` | click | Documented control | U-data-testid |
+| 2 | Diagnosis | `diagnosis` | click | Documented control | U-diagnosis |
+| 3 | Prescriptions | `prescriptions` | click | Documented control | U-prescriptions |
+| 4 | Appointments | `appointments` | click | Documented control | U-appointments |
+| 5 | Healthstudio | `HealthStudio` | click | Documented control | U-HealthStudio |
+| 6 | Aihealthchat | `AIHealthChat` | click | Documented control | U-AIHealthChat |
+| 7 | Latestappointmentresult | `LatestAppointmentResult` | click | Documented control | U-LatestAppointmentResult |
+| 8 | Treatmentresults | `TreatmentResults` | click | Documented control | U-TreatmentResults |
+| 9 | Medicalcontent | `MedicalContent` | click | Documented control | U-MedicalContent |
+| 10 | Vitalschart | `VitalsChart` | click | Documented control | U-VitalsChart |
+| 11 | Confirmed | `confirmed` | click | Documented control | U-confirmed |
+| 12 | Dashboard Page | `dashboard-page` | click | Documented control | U-dashboard-page |
+| 13 | Appointmentid | `appointmentId` | click | Documented control | U-appointmentId |
+| 14 | Meetingid | `meetingId` | click | Documented control | U-meetingId |
+| 15 | Success | `success` | click | Documented control | U-success |
+| 16 | Message | `message` | click | Documented control | U-message |
+| 17 | Code | `code` | click | Documented control | U-code |
+| 18 | Dashboardworkflow | `dashboardWorkflow` | click | Documented control | U-dashboardWorkflow |
 
 ## 1. Purpose
 

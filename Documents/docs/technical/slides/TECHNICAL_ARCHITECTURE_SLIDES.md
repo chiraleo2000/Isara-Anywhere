@@ -179,7 +179,7 @@ appointments ──► emr | prescriptions | lab_orders
 **Real-time:** ช่อง `appointment_*` NOTIFY → Socket.IO rooms  
 
 **Deploy local:** `docker-compose up`  
-**Deploy cloud:** `cloudbuild.yaml` / `scripts/deploy/cloud.ps1`  
+**Deploy cloud:** `npm run cloud:deploy` (root `cloudbuild.yaml` + `scripts/deploy-cloud-from-env.ps1`)  
 
 **เอกสารกระบวนการรายหน้า:** `Processes/Pages/**/*.md` (ENRICH-7 — ขั้นตอนละเอียด)  
 **อัปเดตหน้ากระบวนการ:** `python scripts/enrich-process-pages.py --force-steps`

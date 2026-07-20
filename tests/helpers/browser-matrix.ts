@@ -96,18 +96,17 @@ function buildCoreBrowserSpec(role: PortalRole, engine: BrowserEngine): RoleBrow
 export function getRoleBrowserSpec(role: PortalRole): RoleBrowserSpec {
   const core = resolveCoreBrowserEngine();
   if (core) return buildCoreBrowserSpec(role, core);
-  // Local headed runs: Firefox admin dashboard often whiteouts on Windows — use Edge for stability.
-  const localHeaded =
-    process.env.TEST_ENV !== 'cloud' &&
-    (process.env.PW_HEADED === '1' || process.env.PW_HEADLESS !== '1');
-  if (role === 'admin' && localHeaded) {
+  // Cloud headed Firefox frequently whiteouts / times out on the doctor SPA (admin).
+  // Prefer Edge (same engine as doctor) when TEST_ENV=cloud or PW_CLOUD_ADMIN_EDGE=1.
+  if (
+    role === 'admin' &&
+    (process.env.TEST_ENV === 'cloud' ||
+      process.env.PW_CLOUD_ADMIN_EDGE === '1' ||
+      process.env.PW_CLOUD_ADMIN_EDGE === 'true')
+  ) {
     return {
+      ...ROLE_BROWSER_MATRIX.doctor,
       role: 'admin',
-      engine: 'chromium',
-      channel: 'msedge',
-      browserName: 'edge',
-      navTimeoutMultiplier: 1,
-      launchRetries: 2,
     };
   }
   return ROLE_BROWSER_MATRIX[role];
@@ -138,7 +137,12 @@ export function chromiumLaunchArgs(headless = false): string[] {
     '--use-fake-ui-for-media-stream',
   ];
   if (headless) {
-    return ['--no-sandbox', ...media];
+    return [
+      '--no-sandbox',
+      ...media,
+      '--host-resolver-rules=MAP meet.localhost 127.0.0.1',
+      '--ignore-certificate-errors',
+    ];
   }
   // Headed: fake media on installed Chrome (Windows); grantPermissions alone is not enough for MediaRecorder
   return [
@@ -146,6 +150,8 @@ export function chromiumLaunchArgs(headless = false): string[] {
     '--window-size=1440,900',
     '--use-fake-device-for-media-capture',
     '--use-fake-ui-for-media-stream',
+    '--host-resolver-rules=MAP meet.localhost 127.0.0.1',
+    '--ignore-certificate-errors',
   ];
 }
 

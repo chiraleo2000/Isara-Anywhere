@@ -9,12 +9,12 @@
     "noImplicitAny": false,
     "forceConsistentCasingInFileNames": true,
     "skipLibCheck": true,
-    "resolveJsonModule": true,
-    "types": ["node", "@playwright/test"]
+    "resolveJsonModule": true
   },
   "include": [
     "./**/*.ts",
-    "../fixtures/**/*.ts"
+    "../fixtures/**/*.ts",
+    "./playwright-env.d.ts"
   ],
   "exclude": ["node_modules", "unit"]
 }

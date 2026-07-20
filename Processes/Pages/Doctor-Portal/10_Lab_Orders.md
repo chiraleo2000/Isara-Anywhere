@@ -32,7 +32,20 @@
 3. **ผลลัพธ์ที่คาดหวัง** — สถานะระบบ / API / ฐานข้อมูลหลังจบขั้นตอน
 
 ---
+## UI Controls Inventory
 
+| # | Control | testid | Action | Expected | Screenshot |
+|---|---------|--------|--------|----------|------------|
+| 1 | Lab PDF upload | `lab-report-upload-btn` | click | UI responds; API optional | U-lab-report-upload-btn |
+| 2 | Imaging upload | `imaging-report-upload-btn` | click | UI responds; API optional | U-imaging-report-upload-btn |
+| 3 | Data Testid | `data-testid` | click | Documented control | U-data-testid |
+| 4 | Confirmed | `confirmed` | click | Documented control | U-confirmed |
+| 5 | Appointmentid | `appointmentId` | click | Documented control | U-appointmentId |
+| 6 | Meetingid | `meetingId` | click | Documented control | U-meetingId |
+| 7 | Success | `success` | click | Documented control | U-success |
+| 8 | Message | `message` | click | Documented control | U-message |
+| 9 | Code | `code` | click | Documented control | U-code |
+| 10 | Laborders | `labOrders` | click | Documented control | U-labOrders |
 
 ## 1. Purpose
 

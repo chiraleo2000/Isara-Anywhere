@@ -27,13 +27,23 @@ interface AxeResult {
   }>;
 }
 
-async function runAxe(page: Page): Promise<AxeResult> {
+async function runAxe(page: Page, timeoutMs = 90_000): Promise<AxeResult> {
   // @axe-core/playwright is a required dev dependency. Any import failure is a
   // hard error so the suite never silently degrades into a skip.
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { default: AxeBuilder } = await import('@axe-core/playwright');
-  const builder = new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa']);
-  return (await builder.analyze()) as unknown as AxeResult;
+  const analyze = async () => {
+    const builder = new AxeBuilder({ page })
+      .withTags(['wcag2a', 'wcag2aa'])
+      .include('body');
+    return (await builder.analyze()) as unknown as AxeResult;
+  };
+  return Promise.race([
+    analyze(),
+    new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error(`axe analyze timed out after ${timeoutMs}ms`)), timeoutMs),
+    ),
+  ]);
 }
 
 function filterBlocking(r: AxeResult): AxeResult['violations'] {
@@ -43,8 +53,13 @@ function filterBlocking(r: AxeResult): AxeResult['violations'] {
 }
 
 test.describe('Group K — Accessibility (WCAG 2.1 AA)', () => {
+  test.describe.configure({ timeout: 120_000 });
+
   test('K1 — Patient portal login page has no serious a11y violations', async ({ page }) => {
-    await gotoCloudWithRetry(page, `${PATIENT_URL}/login`, 'K1-login', LOGIN_NAV_TIMEOUT);
+    await page.goto(`${PATIENT_URL}/login`, { waitUntil: 'domcontentloaded', timeout: LOGIN_NAV_TIMEOUT });
+    await expect(page.locator('input[type="email"], input[name="email"]').first()).toBeVisible({
+      timeout: IS_CLOUD ? 45_000 : 15_000,
+    });
     const results = await runAxe(page);
     const blocking = filterBlocking(results);
     if (blocking.length > 0) {
@@ -64,9 +79,10 @@ test.describe('Group K — Accessibility (WCAG 2.1 AA)', () => {
   });
 
   test('K3 — Patient portal root page is keyboard-navigable', async ({ page }) => {
-    await gotoCloudWithRetry(page, `${PATIENT_URL}/login`, 'K3/patient-login');
-    const focusable = page.locator('a[href], button, input, select, textarea, [tabindex]:not([tabindex="-1"])');
-    await expect(focusable.first()).toBeVisible({ timeout: IS_CLOUD ? 30_000 : 15_000 });
+    await page.goto(`${PATIENT_URL}/login`, { waitUntil: 'domcontentloaded', timeout: LOGIN_NAV_TIMEOUT });
+    await expect(page.locator('input[type="email"], input[name="email"]').first()).toBeVisible({
+      timeout: IS_CLOUD ? 45_000 : 15_000,
+    });
     for (let i = 0; i < 12; i++) {
       await page.keyboard.press('Tab');
     }

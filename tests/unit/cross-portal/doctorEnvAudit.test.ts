@@ -14,11 +14,11 @@ describe('Doctor env audit (ENV)', () => {
   });
 
   it('ENV-02 — doctor .env exists', () => {
-    expect(fs.existsSync(path.join(root, 'Isara-doctor-portal/.env'))).toBe(true);
+    expect(fs.existsSync(path.join(root, 'issara-doctor/.env'))).toBe(true);
   });
 
   it('ENV-03 — forbidden VITE_GOOGLE_CLIENT_SECRET absent from example', () => {
-    const example = path.join(root, 'Isara-doctor-portal/.env.example');
+    const example = path.join(root, 'issara-doctor/.env.example');
     if (fs.existsSync(example)) {
       expect(fs.readFileSync(example, 'utf8')).not.toMatch(/VITE_GOOGLE_CLIENT_SECRET/);
     }

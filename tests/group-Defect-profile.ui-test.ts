@@ -1,9 +1,17 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-import { test, expect, navPatient, assertFullHealth, snap } from './helpers/multi-portal';
+import {
+  test,
+  expect,
+  navPatient,
+  assertFullHealth,
+  snap,
+  waitForPatientProfileAddress,
+} from './helpers/multi-portal';
 
-const AUTH_DIR = path.join(__dirname, 'e2e', '.auth-states');
+const AUTH_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), 'e2e', '.auth-states');
 
 function reinjectPatientAuth(page: import('@playwright/test').Page): Promise<void> {
   const patientState = path.join(AUTH_DIR, 'patient1.json');
@@ -43,7 +51,8 @@ test.describe('Defect — PHR profile persistence after re-login', () => {
     await saveBtn.click();
     const saved = await saveResp;
     expect(saved.ok(), `profile save HTTP ${saved.status()}`).toBeTruthy();
-    await expect(patient.page.locator('body')).toContainText(marker, { timeout: 10_000 });
+    await waitForPatientProfileAddress(patient.page, marker);
+    await expect(patient.page.getByText(marker, { exact: true })).toBeVisible({ timeout: 15_000 });
 
     await patient.page.evaluate(() => {
       localStorage.clear();
@@ -51,12 +60,17 @@ test.describe('Defect — PHR profile persistence after re-login', () => {
     });
     await reinjectPatientAuth(patient.page);
     await patient.page.reload({ waitUntil: 'domcontentloaded' });
-    await patient.page.waitForTimeout(1500);
+    await waitForPatientProfileAddress(patient.page, marker);
 
     await navPatient(patient.page, '/profile', 'DP1-relogin');
     await assertFullHealth(patient.page, 'DP1-relogin');
-
-    await expect(patient.page.locator('body')).toContainText(marker, { timeout: 15_000 });
+    const profileLoaded = patient.page.waitForResponse(
+      (r) => r.url().includes('/api/phr/') && r.request().method() === 'GET' && r.ok(),
+      { timeout: 30_000 },
+    );
+    await profileLoaded.catch(() => null);
+    await waitForPatientProfileAddress(patient.page, marker);
+    await expect(patient.page.getByText(marker, { exact: true })).toBeVisible({ timeout: 30_000 });
     await snap(patient.page, 'DP1-phr-persist-relogin', 'group-defect');
   });
 });

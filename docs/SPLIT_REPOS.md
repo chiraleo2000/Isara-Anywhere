@@ -34,22 +34,24 @@ From monorepo root, one-time per app (do **not** push without explicit approval)
 ```bash
 # Patient portal
 git subtree split --prefix=Isara-patient-portal -b split/patient-portal
-git push git@github.com:YOUR_ORG/Isara-patient-portal.git split/patient-portal:main
+git push git@github.com:chiraleo2000/Isara-patient-portal.git split/patient-portal:main
 
 # Doctor portal
 git subtree split --prefix=Isara-doctor-portal -b split/doctor-portal
-git push git@github.com:YOUR_ORG/Isara-doctor-portal.git split/doctor-portal:main
+git push git@github.com:chiraleo2000/Isara-doctor-portal.git split/doctor-portal:main
 
 # Meeting server
 git subtree split --prefix=Izara-jitsi-server -b split/meeting-server
-git push git@github.com:YOUR_ORG/Izara-jitsi-server.git split/meeting-server:main
+git push git@github.com:chiraleo2000/Izara-jitsi-server.git split/meeting-server:main
 
 # Platform hub (slim tree or submodules)
 git subtree split --prefix=scripts -b split/platform-scripts
 # Or keep monorepo as Isara-Anywhere with git submodules pointing at split remotes
 ```
 
-Tags after split: `platform-v1.8.0`, `patient-v1.7.x`, `doctor-v1.7.x`, `meeting-v1.7.x`.
+Tags after split: `patient-v1.7.55`, `doctor-v1.7.55`, `meeting-v1.7.55` (see `reports/defect-fix/subtree-split-ready-2026-06-26.md` for current SHAs).
+
+**Local split status (2026-06-26):** branches `split/patient-portal`, `split/doctor-portal`, `split/meeting-server` pushed to chiraleo2000 GitHub repos; tags `patient-v1.7.55`, `doctor-v1.7.55`, `meeting-v1.7.55`. See `reports/defect-fix/subtree-split-ready-2026-06-26.md` for SHAs.
 
 Sibling clone layout: `bash scripts/repos/clone-siblings.sh ../izara-siblings`
 

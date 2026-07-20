@@ -8,8 +8,12 @@ import { fileURLToPath } from 'url';
 import { chromium } from 'playwright';
 
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
-const masterPath = path.join(root, 'docs', 'diagrams', 'diagrams.drawio');
-const outDir = path.join(root, 'docs', 'diagrams', 'export', 'pages');
+const drawioCandidates = [
+  path.join(root, 'Documents', 'docs', 'diagrams', 'diagrams.drawio'),
+  path.join(root, 'docs', 'diagrams', 'diagrams.drawio'),
+];
+const masterPath = drawioCandidates.find((p) => fs.existsSync(p)) || drawioCandidates[0];
+const outDir = path.join(path.dirname(masterPath), 'export', 'pages');
 
 const SCALE = Number(process.env.DRAWIO_SCALE || 2);
 const BORDER = Number(process.env.DRAWIO_BORDER || 15);

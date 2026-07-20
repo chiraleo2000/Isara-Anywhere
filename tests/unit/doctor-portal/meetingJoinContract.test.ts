@@ -6,7 +6,7 @@ import {
   getJitsiExternalApiOptions,
   loadJitsiExternalApiScript,
   pickJitsiJwt,
-} from '../../../Isara-doctor-portal/frontend/utils/jitsiMeetingConfig.ts';
+} from '../../../../issara-doctor/frontend/utils/jitsiMeetingConfig.ts';
 
 describe('doctor meeting join config contract', () => {
   beforeEach(() => {
@@ -37,23 +37,27 @@ describe('doctor meeting join config contract', () => {
   });
 
   it('MJ02 — doctor open-room init does not throw with mocked script loader', async () => {
-    vi.stubGlobal('JitsiMeetExternalAPI', vi.fn());
+    // Do not stub JitsiMeetExternalAPI before load — loader short-circuits and skips createElement.
+    delete (globalThis as any).JitsiMeetExternalAPI;
+    const scriptEl = {
+      async: false,
+      src: '',
+      onload: null as (() => void) | null,
+      onerror: null as (() => void) | null,
+      addEventListener: vi.fn(),
+      getAttribute: vi.fn(() => null),
+      remove: vi.fn(),
+    };
     vi.stubGlobal('document', {
       querySelector: vi.fn(() => null),
       querySelectorAll: vi.fn(() => []),
       head: { appendChild: vi.fn() },
-      createElement: vi.fn(() => ({
-        async: false,
-        src: '',
-        onload: null as (() => void) | null,
-        onerror: null as (() => void) | null,
-        addEventListener: vi.fn(),
-        getAttribute: vi.fn(() => null),
-      })),
+      createElement: vi.fn(() => scriptEl),
     });
     const p = loadJitsiExternalApiScript('meet.example.com');
-    const el = (document.createElement as ReturnType<typeof vi.fn>).mock.results[0]?.value;
-    el.onload?.();
+    expect(document.createElement).toHaveBeenCalledWith('script');
+    (globalThis as any).JitsiMeetExternalAPI = vi.fn();
+    scriptEl.onload?.();
     await expect(p).resolves.toBeUndefined();
     const opts = getJitsiExternalApiOptions('doctor', 'Dr. Demo');
     expect(opts.configOverwrite.prejoinPageEnabled).toBe(false);
@@ -89,7 +93,7 @@ describe('doctor meeting join config contract', () => {
   });
 
   it('MJ06 — resolveMountJwt never passes JWT to public meet.jit.si mount', async () => {
-    const { resolveMountJwt } = await import('../../../Isara-doctor-portal/frontend/utils/jitsiMeetingConfig.ts');
+    const { resolveMountJwt } = await import('../../../issara-doctor/frontend/utils/jitsiMeetingConfig.ts');
     expect(resolveMountJwt()).toBeUndefined();
   });
 

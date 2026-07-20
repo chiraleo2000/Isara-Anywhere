@@ -3,9 +3,9 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 const root = path.resolve(__dirname, '../../..');
-const appPath = path.join(root, 'Isara-patient-portal/frontend/App.tsx');
-const canonicalPath = path.join(root, 'Isara-patient-portal/frontend/pages/LivingWillPage.tsx');
-const implPath = path.join(root, 'Isara-patient-portal/frontend/pages/pdpa/LivingWillPage.tsx');
+const appPath = path.join(root, 'issara-patient/frontend/App.tsx');
+const canonicalPath = path.join(root, 'issara-patient/frontend/pages/LivingWillPage.tsx');
+const implPath = path.join(root, 'issara-patient/frontend/pages/pdpa/LivingWillPage.tsx');
 
 describe('living will canonical path (P11–P12, G2)', () => {
   it('App.tsx routes living-will to pages/LivingWillPage.tsx', () => {

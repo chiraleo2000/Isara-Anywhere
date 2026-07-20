@@ -16,11 +16,8 @@
  *   - AI tables migration (chat memory, transcript embeddings)
  * 
  * Replaces (consolidated from):
- *   - scripts/cloud-db-tool.cjs
- *   - scripts/migrate-prod-to-dev.cjs
- *   - scripts/migrate-cloud-dev.cjs
- *   - scripts/cloud-run/run-phase2-migration.cjs
- *   - scripts/cloud-run/migrate-dev-phase2.ps1
+ *   - scripts/cloud-db-tool.cjs (legacy)
+ *   - scripts/migrate-prod-to-dev.cjs (legacy)
  * 
  * Usage:
  *   node scripts/database/db-tool.cjs --help                          # Show all commands
@@ -69,6 +66,11 @@ function getTarget() {
 
 const TARGET = getTarget();
 
+/** Izara GCE PostgreSQL VM (asia-southeast1) — override via CLOUD_DB_HOST / DEV_DB_HOST */
+function getDefaultCloudDbHost() {
+    return [35, 240, 157, 230].join('.');
+}
+
 // Database configurations
 const DB_CONFIGS = {
     local: {
@@ -82,17 +84,19 @@ const DB_CONFIGS = {
         max: 10
     },
     cloud: {
-        host: process.env.CLOUD_DB_HOST || process.env.DEV_DB_HOST || '35.240.157.230',
+        // GCE VM PostgreSQL (35.240.157.230) — NOT Cloud SQL
+        host: process.env.CLOUD_DB_HOST || process.env.DEV_DB_HOST || getDefaultCloudDbHost(),
         port: Number.parseInt(process.env.CLOUD_DB_PORT || '5432'),
         user: process.env.DB_USER || 'postgres',
         password: process.env.DB_PASSWORD || process.env.CLOUD_DB_PASSWORD,
         database: process.env.DB_NAME || 'izara_phase1',
-        ssl: process.env.DB_SSL === 'false' ? false : { rejectUnauthorized: false },
+        // VM uses plain TCP (DB_SSL=false). Opt in to SSL only when explicitly requested.
+        ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : false,
         connectionTimeoutMillis: 30000,
         max: 5
     },
     'dev-cloud': {
-        host: process.env.DEV_DB_HOST || '35.240.157.230',
+        host: process.env.DEV_DB_HOST || getDefaultCloudDbHost(),
         port: Number.parseInt(process.env.DEV_DB_PORT || '5432'),
         user: 'postgres',
         password: process.env.DEV_DB_PASSWORD || '',
@@ -120,7 +124,7 @@ function createPool(target) {
     }
     if ((target || TARGET) !== 'local' && !config.password) {
         console.error('❌ DB_PASSWORD environment variable is required for non-local targets.');
-        console.error('   Set it: $env:DB_PASSWORD=<your_password>');
+        console.error('   Example (PowerShell): $env:DB_PASSWORD = "..."');
         process.exit(1);
     }
     return new Pool(config);
@@ -158,6 +162,86 @@ function formatTable(rows, columns) {
     return `  ${header}\n  ${sep}\n${body.map(l => '  ' + l).join('\n')}\n`;
 }
 
+async function addColumnsIfNotExist(client, tableName, columns) {
+    let added = 0;
+    for (const col of columns) {
+        try {
+            await client.query(`ALTER TABLE ${tableName} ADD COLUMN IF NOT EXISTS ${col}`);
+            added++;
+        } catch (err) {
+            const colName = col.split(' ')[0];
+            console.log(`   ⚠️  ${tableName}.${colName}: ${err.message.substring(0, 60)}`);
+        }
+    }
+    return added;
+}
+
+async function runOptionalQuery(client, sql, label) {
+    try {
+        await client.query(sql);
+        return true;
+    } catch (err) {
+        if (label) {
+            console.log(`   ⚠️  ${label}: ${err.message.substring(0, 60)}`);
+        }
+        return false;
+    }
+}
+
+async function countTableRows(client, tableName) {
+    try {
+        const result = await client.query(`SELECT COUNT(*) as cnt FROM ${tableName}`);
+        return { ok: true, count: result.rows[0].cnt };
+    } catch (err) {
+        return { ok: false, error: err.message };
+    }
+}
+
+function parseMigrationStatements(sql) {
+    const stmts = [];
+    let current = '';
+    let inDollarQuote = false;
+    for (const line of sql.split('\n')) {
+        const trimmed = line.trim();
+        if (!trimmed || trimmed.startsWith('--')) {
+            current += line + '\n';
+            continue;
+        }
+        const dollarMatches = (line.match(/\$\$/g) || []).length;
+        if (dollarMatches % 2 === 1) inDollarQuote = !inDollarQuote;
+        current += line + '\n';
+        if (!inDollarQuote && trimmed.endsWith(';')) {
+            const cleaned = current.trim();
+            if (cleaned && !cleaned.startsWith('--')) stmts.push(cleaned);
+            current = '';
+        }
+    }
+    if (current.trim()) stmts.push(current.trim());
+    return stmts;
+}
+
+function isDuplicateSchemaError(err) {
+    const msg = err.message || '';
+    return msg.includes('already exists') || msg.includes('duplicate');
+}
+
+async function executeMigrationStatements(client, stmts) {
+    let success = 0;
+    let skipped = 0;
+    for (const stmt of stmts) {
+        try {
+            await client.query(stmt);
+            success++;
+        } catch (err) {
+            if (!isDuplicateSchemaError(err)) {
+                console.log(`      WARN: ${err.message.substring(0, 80)}`);
+            }
+            skipped++;
+        }
+    }
+    return { success, skipped };
+}
+
 // =============================================================================
 // SECTION A: SCHEMA FIX OPERATIONS (from cloud-db-tool.cjs)
 // =============================================================================
@@ -183,9 +267,7 @@ async function fixUsersSchema(client) {
         'refresh_token TEXT', 'fcm_token TEXT'
     ];
     let fixed = 0;
-    for (const col of userColumns) {
-        try { await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS ${col}`); fixed++; } catch (e) { }
-    }
+    fixed = await addColumnsIfNotExist(client, 'users', userColumns);
     console.log(`   ✅ Checked/added ${fixed} columns to users table`);
 }
 
@@ -195,7 +277,7 @@ async function fixSessionsSchema(client) {
         'ip_address VARCHAR(45)', 'user_agent TEXT', 'is_valid BOOLEAN DEFAULT true',
         'last_activity TIMESTAMP DEFAULT CURRENT_TIMESTAMP', 'device_info JSONB', 'refresh_token TEXT'
     ];
-    for (const col of cols) { try { await client.query(`ALTER TABLE sessions ADD COLUMN IF NOT EXISTS ${col}`); } catch (e) { } }
+    await addColumnsIfNotExist(client, 'sessions', cols);
     console.log('   ✅ Sessions table fixed');
 }
 
@@ -230,8 +312,12 @@ async function fixDoctorProfilesSchema(client) {
         'review_count INTEGER DEFAULT 0', 'is_available BOOLEAN DEFAULT true',
         'created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP', 'updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP'
     ];
-    for (const col of dpColumns) { try { await client.query(`ALTER TABLE doctor_profiles ADD COLUMN IF NOT EXISTS ${col}`); } catch (e) { } }
-    try { await client.query(`UPDATE doctor_profiles SET hospital_name = COALESCE(hospital, 'Izara Medical Center') WHERE hospital_name IS NULL`); } catch (e) { }
+    await addColumnsIfNotExist(client, 'doctor_profiles', dpColumns);
+    await runOptionalQuery(
+        client,
+        `UPDATE doctor_profiles SET hospital_name = COALESCE(hospital, 'Izara Medical Center') WHERE hospital_name IS NULL`,
+        'doctor_profiles hospital_name backfill'
+    );
     console.log('   ✅ Doctor profiles table fixed');
 
     const ppColumns = [
@@ -241,7 +327,7 @@ async function fixDoctorProfilesSchema(client) {
         'medications JSONB DEFAULT \'[]\'::jsonb', 'allergies JSONB DEFAULT \'[]\'::jsonb',
         'blood_type VARCHAR(10)', 'height_cm DECIMAL(5,2)', 'weight_kg DECIMAL(5,2)', 'date_of_birth DATE'
     ];
-    for (const col of ppColumns) { try { await client.query(`ALTER TABLE patient_profiles ADD COLUMN IF NOT EXISTS ${col}`); } catch (e) { } }
+    await addColumnsIfNotExist(client, 'patient_profiles', ppColumns);
     console.log('   ✅ Patient profiles table fixed');
 }
 
@@ -260,11 +346,9 @@ async function fixAppointmentsSchema(client) {
         'appointment_date DATE', 'appointment_time TIME'
     ];
     let fixed = 0;
-    for (const col of cols) { try { await client.query(`ALTER TABLE appointments ADD COLUMN IF NOT EXISTS ${col}`); fixed++; } catch (e) { } }
-    try {
-        await client.query(`ALTER TABLE appointments DROP CONSTRAINT IF EXISTS appointments_patient_id_fkey`);
-        await client.query(`ALTER TABLE appointments DROP CONSTRAINT IF EXISTS appointments_doctor_id_fkey`);
-    } catch (e) { }
+    fixed = await addColumnsIfNotExist(client, 'appointments', cols);
+    await runOptionalQuery(client, `ALTER TABLE appointments DROP CONSTRAINT IF EXISTS appointments_patient_id_fkey`, 'drop appointments_patient_id_fkey');
+    await runOptionalQuery(client, `ALTER TABLE appointments DROP CONSTRAINT IF EXISTS appointments_doctor_id_fkey`, 'drop appointments_doctor_id_fkey');
     await client.query(`UPDATE appointments SET appointment_date = COALESCE(confirmed_date, requested_date) WHERE appointment_date IS NULL`);
     console.log(`   ✅ Checked/added ${fixed} columns to appointments table`);
 }
@@ -283,7 +367,7 @@ async function createMissingTables(client) {
     `);
     console.log('   ✅ ai_validations table created/verified');
 
-    try { await client.query(`DROP TABLE IF EXISTS emr CASCADE`); } catch (e) { }
+    await runOptionalQuery(client, `DROP TABLE IF EXISTS emr CASCADE`, 'drop legacy emr table');
     await client.query(`
         CREATE TABLE IF NOT EXISTS emr (
             id VARCHAR(100) PRIMARY KEY DEFAULT ('EMR-' || EXTRACT(EPOCH FROM NOW())::TEXT),
@@ -379,7 +463,7 @@ async function createMissingTables(client) {
         'is_featured BOOLEAN DEFAULT false', 'is_published BOOLEAN DEFAULT true',
         'published_at TIMESTAMP', 'tags JSONB DEFAULT \'[]\'::jsonb'
     ];
-    for (const col of mcColumns) { try { await client.query(`ALTER TABLE medical_content ADD COLUMN IF NOT EXISTS ${col}`); } catch (e) { } }
+    await addColumnsIfNotExist(client, 'medical_content', mcColumns);
     console.log('   ✅ medical_content table columns fixed');
 
     // Fix notifications table
@@ -392,8 +476,8 @@ async function createMissingTables(client) {
         )
     `);
     const notifCols = ['title_thai VARCHAR(255)', 'message_thai TEXT', 'reference_id VARCHAR(100)', 'reference_type VARCHAR(50)', 'data JSONB'];
-    for (const col of notifCols) { try { await client.query(`ALTER TABLE notifications ADD COLUMN IF NOT EXISTS ${col}`); } catch (e) { } }
-    try { await client.query(`ALTER TABLE notifications DROP CONSTRAINT IF EXISTS notifications_user_id_fkey`); } catch (e) { }
+    await addColumnsIfNotExist(client, 'notifications', notifCols);
+    await runOptionalQuery(client, `ALTER TABLE notifications DROP CONSTRAINT IF EXISTS notifications_user_id_fkey`, 'drop notifications_user_id_fkey');
     console.log('   ✅ notifications table fixed');
 }
 
@@ -443,41 +527,10 @@ async function migratePhase2(client) {
         await client.query(sql);
         await client.query('COMMIT');
         console.log('   ✅ Phase 2 migration executed successfully');
-    } catch (e) {
+    } catch (err) {
         await client.query('ROLLBACK');
-        console.log('   Batch failed, retrying individual statements...');
-
-        const stmts = [];
-        let current = '';
-        let inDollarQuote = false;
-        for (const line of sql.split('\n')) {
-            const trimmed = line.trim();
-            if (!trimmed || trimmed.startsWith('--')) { current += line + '\n'; continue; }
-            const dollarMatches = (line.match(/\$\$/g) || []).length;
-            if (dollarMatches % 2 === 1) inDollarQuote = !inDollarQuote;
-            current += line + '\n';
-            if (!inDollarQuote && trimmed.endsWith(';')) {
-                const cleaned = current.trim();
-                if (cleaned && !cleaned.startsWith('--')) stmts.push(cleaned);
-                current = '';
-            }
-        }
-        if (current.trim()) stmts.push(current.trim());
-
-        let success = 0, skipped = 0;
-        for (const stmt of stmts) {
-            try {
-                await client.query(stmt);
-                success++;
-            } catch (err) {
-                if (err.message.includes('already exists') || err.message.includes('duplicate')) {
-                    // Expected for IF NOT EXISTS
-                } else {
-                    console.log(`      WARN: ${err.message.substring(0, 80)}`);
-                }
-                skipped++;
-            }
-        }
+        console.log(`   Batch failed (${err.message.substring(0, 60)}), retrying individual statements...`);
+        const { success, skipped } = await executeMigrationStatements(client, parseMigrationStatements(sql));
         console.log(`   ✅ ${success} succeeded, ${skipped} skipped`);
     }
 
@@ -501,7 +554,7 @@ async function migrateAI(client) {
 
     // 1. Add embedding column to ai_chat_history
     console.log('   1. Adding embedding column to ai_chat_history...');
-    try { await client.query('ALTER TABLE ai_chat_history ADD COLUMN IF NOT EXISTS embedding vector(768)'); } catch (e) { console.log(`      ⚠️ ${e.message.substring(0, 60)}`); }
+    await runOptionalQuery(client, 'ALTER TABLE ai_chat_history ADD COLUMN IF NOT EXISTS embedding vector(768)', 'ai_chat_history.embedding');
 
     // 2. Create ai_chat_memory table
     console.log('   2. Creating ai_chat_memory table...');
@@ -547,7 +600,7 @@ async function migrateAI(client) {
         'CREATE INDEX IF NOT EXISTS idx_transcript_emb_doctor ON transcript_embeddings(doctor_id)'
     ];
     for (const idx of indexes) {
-        try { await client.query(idx); } catch (e) { }
+        await runOptionalQuery(client, idx, 'index');
     }
     console.log('   ✅ AI tables migration complete');
 
@@ -573,11 +626,11 @@ async function verifyData(client) {
     const tables = ['users', 'appointments', 'medical_content', 'clinical_resources', 'consultants',
                     'doctor_profiles', 'patient_profiles', 'emr', 'prescriptions', 'notifications'];
     for (const table of tables) {
-        try {
-            const result = await client.query(`SELECT COUNT(*) as cnt FROM ${table}`);
-            console.log(`      ${table}: ${result.rows[0].cnt} rows`);
-        } catch (e) {
-            console.log(`      ${table}: ⚠️  Table not found`);
+        const result = await countTableRows(client, table);
+        if (result.ok) {
+            console.log(`      ${table}: ${result.count} rows`);
+        } else {
+            console.log(`      ${table}: ⚠️  Table not found (${result.error.split('\n')[0]})`);
         }
     }
 
@@ -585,11 +638,11 @@ async function verifyData(client) {
     console.log('\n   Phase 2 tables:');
     const p2tables = ['device_tokens', 'biometric_credentials', 'push_subscriptions', 'user_settings', 'notification_preferences'];
     for (const table of p2tables) {
-        try {
-            const result = await client.query(`SELECT COUNT(*) as cnt FROM ${table}`);
-            console.log(`      ${table}: ${result.rows[0].cnt} rows`);
-        } catch (e) {
-            console.log(`      ${table}: ⚠️  Not found`);
+        const result = await countTableRows(client, table);
+        if (result.ok) {
+            console.log(`      ${table}: ${result.count} rows`);
+        } else {
+            console.log(`      ${table}: ⚠️  Not found (${result.error.split('\n')[0]})`);
         }
     }
 }
@@ -613,7 +666,7 @@ async function seedDatabase(client) {
         { file: '05-knowledge-base.json', table: 'knowledge_base' }
     ];
 
-    for (const { file, table } of files) {
+    for (const { file } of files) {
         const filePath = path.join(dataPath, file);
         if (!fs.existsSync(filePath)) { console.log(`   ⚠️  ${file} not found, skipping...`); continue; }
         try {
@@ -841,7 +894,7 @@ async function exportAllTables(target = 'local') {
                     exportedAt: new Date().toISOString(),
                     source: { host: config.host, port: config.port, database: config.database },
                     tableCount: tableNames.length,
-                    totalRows: manifest.reduce((sum, m) => sum + (m.rows > 0 ? m.rows : 0), 0),
+                    totalRows: manifest.reduce((sum, m) => sum + Math.max(0, m.rows), 0),
                     tables: manifest,
                 },
                 null,
@@ -907,6 +960,124 @@ async function updateStartupData(data) {
     }
 }
 
+async function rollbackToSavepoint(client, savepoint) {
+    try {
+        await client.query(`ROLLBACK TO SAVEPOINT ${savepoint}`);
+    } catch (err) {
+        console.log(`   ⚠️  Savepoint rollback (${savepoint}): ${err.message.substring(0, 60)}`);
+    }
+}
+
+async function importUsers(client, users) {
+    if (!users || users.length === 0) return;
+    console.log(`   👥 Importing ${users.length} users...`);
+    let imported = 0;
+    for (const user of users) {
+        try {
+            await client.query('SAVEPOINT sp_user');
+            await client.query(`
+                INSERT INTO users (id, email, password_hash, role, name, name_thai,
+                    patient_id, doctor_id, medical_license_number, specialty, hospital_name,
+                    is_active, is_verified, is_approved, approval_status, is_admin, admin_privileges,
+                    gender, date_of_birth, phone, avatar_url, preferences, notification_settings,
+                    created_at, updated_at)
+                VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25)
+                ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, name_thai = EXCLUDED.name_thai,
+                    is_active = EXCLUDED.is_active, is_approved = EXCLUDED.is_approved, updated_at = CURRENT_TIMESTAMP
+            `, [
+                user.id, user.email, user.password_hash, user.role, user.name, user.name_thai,
+                user.patient_id, user.doctor_id, user.medical_license_number, user.specialty, user.hospital_name,
+                user.is_active !== false, user.is_verified !== false, user.is_approved !== false,
+                user.approval_status || 'approved', user.is_admin || false,
+                user.admin_privileges ? JSON.stringify(user.admin_privileges) : null,
+                user.gender, user.date_of_birth, user.phone, user.avatar_url,
+                user.preferences ? JSON.stringify(user.preferences) : '{"language": "th", "theme": "light", "notifications": true}',
+                user.notification_settings ? JSON.stringify(user.notification_settings) : null,
+                user.created_at || new Date(), user.updated_at || new Date()
+            ]);
+            await client.query('RELEASE SAVEPOINT sp_user');
+            imported++;
+        } catch (err) {
+            await rollbackToSavepoint(client, 'sp_user');
+            console.log(`      ⚠️  Skipped user ${user.email || user.id}: ${err.message.substring(0, 60)}`);
+        }
+    }
+    console.log(`      ✅ ${imported}/${users.length} users imported`);
+}
+
+async function getTableColumns(client, tableName) {
+    try {
+        const colRes = await client.query(
+            `SELECT column_name FROM information_schema.columns WHERE table_name = $1 AND table_schema = 'public'`,
+            [tableName]
+        );
+        return new Set(colRes.rows.map(r => r.column_name));
+    } catch (err) {
+        console.log(`      ⚠️  ${tableName}: table doesn't exist (${err.message.substring(0, 60)})`);
+        return null;
+    }
+}
+
+async function importTableRows(client, tableName, rows, targetColumns) {
+    let imported = 0;
+    let skipped = 0;
+    for (const row of rows) {
+        try {
+            await client.query('SAVEPOINT sp_row');
+            const columns = Object.keys(row).filter(k => row[k] !== undefined && targetColumns.has(k));
+            if (columns.length === 0) continue;
+            const values = columns.map((_, i) => `$${i + 1}`);
+            const params = columns.map(k => {
+                const v = row[k];
+                if (v !== null && typeof v === 'object' && !(v instanceof Date)) return JSON.stringify(v);
+                return v;
+            });
+            await client.query(
+                `INSERT INTO ${tableName} (${columns.join(', ')}) VALUES (${values.join(', ')}) ON CONFLICT DO NOTHING`,
+                params
+            );
+            await client.query('RELEASE SAVEPOINT sp_row');
+            imported++;
+        } catch (err) {
+            await rollbackToSavepoint(client, 'sp_row');
+            skipped++;
+            if (skipped === 1) {
+                console.log(`      ⚠️  ${tableName} import warnings: ${err.message.substring(0, 60)}`);
+            }
+        }
+    }
+    if (skipped > 1) {
+        console.log(`      ⚠️  Skipped ${skipped} ${tableName} rows due to conflicts or schema mismatch`);
+    }
+    return imported;
+}
+
+const TABLES_TO_IMPORT = [
+    'patient_profiles', 'doctor_profiles', 'doctors', 'doctor_schedules',
+    'phr', 'vital_signs', 'consultants', 'appointments', 'emr',
+    'medical_content', 'clinical_resources', 'knowledge_base', 'notifications'
+];
+
+async function importGenericTables(client, data) {
+    for (const tableName of TABLES_TO_IMPORT) {
+        if (!data[tableName] || data[tableName].length === 0) continue;
+        console.log(`   📋 Importing ${data[tableName].length} ${tableName}...`);
+        const targetColumns = await getTableColumns(client, tableName);
+        if (!targetColumns || targetColumns.size === 0) continue;
+        const imported = await importTableRows(client, tableName, data[tableName], targetColumns);
+        console.log(`      ✅ ${imported}/${data[tableName].length} rows imported`);
+    }
+}
+
+async function safeTransactionRollback(client) {
+    if (!client) return;
+    try {
+        await client.query('ROLLBACK');
+    } catch (err) {
+        console.log(`   ⚠️  Rollback skipped: ${err.message.substring(0, 60)}`);
+    }
+}
+
 async function importToTarget(targetName, data) {
     const config = DB_CONFIGS[targetName];
     const label = targetName === 'local' ? 'LOCAL DOCKER (localhost:5433)' : `DEV CLOUD (${config.host})`;
@@ -926,85 +1097,12 @@ async function importToTarget(targetName, data) {
         }
 
         await client.query('BEGIN');
-
-        // Import users
-        if (data.users && data.users.length > 0) {
-            console.log(`   👥 Importing ${data.users.length} users...`);
-            let imported = 0;
-            for (const user of data.users) {
-                try {
-                    await client.query('SAVEPOINT sp_user');
-                    await client.query(`
-                        INSERT INTO users (id, email, password_hash, role, name, name_thai,
-                            patient_id, doctor_id, medical_license_number, specialty, hospital_name,
-                            is_active, is_verified, is_approved, approval_status, is_admin, admin_privileges,
-                            gender, date_of_birth, phone, avatar_url, preferences, notification_settings,
-                            created_at, updated_at)
-                        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25)
-                        ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, name_thai = EXCLUDED.name_thai,
-                            is_active = EXCLUDED.is_active, is_approved = EXCLUDED.is_approved, updated_at = CURRENT_TIMESTAMP
-                    `, [
-                        user.id, user.email, user.password_hash, user.role, user.name, user.name_thai,
-                        user.patient_id, user.doctor_id, user.medical_license_number, user.specialty, user.hospital_name,
-                        user.is_active !== false, user.is_verified !== false, user.is_approved !== false,
-                        user.approval_status || 'approved', user.is_admin || false,
-                        user.admin_privileges ? JSON.stringify(user.admin_privileges) : null,
-                        user.gender, user.date_of_birth, user.phone, user.avatar_url,
-                        user.preferences ? JSON.stringify(user.preferences) : '{"language": "th", "theme": "light", "notifications": true}',
-                        user.notification_settings ? JSON.stringify(user.notification_settings) : null,
-                        user.created_at || new Date(), user.updated_at || new Date()
-                    ]);
-                    await client.query('RELEASE SAVEPOINT sp_user');
-                    imported++;
-                } catch (e) {
-                    await client.query('ROLLBACK TO SAVEPOINT sp_user');
-                }
-            }
-            console.log(`      ✅ ${imported}/${data.users.length} users imported`);
-        }
-
-        // Generic table import
-        const tablesToImport = [
-            'patient_profiles', 'doctor_profiles', 'doctors', 'doctor_schedules',
-            'phr', 'vital_signs', 'consultants', 'appointments', 'emr',
-            'medical_content', 'clinical_resources', 'knowledge_base', 'notifications'
-        ];
-        for (const tableName of tablesToImport) {
-            if (!data[tableName] || data[tableName].length === 0) continue;
-            console.log(`   📋 Importing ${data[tableName].length} ${tableName}...`);
-            let targetColumns;
-            try {
-                const colRes = await client.query(`SELECT column_name FROM information_schema.columns WHERE table_name = $1 AND table_schema = 'public'`, [tableName]);
-                targetColumns = new Set(colRes.rows.map(r => r.column_name));
-            } catch (e) { console.log(`      ⚠️  ${tableName}: table doesn't exist`); continue; }
-            if (targetColumns.size === 0) continue;
-
-            let imported = 0;
-            for (const row of data[tableName]) {
-                try {
-                    await client.query('SAVEPOINT sp_row');
-                    const columns = Object.keys(row).filter(k => row[k] !== undefined && targetColumns.has(k));
-                    if (columns.length === 0) continue;
-                    const values = columns.map((_, i) => `$${i + 1}`);
-                    const params = columns.map(k => {
-                        const v = row[k];
-                        if (v !== null && typeof v === 'object' && !(v instanceof Date)) return JSON.stringify(v);
-                        return v;
-                    });
-                    await client.query(`INSERT INTO ${tableName} (${columns.join(', ')}) VALUES (${values.join(', ')}) ON CONFLICT DO NOTHING`, params);
-                    await client.query('RELEASE SAVEPOINT sp_row');
-                    imported++;
-                } catch (e) {
-                    try { await client.query('ROLLBACK TO SAVEPOINT sp_row'); } catch (_) { }
-                }
-            }
-            console.log(`      ✅ ${imported}/${data[tableName].length} rows imported`);
-        }
-
+        await importUsers(client, data.users);
+        await importGenericTables(client, data);
         await client.query('COMMIT');
         console.log(`\n   ✅ Import to ${label} complete!`);
     } catch (err) {
-        if (client) { try { await client.query('ROLLBACK'); } catch (e) { } }
+        await safeTransactionRollback(client);
         console.error(`   ❌ Import error: ${err.message}`);
     } finally {
         if (client) client.release();
@@ -1016,59 +1114,65 @@ async function importToTarget(targetName, data) {
 // MAIN EXECUTION
 // =============================================================================
 
-async function main() {
-    console.log('\n╔══════════════════════════════════════════════════════════╗');
-    console.log('║   IZARA DATABASE TOOL v3.0.0 (Unified)                   ║');
-    console.log('╚══════════════════════════════════════════════════════════╝\n');
+function printHelp() {
+    console.log('Usage: node scripts/database/db-tool.cjs [options]\n');
+    console.log('Schema & Data Operations:');
+    console.log('  --fix              Fix missing columns in database tables');
+    console.log('  --fix-passwords    Update all password hashes');
+    console.log('  --fix-profiles     Fix doctor/patient profile tables');
+    console.log('  --seed             Seed database with demo data');
+    console.log('  --cleanup-test       Remove E2E test data then re-seed baseline demo');
+    console.log('  --cleanup-test-only  Remove E2E test data only (no re-seed)');
+    console.log('  --verify           Verify data integrity');
+    console.log('  --all              Run all fixes, seed, and verify\n');
+    console.log('Migrations:');
+    console.log('  --migrate-phase2   Run Phase 2 migration (mobile app tables)');
+    console.log('  --migrate-ai       Run AI tables migration (chat memory, embeddings)\n');
+    console.log('Production Data:');
+    console.log('  --query            Query production DB and display summary');
+    console.log('  --export           Export production data to SQL + JSON');
+    console.log('  --export-all       Export every public table (default target: local)');
+    console.log('  --import-local     Import exported data into local Docker DB');
+    console.log('  --import-dev       Import exported data into dev cloud DB');
+    console.log('  --full             Full migration (export + import local + import dev)\n');
+    console.log('Targets:');
+    console.log('  --target local     Target local database (localhost:5433)');
+    console.log('  --target cloud     Target cloud/production database');
+    console.log('  --target dev-cloud Target dev-testing cloud database\n');
+    console.log('Environment Variables:');
+    console.log('  DB_PASSWORD        Database password (required for cloud)');
+    console.log('  DEV_DB_PASSWORD    Dev database password');
+    console.log('  DB_HOST / DB_PORT  Override connection details\n');
+    console.log('Examples:');
+    console.log('  node scripts/database/db-tool.cjs --target local --fix');
+    console.log('  node scripts/database/db-tool.cjs --target cloud --all');
+    console.log('  node scripts/database/db-tool.cjs --migrate-phase2');
+    console.log('  node scripts/database/db-tool.cjs --migrate-ai --target dev-cloud');
+    console.log('  $env:DB_PASSWORD="pwd"; node scripts/database/db-tool.cjs --export');
+    console.log('  node scripts/database/db-tool.cjs --target local --export-all');
+    console.log('  $env:DB_PASSWORD="pwd"; node scripts/database/db-tool.cjs --full');
+}
 
-    // Show help
-    if (args.size === 0 || args.has('--help') || args.has('-h')) {
-        console.log('Usage: node scripts/database/db-tool.cjs [options]\n');
-        console.log('Schema & Data Operations:');
-        console.log('  --fix              Fix missing columns in database tables');
-        console.log('  --fix-passwords    Update all password hashes');
-        console.log('  --fix-profiles     Fix doctor/patient profile tables');
-        console.log('  --seed             Seed database with demo data');
-        console.log('  --cleanup-test       Remove E2E test data then re-seed baseline demo');
-        console.log('  --cleanup-test-only  Remove E2E test data only (no re-seed)');
-        console.log('  --verify           Verify data integrity');
-        console.log('  --all              Run all fixes, seed, and verify\n');
-        console.log('Migrations:');
-        console.log('  --migrate-phase2   Run Phase 2 migration (mobile app tables)');
-        console.log('  --migrate-ai       Run AI tables migration (chat memory, embeddings)\n');
-        console.log('Production Data:');
-        console.log('  --query            Query production DB and display summary');
-        console.log('  --export           Export production data to SQL + JSON');
-        console.log('  --export-all       Export every public table (default target: local)');
-        console.log('  --import-local     Import exported data into local Docker DB');
-        console.log('  --import-dev       Import exported data into dev cloud DB');
-        console.log('  --full             Full migration (export + import local + import dev)\n');
-        console.log('Targets:');
-        console.log('  --target local     Target local database (localhost:5433)');
-        console.log('  --target cloud     Target cloud/production database');
-        console.log('  --target dev-cloud Target dev-testing cloud database\n');
-        console.log('Environment Variables:');
-        console.log('  DB_PASSWORD        Database password (required for cloud)');
-        console.log('  DEV_DB_PASSWORD    Dev database password');
-        console.log('  DB_HOST / DB_PORT  Override connection details\n');
-        console.log('Examples:');
-        console.log('  node scripts/database/db-tool.cjs --target local --fix');
-        console.log('  node scripts/database/db-tool.cjs --target cloud --all');
-        console.log('  node scripts/database/db-tool.cjs --migrate-phase2');
-        console.log('  node scripts/database/db-tool.cjs --migrate-ai --target dev-cloud');
-        console.log('  $env:DB_PASSWORD="pwd"; node scripts/database/db-tool.cjs --export');
-        console.log('  node scripts/database/db-tool.cjs --target local --export-all');
-        console.log('  $env:DB_PASSWORD="pwd"; node scripts/database/db-tool.cjs --full');
-        return;
+function hasSchemaCommand() {
+    return args.has('--fix') || args.has('--all') || args.has('--verify')
+        || args.has('--migrate-phase2') || args.has('--migrate-ai');
+}
+
+function hasProductionOnlyCommand() {
+    return args.has('--export') || args.has('--full')
+        || args.has('--import-local') || args.has('--import-dev');
+}
+
+async function runProductionWorkflow() {
+    if (args.has('--query')) {
+        await queryProdData();
+        return 'done';
     }
-
-    // Handle production data commands (use their own pool)
-    if (args.has('--query')) { await queryProdData(); return; }
 
     if (args.has('--export-all')) {
         await exportAllTables(TARGET);
         console.log('\n🎉 Done!\n');
-        return;
+        return 'done';
     }
 
     let exportedData = null;
@@ -1094,78 +1198,102 @@ async function main() {
         await importToTarget('dev-cloud', exportedData);
     }
 
-    if (args.has('--export') || args.has('--full') || args.has('--import-local') || args.has('--import-dev')) {
-        if (!args.has('--fix') && !args.has('--all') && !args.has('--verify') && !args.has('--migrate-phase2') && !args.has('--migrate-ai')) {
-            console.log('\n🎉 Done!\n');
-            return;
-        }
+    if (hasProductionOnlyCommand() && !hasSchemaCommand()) {
+        console.log('\n🎉 Done!\n');
+        return 'done';
     }
 
-    // Handle schema/migration commands (use target pool)
+    return 'continue';
+}
+
+async function runCleanupTestData(client) {
+    console.log('\n🧹 CLEANING PLAYWRIGHT / E2E TEST DATA\n');
+    const sqlPath = path.join(__dirname, 'cleanup-test-data.sql');
+    const sql = fs.readFileSync(sqlPath, 'utf8');
+    await client.query(sql);
+    console.log('   ✅ cleanup-test-data.sql applied');
+}
+
+async function runSeedWorkflow(client, runAll) {
+    const shouldSeed =
+        !args.has('--cleanup-test-only') &&
+        (runAll || args.has('--seed') || args.has('--cleanup-test'));
+
+    if (shouldSeed) {
+        console.log('\n🌱 SEEDING DATABASE\n');
+        await seedDatabase(client);
+    }
+
+    if (args.has('--seed-sso') || args.has('--cleanup-test')) {
+        const ssoPath = path.join(__dirname, 'seed-sso-test-users.sql');
+        if (fs.existsSync(ssoPath)) {
+            console.log('\n🔐 SEEDING SSO TEST USERS (Group N)\n');
+            await client.query(fs.readFileSync(ssoPath, 'utf8'));
+            console.log('   ✅ seed-sso-test-users.sql applied');
+        }
+    }
+}
+
+async function runSchemaWorkflow(client) {
+    const runAll = args.has('--all');
+
+    if (runAll || args.has('--fix') || args.has('--fix-schema')) {
+        console.log('\n🔧 FIXING DATABASE SCHEMA\n');
+        await fixUsersSchema(client);
+        await fixSessionsSchema(client);
+        await fixAppointmentsSchema(client);
+        await createMissingTables(client);
+        await updateUserData(client);
+    }
+
+    if (runAll || args.has('--fix-profiles')) {
+        console.log('\n🔧 FIXING PROFILE TABLES\n');
+        await fixDoctorProfilesSchema(client);
+    }
+
+    if (runAll || args.has('--fix-passwords')) {
+        console.log('\n🔧 FIXING PASSWORDS\n');
+        await fixPasswords(client);
+    }
+
+    if (args.has('--cleanup-test') || args.has('--cleanup-test-only')) {
+        await runCleanupTestData(client);
+    }
+
+    await runSeedWorkflow(client, runAll);
+
+    if (args.has('--migrate-phase2')) {
+        await migratePhase2(client);
+    }
+
+    if (args.has('--migrate-ai')) {
+        await migrateAI(client);
+    }
+
+    if (runAll || args.has('--verify')) {
+        console.log('\n🔍 VERIFYING DATA\n');
+        await verifyData(client);
+    }
+}
+
+async function main() {
+    console.log('\n╔══════════════════════════════════════════════════════════╗');
+    console.log('║   IZARA DATABASE TOOL v3.0.0 (Unified)                   ║');
+    console.log('╚══════════════════════════════════════════════════════════╝\n');
+
+    if (args.size === 0 || args.has('--help') || args.has('-h')) {
+        printHelp();
+        return;
+    }
+
+    const productionResult = await runProductionWorkflow();
+    if (productionResult === 'done') return;
+
     const pool = createPool();
     const client = await pool.connect();
 
     try {
-        const runAll = args.has('--all');
-
-        if (runAll || args.has('--fix') || args.has('--fix-schema')) {
-            console.log('\n🔧 FIXING DATABASE SCHEMA\n');
-            await fixUsersSchema(client);
-            await fixSessionsSchema(client);
-            await fixAppointmentsSchema(client);
-            await createMissingTables(client);
-            await updateUserData(client);
-        }
-
-        if (runAll || args.has('--fix-profiles')) {
-            console.log('\n🔧 FIXING PROFILE TABLES\n');
-            await fixDoctorProfilesSchema(client);
-        }
-
-        if (runAll || args.has('--fix-passwords')) {
-            console.log('\n🔧 FIXING PASSWORDS\n');
-            await fixPasswords(client);
-        }
-
-        if (args.has('--cleanup-test') || args.has('--cleanup-test-only')) {
-            console.log('\n🧹 CLEANING PLAYWRIGHT / E2E TEST DATA\n');
-            const sqlPath = path.join(__dirname, 'cleanup-test-data.sql');
-            const sql = fs.readFileSync(sqlPath, 'utf8');
-            await client.query(sql);
-            console.log('   ✅ cleanup-test-data.sql applied');
-        }
-
-        const shouldSeed =
-            !args.has('--cleanup-test-only') &&
-            (runAll || args.has('--seed') || args.has('--cleanup-test'));
-
-        if (shouldSeed) {
-            console.log('\n🌱 SEEDING DATABASE\n');
-            await seedDatabase(client);
-        }
-
-        if (args.has('--seed-sso') || args.has('--cleanup-test')) {
-            const ssoPath = path.join(__dirname, 'seed-sso-test-users.sql');
-            if (fs.existsSync(ssoPath)) {
-                console.log('\n🔐 SEEDING SSO TEST USERS (Group N)\n');
-                await client.query(fs.readFileSync(ssoPath, 'utf8'));
-                console.log('   ✅ seed-sso-test-users.sql applied');
-            }
-        }
-
-        if (args.has('--migrate-phase2')) {
-            await migratePhase2(client);
-        }
-
-        if (args.has('--migrate-ai')) {
-            await migrateAI(client);
-        }
-
-        if (runAll || args.has('--verify')) {
-            console.log('\n🔍 VERIFYING DATA\n');
-            await verifyData(client);
-        }
-
+        await runSchemaWorkflow(client);
         console.log('\n✅ Database tool completed successfully!\n');
     } catch (err) {
         console.error('\n❌ Error:', err.message);

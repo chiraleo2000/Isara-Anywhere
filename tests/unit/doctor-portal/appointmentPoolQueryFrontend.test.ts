@@ -4,12 +4,12 @@
 import { describe, it, expect } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
-import { splitQueueSections, ACCEPTED_VISIBILITY_DAYS } from '../../../Isara-doctor-portal/frontend/utils/appointmentPoolQuery';
+import { splitQueueSections, ACCEPTED_VISIBILITY_DAYS } from '../../../../issara-doctor/frontend/utils/appointmentPoolQuery';
 
 describe('appointmentPoolQuery — frontend module (no backend import)', () => {
   it('APQ-FE-01 — exports splitQueueSections from frontend utils only', () => {
     const src = fs.readFileSync(
-      path.join(__dirname, '../../../Isara-doctor-portal/frontend/utils/appointmentPoolQuery.ts'),
+      path.join(__dirname, '../../../issara-doctor/frontend/utils/appointmentPoolQuery.ts'),
       'utf8',
     );
     expect(src).not.toMatch(/backend\/appointmentPoolQuery/);

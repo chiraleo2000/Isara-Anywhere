@@ -118,7 +118,7 @@ This document details the full health record workflow for Izara Telemedicine, in
 
 ### 2.1 PostgreSQL Database Tables
 
-**IMPORTANT:** All data is stored in PostgreSQL database `izara_phase1`. NO GCS bucket storage is used.
+**IMPORTANT:** All interactive clinical data is stored in PostgreSQL (`izara_phase1`). The unified **`patient_documents`** registry holds delivered files. Legacy GCS references in older diagrams are deprecated — use `DocumentDeliveryService` and `Processes/Clinical_Document_Delivery_Workflows.md`.
 
 | Table | Purpose | Key Fields |
 | -------- | --------- | ------- |
@@ -727,10 +727,10 @@ Both portals now use a shared type definition for PHR data to ensure consistency
 ### File Locations
 
 
-- Patient Portal: `src/types/sharedPHRTypes.ts`
+- Patient Portal: `frontend/types/sharedPHRTypes.ts`
 
 
-- Doctor Portal: `src/types/sharedPHRTypes.ts`
+- Doctor Portal: `frontend/types/sharedPHRTypes.ts`
 
 
 #### Key Types
@@ -1042,7 +1042,7 @@ node scripts/lifestyleAndEMRSeleniumTests.cjs --headless
 | Edit Lifestyle | Patient | PHRPage.tsx | Edit diet, exercise, smoking, alcohol, etc. | phr.json lifestyle updated |
 | Add Medication | Patient | PHRPage.tsx | Add medication with dosage | phr.json medications updated |
 | Add Allergy | Patient | PHRPage.tsx | Add allergy with severity | phr.json allergies updated |
-| View PHR | Doctor | PatientRecordViewer.tsx | View patient's self-entered data + lifestyle | Read from GCS |
+| View PHR | Doctor | PatientRecordViewer.tsx | View patient's self-entered data + lifestyle | Read from PostgreSQL `phr` / `vital_signs` |
 | Complete EMR | Doctor | CompleteEMREditor.tsx | Write/sign EMR (Thai OPD Card format) | appointments.json, health-logs.json |
 | **Prescribe Medication** | Doctor | CompletePrescribing.tsx | Add medications with dosage/instructions | prescriptions.json, **health-logs.json** |
 | Enter Lab Results | Doctor | CompleteLabOrders.tsx | Enter lab results for appointment | lab-results.json, EMR updated |

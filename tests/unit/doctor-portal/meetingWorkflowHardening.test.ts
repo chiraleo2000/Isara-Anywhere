@@ -10,11 +10,11 @@ import {
   prepareLayoutThenMount,
   resolveMountJwt,
   loadJitsiExternalApiScript,
-} from '../../../Isara-doctor-portal/frontend/utils/jitsiMeetingConfig.ts';
+} from '../../../../issara-doctor/frontend/utils/jitsiMeetingConfig.ts';
 import {
   buildTelehealthMeetingUrls,
   generateIzaraRoomName as serverGenerateIzaraRoomName,
-} from '../../../Isara-doctor-portal/backend/jitsiMeetingLinks.cjs';
+} from '../../../../issara-doctor/backend/jitsiMeetingLinks.cjs';
 
 describe('meetingWorkflowHardening — Jitsi mount safety (JWT removed)', () => {
   it('MWH01 — resolveMountJwt always undefined on public meet.jit.si', () => {
@@ -78,19 +78,20 @@ describe('meetingWorkflowHardening — room URL parity across portals', () => {
     expect(server).toMatch(/^izara-abc123def456-/);
   });
 
-  it('MWH07 — confirm URLs share one room across doctor, patient, guest', () => {
+  it('MWH07 — confirm URLs share portal paths when ids provided', () => {
     const room = 'izara-fixed-room-test';
     const urls = buildTelehealthMeetingUrls('apt-workflow-1', {
       roomName: room,
       patientName: 'Patient Demo',
       doctorName: 'Dr. Demo',
+      patientId: 'pat-1',
+      doctorId: 'doc-1',
     });
     expect(urls.roomName).toBe(room);
-    expect(urls.doctorMeetingUrl).toContain(`/${room}`);
-    expect(urls.patientMeetingUrl).toContain(`/${room}`);
-    expect(urls.guestMeetingUrl).toContain(`/${room}`);
-    expect(urls.patientMeetingUrl).toContain('prejoinPageEnabled=false');
-    expect(urls.patientMeetingUrl).toContain('requireDisplayName=false');
+    expect(urls.patientMeetingUrl).toContain('/patient/pat-1/meeting/apt-workflow-1');
+    expect(urls.doctorMeetingUrl).toContain('/doctor/doc-1/meeting/apt-workflow-1');
+    expect(urls.jitsiPatientMeetingUrl).toContain(`/${room}`);
+    expect(urls.jitsiDoctorMeetingUrl).toContain(`/${room}`);
   });
 
   it('MWH08 — doctor join must not embed JWT in External API opts', () => {
@@ -103,7 +104,7 @@ describe('meetingWorkflowHardening — room URL parity across portals', () => {
     const fs = await import('node:fs');
     const path = await import('node:path');
     const src = fs.readFileSync(
-      path.join(__dirname, '../../../Isara-doctor-portal/frontend/pages/meetings/MeetingRoom.tsx'),
+      path.join(__dirname, '../../../issara-doctor/frontend/pages/meetings/MeetingRoom.tsx'),
       'utf8',
     );
     expect(src).toMatch(/notifyHostPresent/);

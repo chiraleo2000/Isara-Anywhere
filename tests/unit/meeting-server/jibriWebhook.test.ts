@@ -2,7 +2,7 @@
  * @process Processes/VIDEO_MEETING_JITSI_GEMINI.md — Jibri webhook contract (root /tests)
  */
 import { describe, it, expect } from 'vitest';
-import { validateJibriWebhookRequest } from '../../../Izara-jitsi-server/backend/jibriWebhook.js';
+import { validateJibriWebhookRequest } from '../../../../issara-jitsi/backend/jibriWebhook.js';
 
 describe('jibriWebhook — validation contract', () => {
   const secret = 'unit-test-jibri-secret';
@@ -30,6 +30,6 @@ describe('jibriWebhook — validation contract', () => {
       { expectedSecret: secret, providedSecret: secret },
     );
     expect(r.ok).toBe(true);
-    expect(r.status).toBe(200);
+    expect(r.status).toBe(202);
   });
 });

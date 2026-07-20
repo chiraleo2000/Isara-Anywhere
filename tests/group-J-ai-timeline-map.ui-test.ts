@@ -15,12 +15,20 @@
  */
 import {
   test, expect, assertFullHealth, snap,
-  navPatient,
+  navPatient, ensurePatientPortalAuthenticated,
 } from './helpers/multi-portal';
 import { assertAiMountOnlyWhenSkipped } from './helpers/ai-gate-fixture';
 
+const IS_CLOUD = process.env.TEST_ENV === 'cloud';
+
 test.describe('Group J — AI Doctor, Timeline, Map & Find Doctors', () => {
   test.describe.configure({ mode: 'serial' });
+
+  test.beforeEach(async ({ portals }) => {
+    if (IS_CLOUD) {
+      await ensurePatientPortalAuthenticated(portals.patient.page, 'J-patient-auth');
+    }
+  });
 
   /* ═════════════════════════════════════════════════════════════════
      J1 — Patient: AI Doctor → type symptom → submit → read response
@@ -33,8 +41,8 @@ test.describe('Group J — AI Doctor, Timeline, Map & Find Doctors', () => {
       await navPatient(patient.page, '/ai-doctor', 'J01');
       await assertFullHealth(patient.page, 'J01');
       const skipLive = await assertAiMountOnlyWhenSkipped(patient.page, {
-        selectors: ['textarea', 'input[type="text"]'],
-        bodyPattern: /AI|Doctor|หมอ|chat|ถาม|symptom|อาการ/i,
+        selectors: ['input[type="text"]', 'textarea', '[role="textbox"]'],
+        bodyPattern: /AI|Doctor|หมอ|chat|ถาม|symptom|อาการ|Health Assistant/i,
         label: 'J1 AI Doctor',
       });
       if (skipLive) {
@@ -140,6 +148,24 @@ test.describe('Group J — AI Doctor, Timeline, Map & Find Doctors', () => {
         await patient.page.waitForTimeout(1_000);
       }
 
+      // Clinical event type filters (shared chart: imaging / meeting / document)
+      const clinicalFilters = [
+        /Imaging|ภาพวินิจฉัย/i,
+        /Meeting|การประชุม/i,
+        /Document|เอกสาร/i,
+        /Lab|แล็บ|ผลตรวจ/i,
+        /All|ทั้งหมด/i,
+      ];
+      let clinicalClicks = 0;
+      for (const pattern of clinicalFilters) {
+        const btn = patient.page.locator('button, [role="tab"]').filter({ hasText: pattern }).first();
+        if (await btn.isVisible({ timeout: 2_000 }).catch(() => false)) {
+          await btn.click();
+          await patient.page.waitForTimeout(500);
+          clinicalClicks++;
+        }
+      }
+
       // Try filter buttons
       const filterBtns = patient.page.locator('button, [role="tab"]').filter({
         hasText: /All|ทั้งหมด|Week|สัปดาห์|Month|เดือน|Year|ปี|Filter|กรอง/i,
@@ -150,7 +176,7 @@ test.describe('Group J — AI Doctor, Timeline, Map & Find Doctors', () => {
         await patient.page.waitForTimeout(1_000);
       }
       await snap(patient.page, 'J06-timeline-filtered', 'group-J');
-      console.log(`  ✅ J06: Timeline filters — ${filterCount} filter buttons`);
+      console.log(`  ✅ J06: Timeline filters — ${filterCount} filter buttons, ${clinicalClicks} clinical`);
     });
 
     await test.step('J07 — Scroll timeline content', async () => {

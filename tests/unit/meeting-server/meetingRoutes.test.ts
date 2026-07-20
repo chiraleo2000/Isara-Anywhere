@@ -2,7 +2,7 @@
  * ═══════════════════════════════════════════════════════════════════════
  * MEETING SERVER — Meeting Routes Unit Tests
  * ═══════════════════════════════════════════════════════════════════════
- * Tests: Izara-jitsi-server/backend/index.js — routes, config, auth
+ * Tests: issara-jitsi/backend/index.js — routes, config, auth
  */
 import { describe, it, expect } from 'vitest';
 import crypto from 'node:crypto';
@@ -127,7 +127,7 @@ describe('Meeting Server — Routes & Config', () => {
     });
 
     it('B03 — allows Cloud Run origins', () => {
-      expect(isOriginAllowed('https://isara-patient-portal-dev.run.app', false)).toBe(true);
+      expect(isOriginAllowed('https://issara-patient-dev.run.app', false)).toBe(true);
     });
 
     it('B04 — rejects unknown origin in production', () => {

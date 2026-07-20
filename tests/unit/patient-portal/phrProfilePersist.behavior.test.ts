@@ -4,11 +4,11 @@ import path from 'node:path';
 
 const profilePagePath = path.resolve(
   __dirname,
-  '../../../Isara-patient-portal/frontend/pages/ProfilePage.tsx',
+  '../../../issara-patient/frontend/pages/ProfilePage.tsx',
 );
 const phrRoutePath = path.resolve(
   __dirname,
-  '../../../Isara-patient-portal/backend/routes/phr.ts',
+  '../../../issara-patient/backend/routes/phr.ts',
 );
 
 describe('PHR profile persist (P6)', () => {

@@ -4,7 +4,7 @@ import path from 'node:path';
 
 const mapPagePath = path.resolve(
   __dirname,
-  '../../../Isara-patient-portal/frontend/pages/MapPage.tsx',
+  '../../../issara-patient/frontend/pages/MapPage.tsx',
 );
 
 describe('Map markers regression guard', () => {

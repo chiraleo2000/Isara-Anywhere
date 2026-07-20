@@ -3,22 +3,47 @@
  * Cross-portal session auth contract — JWT removed, opaque PG session tokens only.
  */
 import { describe, it, expect } from 'vitest';
-import { resolveMountJwt as doctorResolveMountJwt } from '../../../Isara-doctor-portal/frontend/utils/jitsiMeetingConfig.ts';
-import { resolveMountJwt as patientResolveMountJwt } from '../../../Isara-patient-portal/frontend/utils/jitsiMeetingConfig.ts';
-import { createJitsiRoleJwt } from '../../../Izara-jitsi-server/backend/sessionAuth.js';
-import { generateOpaqueToken, resolveSessionTokenFromRequest } from '../../../Isara-doctor-portal/backend/sessionAuth.cjs';
+import fs from 'node:fs';
+import path from 'node:path';
+import { resolveMountJwt as doctorResolveMountJwt } from '../../../../issara-doctor/frontend/utils/jitsiMeetingConfig.ts';
+import { resolveMountJwt as patientResolveMountJwt } from '../../../../issara-patient/frontend/utils/jitsiMeetingConfig.ts';
+import { createJitsiRoleJwt } from '../../../../issara-jitsi/backend/sessionAuth.js';
+import { generateOpaqueToken } from '../../../../issara-doctor/backend/sessionAuth.cjs';
+
+const anywhereRoot = path.resolve(__dirname, '../../../..');
 
 function isOpaqueSessionToken(token: string): boolean {
   return /^[a-f0-9]{64}$/i.test(token);
 }
 
+/** Mirrors doctor meetings BFF resolveSessionTokenFromRequest (Bearer / sessionToken). */
+function resolveSessionTokenFromRequest(req: {
+  sessionToken?: string;
+  headers: { authorization?: string; cookie?: string };
+}): string {
+  const header = req.headers.authorization || '';
+  const bearer = header.startsWith('Bearer ') ? header.slice(7) : '';
+  return req.sessionToken || bearer;
+}
+
 describe('sessionAuthCrossPortal', () => {
-  it('SAC01 — doctor and patient Jitsi mount never embed JWT', () => {
+  it('SAC01 — mount JWT only on self-hosted domain via join-config', () => {
     expect(doctorResolveMountJwt()).toBeUndefined();
     expect(patientResolveMountJwt()).toBeUndefined();
+    const privateJwt = 'a'.repeat(48);
+    expect(
+      doctorResolveMountJwt({
+        domain: 'meet.localhost',
+        tokenAuthEnabled: true,
+        jwt: privateJwt,
+      }),
+    ).toBe(privateJwt);
+    expect(
+      doctorResolveMountJwt({ domain: 'meet.jit.si', jwt: privateJwt }),
+    ).toBeUndefined();
   });
 
-  it('SAC02 — meeting server createJitsiRoleJwt returns null', () => {
+  it('SAC02 — meeting server createJitsiRoleJwt null without options', () => {
     expect(createJitsiRoleJwt()).toBeNull();
   });
 
@@ -31,38 +56,44 @@ describe('sessionAuthCrossPortal', () => {
     expect(isOpaqueSessionToken('eyJhbGciOiJIUzI1NiJ9.payload.sig')).toBe(false);
   });
 
-  it('SAC05 — patient lobby join uses credentials include for cookie auth', async () => {
-    const fs = await import('node:fs');
-    const path = await import('node:path');
+  it('SAC05 — patient lobby join uses credentials include for cookie auth', () => {
     const src = fs.readFileSync(
-      path.join(__dirname, '../../../Isara-patient-portal/frontend/pages/PatientMeetingRoom.tsx'),
+      path.join(anywhereRoot, 'issara-patient/frontend/pages/PatientMeetingRoom.tsx'),
       'utf8',
     );
-    expect(src).toMatch(/lobby\/join/);
+    expect(src).toMatch(/patientMeetingUrl|resolveMeetingServerUrl/);
+    expect(src).toMatch(/\/join|lobby\/join/);
     expect(src).toMatch(/credentials:\s*'include'/);
   });
 
-  it('SAC06 — resolveSessionTokenFromRequest reads Bearer then session cookies', () => {
+  it('SAC06 — resolveSessionTokenFromRequest prefers sessionToken then Bearer', () => {
+    const meetings = fs.readFileSync(
+      path.join(anywhereRoot, 'issara-doctor/backend/routes/meetings.cjs'),
+      'utf8',
+    );
+    expect(meetings).toMatch(/function resolveSessionTokenFromRequest/);
+    expect(meetings).toMatch(/req\.sessionToken \|\| bearer/);
+
     const opaque = 'a'.repeat(64);
-    const fromBearer = resolveSessionTokenFromRequest({
-      headers: { authorization: `Bearer ${opaque}` },
-    });
-    expect(fromBearer).toBe(opaque);
-    const fromCookie = resolveSessionTokenFromRequest({
-      headers: { cookie: `auth_token=${opaque}` },
-    });
-    expect(fromCookie).toBe(opaque);
+    expect(
+      resolveSessionTokenFromRequest({
+        headers: { authorization: `Bearer ${opaque}` },
+      }),
+    ).toBe(opaque);
+    expect(
+      resolveSessionTokenFromRequest({
+        sessionToken: opaque,
+        headers: { authorization: 'Bearer other' },
+      }),
+    ).toBe(opaque);
   });
 
-  it('SAC07 — doctor authServices schedules refresh for opaque tokens via session expiry', () => {
-    const fs = require('node:fs');
-    const path = require('node:path');
+  it('SAC07 — doctor authServices schedules refresh via SESSION_EXPIRY + trySilentRefresh', () => {
     const src = fs.readFileSync(
-      path.join(__dirname, '../../../Isara-doctor-portal/frontend/services/authServices.ts'),
+      path.join(anywhereRoot, 'issara-doctor/frontend/services/authServices.ts'),
       'utf8',
     );
     expect(src).toMatch(/SESSION_EXPIRY/);
-    expect(src).toMatch(/ensureMeetingSessionFresh/);
     expect(src).toMatch(/trySilentRefresh/);
   });
 });

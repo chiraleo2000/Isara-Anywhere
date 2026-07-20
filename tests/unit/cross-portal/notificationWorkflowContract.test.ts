@@ -9,7 +9,7 @@ const root = path.resolve(__dirname, '../../..');
 
 describe('Notification workflow contract (NTF)', () => {
   it('NTF-01 — notification service module', () => {
-    expect(fs.existsSync(path.join(root, 'Isara-patient-portal/backend/services/notificationService.ts'))).toBe(true);
+    expect(fs.existsSync(path.join(root, 'issara-patient/backend/services/notificationService.ts'))).toBe(true);
   });
 
   it('NTF-02 — mark all read behavior test', () => {
@@ -17,17 +17,17 @@ describe('Notification workflow contract (NTF)', () => {
   });
 
   it('NTF-03 — notifications API route', () => {
-    const src = fs.readFileSync(path.join(root, 'Isara-patient-portal/backend/routes/notifications.ts'), 'utf8');
+    const src = fs.readFileSync(path.join(root, 'issara-patient/backend/routes/notifications.ts'), 'utf8');
     expect(src).toMatch(/router\.(get|post|put|patch)/);
   });
 
   it('NTF-04 — doctor notification bell component', () => {
-    const bell = path.join(root, 'Isara-doctor-portal/frontend/components/notifications/DoctorNotificationBell.tsx');
+    const bell = path.join(root, 'issara-doctor/frontend/components/notifications/DoctorNotificationBell.tsx');
     expect(fs.existsSync(bell)).toBe(true);
   });
 
   it('NTF-05 — queue socket toast on NOTIFY', () => {
-    expect(fs.readFileSync(path.join(root, 'Isara-doctor-portal/frontend/pages/meetings/HealthMeeting.tsx'), 'utf8'))
+    expect(fs.readFileSync(path.join(root, 'issara-doctor/frontend/pages/meetings/HealthMeeting.tsx'), 'utf8'))
       .toMatch(/socket|toast|notification/i);
   });
 

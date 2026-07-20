@@ -25,6 +25,12 @@
  */
 import { defineConfig } from 'vitest/config';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+/** tests/unit → New-Isara-Anywhere (real sibling portals; avoid broken workspace junctions) */
+const unitDir = path.dirname(fileURLToPath(import.meta.url));
+const anywhereRoot = path.resolve(unitDir, '../../..');
+const cov = (...parts: string[]) => path.join(anywhereRoot, ...parts).replace(/\\/g, '/');
 
 // ── File lists per logical group ────────────────────────────────────────
 const GROUP_AUTH = [
@@ -39,6 +45,9 @@ const GROUP_AUTH = [
   'patient-portal/auth-context.test.ts',
   'patient-portal/registerRoute.test.ts',
   'patient-portal/resetPasswordRoute.test.ts',
+  'cross-portal/authLockoutContract.test.ts',
+  'cross-portal/crossRoleApiDenialContract.test.ts',
+  'cross-portal/googleSsoContract.test.ts',
 ];
 const GROUP_APPOINTMENTS = [
   'doctor-portal/appointmentService.test.ts',
@@ -57,6 +66,9 @@ const GROUP_APPOINTMENTS = [
   'patient-portal/guestMeetingJoin.test.ts',
   'patient-portal/processPagesContract.test.ts',
   'doctor-portal/appointmentPoolManagement.test.ts',
+  'cross-portal/adminCannotConfirmContract.test.ts',
+  'cross-portal/declineToPoolContract.test.ts',
+  'cross-portal/confirmTripleNotifyContract.test.ts',
 ];
 const GROUP_CLINICAL = [
   'doctor-portal/meetingResultsValidation.test.ts',
@@ -68,19 +80,40 @@ const GROUP_CLINICAL = [
   'doctor-portal/healthRecordsEmrWorkflow.test.ts',
   'doctor-portal/prescriptions.test.ts',
   'doctor-portal/labOrders.test.ts',
+  'doctor-portal/labOrderApi.test.ts',
   'doctor-portal/labTestDatabase.test.ts',
   'doctor-portal/drugDatabase.test.ts',
+  'doctor-portal/clinicalDataService.test.ts',
+  'doctor-portal/doctorDataService.test.ts',
   'patient-portal/phrRoute.test.ts',
   'patient-portal/sharedPHRTypes.test.ts',
   'patient-portal/livingWillWorkflow.test.ts',
   'patient-portal/pdpaRoute.test.ts',
   'patient-portal/pdpaWorkflow.test.ts',
   'patient-portal/pdpaAudit.integration.test.ts',
+  'patient-portal/phrCrudContract.test.ts',
+  'cross-portal/emrSignDeliveryContract.test.ts',
+  'cross-portal/imagingRxLabDeliveryContract.test.ts',
+  'cross-portal/pdpaG15G16Contract.test.ts',
+  'cross-portal/livingWillShareContract.test.ts',
+  'cross-portal/meetingPhrShareRedoContract.test.ts',
+  'cross-portal/byteShareChain.integration.test.ts',
+  'cross-portal/meetingPhrShareRuntime.integration.test.ts',
+  'cross-portal/phrReadyForPatientContract.test.ts',
+  'cross-portal/pageWorkflowCoverageContract.test.ts',
 ];
 const GROUP_CONTENT = [
   'doctor-portal/medicalContentWorkflow.test.ts',
   'doctor-portal/medicalConsultants.test.ts',
+  'doctor-portal/contentFormatters.test.ts',
+  'doctor-portal/clinicalResources.test.ts',
   'patient-portal/contentRoute.test.ts',
+  'patient-portal/contentAccessPolicy.test.ts',
+  'patient-portal/contentImageRenderer.test.ts',
+  'cross-portal/contentVisibilityContract.test.ts',
+  'cross-portal/contentWorkflowContract.test.ts',
+  'cross-portal/contentApprovalStateMachine.test.ts',
+  'cross-portal/adminNavBadges.test.ts',
 ];
 const GROUP_MEETING = [
   'meeting/**',
@@ -95,22 +128,31 @@ const GROUP_MEETING = [
   'meeting-server/lobbyFlow.test.ts',
   'meeting-server/lobbyKeyResolve.test.ts',
   'meeting-server/transcriptionFlow.test.ts',
+  'meeting-server/transcriptHostControlsContract.test.ts',
+  'meeting-server/guestAnonymousDenyContract.test.ts',
   'meeting-server/joinConfigAcceptance.test.ts',
   'meeting-server/meetingCreateAcceptance.test.ts',
   'meeting-server/hostReadyGate.test.ts',
   'meeting-server/meetingRuntimeApi.test.ts',
   'meeting-server/jibriWebhook.test.ts',
   'meeting-server/jitsiRoleJwt.test.ts',
+  'meeting-server/jitsiRecordingModules.test.ts',
+  'meeting-server/jitsiSocketSecurity.test.ts',
   'doctor-portal/meetingJoinContract.test.ts',
   'doctor-portal/meetingWorkflowHardening.test.ts',
   'doctor-portal/meetingTimeService.test.ts',
   'patient-portal/videoMeetingRoute.test.ts',
   'cross-portal/jitsiMeetingConfig.test.ts',
   'cross-portal/defectIsaraPdfMeetingQueue.test.ts',
+  'cross-portal/mitlValidateContract.test.ts',
+  'cross-portal/adminLobbyModeratorDenyContract.test.ts',
+  'cross-portal/meetingPhrShareRedoContract.test.ts',
+  'cross-portal/meetingGuestShareUiContract.test.ts',
   'patient-portal/jitsiDisplayName.behavior.test.ts',
 ];
 const GROUP_AI = [
   'doctor-portal/geminiService.test.ts',
+  'doctor-portal/aiClinicalCopilot.test.ts',
   'patient-portal/aiRoute.test.ts',
   'patient-portal/aiTriage.test.ts',
   'patient-portal/aiNewChat.behavior.test.ts',
@@ -122,6 +164,12 @@ const GROUP_API = [
   'doctor-portal/postgresDataService.test.ts',
   'doctor-portal/storageServices.test.ts',
   'doctor-portal/gcsApiServer.test.ts',
+  'doctor-portal/smtpEmailService.test.ts',
+  'doctor-portal/emailService.test.ts',
+  'doctor-portal/socketHelpers.test.ts',
+  'doctor-portal/doctorDataService.test.ts',
+  'doctor-portal/clinicalDataService.test.ts',
+  'doctor-portal/labOrderApi.test.ts',
   'patient-portal/api-service.test.ts',
   'patient-portal/services-logic.test.ts',
 ];
@@ -131,15 +179,24 @@ const GROUP_NOTIFICATIONS = [
   'patient-portal/notificationWorkflow.test.ts',
   'patient-portal/notificationRowNormalize.test.ts',
   'patient-portal/notificationMarkAllRead.behavior.test.ts',
+  'cross-portal/notificationDedupContract.test.ts',
+  'cross-portal/confirmTripleNotifyContract.test.ts',
+  'cross-portal/notifySocketRoomMapContract.test.ts',
+  'cross-portal/notificationWorkflowContract.test.ts',
+  'cross-portal/offlineEmrSync.test.ts',
 ];
 const GROUP_SECURITY = [
   'doctor-portal/owaspMiddleware.test.ts',
   'doctor-portal/sanitizeRequestBody.middleware.test.ts',
   'doctor-portal/authLoginResponse.test.ts',
   'doctor-portal/auditLogService.test.ts',
+  'doctor-portal/loadCorsPolicy.test.ts',
+  'doctor-portal/smtpCorsHelpers.test.ts',
   'patient-portal/owasp-middleware.test.ts',
   'security/corsAndRateLimiting.test.ts',
   'security/security-validation.test.ts',
+  'cross-portal/securityScanningContract.test.ts',
+  'config/envForbiddenKeys.test.ts',
 ];
 const GROUP_PATIENT_WORKFLOWS = [
   'patient-portal/dashboardWorkflow.test.ts',
@@ -152,6 +209,7 @@ const GROUP_PATIENT_WORKFLOWS = [
 const GROUP_DATABASE = [
   'database/appointmentTx.integration.test.ts',
   'config/envSchema.test.ts',
+  'config/envForbiddenKeys.test.ts',
   'database/data-validation.test.ts',
   'database/embeddedPg.test.ts',
   'database/schema-validation.test.ts',
@@ -159,10 +217,12 @@ const GROUP_DATABASE = [
 ];
 const GROUP_ADMIN = [
   'doctor-portal/scheduleManagement.test.ts',
+  'doctor-portal/scheduleCalendarMapperContract.test.ts',
   'doctor-portal/patientDetailView.test.ts',
   'doctor-portal/clinicalResources.test.ts',
   'doctor-portal/adminDoctorManagement.test.ts',
   'doctor-portal/adminAppointmentManagement.test.ts',
+  'doctor-portal/doctorProfileCrudContract.test.ts',
 ];
 const GROUP_CROSS_PORTAL = [
   'cross-portal/postMeetingWorkflow.integration.test.ts',
@@ -189,9 +249,30 @@ const GROUP_CROSS_PORTAL = [
   'cross-portal/notificationWorkflowContract.test.ts',
   'cross-portal/livingWillContract.test.ts',
   'cross-portal/doctorEnvAudit.test.ts',
+  'cross-portal/pdpaConsentContract.test.ts',
+  'cross-portal/contentVisibilityContract.test.ts',
+  'cross-portal/errorBoundaryContract.test.ts',
   'cross-portal/appointmentUxContract.test.ts',
   'cross-portal/meetingUxContract.test.ts',
   'cross-portal/phrEmrUxContract.test.ts',
+  'cross-portal/workflowConnectionsContract.test.ts',
+  'cross-portal/securityScanningContract.test.ts',
+  'cross-portal/twoRoundCloudTestingContract.test.ts',
+  'cross-portal/authLockoutContract.test.ts',
+  'cross-portal/crossRoleApiDenialContract.test.ts',
+  'cross-portal/googleSsoContract.test.ts',
+  'cross-portal/adminCannotConfirmContract.test.ts',
+  'cross-portal/declineToPoolContract.test.ts',
+  'cross-portal/confirmTripleNotifyContract.test.ts',
+  'cross-portal/mitlValidateContract.test.ts',
+  'cross-portal/emrSignDeliveryContract.test.ts',
+  'cross-portal/imagingRxLabDeliveryContract.test.ts',
+  'cross-portal/notifySocketRoomMapContract.test.ts',
+  'cross-portal/pdpaG15G16Contract.test.ts',
+  'cross-portal/livingWillShareContract.test.ts',
+  'cross-portal/contentApprovalStateMachine.test.ts',
+  'cross-portal/notificationDedupContract.test.ts',
+  'cross-portal/adminLobbyModeratorDenyContract.test.ts',
   'doctor-portal/emrAiDraft.test.ts',
   'doctor-portal/meetingRoomRoutes.test.ts',
   'doctor-portal/telemedDashboard.test.ts',
@@ -247,12 +328,14 @@ export default defineConfig({
       tempDirectory: './coverage/.tmp',
       clean: false,
       include: [
-        '../../Isara-doctor-portal/backend/**',
-        '../../Isara-doctor-portal/frontend/services/**',
-        '../../Isara-doctor-portal/frontend/utils/**',
-        '../../Isara-patient-portal/backend/**',
-        '../../Isara-patient-portal/frontend/services/**',
-        '../../Izara-jitsi-server/backend/**',
+        `${cov('issara-doctor', 'backend')}/**`,
+        `${cov('issara-doctor', 'frontend', 'services')}/**`,
+        `${cov('issara-doctor', 'frontend', 'utils')}/**`,
+        `${cov('issara-patient', 'backend')}/**`,
+        `${cov('issara-patient', 'frontend', 'lib')}/**`,
+        `${cov('issara-patient', 'frontend', 'utils')}/**`,
+        `${cov('issara-patient', 'frontend', 'hooks')}/**`,
+        `${cov('issara-jitsi', 'backend')}/**`,
       ],
       exclude: ['**/node_modules/**', '**/dist/**', '**/*.test.*', '**/*.spec.*'],
       all: true,
@@ -267,9 +350,10 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      '@doctor': path.resolve(__dirname, '../../Isara-doctor-portal/frontend'),
-      '@patient': path.resolve(__dirname, '../../Isara-patient-portal/frontend'),
-      '@meeting': path.resolve(__dirname, '../../Izara-jitsi-server/backend'),
+      '@doctor': path.resolve(anywhereRoot, 'issara-doctor/frontend'),
+      '@patient': path.resolve(anywhereRoot, 'issara-patient/frontend'),
+      '@meeting': path.resolve(anywhereRoot, 'issara-jitsi/backend'),
+      jsonwebtoken: path.resolve(unitDir, 'node_modules/jsonwebtoken'),
     },
   },
 });

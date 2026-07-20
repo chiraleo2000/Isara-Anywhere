@@ -1,8 +1,10 @@
 #!/usr/bin/env pwsh
 <#
-  Remove Playwright/E2E-generated rows from cloud PostgreSQL.
+  Remove Playwright/E2E-generated rows from GCE VM PostgreSQL
+  (35.240.157.230:5432 / izara_phase1) - NOT Cloud SQL.
   Default: purge only (no re-seed). Pass -Reseed to run baseline demo seed after purge.
-  Reads `.env` for DB_PASSWORD / CLOUD_DB_PASSWORD (read-only).
+  Reads `.env` for DB_PASSWORD / CLOUD_DB_PASSWORD (read-only). Prefer Secret Manager
+  `db-password` exported as CLOUD_DB_PASSWORD before invoking.
 #>
 param(
     [switch]$Reseed
@@ -29,6 +31,16 @@ if (Test-Path $envFile) {
     }
 }
 
+# GCE VM Postgres only. Do not use Cloud SQL.
+if (-not $env:CLOUD_DB_HOST) { $env:CLOUD_DB_HOST = '35.240.157.230' }
+$env:DB_HOST = $env:CLOUD_DB_HOST
+if (-not $env:CLOUD_DB_PORT) { $env:CLOUD_DB_PORT = '5432' }
+$env:DB_PORT = $env:CLOUD_DB_PORT
+if (-not $env:DB_NAME) { $env:DB_NAME = 'izara_phase1' }
+if (-not $env:DB_USER) { $env:DB_USER = 'postgres' }
+# VM Postgres is plain TCP
+$env:DB_SSL = 'false'
+
 if (-not $env:DB_PASSWORD -and $env:CLOUD_DB_PASSWORD) {
     $env:DB_PASSWORD = $env:CLOUD_DB_PASSWORD
 }
@@ -36,16 +48,24 @@ if (-not $env:DB_PASSWORD -and $env:DEV_DB_PASSWORD) {
     $env:DB_PASSWORD = $env:DEV_DB_PASSWORD
 }
 
-# Cloud purge must use CLOUD_DB_PASSWORD even when .env sets local DB_PASSWORD
+# Always prefer Secret Manager db-password for GCE VM (local .env DB_PASSWORD is Docker-only).
+try {
+    $sec = gcloud secrets versions access latest --secret=db-password --project=izara-telemedicine 2>$null
+    if ($LASTEXITCODE -eq 0 -and $sec) {
+        $env:CLOUD_DB_PASSWORD = [string]$sec
+        $env:CLOUD_DB_PASSWORD = $env:CLOUD_DB_PASSWORD.Trim()
+    }
+} catch { }
 if ($env:CLOUD_DB_PASSWORD) {
     $env:DB_PASSWORD = $env:CLOUD_DB_PASSWORD
 }
 
 if (-not $env:DB_PASSWORD) {
-    Write-Error "DB_PASSWORD (or CLOUD_DB_PASSWORD) required in .env"
+    Write-Error "CLOUD_DB_PASSWORD (or DB_PASSWORD) required - use GCE VM secret db-password, not local Docker postgres password"
 }
 
-# Clear local Playwright workflow artifact
+Write-Host "Target: GCE VM PostgreSQL $($env:DB_HOST):$($env:DB_PORT)/$($env:DB_NAME) (not Cloud SQL)" -ForegroundColor Gray
+
 $wf = Join-Path $root "tests\e2e\.workflow-state.json"
 if (Test-Path $wf) {
     Remove-Item $wf -Force
@@ -53,10 +73,10 @@ if (Test-Path $wf) {
 }
 
 if ($Reseed) {
-    Write-Host "=== Cloud test data cleanup + re-seed baseline demo ===" -ForegroundColor Cyan
+    Write-Host "=== GCE VM test data cleanup + re-seed baseline demo ===" -ForegroundColor Cyan
     node scripts/database/db-tool.cjs --target cloud --cleanup-test
 } else {
-    Write-Host "=== Cloud test data cleanup (purge only, no demo re-seed) ===" -ForegroundColor Cyan
+    Write-Host "=== GCE VM test data cleanup (purge only, no demo re-seed) ===" -ForegroundColor Cyan
     node scripts/database/db-tool.cjs --target cloud --cleanup-test-only
 }
 exit $LASTEXITCODE

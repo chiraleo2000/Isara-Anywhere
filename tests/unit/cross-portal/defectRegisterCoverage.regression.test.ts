@@ -12,15 +12,15 @@ const DEFECT_IDS = [
 ];
 
 const SCAN_FILES = [
-  'Isara-doctor-portal/frontend/services/geminiClinicalService.ts',
-  'Isara-doctor-portal/frontend/components/CompleteEMREditor.tsx',
-  'Isara-doctor-portal/frontend/components/CompletePrescribing.tsx',
-  'Isara-doctor-portal/frontend/components/LiveTranscription.tsx',
-  'Isara-doctor-portal/frontend/pages/DoctorDashboard.tsx',
-  'Isara-doctor-portal/frontend/pages/GeminiAIStudio.tsx',
-  'Isara-patient-portal/backend/services/postgresDataService.ts',
-  'Isara-patient-portal/frontend/pages/MapPage.tsx',
-  'Isara-patient-portal/frontend/App.tsx',
+  'issara-doctor/frontend/services/geminiClinicalService.ts',
+  'issara-doctor/frontend/components/CompleteEMREditor.tsx',
+  'issara-doctor/frontend/components/CompletePrescribing.tsx',
+  'issara-doctor/frontend/components/LiveTranscription.tsx',
+  'issara-doctor/frontend/pages/DoctorDashboard.tsx',
+  'issara-doctor/frontend/pages/GeminiAIStudio.tsx',
+  'issara-patient/backend/services/postgresDataService.ts',
+  'issara-patient/frontend/pages/MapPage.tsx',
+  'issara-patient/frontend/App.tsx',
 ];
 
 describe('defect register coverage guard (v1.7.48)', () => {
@@ -42,7 +42,7 @@ describe('defect register coverage guard (v1.7.48)', () => {
       expect(content, rel).not.toMatch(/onKeyPress/);
     }
     const pg = fs.readFileSync(
-      path.join(root, 'Isara-patient-portal/backend/services/postgresDataService.ts'),
+      path.join(root, 'issara-patient/backend/services/postgresDataService.ts'),
       'utf8',
     );
     expect(pg).not.toMatch(/\.substr\(/);
@@ -50,7 +50,7 @@ describe('defect register coverage guard (v1.7.48)', () => {
 
   it('orphan map/MapPage.tsx is removed', () => {
     expect(
-      fs.existsSync(path.join(root, 'Isara-patient-portal/frontend/pages/map/MapPage.tsx')),
+      fs.existsSync(path.join(root, 'issara-patient/frontend/pages/map/MapPage.tsx')),
     ).toBe(false);
   });
 

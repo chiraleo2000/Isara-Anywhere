@@ -50,6 +50,7 @@ flowchart TB
         S2["✍️ Digital Signature"]
         S3["🔒 Record Lock"]
         S4["📧 Patient Notification"]
+        S5["📁 patient_documents<br/>(emr_report + instruction_sheet)"]
     end
 
     %% Flow
@@ -67,7 +68,7 @@ flowchart TB
     O2 --> S1
     O3 --> S1
     O4 --> S1
-    S1 --> S2 --> S3 --> S4
+    S1 --> S2 --> S3 --> S4 --> S5
 
     classDef videoStyle fill:#E0F7FA,stroke:#00ACC1,stroke-width:2px,color:#006064
     classDef aiStyle fill:#FFF8E1,stroke:#FFA000,stroke-width:2px,color:#E65100
@@ -81,4 +82,4 @@ flowchart TB
     class E1,E2,E3,E4,E5 emrStyle
     class O1,O2,O3,O4 orderStyle
     class C1,C2,C3,C4 cdsStyle
-    class S1,S2,S3,S4 signStyle
+    class S1,S2,S3,S4,S5 signStyle

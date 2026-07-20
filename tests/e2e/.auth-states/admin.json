@@ -1,0 +1,38 @@
+{
+  "cookies": [],
+  "origins": [
+    {
+      "origin": "https://izara-doctor-portal-dev-testing-724889190329.asia-southeast1.run.app",
+      "localStorage": [
+        {
+          "name": "token",
+          "value": "3d4d615d6276e3d7c1c96553adee431e995995aed55f8baefe8fb6db85438670"
+        },
+        {
+          "name": "izara_current_user",
+          "value": "{\"id\":\"ADMIN-TEST-001\",\"email\":\"admin.test@izara.com\",\"name\":\"Dr. Admin Kind\",\"displayName\":\"Dr. Admin Kind\",\"role\":\"admin\",\"doctorId\":\"ADMIN-TEST-001\",\"medicalLicenseNumber\":\"TEST-LIC-001\",\"isActive\":true,\"emailVerified\":true,\"isAdmin\":true,\"adminPrivileges\":{\"manageDoctors\":true,\"manageAppointments\":true,\"viewAllRecords\":true,\"manageContent\":true,\"systemSettings\":true},\"preferences\":{\"theme\":\"light\",\"language\":\"th\",\"notifications\":{\"email\":true,\"push\":true,\"sms\":false}}}"
+        },
+        {
+          "name": "izara_session_expiry",
+          "value": "1784278499426"
+        },
+        {
+          "name": "izara_last_activity",
+          "value": "1784271299426"
+        },
+        {
+          "name": "izara_refresh_token",
+          "value": "29d6eba69f23aa239d7881f67f78e6a367a31f7a864d3856ed4cb77f3d3d2ecd7495c252318ee869eef48f988619c889a1adc4e300ccf3a0a03c51c2905896a6"
+        },
+        {
+          "name": "izara_auth_token",
+          "value": "3d4d615d6276e3d7c1c96553adee431e995995aed55f8baefe8fb6db85438670"
+        },
+        {
+          "name": "user",
+          "value": "{\"email\":\"admin.test@izara.com\",\"name\":\"Dr. Admin Kind\",\"id\":\"ADMIN-TEST-001\",\"role\":\"admin\",\"token\":\"3d4d615d6276e3d7c1c96553adee431e995995aed55f8baefe8fb6db85438670\"}"
+        }
+      ]
+    }
+  ]
+}

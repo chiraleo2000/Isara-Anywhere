@@ -4,11 +4,11 @@ import path from 'node:path';
 
 const patientSettingsPath = path.resolve(
   __dirname,
-  '../../../Isara-patient-portal/frontend/contexts/SettingsContext.tsx',
+  '../../../issara-patient/frontend/contexts/SettingsContext.tsx',
 );
 const doctorSettingsPath = path.resolve(
   __dirname,
-  '../../../Isara-doctor-portal/frontend/hooks/useSettings.tsx',
+  '../../../issara-doctor/frontend/hooks/useSettings.tsx',
 );
 
 describe('cross-portal i18n regression guard', () => {

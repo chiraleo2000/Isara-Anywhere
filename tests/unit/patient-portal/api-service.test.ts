@@ -4,7 +4,7 @@
  * ═══════════════════════════════════════════════════════════════════════
  * Tests: API endpoint mapping, query parameter construction,
  *        auth token handling, error response parsing, role switching
- * Source: Isara-patient-portal/frontend/services/postgresService.ts
+ * Source: issara-patient/frontend/services/postgresService.ts
  * ═══════════════════════════════════════════════════════════════════════
  */
 import { describe, it, expect } from 'vitest';

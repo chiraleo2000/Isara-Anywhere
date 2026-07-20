@@ -254,14 +254,14 @@ const E2E_AUTH_USERS = {
   },
   doctor: {
     email: process.env.TEST_DOCTOR_EMAIL || 'doctor.test@izara.com',
-    password: process.env.TEST_DOCTOR_PASSWORD || 'IzaraDoctor@2024',
+    password: process.env.TEST_DOCTOR_PASSWORD || 'IzaraDoctor@2024', // NOSONAR S2068 — E2E fixture default; override via env in CI
     id: 'DOC-TEST-001',
     name: 'Dr. Test Good',
     role: 'doctor',
   },
   admin: {
     email: process.env.TEST_ADMIN_EMAIL || 'admin.test@izara.com',
-    password: process.env.TEST_ADMIN_PASSWORD || 'IzaraAdmin@2024',
+    password: process.env.TEST_ADMIN_PASSWORD || 'IzaraAdmin@2024', // NOSONAR S2068 — E2E fixture default; override via env in CI
     id: 'ADMIN-TEST-001',
     name: 'Dr. Admin Kind',
     role: 'admin',
@@ -280,25 +280,30 @@ function e2ePortalUrls() {
   };
 }
 
+async function tryLoginAtPath(baseUrl, loginPath, creds) {
+  const isCloud = process.env.TEST_ENV === 'cloud';
+  try {
+    const res = await fetch(`${baseUrl}${loginPath}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: creds.email, password: creds.password }),
+      signal: AbortSignal.timeout(isCloud ? 30_000 : 15_000),
+    });
+    if (res.status !== 200) return '';
+    const data = await res.json();
+    return data.token || data.accessToken || data.data?.token || '';
+  } catch {
+    return '';
+  }
+}
+
 async function apiLoginFetch(baseUrl, creds) {
   const attempts = process.env.TEST_ENV === 'cloud' ? 4 : 6;
+  const loginPaths = ['/api/auth/login', '/auth/login'];
   for (let attempt = 0; attempt < attempts; attempt++) {
-    for (const loginPath of ['/api/auth/login', '/auth/login']) {
-      try {
-        const res = await fetch(`${baseUrl}${loginPath}`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: creds.email, password: creds.password }),
-          signal: AbortSignal.timeout(process.env.TEST_ENV === 'cloud' ? 30_000 : 15_000),
-        });
-        if (res.status === 200) {
-          const data = await res.json();
-          const token = data.token || data.accessToken || data.data?.token || '';
-          if (token) return token;
-        }
-      } catch {
-        /* retry */
-      }
+    for (const loginPath of loginPaths) {
+      const token = await tryLoginAtPath(baseUrl, loginPath, creds);
+      if (token) return token;
     }
     if (attempt < attempts - 1) {
       await new Promise((r) => setTimeout(r, 2000 * (attempt + 1)));
@@ -411,8 +416,9 @@ export function resetDatabaseBaseline() {
 
   const seedSql = path.join(repoRoot, 'scripts', 'database', 'seed-dev-data.sql');
   const ssoSeedSql = path.join(repoRoot, 'scripts', 'database', 'seed-sso-test-users.sql');
+  const contentWorkflowSql = path.join(repoRoot, 'scripts', 'database', 'migrations', 'v2.3.1-content-workflow-columns.sql');
 
-  for (const sqlFile of [cleanupSql, seedSql, ssoSeedSql]) {
+  for (const sqlFile of [cleanupSql, seedSql, ssoSeedSql, contentWorkflowSql]) {
 
     const result = spawnSync(
 
@@ -445,6 +451,40 @@ export function resetDatabaseBaseline() {
     console.warn('[e2e-docker] Auth refresh after DB reset failed (exit', refreshResult.status, ')');
   }
 
+}
+
+
+
+/** Restart meeting-server container after heavy unit/socket tests (prevents hung save-recording during headed E2E). */
+export function restartMeetingServerForE2e() {
+  console.log('[e2e-docker] Restarting meeting-server for headed E2E...');
+  const result = spawnSync('docker', ['restart', 'izara-meeting-server'], {
+    cwd: repoRoot,
+    stdio: 'inherit',
+    shell: process.platform === 'win32',
+  });
+  if (result.status !== 0) {
+    console.warn('[e2e-docker] meeting-server restart failed (exit', result.status, ')');
+    return false;
+  }
+  const waitMs = 12_000;
+  console.log(`[e2e-docker] Waiting ${waitMs / 1000}s for meeting-server health...`);
+  const deadline = Date.now() + waitMs;
+  while (Date.now() < deadline) {
+    const probe = spawnSync(process.execPath, [probeScript, 'http://127.0.0.1:3020'], {
+      cwd: repoRoot,
+      stdio: 'pipe',
+      encoding: 'utf8',
+    });
+    if (probe.status === 0) {
+      console.log('[e2e-docker] meeting-server healthy after restart.');
+      return true;
+    }
+    const napUntil = Date.now() + 2_000;
+    while (Date.now() < napUntil) { /* wait for container */ }
+  }
+  console.warn('[e2e-docker] meeting-server health probe slow after restart — proceeding anyway');
+  return true;
 }
 
 

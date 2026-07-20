@@ -8,8 +8,8 @@ import {
   matchesDoctorPoolAccess,
   matchesPoolFilter,
   PENDING_POOL_STATUSES,
-} from '../../../Isara-doctor-portal/backend/appointmentPoolQuery.cjs';
-import { derivePoolStatus, mapAppointmentToPoolItem } from '../../../Isara-doctor-portal/backend/appointmentQueueMapper.cjs';
+} from '../../../../issara-doctor/backend/appointmentPoolQuery.cjs';
+import { derivePoolStatus, mapAppointmentToPoolItem } from '../../../../issara-doctor/backend/appointmentQueueMapper.cjs';
 
 type AptStatus = 'pending' | 'in_pool' | 'awaiting_doctor_response' | 'confirmed' | 'cancelled' | 'completed';
 

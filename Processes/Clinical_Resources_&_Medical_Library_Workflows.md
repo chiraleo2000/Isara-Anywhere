@@ -340,11 +340,11 @@ LIMIT 5;
 
 ## Data Storage
 
-Data is persisted in GCS bucket: `izara-meta-data`
+Data is persisted in PostgreSQL table **`clinical_resources`** (`izara_phase1`).
 
-- Resources: `clinical-resources/resources.json`
+Tags and categories are stored as columns/JSONB on each row; RAG embeddings in **`knowledge_base`** (pgvector).
 
-- Tags: `clinical-resources/tags.json`
+> **Deprecated:** Legacy GCS `clinical-resources/resources.json` — not used when `USE_POSTGRESQL=true`.
 
 ## Error Handling
 

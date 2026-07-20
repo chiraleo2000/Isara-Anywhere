@@ -32,7 +32,14 @@
 3. **ผลลัพธ์ที่คาดหวัง** — สถานะระบบ / API / ฐานข้อมูลหลังจบขั้นตอน
 
 ---
+## UI Controls Inventory
 
+| # | Control | testid | Action | Expected | Screenshot |
+|---|---------|--------|--------|----------|------------|
+| 1 | Data Testid | `data-testid` | click | Documented control | U-data-testid |
+| 2 | Confirmed | `confirmed` | click | Documented control | U-confirmed |
+| 3 | Appointmentid | `appointmentId` | click | Documented control | U-appointmentId |
+| 4 | Meetingid | `meetingId` | click | Documented control | U-meetingId |
 
 ## 1. Purpose
 

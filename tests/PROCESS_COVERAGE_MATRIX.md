@@ -1,6 +1,30 @@
 # Process Documentation → Test Coverage Matrix
 
-**Last updated:** 2026-06-10 (Telemedicine Full Gate v5.2)
+**Last updated:** 2026-07-13 (v1.7.60 full-pass) — 602 controls, P0 covered=30 / partial=0 / missing=0; process gaps=0; Group U **31/31**; UI showup **69/69**; unit groups **17/17**; `phase:9:strict` ledger **P0=0**; `test:cloud:deploy-gate` **21/21** (smoke+GATE0+meeting-ai+A/D/Q)
+
+## UI element coverage (Group U)
+
+| Artifact | Role |
+|----------|------|
+| [`UI_ELEMENT_COVERAGE_MATRIX.md`](UI_ELEMENT_COVERAGE_MATRIX.md) | Per-control testid registry (602 controls; P0 missing=0; 30 P0 covered; 164 covered after promote) |
+| [`_coverage_gap_backlog.md`](_coverage_gap_backlog.md) | Real vs inventory-noise classification for remaining P1 missing |
+| `group-U-ui-element-audit.ui-test.ts` | Headed click/type + screenshot — auth, dashboards, PHR, schedule/queue, EMR/Rx/lab, PDPA/LW, meeting results, admin/content |
+| `pageElementContract.test.ts` | Vitest: P0 testids exist in frontend |
+| `processDocContentContract.test.ts` | Vitest: all 42 pages have UI Controls Inventory |
+
+**Regenerate:** `python scripts/audit-ui-element-coverage.py` then `python scripts/promote-group-u-p0-covered.py`
+
+## Requirements-driven unit packs (v1.7.60)
+
+| Pack | File |
+|------|------|
+| Workflow connections / Security / Two-round | `workflowConnectionsContract`, `securityScanningContract`, `twoRoundCloudTestingContract`, `envForbiddenKeys` |
+| Auth | `authLockoutContract`, `crossRoleApiDenialContract`, `googleSsoContract` |
+| Appointments / GATE0 | `adminCannotConfirmContract`, `declineToPoolContract`, `confirmTripleNotifyContract` |
+| Meeting / MITL | `transcriptHostControlsContract`, `guestAnonymousDenyContract`, `mitlValidateContract`, `adminLobbyModeratorDenyContract` |
+| Clinical delivery | `emrSignDeliveryContract`, `imagingRxLabDeliveryContract`, `phrCrudContract`, `notifySocketRoomMapContract` |
+| PDPA / Content / Notify | `pdpaG15G16Contract`, `livingWillShareContract`, `contentApprovalStateMachine`, `notificationDedupContract` |
+| Profile / Schedule | `doctorProfileCrudContract`, `scheduleCalendarMapperContract` |
 
 ## v5.2 contract packs
 
@@ -36,6 +60,16 @@
 | Auth login | `authLoginResponse`, `doctorLogin`, `adminLogin`, `patientLogin` | AUTH-* |
 | Calendar confirm | `cross-portal/calendarConfirmNotification.test.ts` | CAL-03–05 |
 
+## Clinical delivery + queue consolidation (2026-07-10)
+
+| Pack | File | IDs |
+|------|------|-----|
+| Document mapping | `patient-portal/documentDeliveryMapping.test.ts` | DOC-01–05 |
+| Pool → Health Meeting redirect | `doctor-portal/appointmentPoolRedirect.test.ts` | APR-01–04 |
+| Doctor message notify | `doctor-portal/doctorMessageNotification.test.ts` | DMN-01–04 |
+| Patient Jitsi loader | `patient-portal/loadJitsiExternalApiScript.test.ts` | JIT-P01–04 |
+| Doctor Jitsi stub-safe loader | `doctor-portal/loadJitsiExternalApiScript.stubs.test.ts` | JIT-D01–03 |
+
 ## Session auth + unified queue (v1.7.52)
 
 | Area | Unit tests | UI |
@@ -61,10 +95,11 @@
 | Column | Meaning |
 |--------|---------|
 | **Status** | `covered` · `partial` · `missing` |
+| **ElementCoverage** | P0 control status from `UI_ELEMENT_COVERAGE_MATRIX.md` |
 | **Priority** | P0 meeting · P1 clinical/admin · P2 secondary |
 | **UnitTest** | Vitest under `tests/unit/` |
 | **UI** | Playwright project (group letter) |
-| **ScreenshotRef** | Expected PNG under `Documents/docs/screenshots/` |
+| **ScreenshotRef** | Expected PNG under `docs/screenshots/` |
 
 ---
 
@@ -73,14 +108,13 @@
 | ProcessDoc | Domain | UnitTest | UI | Status | Priority | ScreenshotRef |
 |------------|--------|----------|-----|--------|----------|---------------|
 | Doctor-Portal/00_Doctor_Portal_Overview | Auth | authServer, config | A | covered | P2 | group-A/A01-doctor-dashboard |
-| Doctor-Portal/00_Overview | Auth | authServer, config | A | partial | P2 | group-A/A01-doctor-dashboard |
 | Doctor-Portal/01_Login | Auth | authServer.test.ts, authServer.http.test.ts | A | covered | P1 | group-A |
 | Doctor-Portal/02_Reset_Password | Auth | authServer.http.test.ts | A | covered | P2 | — |
 | Doctor-Portal/03_Dashboard | Admin | dashboardFiltering | A, C | covered | P1 | group-A/A01-doctor-dashboard |
 | Doctor-Portal/04_Schedule | Appointments | scheduleManagement | C, D | covered | P1 | group-D/D12-schedule |
 | Doctor-Portal/05_Patient_Management | Clinical | patientDetailView | C, E | covered | P1 | group-E/E04-patients-list |
-| Doctor-Portal/06_Health_Meeting | Meeting | queueManagementWorkflow, queueSocket.test.ts | D, E, Q | covered | P0 | group-D/D09-health-meeting |
-| Doctor-Portal/07_Virtual_Meeting | Meeting | virtualMeetingWorkflow | E, Q | covered | P0 | group-Q/Q01b-doctor-host-jitsi |
+| Doctor-Portal/06_Health_Meeting | Meeting | queueManagementWorkflow, meetingRoomRoutes, meetingUxContract | D, E, Q | covered | P0 | group-D/D09-health-meeting |
+| Doctor-Portal/07_Virtual_Meeting | Meeting | **REMOVED** — use Meeting-Server/01_Meeting_Room | — | removed | — | group-Q/Q01b-doctor-host-jitsi |
 | Doctor-Portal/08_EMR_Editor | Clinical | emrService, emrAutosave.test.ts | E | covered | P1 | group-E/E07-clinical-actions |
 | Doctor-Portal/09_Prescribing | Clinical | prescriptions, prescribingAllergy.test.ts | E | covered | P1 | — |
 | Doctor-Portal/10_Lab_Orders | Clinical | labOrders | E, F, L | covered | P0 | group-F/F09-lab-results-tab |
@@ -93,7 +127,7 @@
 | Doctor-Portal/17_Admin_Appointment_Management | Admin | adminAppointmentManagement | D, I | covered | P1 | group-D/D14-admin-meeting |
 | Doctor-Portal/18_Admin_Doctor_Management | Admin | adminDoctorManagement | I | covered | P1 | group-A/C03 |
 | Doctor-Portal/19_Doctors_Management | Admin | adminDoctorManagement, processPagesContract | I | covered | P2 | — |
-| Doctor-Portal/20_Appointment_Pool_Management | Appointments | appointmentPoolManagement, queueLifecycle, queueAcceptTraceability | D | covered | P0 | group-D/D11-appointment-pool |
+| Doctor-Portal/20_Appointment_Pool_Management | Appointments | appointmentPoolManagement, queueLifecycle, queueAcceptTraceability | D | covered | P0 | group-D/D11-appointment-pool (redirect → health-meeting queue) |
 | Doctor-Portal/21_Queue_Management | Appointments | queueManagementWorkflow, queueSocket.test.ts | D, E, Q | covered | P0 | group-D/D16b-doctor-queue-assigned |
 
 ---
@@ -103,7 +137,6 @@
 | ProcessDoc | Domain | UnitTest | UI | Status | Priority | ScreenshotRef |
 |------------|--------|----------|-----|--------|----------|---------------|
 | Patient-Portal/00_Patient_Portal_Overview | Auth | authRoute, auth-context | A, B | covered | P2 | group-A/A01-patient-dashboard |
-| Patient-Portal/00_Overview | Auth | authRoute, auth-context | A, B | covered | P2 | group-A/A01-patient-dashboard |
 | Patient-Portal/01_Login | Auth | authRoute | A, B | covered | P1 | group-A |
 | Patient-Portal/02_Register | Auth | authPayloadContract | A | covered | P1 | group-A/A2b-auth-registration |
 | Patient-Portal/03_Reset_Password | Auth | authPayloadContract | A | covered | P1 | group-A/A2b-auth-registration |
@@ -115,7 +148,7 @@
 | Patient-Portal/09_Map | Workflows | mapPage | J | covered | P2 | group-J |
 | Patient-Portal/10_PDPA | Clinical | pdpaRoute, pdpaAudit.integration.test.ts | G | covered | P2 | group-G |
 | Patient-Portal/11_Living_Will | Clinical | livingWillWorkflow | G | covered | P2 | group-G |
-| Patient-Portal/12_Profile | Auth | userManagementWorkflow | B | partial | P2 | — |
+| Patient-Portal/12_Profile | Auth | userManagementWorkflow, profileWorkflow | B | covered | P2 | group-B |
 | Patient-Portal/13_Settings | Workflows | settingsPage | B | covered | P2 | — |
 | Patient-Portal/14_Timeline | Workflows | timelinePage | J | covered | P2 | group-J |
 | Patient-Portal/15_Notification_System | Notifications | notificationWorkflow | I | covered | P2 | — |
@@ -127,9 +160,8 @@
 | ProcessDoc | Domain | UnitTest | UI | Status | Priority | ScreenshotRef |
 |------------|--------|----------|-----|--------|----------|---------------|
 | Meeting-Server/00_Meeting_Server_Overview | Meeting | meeting-server/*, meetingRuntimeApi, saveRecordingContract | E, Q | covered | P0 | group-Q/ |
-| Meeting-Server/00_Overview | Meeting | meeting-server/*, meetingRuntimeApi, saveRecordingContract | E, Q | covered | P0 | group-Q/ |
-| Meeting-Server/01_Meeting_Room | Meeting | meetingRoomRoutes, meetingUxContract, jitsiMeetingConfig | E, Q, R | covered | P0 | group-E/ (cloud capture) |
-| Meeting-Server/02_Meeting_Results | Meeting | meetingResultsValidation, meetingUxContract, postMeetingWorkflow | Q | covered | P0 | group-Q/ (cloud capture) |
+| Meeting-Server/01_Meeting_Room | Meeting | meetingRoomRoutes, meetingUxContract, jitsiMeetingConfig, meetingPhrShareRedoContract | E, Q, R | covered | P0 | group-Q/ — 2026-07-14 share redo |
+| Meeting-Server/02_Meeting_Results | Meeting | meetingResultsValidation, meetingUxContract, postMeetingWorkflow, meetingPhrShareRedoContract | Q, Q2 | covered | P0 | group-Q2/ — 2026-07-14 MITL publish |
 | Meeting-Server/03_Emr_Appointment_Page | Clinical | emrAiDraft, meetingRoomRoutes, phrEmrUxContract | E, F | covered | P0 | group-E/ (cloud capture) |
 
 ---
@@ -143,16 +175,17 @@
 | FULL_WORKFLOW_CONTRACT.md | cross-portal/* | A–Q | covered | P0 |
 | Data_Sync_Documentation.md | syncQueue.integration.test.ts | — | covered | P1 |
 | Notification_Workflows.md | notificationWorkflow | I | covered | P2 |
-| Health_Records_Processes.md | phrRoute, emr*, healthRecordsWorkflowContract | F | covered | P1 |
-| GATE0_IMPLEMENTATION_STATUS.md | verify:gate0 script | D, E | partial | P0 |
+| Health_Records_Processes.md | phrRoute, emr*, healthRecordsWorkflowContract, clinicalDocumentDelivery | F, E, L | covered | P1 |
+| Clinical_Document_Delivery_Workflows.md | clinicalDocumentDelivery.test.ts, phrDocuments.test.ts | E, F | covered | P0 |
+| GATE0_IMPLEMENTATION_STATUS.md | gate0ImplementationContract, verify:gate0:local | D, E | covered | P0 |
 | TWO_ROUND_CLOUD_TESTING.md | — | A→D→D-host→Q→E→F | covered | P0 |
-| ENV_AND_STACK_CHECK.md | serviceReadiness, globalSetupLogic | M | partial | P2 |
-| User_management_Workflows.md | auth*, userManagementWorkflow | A, B | partial | P1 |
+| ENV_AND_STACK_CHECK.md | doctorEnvAudit, envSchema | M | covered | P2 |
+| User_management_Workflows.md | auth*, userManagementWorkflow, adminDoctorManagement | A, B | covered | P1 |
 | Living_Will_Processes.md | livingWillWorkflow, pdpa* | G | covered | P2 |
 | Medical_Consultants_Workflows.md | medicalConsultants | H | covered | P2 |
 | Medicine_Content_Processes.md | medicalContentWorkflow, contentRoute | H | covered | P2 |
 | Clinical_Resources_* | clinicalResources | H | covered | P2 |
-| PHASE1_* / System_Architecture_* | schemaAndSeed, embeddedPg | — | partial | P2 |
+| PHASE1_* / System_Architecture_* | phase1RequirementsContract, schemaAndSeed, embeddedPg | — | covered | P2 |
 
 ---
 

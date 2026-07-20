@@ -6,15 +6,15 @@ const ROOT = path.resolve(__dirname, '../../..');
 const CANONICAL_MODEL = 'gemini-3.1-flash-lite';
 
 const KEY_FILES = [
-  'Isara-doctor-portal/frontend/services/geminiClinicalService.ts',
-  'Isara-doctor-portal/frontend/services/config.ts',
-  'Isara-doctor-portal/backend/mainApiServer.cjs',
-  'Isara-patient-portal/backend/routes/ai.ts',
-  'Isara-patient-portal/backend/routes/video-meeting-proxy.ts',
-  'Izara-jitsi-server/backend/index.js',
+  'issara-doctor/frontend/services/geminiClinicalService.ts',
+  'issara-doctor/frontend/services/config.ts',
+  'issara-doctor/backend/mainApiServer.cjs',
+  'issara-patient/backend/routes/ai.ts',
+  'issara-patient/backend/routes/video-meeting-proxy.ts',
+  'issara-jitsi/backend/index.js',
   '.env.example',
-  'Isara-doctor-portal/.env.example',
-  'Isara-patient-portal/.env.example',
+  'issara-doctor/.env.example',
+  'issara-patient/.env.example',
 ];
 
 const FORBIDDEN = ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'flash-lite-lite'];
@@ -22,11 +22,11 @@ const FORBIDDEN = ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'flash-lite-lite
 describe('Gemini 3.1 model config regression', () => {
   it('uses canonical gemini-3.1-flash-lite default in key services', () => {
     const clinical = fs.readFileSync(
-      path.join(ROOT, 'Isara-doctor-portal/frontend/services/geminiClinicalService.ts'),
+      path.join(ROOT, 'issara-doctor/frontend/services/geminiClinicalService.ts'),
       'utf8',
     );
     const mainApi = fs.readFileSync(
-      path.join(ROOT, 'Isara-doctor-portal/backend/mainApiServer.cjs'),
+      path.join(ROOT, 'issara-doctor/backend/mainApiServer.cjs'),
       'utf8',
     );
 
@@ -36,7 +36,7 @@ describe('Gemini 3.1 model config regression', () => {
 
   it('status endpoint documents configured and model fields', () => {
     const mainApi = fs.readFileSync(
-      path.join(ROOT, 'Isara-doctor-portal/backend/mainApiServer.cjs'),
+      path.join(ROOT, 'issara-doctor/backend/mainApiServer.cjs'),
       'utf8',
     );
     expect(mainApi).toMatch(/res\.json\(\{\s*configured,/);

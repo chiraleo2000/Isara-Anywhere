@@ -4,7 +4,9 @@
  */
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT_ENV_PATH = path.resolve(__dirname, '../../.env');
 
 let cachedFileVars: Record<string, string> | null = null;
@@ -68,9 +70,9 @@ export function cloudDoctorUrl(fallback?: string): string {
 }
 
 export function cloudMeetingUrl(fallback?: string): string {
-  return (
-    pick('CLOUD_MEETING_URL', 'MEETING_SERVER_URL', 'VITE_MEETING_SERVER_URL') ||
-    fallback ||
-    ''
-  );
+  // Prefer explicit cloud URLs only — never docker-compose MEETING_SERVER_URL
+  // (e.g. http://meeting-server:3020) which is unreachable from the host/Playwright.
+  const picked = pick('CLOUD_MEETING_URL', 'CLOUD_RUN_MEETING_URL');
+  if (picked && !/meeting-server|host\.docker\.internal/i.test(picked)) return picked;
+  return fallback || '';
 }

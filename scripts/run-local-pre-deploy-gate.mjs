@@ -7,24 +7,32 @@ import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { resolveGateWorkers, isParallelGate } from './gates/lib/resolve-gate-workers.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(__dirname, '..');
 const isWin = process.platform === 'win32';
+const gateWorkers = resolveGateWorkers();
+const isStrict = process.env.GATE_STRICT === '1' || process.env.GATE_STRICT === 'true';
 
 const gateEnv = {
   ...process.env,
   PW_SKIP_LIVE_GEMINI: '1',
   PW_HEADED: '1',
-  PW_WORKERS: '1',
-  PW_SKIP_FIREFOX_JROLE: '1',
-  PW_SKIP_DEFECT_DM5: '1',
-  PW_SKIP_DEFECT_DM6: '1',
+  PW_E2E_JITSI_STUB: '1',
+  PW_WORKERS: gateWorkers,
+  PW_NO_CHROME: process.env.PW_NO_CHROME || '1',
+  BASELINE_VISUAL: '1',
   E2E_ALLOW_PARALLEL_SESSIONS: '1',
   PATIENT_URL: 'http://127.0.0.1:3005',
   DOCTOR_URL: 'http://127.0.0.1:3010',
   MEETING_URL: 'http://127.0.0.1:3020',
   VITE_MEETING_SERVER_URL: 'http://127.0.0.1:3020',
+  DEMO_AUTO_LOGIN: '1',
+  DEMO_AUTO_MEETING: '1',
+  ALLOW_API_FALLBACK: '1',
+  // Teams/Zoom manual admit — doctor clicks Admit in lobby UI (never auto-admit)
+  VITE_AUTO_ADMIT_LOBBY: '0',
 };
 const dockerBuildEnv = {
   ...gateEnv,
@@ -37,8 +45,18 @@ const hostMeetingEnv = {
   PW_SKIP_LIVE_GEMINI: '1',
 };
 delete gateEnv.PW_HEADLESS;
-delete gateEnv.BASELINE_VISUAL;
 delete gateEnv.PW_ALLOW_RECORDING_SEED;
+
+// Drop stale D→E→F workflow ids between gate runs (prevents confirm 404 after DB resets/reseeds).
+try {
+  const workflowStatePath = path.join(root, 'tests', 'e2e', '.workflow-state.json');
+  if (fs.existsSync(workflowStatePath)) {
+    fs.unlinkSync(workflowStatePath);
+    console.log('[gate] Cleared tests/e2e/.workflow-state.json');
+  }
+} catch (err) {
+  console.warn('[gate] Could not clear workflow state:', err?.message || err);
+}
 
 const processDocMap = {
   'verify-deps': 'Processes/ENV_AND_STACK_CHECK.md',
@@ -59,6 +77,50 @@ const processDocMap = {
 function npmStep(name, script) {
   return { name, cmd: 'npm', args: ['run', script], cwd: root };
 }
+
+function browserCoreSteps() {
+  const workerArg = `--workers=${gateWorkers}`;
+  if (isParallelGate()) {
+    return [
+      {
+        name: 'browser-core-multibrowser',
+        cmd: 'npx',
+        args: [
+          'playwright', 'test', '--headed',
+          '--project=W-core-firefox',
+          '--project=W-core-webkit',
+          '--project=D-appointments',
+          workerArg,
+        ],
+        cwd: root,
+      },
+    ];
+  }
+  return [
+    {
+      name: 'browser-core-firefox',
+      cmd: 'npx',
+      args: ['playwright', 'test', '--headed', '--project=W-core-firefox', '--workers=1'],
+      cwd: root,
+    },
+    {
+      name: 'browser-core-webkit',
+      cmd: 'npx',
+      args: ['playwright', 'test', '--headed', '--project=W-core-webkit', '--workers=1'],
+      cwd: root,
+    },
+    {
+      name: 'browser-appointments-firefox',
+      cmd: 'npx',
+      args: ['playwright', 'test', '--headed', '--project=D-appointments', '--workers=1'],
+      cwd: root,
+    },
+  ];
+}
+
+const e2eScript = isStrict
+  ? (isParallelGate() ? 'test:local:e2e-strict-parallel' : 'test:local:e2e-strict')
+  : (isParallelGate() ? 'test:local:e2e-parallel' : 'test:local:e2e-full');
 
 const gateSteps = [
   ...(isWin || process.env.GATE_SKIP_VERIFY_DEPS === '1'
@@ -85,14 +147,33 @@ const gateSteps = [
   npmStep('lint-portals-full', 'test:lint:portals:full'),
   npmStep('process-contracts', 'test:unit:process-contracts'),
   npmStep('v5-contracts', 'test:unit:v5-contracts'),
-  {
-    name: 'docker-compose',
-    cmd: 'docker',
-    args: process.env.GATE_SKIP_DOCKER_BUILD === '1'
-      ? ['compose', '--env-file', '.env.docker', '--profile', 'full', 'up', '-d']
-      : ['compose', '--env-file', '.env.docker', '--profile', 'full', 'up', '-d', '--build'],
-    cwd: root,
-  },
+  (() => {
+    const jitsiVendor = path.join(root, 'deploy/jitsi/docker-jitsi-meet/docker-compose.yml');
+    const hasJitsiVendor = fs.existsSync(jitsiVendor);
+    const composeFiles = ['docker-compose.yml'];
+    const profiles = ['full'];
+    if (hasJitsiVendor) {
+      composeFiles.push('deploy/jitsi/docker-compose.jitsi.yml');
+      profiles.push('jitsi');
+    } else {
+      console.warn(
+        '⚠️  deploy/jitsi/docker-jitsi-meet not found — docker-compose step uses --profile full only.\n' +
+          '    Run: node scripts/jitsi/setup-local-jitsi.mjs  (optional for LAN Jitsi)',
+      );
+    }
+    const args = ['compose', '--env-file', '.env.docker'];
+    for (const f of composeFiles) args.push('-f', f);
+    for (const p of profiles) args.push('--profile', p);
+    args.push('up', '-d');
+    if (process.env.GATE_SKIP_DOCKER_BUILD !== '1') {
+      args.push('--build');
+    } else {
+      // Stack already healthy: recreate without rebuild (correct compose service names).
+      args.push('--no-build', 'issara-jitsi', 'issara-patient', 'issara-doctor');
+      console.log('[gate] GATE_SKIP_DOCKER_BUILD=1 — up --no-build issara-jitsi/patient/doctor');
+    }
+    return { name: 'docker-compose', cmd: 'docker', args, cwd: root };
+  })(),
   npmStep('docker-probe', 'docker:probe-health'),
   {
     name: 'gate0-local',
@@ -100,11 +181,13 @@ const gateSteps = [
     args: ['run', 'verify:gate0:local'],
     cwd: root,
   },
-  npmStep('e2e-full-headed', 'test:local:e2e-full'),
+  ...browserCoreSteps(),
+  npmStep('e2e-full-headed', e2eScript),
   npmStep('screenshots-all', 'test:screenshots:all'),
   npmStep('screenshots-group-e', 'test:screenshots:group-e'),
   npmStep('screenshots-group-s', 'test:screenshots:group-s'),
   npmStep('screenshots-group-q2', 'test:screenshots:group-q2'),
+  npmStep('screenshots-global', 'test:screenshots:global'),
   npmStep('process-audit', 'test:audit:process'),
 ];
 
@@ -124,22 +207,36 @@ let failed = false;
 let failedStep = '';
 let failedProcessDoc = '';
 
+function resolveStepEnv(step) {
+  if (step.name === 'docker-compose') return dockerBuildEnv;
+  if (step.name.startsWith('e2e') || step.name === 'gate0-local' || step.name.startsWith('browser-')) {
+    const env = { ...gateEnv };
+    // Ensure headed local browsers resolve (Cursor may leave PLAYWRIGHT_BROWSERS_PATH=0).
+    if (!env.PLAYWRIGHT_BROWSERS_PATH) {
+      env.PLAYWRIGHT_BROWSERS_PATH = '0';
+    }
+    // W-core projects only — clear for D-appointments / e2e so role matrix is Chrome/Edge/Firefox.
+    delete env.PW_CORE_BROWSER;
+    if (step.name === 'browser-core-firefox') env.PW_CORE_BROWSER = 'firefox';
+    if (step.name === 'browser-core-webkit') env.PW_CORE_BROWSER = 'webkit';
+    if (step.name === 'browser-core-chromium' || step.name === 'browser-core-multibrowser') {
+      env.PW_CORE_BROWSER = 'chromium';
+    }
+    return env;
+  }
+  if (step.name === 'meeting-contract' || step.name === 'post-meeting-pipeline') {
+    return hostMeetingEnv;
+  }
+  return { ...process.env, PW_SKIP_LIVE_GEMINI: '1' };
+}
+
 function runStep(step) {
   console.log(`\n═══ [${step.name}] ═══`);
-  const useGateEnv = step.name.startsWith('e2e') || step.name === 'gate0-local';
-  const useDockerEnv = step.name === 'docker-compose';
-  const useHostMeetingEnv = step.name === 'meeting-contract' || step.name === 'post-meeting-pipeline';
   const r = spawnSync(step.cmd, step.args, {
     cwd: step.cwd,
     stdio: 'inherit',
     shell: isWin,
-    env: useDockerEnv
-      ? dockerBuildEnv
-      : useGateEnv
-        ? gateEnv
-        : useHostMeetingEnv
-          ? hostMeetingEnv
-          : { ...process.env, PW_SKIP_LIVE_GEMINI: '1' },
+    env: resolveStepEnv(step),
   });
   const ok = r.status === 0;
   results.push({

@@ -27,11 +27,11 @@ function normalizeNotificationRow(row: Record<string, unknown>): Record<string, 
 
 const patientService = path.resolve(
   __dirname,
-  '../../../Isara-patient-portal/backend/services/postgresDataService.ts',
+  '../../../issara-patient/backend/services/postgresDataService.ts',
 );
 const doctorService = path.resolve(
   __dirname,
-  '../../../Isara-doctor-portal/backend/services/postgresDataService.cjs',
+  '../../../issara-doctor/backend/services/postgresDataService.cjs',
 );
 
 describe('notification row normalize (P5, D1)', () => {

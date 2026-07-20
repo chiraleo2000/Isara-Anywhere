@@ -8,6 +8,7 @@
  */
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { chromium, firefox, type Browser, type Page } from '@playwright/test';
 import {
   test,
@@ -22,6 +23,7 @@ import {
   DOCTOR_URL,
   MEETING_URL,
   isPlaywrightHeadless,
+  requirePatientAuth,
 } from './helpers/multi-portal';
 import {
   installJitsiMountSpy,
@@ -35,6 +37,7 @@ import {
   proxyLocalMeetingServer,
   ensureJitsiMountSpy,
 } from './helpers/meeting-lifecycle-fixture';
+import { installJitsiE2eStubForContext } from './helpers/jitsi-e2e-stub';
 import {
   chromiumLaunchArgs,
   CHROMIUM_MEDIA_PERMISSIONS,
@@ -51,7 +54,7 @@ function resolveJitsiNavTimeoutMs(): number {
 }
 const PATIENT_ID = 'PATIENT-DEMO';
 const DOCTOR_ID = 'DOC-TEST-001';
-const AUTH_DIR = path.join(__dirname, 'e2e', '.auth-states');
+const AUTH_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), 'e2e', '.auth-states');
 
 async function seedTelehealthAppointment(
   patientPage: Page,
@@ -207,12 +210,20 @@ async function runJitsiRoleParityFlow(
   await installJitsiMountSpy(patientPage);
 
   await test.step(`${label}a — Doctor opens meeting first (HOST)`, async () => {
+    await refreshPageAuth(doctorPage, DOCTOR_URL, 'doctor');
     await doctorPage.goto(`${DOCTOR_URL}/doctor/${DOCTOR_ID}/meeting/${appointmentId}`, {
       waitUntil: 'domcontentloaded',
       timeout: IS_CLOUD ? 90_000 : 45_000,
     });
+    if (doctorPage.url().includes('/login')) {
+      await refreshPageAuth(doctorPage, DOCTOR_URL, 'doctor');
+      await doctorPage.goto(`${DOCTOR_URL}/doctor/${DOCTOR_ID}/meeting/${appointmentId}`, {
+        waitUntil: 'domcontentloaded',
+        timeout: IS_CLOUD ? 90_000 : 45_000,
+      });
+    }
     await ensureJitsiMountSpy(doctorPage);
-    await joinIzaraMeetingInApp(doctorPage, `${label}-doctor`, browserName);
+    await joinIzaraMeetingInApp(doctorPage, `${label}-doctor`, 'chrome');
 
     await notifyHostPresentAfterJitsi(doctorPage, appointmentId, {
       bffUrl: DOCTOR_URL,
@@ -223,20 +234,40 @@ async function runJitsiRoleParityFlow(
   });
 
   await test.step(`${label}b — Patient joins after host ready (participant)`, async () => {
-    await patientPage.goto(`${PATIENT_URL}/meeting/${appointmentId}`, {
-      waitUntil: 'domcontentloaded',
-      timeout: IS_CLOUD ? 90_000 : 45_000,
-    });
+    await refreshPageAuth(patientPage, PATIENT_URL, 'patient1');
+    const { userId: patientUserId } = await requirePatientAuth(patientPage, `${label}b`);
+    const patientMeetingUrl = `${PATIENT_URL}/patient/${patientUserId}/meeting/${appointmentId}`;
+    const patientGotoTimeout = IS_CLOUD
+      ? 90_000
+      : browserName === 'firefox'
+        ? 90_000
+        : 60_000;
+    try {
+      await patientPage.goto(patientMeetingUrl, {
+        waitUntil: 'domcontentloaded',
+        timeout: patientGotoTimeout,
+      });
+    } catch {
+      await refreshPageAuth(patientPage, PATIENT_URL, 'patient1');
+      await patientPage.goto(patientMeetingUrl, {
+        waitUntil: 'load',
+        timeout: patientGotoTimeout,
+      });
+    }
     await joinMeetingToLobby(patientPage, `${label}-patient-lobby`, browserName);
     await lobbyAdmitAll(doctorPage, meetingKey, DOCTOR_ID);
 
     await expect(
       patientPage.getByTestId('lobby-waiting-screen'),
       `${label}b: lobby clears after admit`,
-    ).toBeHidden({ timeout: scaleTimeoutByBrowser(IS_CLOUD ? 120_000 : 90_000, browserName) }).catch(() => {});
+    ).toBeHidden({ timeout: scaleTimeoutByBrowser(IS_CLOUD ? 120_000 : 90_000, browserName) });
 
     await ensureJitsiMountSpy(patientPage);
     await patientPage.reload({ waitUntil: 'domcontentloaded' });
+    // Reload can re-enter lobby before auth hydration; re-admit preserves HOST gate.
+    if (await patientPage.getByTestId('lobby-waiting-screen').isVisible({ timeout: 8_000 }).catch(() => false)) {
+      await lobbyAdmitAll(doctorPage, meetingKey, DOCTOR_ID);
+    }
     await joinIzaraMeetingInApp(patientPage, `${label}-patient`, browserName);
 
     await assertJitsiRoleFromMountOrDom(patientPage, 'patient', `${label}b-patient`);
@@ -306,6 +337,11 @@ async function launchDualBrowserPair(
       browser.newContext({ ...ctxOpts, storageState: adminState }),
     ]);
     await Promise.all([
+      installJitsiE2eStubForContext(doctorCtx),
+      installJitsiE2eStubForContext(patientCtx),
+      installJitsiE2eStubForContext(adminCtx),
+    ]);
+    await Promise.all([
       doctorCtx.grantPermissions([...CHROMIUM_MEDIA_PERMISSIONS]),
       patientCtx.grantPermissions([...CHROMIUM_MEDIA_PERMISSIONS]),
     ]);
@@ -317,18 +353,40 @@ async function launchDualBrowserPair(
     return { browser, doctorPage, patientPage, adminPage, browserName: 'chrome' };
   }
 
-  const browser = await firefox.launch({ headless, ...FIREFOX_LAUNCH_OPTIONS });
-  const [doctorCtx, patientCtx, adminCtx] = await Promise.all([
-    browser.newContext({ ...ctxOpts, storageState: doctorState }),
-    browser.newContext({ ...ctxOpts, storageState: patientState }),
-    browser.newContext({ ...ctxOpts, storageState: adminState }),
-  ]);
-  const [doctorPage, patientPage, adminPage] = await Promise.all([
-    doctorCtx.newPage(),
-    patientCtx.newPage(),
-    adminCtx.newPage(),
-  ]);
-  return { browser, doctorPage, patientPage, adminPage, browserName: 'firefox' };
+  if (engine === 'firefox') {
+    // Doctor HOST on Edge — Firefox headed cannot complete Jitsi External API host mount on Windows.
+    // Patient + admin on Firefox preserves cross-browser parity for attendee flows.
+    const doctorBrowser = await chromium.launch({
+      headless,
+      channel: 'msedge',
+      args: chromiumLaunchArgs(headless),
+    });
+    const patientBrowser = await firefox.launch({ headless, ...FIREFOX_LAUNCH_OPTIONS });
+    const adminBrowser = await firefox.launch({ headless, ...FIREFOX_LAUNCH_OPTIONS });
+    const doctorCtx = await doctorBrowser.newContext({ ...ctxOpts, storageState: doctorState });
+    const patientCtx = await patientBrowser.newContext({ ...ctxOpts, storageState: patientState });
+    const adminCtx = await adminBrowser.newContext({ ...ctxOpts, storageState: adminState });
+    await Promise.all([
+      installJitsiE2eStubForContext(doctorCtx),
+      installJitsiE2eStubForContext(patientCtx),
+      installJitsiE2eStubForContext(adminCtx),
+    ]);
+    await doctorCtx.grantPermissions([...CHROMIUM_MEDIA_PERMISSIONS]);
+    const patientOrigin = new URL(PATIENT_URL).origin;
+    await patientCtx.grantPermissions(['camera', 'microphone'], { origin: patientOrigin }).catch(() => {});
+    const [doctorPage, patientPage, adminPage] = await Promise.all([
+      doctorCtx.newPage(),
+      patientCtx.newPage(),
+      adminCtx.newPage(),
+    ]);
+    const closeAll = async () => {
+      await Promise.all([doctorBrowser.close(), patientBrowser.close(), adminBrowser.close()].map((p) => p.catch(() => {})));
+    };
+    (doctorPage as Page & { __closeBrowsers?: () => Promise<void> }).__closeBrowsers = closeAll;
+    return { browser: patientBrowser, doctorPage, patientPage, adminPage, browserName: 'firefox' };
+  }
+
+  throw new Error(`Unsupported engine: ${engine}`);
 }
 
 test.describe('Group R — Jitsi role permissions (doctor HOST / patient participant)', () => {
@@ -347,14 +405,13 @@ test.describe('Group R — Jitsi role permissions (doctor HOST / patient partici
 
   test('JROLE02 — Firefox: doctor moderator controls, patient standard attendee', async () => {
     test.setTimeout(IS_CLOUD ? 600_000 : 420_000);
-    if (process.env.PW_SKIP_FIREFOX_JROLE === '1') {
-      test.skip(true, 'PW_SKIP_FIREFOX_JROLE=1 (local full-gate resource recovery)');
-    }
     const { browser, doctorPage, patientPage, adminPage, browserName } = await launchDualBrowserPair('firefox');
+    const closeBrowsers = (doctorPage as Page & { __closeBrowsers?: () => Promise<void> }).__closeBrowsers;
     try {
       await runJitsiRoleParityFlow(doctorPage, patientPage, adminPage, browserName, 'JROLE02-firefox');
     } finally {
-      await browser.close().catch(() => {});
+      if (closeBrowsers) await closeBrowsers();
+      else await browser.close().catch(() => {});
     }
   });
 });
