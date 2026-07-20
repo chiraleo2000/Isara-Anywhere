@@ -1,23 +1,21 @@
 # Cloud Full Coverage Results
 
-**Date:** 2026-07-17  
-**Baseline:** `20260717-1300`  
-**Command:** `npm run test:cloud:full` + K/N/O retry  
-**Env:** Cloud Run backed by **GCE VM Postgres** `35.240.157.230` (not Cloud SQL)  
-**Status:** ALL-PASS  
-**Exit:** 0 (after residual retry)
+**Date:** 2026-07-20  
+**Tag:** v1.7.63  
+**Baseline:** `20260720-1300`
 
-## Summary
+## Primary run
 
-| Run | Passed | Failed | Notes |
-|-----|--------|--------|-------|
-| Initial `test:cloud:full` | 78 | 10 | K/N/O failed: missing Playwright Chromium in sandbox cache |
-| Retry K + N + O (`PLAYWRIGHT_BROWSERS_PATH=0`) | 18 | 0 | After `npx playwright install chromium` + SSO seed |
-| **Combined** | **88** | **0** | Zero product residuals |
+- Command: `npm run test:cloud:full`
+- Log: `reports/baseline-20260720-1300/cloud-full.txt`
+- Result: **85 passed**, **1 failed**, 2 did not run (E4 flake — browser closed mid-assert)
 
-## Evidence
+## Residual clear
 
-- `reports/baseline-20260717-1300/p3-cloud-full.txt`
-- `reports/baseline-20260717-1300/p3-cloud-full-retry-kno.txt`
-- Pre-suite purge: GCE `35.240.157.230` (cleanup exit 0)
-- SSO seed: Secret Manager `db-password` (exit 0 on retry)
+- Command: `npx playwright test --project=E-meeting-clinical --project=F-phr-health-records --project=L-lab-ordering`
+- Log: `reports/baseline-20260720-1300/cloud-full-retry-efl.txt`
+- Result: **13 passed** (RETRY_EFL_EXIT=0)
+
+## Verdict
+
+**Zero residuals** — full cloud matrix cleared for baseline `20260720-1300` (effective **88/88** class coverage after E/F/L retry).

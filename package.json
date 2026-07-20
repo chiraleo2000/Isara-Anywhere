@@ -1,6 +1,6 @@
 {
   "name": "issara-workspace",
-  "version": "1.7.61",
+  "version": "1.7.63",
   "private": true,
   "description": "ISSARA Workspace - Run all projects concurrently",
   "type": "module",
